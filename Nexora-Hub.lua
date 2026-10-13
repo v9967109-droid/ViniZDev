@@ -1847,23 +1847,27 @@ function Nexora.CreateMain(config)
     reopen.Position = UDim2.new(0, 14, 0.5, -23)
     reopen.AnchorPoint = Vector2.new(0, 0)
     reopen.Visible = false
-    reopen.Text = "↗"
-    reopen.TextColor3 = C.bg
-    reopen.TextSize = 20
+    reopen.Text = "N"
+    reopen.TextColor3 = Color3.fromRGB(255, 255, 255)
+    reopen.TextSize = 22
     reopen.Font = Enum.Font.GothamBold
     reopen.BackgroundColor3 = C.gold
+    -- Estado declarado antes dos eventos para evitar que o clique use uma variável global.
+    local floatDragging, floatStart, floatPos, floatMoved = false, nil, nil, false
     local function hideWindow()
         shell.Visible = false
         reopen.Visible = true
     end
     close.MouseButton1Click:Connect(hideWindow)
-    reopen.MouseButton1Click:Connect(function()
-        if floatMoved then return end
+    -- O evento de clique só reabre se o usuário não arrastou o botão.
+    reopen.Activated:Connect(function()
+        if floatMoved then
+            task.defer(function() floatMoved = false end)
+            return
+        end
         shell.Visible = true
         reopen.Visible = false
     end)
-    -- Botão flutuante pode ser arrastado para qualquer canto (mouse ou toque).
-    local floatDragging, floatStart, floatPos, floatMoved = false, nil, nil, false
     reopen.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             floatDragging = true; floatMoved = false; floatStart = input.Position; floatPos = reopen.Position
@@ -1883,7 +1887,10 @@ function Nexora.CreateMain(config)
         end
     end)
     UIS.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then floatDragging = false end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            floatDragging = false
+            -- Mantém floatMoved até Activated decidir se foi clique ou arrasto.
+        end
     end)
     local mini = button(top, "—", 30); mini.Size=UDim2.new(0,30,0,30); mini.Position=UDim2.new(1,-78,0,12)
     mini.MouseButton1Click:Connect(hideWindow)
@@ -1975,10 +1982,10 @@ function Nexora.CreateMain(config)
             function Section.CreateToggle(cfg, callback)
                 cfg=cfg or {}; local t=cfg.Title or "Toggle"; local val=cfg.Default==true
                 local r=row(35); local txt=label(make("Frame",{Size=UDim2.new(1,-60,1,0),BackgroundTransparency=1},r),t,12,C.text)
-                local b=button(r,val and "On" or "Off",27); b.Size=UDim2.new(0,52,0,27); b.Position=UDim2.new(1,-52,.5,-13.5); b.BackgroundColor3=val and C.gold or C.panel2; b.TextColor3=val and C.bg or C.text
+                local b=button(r,val and "On" or "Off",27); b.Size=UDim2.new(0,52,0,27); b.Position=UDim2.new(1,-52,.5,-13.5); b.BackgroundColor3=val and C.gold or Color3.fromRGB(0,0,0); b.TextColor3=val and Color3.fromRGB(255,255,255) or Color3.fromRGB(255,255,255)
                 local opt=addOption(t,"toggle",val,pageName,sectionName,callback)
                 local function applyToggle(v, fire)
-                    val = not not v; opt.value=val; b.Text=val and "On" or "Off"; b.BackgroundColor3=val and C.gold or C.panel2; b.TextColor3=val and C.bg or C.text
+                    val = not not v; opt.value=val; b.Text=val and "On" or "Off"; b.BackgroundColor3=val and C.gold or Color3.fromRGB(0,0,0); b.TextColor3=val and Color3.fromRGB(255,255,255) or Color3.fromRGB(255,255,255)
                     if fire and callback then task.spawn(function() pcall(callback,val) end) end
                 end
                 opt._setValue = function(v) applyToggle(v, false) end
@@ -23331,34 +23338,24 @@ MISCPVPSection.CreateToggle(
 			if not game.Workspace:FindFirstChild("WaterWalk") then
 				platform = Instance.new("Part")
 				platform.Name = "WaterWalk"
-				platform.Size = Vector3.new(1 / 0, 1, 1 / 0)
+				platform.Size = Vector3.new(2048, 1, 2048)
 				platform.Transparency = 1
 				platform.Anchored = true
 				platform.Parent = game.workspace
 			end
 			spawn(function()
-				while Settings["Walk On Water "] and (task.wait()) do
+				while Settings["Walk On Water "] and task.wait() do
 					pcall(function()
-						if t.Character.Humanoid.Sit then
+						local character = game:GetService("Players").LocalPlayer.Character
+						local root = character and character:FindFirstChild("HumanoidRootPart")
+						local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+						if not root or not humanoid or humanoid.Sit then
 							platform.CanCollide = false
 							return
 						end
-						if
-							(Vector3.new(
-								0,
-								game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart").Position.Y,
-								0
-							) - Vector3.new(0, -60, 0)).Magnitude > 60
-						then
-							platform.CanCollide = false
-							return
-						end
-						platform.CanCollide = true
-						platform.Position = Vector3.new(
-							game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position.X,
-							game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position.Y * 0 - 5,
-							game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position.Z
-						)
+						-- Keep the platform centered beneath the player, with valid finite dimensions.
+						platform.Position = Vector3.new(root.Position.X, -5, root.Position.Z)
+						platform.CanCollide = root.Position.Y <= 0
 					end)
 				end
 			end)
