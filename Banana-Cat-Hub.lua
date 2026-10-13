@@ -10724,7 +10724,6 @@ QuestDragonSection.CreateToggle(
 			return
 		end
 		getgenv().__HydraDestinationName_Dojo = "Hydra Island / Dragon Dojo"
-		-- Se a missão do Dojo já está ativa, não volte para Hydra só para iniciar.
 		local activeDojoQuest = false
 		pcall(function()
 			local questData = QuestDojoTrainer()
@@ -10732,11 +10731,11 @@ QuestDragonSection.CreateToggle(
 		end)
 		getgenv().__HydraReady_Dojo = activeDojoQuest
 		if not activeDojoQuest then
+			getgenv().__HydraReady_Dojo = false
 			BananaMoveToDestination(CFrame.new(5661.5302734375, 1013.411315918, -334.9619140625), "Auto Quest Dojo Trainer", "__HydraReady_Dojo", 100)
 		end
 		spawn(function()
 			while Settings["Auto Quest Dojo Trainer"] do
-				-- Mantém o loop vivo após morrer/resetar; aguarda o personagem voltar.
 				if getgenv().__HydraReady_Dojo and t.Character and t.Character:FindFirstChild("HumanoidRootPart") then
 					pcall(function() AutoQuestDojo() end)
 				end
@@ -10952,15 +10951,14 @@ QuestDragonSection.CreateToggle(
 			return
 		end
 		getgenv().__HydraDestinationName_Hunter = "Hydra Island / Dragon Dojo"
-		-- Se a missão do Dragon Hunter já está ativa, não refaz a viagem para Hydra.
 		local activeHunterQuest = getgenv().QuestHunterDragon ~= nil and getgenv().QuestHunterDragon ~= ""
 		getgenv().__HydraReady_Hunter = activeHunterQuest
 		if not activeHunterQuest then
+			getgenv().__HydraReady_Hunter = false
 			BananaMoveToDestination(CFrame.new(5661.5302734375, 1013.411315918, -334.9619140625), "Auto Quest Dragon Hunter", "__HydraReady_Hunter", 100)
 		end
 		spawn(function()
 			while Settings["Auto Quest Dragon Hunter"] do
-				-- O toggle continua ativo após morte/reset; o loop retoma ao reaparecer.
 				if getgenv().__HydraReady_Hunter and t.Character and t.Character:FindFirstChild("HumanoidRootPart") then
 					pcall(function() AutoDragonHunter() end)
 				end
