@@ -1787,8 +1787,8 @@ local function button(parent, text, height)
         Font = Enum.Font.Gotham, TextSize = 12,
     }, parent)
     corner(b, 7)
-    b.MouseEnter:Connect(function() TweenService:Create(b, TweenInfo.new(.12), {BackgroundColor3 = Color3.fromRGB(36, 34, 31)}):Play() end)
-    b.MouseLeave:Connect(function() TweenService:Create(b, TweenInfo.new(.12), {BackgroundColor3 = C.panel2}):Play() end)
+    b.MouseEnter:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.12), {BackgroundColor3 = Color3.fromRGB(36, 34, 31)}):Play() end end)
+    b.MouseLeave:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.12), {BackgroundColor3 = C.panel2}):Play() end end)
     return b
 end
 local function addOption(title, typ, value, page, section, callback)
@@ -1820,18 +1820,36 @@ end
 function Nexora.CreateMain(config)
     config = config or {}
     local gui = make("ScreenGui", {Name = "NexoraUI", ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
-    local shell = make("Frame", {Name="Window", AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.new(0, 690, 0, 440), BackgroundColor3=C.bg, BorderSizePixel=0}, gui)
+    local SIZE_FILE = "NexoraHubWindowSize.json"
+    local persistedW, persistedH = 690, 440
+    -- Salva o tamanho em arquivo do executor para sobreviver a reinícios do jogo.
+    pcall(function()
+        if readfile and isfile and isfile(SIZE_FILE) then
+            local stored = game:GetService("HttpService"):JSONDecode(readfile(SIZE_FILE))
+            persistedW = math.clamp(tonumber(stored.w) or 690, 360, 900)
+            persistedH = math.clamp(tonumber(stored.h) or 440, 280, 720)
+        elseif getgenv and getgenv().__NEXORA_WINDOW_SIZE then
+            persistedW = math.clamp(tonumber(getgenv().__NEXORA_WINDOW_SIZE.w) or 690, 360, 900)
+            persistedH = math.clamp(tonumber(getgenv().__NEXORA_WINDOW_SIZE.h) or 440, 280, 720)
+        end
+    end)
+    local function saveWindowSize(w, h)
+        local data = {w = math.floor(w), h = math.floor(h)}
+        pcall(function() if getgenv then getgenv().__NEXORA_WINDOW_SIZE = data end end)
+        pcall(function() if writefile then writefile(SIZE_FILE, game:GetService("HttpService"):JSONEncode(data)) end end)
+    end
+    local shell = make("Frame", {Name="Window", AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.new(0, persistedW, 0, persistedH), BackgroundColor3=C.bg, BorderSizePixel=0}, gui)
     corner(shell, 12); stroke(shell, C.line)
     local scale = make("UIScale", {Scale = 1}, shell)
     local function resize()
         local cam = workspace.CurrentCamera
         if cam then
             local v = cam.ViewportSize
-            scale.Scale = math.clamp(math.min((v.X-20)/690, (v.Y-20)/440), .38, 1)
+            scale.Scale = math.clamp(math.min((v.X-20)/math.max(1, shell.Size.X.Offset), (v.Y-20)/math.max(1, shell.Size.Y.Offset)), .38, 1)
         end
     end
     resize()
-    if workspace.CurrentCamera then workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function() if shell.Size.X.Offset == 690 and shell.Size.Y.Offset == 440 then resize() end end) end
+    if workspace.CurrentCamera then workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(resize) end
 
     local top = make("Frame", {Size=UDim2.new(1,0,0,54), BackgroundColor3=C.panel, BorderSizePixel=0}, shell)
     corner(top, 12)
@@ -1944,6 +1962,7 @@ function Nexora.CreateMain(config)
             local h = math.clamp(sizeStart.Y.Offset + delta.Y, 280, 720)
             shell.Size = UDim2.new(0, w, 0, h)
             savedWindowSize = shell.Size
+            saveWindowSize(w, h)
             scale.Scale = 1
         end
     end)
@@ -1982,10 +2001,10 @@ function Nexora.CreateMain(config)
             function Section.CreateToggle(cfg, callback)
                 cfg=cfg or {}; local t=cfg.Title or "Toggle"; local val=cfg.Default==true
                 local r=row(35); local txt=label(make("Frame",{Size=UDim2.new(1,-60,1,0),BackgroundTransparency=1},r),t,12,C.text)
-                local b=button(r,val and "On" or "Off",27); b.Size=UDim2.new(0,52,0,27); b.Position=UDim2.new(1,-52,.5,-13.5); b.BackgroundColor3=val and C.gold or Color3.fromRGB(0,0,0); b.TextColor3=val and Color3.fromRGB(255,255,255) or Color3.fromRGB(255,255,255)
+                local b=button(r,val and "On" or "Off",27); b:SetAttribute("NexoraKeepColor", true); b.Size=UDim2.new(0,52,0,27); b.Position=UDim2.new(1,-52,.5,-13.5); b.BackgroundColor3=val and C.gold or Color3.fromRGB(0,0,0); b.TextColor3=Color3.fromRGB(255,255,255)
                 local opt=addOption(t,"toggle",val,pageName,sectionName,callback)
                 local function applyToggle(v, fire)
-                    val = not not v; opt.value=val; b.Text=val and "On" or "Off"; b.BackgroundColor3=val and C.gold or Color3.fromRGB(0,0,0); b.TextColor3=val and Color3.fromRGB(255,255,255) or Color3.fromRGB(255,255,255)
+                    val = not not v; opt.value=val; b.Text=val and "On" or "Off"; b.BackgroundColor3=val and C.gold or Color3.fromRGB(0,0,0); b.TextColor3=Color3.fromRGB(255,255,255)
                     if fire and callback then task.spawn(function() pcall(callback,val) end) end
                 end
                 opt._setValue = function(v) applyToggle(v, false) end
@@ -2035,10 +2054,23 @@ function Nexora.CreateMain(config)
                 local b=button(card,t.."  ·  "..tostring(selected).."  ▾",34); local opt=addOption(t,"dropdown",selected,pageName,sectionName,callback)
                 opt._setValue = function(v) selected=v; opt.value=v; b.Text=t.."  ·  "..tostring(v).."  ▾" end
                 b.MouseButton1Click:Connect(function()
-                    local oldMenu=card:FindFirstChild("Dropdown_"..t:gsub("%W","")); if oldMenu then oldMenu:Destroy(); return end
-                    local menu=make("Frame",{Name="Dropdown_"..t:gsub("%W",""),Size=UDim2.new(1,0,0,math.min(150,#listValues*29)),BackgroundColor3=C.bg,BorderSizePixel=0},card); corner(menu,7); stroke(menu,C.line)
-                    local lay=make("UIListLayout",{Padding=UDim.new(0,3)},menu); make("UIPadding",{PaddingTop=UDim.new(0,4),PaddingBottom=UDim.new(0,4),PaddingLeft=UDim.new(0,4),PaddingRight=UDim.new(0,4)},menu)
-                    for _,v in ipairs(listValues) do local optb=button(menu,tostring(v),25); optb.MouseButton1Click:Connect(function() selected=v; opt.value=v; b.Text=t.."  ·  "..tostring(v).."  ▾"; menu:Destroy(); if callback then callback(v) end end) end
+                    local menuName="NexoraDropdownOverlay"
+                    local oldMenu=gui:FindFirstChild(menuName); if oldMenu then oldMenu:Destroy(); return end
+                    -- Overlay attached to ScreenGui so it opens beside the clicked control, not at the bottom of the section.
+                    local h=math.max(29, math.min(174, #listValues*29+8))
+                    local vp=(workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize) or Vector2.new(800,600)
+                    local bx, by=b.AbsolutePosition.X, b.AbsolutePosition.Y+b.AbsoluteSize.Y+3
+                    if by+h>vp.Y-8 then by=math.max(8,b.AbsolutePosition.Y-h-3) end
+                    local w=math.max(150,b.AbsoluteSize.X)
+                    local x=math.clamp(bx,4,math.max(4,vp.X-w-4))
+                    local menu=make("ScrollingFrame",{Name=menuName,Position=UDim2.fromOffset(x,by),Size=UDim2.fromOffset(w,h),CanvasSize=UDim2.new(0,0,0,#listValues*29+8),ScrollBarThickness=3,ScrollBarImageColor3=C.gold,BackgroundColor3=C.bg,BorderSizePixel=0,ZIndex=100},gui); corner(menu,7); stroke(menu,C.line)
+                    local lay=make("UIListLayout",{Padding=UDim.new(0,3),SortOrder=Enum.SortOrder.LayoutOrder},menu)
+                    make("UIPadding",{PaddingTop=UDim.new(0,4),PaddingBottom=UDim.new(0,4),PaddingLeft=UDim.new(0,4),PaddingRight=UDim.new(0,4)},menu)
+                    lay:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() menu.CanvasSize=UDim2.new(0,0,0,lay.AbsoluteContentSize.Y+8) end)
+                    for _,v in ipairs(listValues) do
+                        local optb=button(menu,tostring(v),25); optb.ZIndex=101; optb.LayoutOrder=table.find(listValues,v) or 1
+                        optb.MouseButton1Click:Connect(function() selected=v; opt.value=v; b.Text=t.."  ·  "..tostring(v).."  ▾"; menu:Destroy(); if callback then task.spawn(function() pcall(callback,v) end) end end)
+                    end
                 end)
                 return opt
             end
@@ -27234,7 +27266,10 @@ task.defer(function()
     task.wait(1)
     local pending = A and A.PendingDefaults or {}
     for _, startDefault in ipairs(pending) do
-        task.spawn(function() pcall(startDefault) end)
+        task.spawn(function()
+            local ok, err = pcall(startDefault)
+            if not ok then warn("[Nexora] Falha ao iniciar opção padrão: " .. tostring(err)) end
+        end)
     end
     table.clear(pending)
 end)
