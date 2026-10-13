@@ -10723,15 +10723,23 @@ QuestDragonSection.CreateToggle(
 			getgenv().__HydraReady_Dojo = false
 			return
 		end
-		getgenv().__HydraReady_Dojo = false
 		getgenv().__HydraDestinationName_Dojo = "Hydra Island / Dragon Dojo"
-		BananaMoveToDestination(CFrame.new(5661.5302734375, 1013.411315918, -334.9619140625), "Auto Quest Dojo Trainer", "__HydraReady_Dojo", 100)
+		local activeDojoQuest = false
+		pcall(function()
+			local questData = QuestDojoTrainer()
+			activeDojoQuest = questData ~= nil and questData.Quest ~= nil
+		end)
+		getgenv().__HydraReady_Dojo = activeDojoQuest
+		if not activeDojoQuest then
+			getgenv().__HydraReady_Dojo = false
+			BananaMoveToDestination(CFrame.new(5661.5302734375, 1013.411315918, -334.9619140625), "Auto Quest Dojo Trainer", "__HydraReady_Dojo", 100)
+		end
 		spawn(function()
 			while Settings["Auto Quest Dojo Trainer"] do
-				if getgenv().__HydraReady_Dojo then
+				if getgenv().__HydraReady_Dojo and t.Character and t.Character:FindFirstChild("HumanoidRootPart") then
 					pcall(function() AutoQuestDojo() end)
 				end
-				task.wait(0.1)
+				task.wait(1)
 			end
 		end)
 	end
@@ -10942,15 +10950,19 @@ QuestDragonSection.CreateToggle(
 			getgenv().__HydraReady_Hunter = false
 			return
 		end
-		getgenv().__HydraReady_Hunter = false
 		getgenv().__HydraDestinationName_Hunter = "Hydra Island / Dragon Dojo"
-		BananaMoveToDestination(CFrame.new(5661.5302734375, 1013.411315918, -334.9619140625), "Auto Quest Dragon Hunter", "__HydraReady_Hunter", 100)
+		local activeHunterQuest = getgenv().QuestHunterDragon ~= nil and getgenv().QuestHunterDragon ~= ""
+		getgenv().__HydraReady_Hunter = activeHunterQuest
+		if not activeHunterQuest then
+			getgenv().__HydraReady_Hunter = false
+			BananaMoveToDestination(CFrame.new(5661.5302734375, 1013.411315918, -334.9619140625), "Auto Quest Dragon Hunter", "__HydraReady_Hunter", 100)
+		end
 		spawn(function()
 			while Settings["Auto Quest Dragon Hunter"] do
-				if getgenv().__HydraReady_Hunter then
+				if getgenv().__HydraReady_Hunter and t.Character and t.Character:FindFirstChild("HumanoidRootPart") then
 					pcall(function() AutoDragonHunter() end)
 				end
-				task.wait(0.1)
+				task.wait(1)
 			end
 		end)
 	end
