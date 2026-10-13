@@ -1791,8 +1791,29 @@ local function button(parent, text, height)
     return b
 end
 local function addOption(title, typ, value, page, section, callback)
-    Nexora.Options[title] = {Title = title, type = typ, value = value, Page_Name = page, Section_Name = section, Callback = callback}
-    return Nexora.Options[title]
+    local opt = {Title = title, name = title, type = typ, value = value, Page_Name = page, Section_Name = section, Callback = callback}
+    local control = {}
+    control.GetText = function() return tostring(opt.value or "") end
+    control.SetValue = function(a, b)
+        local v = b
+        if b == nil then v = a end
+        if v == control then return end
+        opt.value = v
+        if opt._setValue then opt._setValue(v) end
+        if callback then task.spawn(function() pcall(callback, v) end) end
+    end
+    control.SetStage = control.SetValue
+    control.SetSubValue = function(a, b, c)
+        local key, v
+        if c ~= nil then key, v = b, c else key, v = a, b end
+        opt.value = opt.value or {}
+        opt.value[key] = v
+        if opt._setSubValue then opt._setSubValue(key, v) end
+        if callback then task.spawn(function() pcall(callback, opt.value) end) end
+    end
+    opt.FunctionCreate = control
+    Nexora.Options[title] = opt
+    return opt
 end
 
 function Nexora.CreateMain(config)
@@ -1805,7 +1826,7 @@ function Nexora.CreateMain(config)
         local cam = workspace.CurrentCamera
         if cam then
             local v = cam.ViewportSize
-            scale.Scale = math.clamp(math.min((v.X-24)/690, (v.Y-24)/440), .58, 1)
+            scale.Scale = math.clamp(math.min((v.X-20)/690, (v.Y-20)/440), .38, 1)
         end
     end
     resize()
@@ -1885,7 +1906,12 @@ function Nexora.CreateMain(config)
                 local r=row(35); local txt=label(make("Frame",{Size=UDim2.new(1,-60,1,0),BackgroundTransparency=1},r),t,12,C.text)
                 local b=button(r,val and "ON" or "OFF",27); b.Size=UDim2.new(0,52,0,27); b.Position=UDim2.new(1,-52,.5,-13.5); b.BackgroundColor3=val and C.gold or C.panel2; b.TextColor3=val and C.bg or C.text
                 local opt=addOption(t,"toggle",val,pageName,sectionName,callback)
-                b.MouseButton1Click:Connect(function() val=not val; opt.value=val; b.Text=val and "ON" or "OFF"; b.BackgroundColor3=val and C.gold or C.panel2; b.TextColor3=val and C.bg or C.text; if callback then task.spawn(callback,val) end end)
+                local function applyToggle(v, fire)
+                    val = not not v; opt.value=val; b.Text=val and "ON" or "OFF"; b.BackgroundColor3=val and C.gold or C.panel2; b.TextColor3=val and C.bg or C.text
+                    if fire and callback then task.spawn(function() pcall(callback,val) end) end
+                end
+                opt._setValue = function(v) applyToggle(v, false) end
+                b.MouseButton1Click:Connect(function() applyToggle(not val, true) end)
                 return opt
             end
             function Section.CreateButton(cfg, callback)
@@ -1893,7 +1919,12 @@ function Nexora.CreateMain(config)
             end
             function Section.CreateLabel(cfg)
                 local t=type(cfg)=="table" and (cfg.Title or cfg.Text or "") or tostring(cfg or "")
-                local r=row(28); label(r,t,11,C.muted); return r
+                local r=row(28)
+                local txt=label(r,t,11,C.muted)
+                local handle={Object=txt}
+                handle.SetText=function(value) txt.Text=tostring(value or "") end
+                handle.GetText=function() return txt.Text end
+                return handle
             end
             function Section.CreateSlider(cfg, callback)
                 cfg=cfg or {}; local t=cfg.Title or "Slider"; local min=cfg.Min or cfg.MinValue or 0; local max=cfg.Max or cfg.MaxValue or 100; local val=math.clamp(cfg.Default or cfg.Value or min,min,max)
@@ -1902,8 +1933,14 @@ function Nexora.CreateMain(config)
                 local bar=make("Frame",{Position=UDim2.new(0,0,0,30),Size=UDim2.new(1,0,0,7),BackgroundColor3=C.panel2,BorderSizePixel=0},r); corner(bar,4)
                 local fill=make("Frame",{Size=UDim2.new((val-min)/math.max(1,max-min),0,1,0),BackgroundColor3=C.gold,BorderSizePixel=0},bar); corner(fill,4)
                 local hit=make("TextButton",{Size=UDim2.new(1,0,0,20),Position=UDim2.new(0,0,0,-6),BackgroundTransparency=1,Text="",TextTransparency=1},bar)
-                local function set(x) local ratio=math.clamp((x-bar.AbsolutePosition.X)/math.max(1,bar.AbsoluteSize.X),0,1); val=math.floor(min+(max-min)*ratio); fill.Size=UDim2.new(ratio,0,1,0); num.Text=tostring(val); opt.value=val; if callback then callback(val) end end
-                local opt=addOption(t,"slider",val,pageName,sectionName,callback)
+                local opt
+                local function set(x) local ratio=math.clamp((x-bar.AbsolutePosition.X)/math.max(1,bar.AbsoluteSize.X),0,1); val=math.floor(min+(max-min)*ratio); fill.Size=UDim2.new(ratio,0,1,0); num.Text=tostring(val); if opt then opt.value=val end; if callback then pcall(callback,val) end end
+                opt=addOption(t,"slider",val,pageName,sectionName,callback)
+                opt._setValue = function(v)
+                    val = math.clamp(tonumber(v) or min, min, max)
+                    local ratio = (val-min)/math.max(1,max-min)
+                    fill.Size=UDim2.new(ratio,0,1,0); num.Text=tostring(val)
+                end
                 hit.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then set(i.Position.X) end end)
                 hit.InputChanged:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch then if UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then set(i.Position.X) end end end)
                 return opt
@@ -1911,6 +1948,7 @@ function Nexora.CreateMain(config)
             function Section.CreateDropdown(cfg, callback)
                 cfg=cfg or {}; local t=cfg.Title or "Dropdown"; local listValues=cfg.List or cfg.Values or cfg.Options or {}; local selected=cfg.Default or "Select..."
                 local b=button(card,t.."  ·  "..tostring(selected).."  ▾",34); local opt=addOption(t,"dropdown",selected,pageName,sectionName,callback)
+                opt._setValue = function(v) selected=v; opt.value=v; b.Text=t.."  ·  "..tostring(v).."  ▾" end
                 b.MouseButton1Click:Connect(function()
                     local oldMenu=card:FindFirstChild("Dropdown_"..t:gsub("%W","")); if oldMenu then oldMenu:Destroy(); return end
                     local menu=make("Frame",{Name="Dropdown_"..t:gsub("%W",""),Size=UDim2.new(1,0,0,math.min(150,#listValues*29)),BackgroundColor3=C.bg,BorderSizePixel=0},card); corner(menu,7); stroke(menu,C.line)
@@ -1919,12 +1957,48 @@ function Nexora.CreateMain(config)
                 end)
                 return opt
             end
+            function Section.CreateBox(cfg, callback)
+                cfg = cfg or {}
+                local t = cfg.Title or "Text input"
+                local r = row(58)
+                label(make("Frame", {Size=UDim2.new(1,0,0,20), BackgroundTransparency=1}, r), t, 11, C.text)
+                local input = make("TextBox", {Position=UDim2.new(0,0,0,25), Size=UDim2.new(1,0,0,30), BackgroundColor3=C.bg, BorderSizePixel=0, Text=tostring(cfg.Default or ""), PlaceholderText=cfg.Placeholder or "Digite aqui...", TextColor3=C.text, PlaceholderColor3=C.muted, Font=Enum.Font.Gotham, TextSize=11, ClearTextOnFocus=false}, r)
+                corner(input, 7); stroke(input, C.line)
+                local opt = addOption(t, "box", input.Text, pageName, sectionName, callback)
+                local function setText(v, fire)
+                    input.Text = tostring(v == nil and "" or v); opt.value = input.Text
+                    if fire and callback then task.spawn(function() pcall(callback, input.Text) end) end
+                end
+                opt._setValue = function(v) setText(v, false) end
+                opt.FunctionCreate.GetText = function() return input.Text end
+                input.FocusLost:Connect(function() setText(input.Text, true) end)
+                return opt
+            end
             function Section.CreateNoti(text, duration)
-                local note=make("TextLabel",{AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-15,1,-15),Size=UDim2.new(0,260,0,48),BackgroundColor3=C.panel,Text=tostring(text),TextColor3=C.text,Font=Enum.Font.Gotham,TextSize=12},gui); corner(note,8); stroke(note,C.gold); task.delay(duration or 3,function() if note then note:Destroy() end end); return note
+                local note=make("TextLabel",{AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-15,1,-15),Size=UDim2.new(0,260,0,48),BackgroundColor3=C.panel,Text=tostring(text),TextColor3=C.text,Font=Enum.Font.Gotham,TextSize=12,TextWrapped=true},gui); corner(note,8); stroke(note,C.gold); task.delay(duration or 3,function() if note then note:Destroy() end end); return note
             end
             return Section
         end
         return Page
+    end
+    function Main.CreateBind(config, callback)
+        config = config or {}
+        local key = config.Key or Enum.KeyCode.LeftControl
+        local listening = false
+        local bindGui = gui
+        local MainBind = {}
+        local conn = UIS.InputBegan:Connect(function(input, processed)
+            if processed then return end
+            if input.KeyCode == key then
+                if callback then task.spawn(function() pcall(callback) end) else bindGui.Enabled = not bindGui.Enabled end
+            end
+        end)
+        MainBind.Disconnect = function() if conn then conn:Disconnect() end end
+        MainBind.SetKey = function(v) key = v end
+        return MainBind
+    end
+    Main.CreateNotification = function(payload)
+        return Main.CreateNoti(payload)
     end
     function Main.CreateNoti(text, duration)
         if type(text) == "table" then
@@ -1961,7 +2035,7 @@ end
 return Nexora
 
 end)()
-Main = A.CreateMain({ Title = "Banana Cat Hub - Blox Fruits [ Beta ]", Desc = "-- Blox Fruits" })
+Main = A.CreateMain({ Title = "NEXORA HUB", Desc = "BLOX FRUITS • CUSTOM UI" })
 
 PageShop = Main.CreatePage({ Page_Name = "Shop", Page_Title = "Shop" })
 getgenv().Options = A.Options
@@ -23864,13 +23938,8 @@ a.CreateButton({ Title = "Copy Config" }, function()
 end)
 a.CreateBind({ Title = "Toggle GUI", Key = Enum.KeyCode.LeftControl }, function()
 	getgenv().UIToggled = not getgenv().UIToggled
-	if game.CoreGui:FindFirstChild("Nousigi Hub GUI") then
-		for T, T in ipairs(game.CoreGui:GetChildren()) do
-			if T.Name == "Nousigi Hub GUI" then
-				T.Enabled = getgenv().UIToggled
-			end
-		end
-	end
+	local ui = ((gethui and gethui()) or game:GetService("CoreGui")):FindFirstChild("NexoraUI")
+	if ui then ui.Enabled = getgenv().UIToggled end
 end)
 spawn(function()
 	pcall(function()
