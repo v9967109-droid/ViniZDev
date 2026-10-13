@@ -1,3 +1,141 @@
+-- NEXORA_FIXED_KEY_GATE_V1
+-- Configure suas Keys nesta tabela. Todas as strings listadas são aceitas.
+do
+    local VALID_KEYS = {
+        "NEXORA-KEY-001",
+        "NEXORA-KEY-002",
+        "NEXORA-KEY-003",
+        "NEXORA-KEY-004",
+        "NEXORA-KEY-005",
+    }
+
+    local Players = game:GetService("Players")
+    local CoreGui = game:GetService("CoreGui")
+    local player = Players.LocalPlayer
+    local guiParent = CoreGui
+    pcall(function()
+        if typeof(gethui) == "function" then
+            guiParent = gethui()
+        end
+    end)
+
+    local keyAccepted = false
+    local oldGui
+    pcall(function()
+        oldGui = guiParent:FindFirstChild("NexoraKeyGate")
+        if oldGui then oldGui:Destroy() end
+    end)
+
+    local screen = Instance.new("ScreenGui")
+    screen.Name = "NexoraKeyGate"
+    screen.ResetOnSpawn = false
+    screen.IgnoreGuiInset = true
+    pcall(function() screen.Parent = guiParent end)
+    if not screen.Parent then screen.Parent = player:WaitForChild("PlayerGui") end
+
+    local frame = Instance.new("Frame")
+    frame.Name = "Main"
+    frame.Size = UDim2.new(0, 360, 0, 220)
+    frame.Position = UDim2.new(0.5, -180, 0.5, -110)
+    frame.BackgroundColor3 = Color3.fromRGB(13, 11, 20)
+    frame.BorderSizePixel = 0
+    frame.Parent = screen
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 12)
+    corner.Parent = frame
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(115, 82, 190)
+    stroke.Thickness = 1.5
+    stroke.Parent = frame
+
+    local title = Instance.new("TextLabel")
+    title.BackgroundTransparency = 1
+    title.Size = UDim2.new(1, -24, 0, 38)
+    title.Position = UDim2.new(0, 12, 0, 12)
+    title.Font = Enum.Font.GothamBold
+    title.Text = "BANANA CAT HUB  •  KEY SYSTEM"
+    title.TextColor3 = Color3.fromRGB(245, 240, 255)
+    title.TextSize = 16
+    title.Parent = frame
+
+    local info = Instance.new("TextLabel")
+    info.BackgroundTransparency = 1
+    info.Size = UDim2.new(1, -28, 0, 24)
+    info.Position = UDim2.new(0, 14, 0, 53)
+    info.Font = Enum.Font.Gotham
+    info.Text = "Enter a valid key to load the hub"
+    info.TextColor3 = Color3.fromRGB(180, 174, 194)
+    info.TextSize = 12
+    info.Parent = frame
+
+    local input = Instance.new("TextBox")
+    input.Name = "KeyInput"
+    input.Size = UDim2.new(1, -32, 0, 40)
+    input.Position = UDim2.new(0, 16, 0, 85)
+    input.BackgroundColor3 = Color3.fromRGB(28, 24, 38)
+    input.BorderSizePixel = 0
+    input.ClearTextOnFocus = false
+    input.PlaceholderText = "Enter your key..."
+    input.Text = ""
+    input.Font = Enum.Font.Gotham
+    input.TextSize = 14
+    input.TextColor3 = Color3.fromRGB(255, 255, 255)
+    input.PlaceholderColor3 = Color3.fromRGB(135, 128, 150)
+    input.Parent = frame
+    local inputCorner = Instance.new("UICorner")
+    inputCorner.CornerRadius = UDim.new(0, 8)
+    inputCorner.Parent = input
+
+    local status = Instance.new("TextLabel")
+    status.BackgroundTransparency = 1
+    status.Size = UDim2.new(1, -32, 0, 22)
+    status.Position = UDim2.new(0, 16, 0, 128)
+    status.Font = Enum.Font.Gotham
+    status.Text = ""
+    status.TextColor3 = Color3.fromRGB(255, 105, 105)
+    status.TextSize = 12
+    status.Parent = frame
+
+    local button = Instance.new("TextButton")
+    button.Name = "VerifyKey"
+    button.Size = UDim2.new(1, -32, 0, 38)
+    button.Position = UDim2.new(0, 16, 0, 164)
+    button.BackgroundColor3 = Color3.fromRGB(115, 82, 190)
+    button.BorderSizePixel = 0
+    button.Font = Enum.Font.GothamBold
+    button.Text = "VERIFY KEY"
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.TextSize = 14
+    button.Parent = frame
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(0, 8)
+    buttonCorner.Parent = button
+
+    local function verifyKey()
+        local entered = tostring(input.Text or ""):gsub("^%s+", ""):gsub("%s+$", "")
+        for _, validKey in ipairs(VALID_KEYS) do
+            if entered ~= "" and entered == validKey then
+                keyAccepted = true
+                status.TextColor3 = Color3.fromRGB(115, 235, 150)
+                status.Text = "Key accepted! Loading hub..."
+                button.Text = "ACCEPTED"
+                task.wait(0.25)
+                screen:Destroy()
+                return
+            end
+        end
+        status.TextColor3 = Color3.fromRGB(255, 105, 105)
+        status.Text = "Invalid key. Please try again."
+    end
+    button.Activated:Connect(verifyKey)
+    input.FocusLost:Connect(function(enterPressed)
+        if enterPressed then verifyKey() end
+    end)
+
+    repeat task.wait(0.1) until keyAccepted
+end
+-- END NEXORA_FIXED_KEY_GATE_V1
+
 AutoFarmLevel = true
 
 function BuildSchema()
@@ -10723,23 +10861,15 @@ QuestDragonSection.CreateToggle(
 			getgenv().__HydraReady_Dojo = false
 			return
 		end
+		getgenv().__HydraReady_Dojo = false
 		getgenv().__HydraDestinationName_Dojo = "Hydra Island / Dragon Dojo"
-		local activeDojoQuest = false
-		pcall(function()
-			local questData = QuestDojoTrainer()
-			activeDojoQuest = questData ~= nil and questData.Quest ~= nil
-		end)
-		getgenv().__HydraReady_Dojo = activeDojoQuest
-		if not activeDojoQuest then
-			getgenv().__HydraReady_Dojo = false
-			BananaMoveToDestination(CFrame.new(5661.5302734375, 1013.411315918, -334.9619140625), "Auto Quest Dojo Trainer", "__HydraReady_Dojo", 100)
-		end
+		BananaMoveToDestination(CFrame.new(5661.5302734375, 1013.411315918, -334.9619140625), "Auto Quest Dojo Trainer", "__HydraReady_Dojo", 100)
 		spawn(function()
 			while Settings["Auto Quest Dojo Trainer"] do
-				if getgenv().__HydraReady_Dojo and t.Character and t.Character:FindFirstChild("HumanoidRootPart") then
+				if getgenv().__HydraReady_Dojo then
 					pcall(function() AutoQuestDojo() end)
 				end
-				task.wait(1)
+				task.wait(0.1)
 			end
 		end)
 	end
@@ -10950,19 +11080,15 @@ QuestDragonSection.CreateToggle(
 			getgenv().__HydraReady_Hunter = false
 			return
 		end
+		getgenv().__HydraReady_Hunter = false
 		getgenv().__HydraDestinationName_Hunter = "Hydra Island / Dragon Dojo"
-		local activeHunterQuest = getgenv().QuestHunterDragon ~= nil and getgenv().QuestHunterDragon ~= ""
-		getgenv().__HydraReady_Hunter = activeHunterQuest
-		if not activeHunterQuest then
-			getgenv().__HydraReady_Hunter = false
-			BananaMoveToDestination(CFrame.new(5661.5302734375, 1013.411315918, -334.9619140625), "Auto Quest Dragon Hunter", "__HydraReady_Hunter", 100)
-		end
+		BananaMoveToDestination(CFrame.new(5661.5302734375, 1013.411315918, -334.9619140625), "Auto Quest Dragon Hunter", "__HydraReady_Hunter", 100)
 		spawn(function()
 			while Settings["Auto Quest Dragon Hunter"] do
-				if getgenv().__HydraReady_Hunter and t.Character and t.Character:FindFirstChild("HumanoidRootPart") then
+				if getgenv().__HydraReady_Hunter then
 					pcall(function() AutoDragonHunter() end)
 				end
-				task.wait(1)
+				task.wait(0.1)
 			end
 		end)
 	end
