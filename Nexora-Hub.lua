@@ -1737,6 +1737,7 @@ local A = (function()
 
 local Nexora = {}
 Nexora.Options = {}
+Nexora.PendingDefaults = {}
 
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
@@ -1841,24 +1842,51 @@ function Nexora.CreateMain(config)
     local desc = label(make("Frame", {Position=UDim2.new(0,55,0,29), Size=UDim2.new(0,350,0,17), BackgroundTransparency=1}, top), config.Desc or "CUSTOM INTERFACE", 9, C.muted)
     local close = button(top, "×", 30); close.Size=UDim2.new(0,30,0,30); close.Position=UDim2.new(1,-42,0,12); close.TextSize=20
     local reopen = button(gui, "N", 42)
-    reopen.Name = "NexoraReopen"
-    reopen.Size = UDim2.new(0, 44, 0, 44)
-    reopen.Position = UDim2.new(0, 14, 0.5, -22)
+    reopen.Name = "NexoraFloatingButton"
+    reopen.Size = UDim2.new(0, 46, 0, 46)
+    reopen.Position = UDim2.new(0, 14, 0.5, -23)
     reopen.AnchorPoint = Vector2.new(0, 0)
     reopen.Visible = false
+    reopen.Text = "↗"
     reopen.TextColor3 = C.bg
-    reopen.TextSize = 18
+    reopen.TextSize = 20
     reopen.Font = Enum.Font.GothamBold
     reopen.BackgroundColor3 = C.gold
-    close.MouseButton1Click:Connect(function()
+    local function hideWindow()
         shell.Visible = false
         reopen.Visible = true
-    end)
+    end
+    close.MouseButton1Click:Connect(hideWindow)
     reopen.MouseButton1Click:Connect(function()
+        if floatMoved then return end
         shell.Visible = true
         reopen.Visible = false
     end)
+    -- Botão flutuante pode ser arrastado para qualquer canto (mouse ou toque).
+    local floatDragging, floatStart, floatPos, floatMoved = false, nil, nil, false
+    reopen.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            floatDragging = true; floatMoved = false; floatStart = input.Position; floatPos = reopen.Position
+        end
+    end)
+    UIS.InputChanged:Connect(function(input)
+        if floatDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local d = input.Position - floatStart
+            if math.abs(d.X) > 4 or math.abs(d.Y) > 4 then floatMoved = true end
+            if floatMoved then
+                local cam = workspace.CurrentCamera
+                local vp = cam and cam.ViewportSize or Vector2.new(800,600)
+                local x = math.clamp(floatPos.X.Offset + d.X, 0, math.max(0, vp.X - reopen.AbsoluteSize.X))
+                local y = math.clamp(floatPos.Y.Offset + d.Y, 0, math.max(0, vp.Y - reopen.AbsoluteSize.Y))
+                reopen.Position = UDim2.new(0, x, 0, y)
+            end
+        end
+    end)
+    UIS.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then floatDragging = false end
+    end)
     local mini = button(top, "—", 30); mini.Size=UDim2.new(0,30,0,30); mini.Position=UDim2.new(1,-78,0,12)
+    mini.MouseButton1Click:Connect(hideWindow)
 
     local dragging, dragStart, startPos = false, nil, nil
     top.InputBegan:Connect(function(input)
@@ -1876,14 +1904,10 @@ function Nexora.CreateMain(config)
         end
     end)
     local minimized = false
+    local savedWindowSize = shell.Size
     mini.MouseButton1Click:Connect(function()
-        minimized = not minimized
-        local side = shell:FindFirstChild("Sidebar")
-        local body = shell:FindFirstChild("Content")
-        if side then side.Visible = not minimized end
-        if body then body.Visible = not minimized end
-        shell.Size = minimized and UDim2.new(0, 690, 0, 54) or UDim2.new(0, 690, 0, 440)
-        mini.Text = minimized and "□" or "—"
+        -- Minimizar usa o botão flutuante arrastável; o tamanho original fica guardado.
+        hideWindow()
     end)
 
     local sidebar = make("Frame", {Name="Sidebar", Position=UDim2.new(0,0,0,54), Size=UDim2.new(0,164,1,-54), BackgroundColor3=C.panel, BorderSizePixel=0}, shell)
@@ -1912,6 +1936,7 @@ function Nexora.CreateMain(config)
             local w = math.clamp(sizeStart.X.Offset + delta.X, 360, 900)
             local h = math.clamp(sizeStart.Y.Offset + delta.Y, 280, 720)
             shell.Size = UDim2.new(0, w, 0, h)
+            savedWindowSize = shell.Size
             scale.Scale = 1
         end
     end)
@@ -1950,14 +1975,21 @@ function Nexora.CreateMain(config)
             function Section.CreateToggle(cfg, callback)
                 cfg=cfg or {}; local t=cfg.Title or "Toggle"; local val=cfg.Default==true
                 local r=row(35); local txt=label(make("Frame",{Size=UDim2.new(1,-60,1,0),BackgroundTransparency=1},r),t,12,C.text)
-                local b=button(r,val and "ON" or "OFF",27); b.Size=UDim2.new(0,52,0,27); b.Position=UDim2.new(1,-52,.5,-13.5); b.BackgroundColor3=val and C.gold or C.panel2; b.TextColor3=val and C.bg or C.text
+                local b=button(r,val and "On" or "Off",27); b.Size=UDim2.new(0,52,0,27); b.Position=UDim2.new(1,-52,.5,-13.5); b.BackgroundColor3=val and C.gold or C.panel2; b.TextColor3=val and C.bg or C.text
                 local opt=addOption(t,"toggle",val,pageName,sectionName,callback)
                 local function applyToggle(v, fire)
-                    val = not not v; opt.value=val; b.Text=val and "ON" or "OFF"; b.BackgroundColor3=val and C.gold or C.panel2; b.TextColor3=val and C.bg or C.text
+                    val = not not v; opt.value=val; b.Text=val and "On" or "Off"; b.BackgroundColor3=val and C.gold or C.panel2; b.TextColor3=val and C.bg or C.text
                     if fire and callback then task.spawn(function() pcall(callback,val) end) end
                 end
                 opt._setValue = function(v) applyToggle(v, false) end
                 b.MouseButton1Click:Connect(function() applyToggle(not val, true) end)
+                -- Defaults ON ficam amarelos e iniciam sua callback após carregar a source inteira.
+                if val and callback then
+                    table.insert(Nexora.PendingDefaults, function()
+                        applyToggle(true, false)
+                        pcall(callback, true)
+                    end)
+                end
                 return opt
             end
             function Section.CreateButton(cfg, callback)
@@ -27198,3 +27230,14 @@ __PASS38_NAMED_FUNCTIONS = {
         if type(__fn) == "function" then rawset(_G, __name, __fn) end
     end
 end)()
+
+
+-- Inicializa os toggles configurados como ON somente depois que a source terminou de carregar.
+task.defer(function()
+    task.wait(1)
+    local pending = A and A.PendingDefaults or {}
+    for _, startDefault in ipairs(pending) do
+        task.spawn(function() pcall(startDefault) end)
+    end
+    table.clear(pending)
+end)
