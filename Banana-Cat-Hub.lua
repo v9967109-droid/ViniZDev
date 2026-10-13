@@ -8556,42 +8556,6 @@ StackDevilFruitSection.CreateToggle(
 		SaveSettings("Teleport To Fruit [ Hop Server ]", f)
 	end
 )
--- Deslocamento em etapas usando o toTarget original. Cada waypoint fica a menos de 3000 studs,
--- evitando que a lógica de entradas/ilhas do toTarget redirecione o personagem para outro local.
-local function BananaMoveToDestination(destination, settingName, readyFlag, arrivalDistance)
-    getgenv()[readyFlag] = false
-    task.spawn(function()
-        local waypoint = nil
-        while Settings[settingName] do
-            local character = t.Character
-            local root = character and character:FindFirstChild("HumanoidRootPart")
-            local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-            if root and humanoid and humanoid.Health > 0 then
-                local remaining = (destination.Position - root.Position).Magnitude
-                if remaining <= (arrivalDistance or 100) then
-                    getgenv()[readyFlag] = true
-                    return
-                end
-                -- Só cria um novo waypoint quando chega perto do anterior; isso evita reiniciar
-                -- o tween a cada ciclo e mantém o movimento contínuo usando a função original.
-                if not waypoint or (root.Position - waypoint.Position).Magnitude <= 120 then
-                    local direction = destination.Position - root.Position
-                    local distance = direction.Magnitude
-                    if distance > 2200 then
-                        waypoint = CFrame.new(root.Position + direction.Unit * 2000)
-                    else
-                        waypoint = destination
-                    end
-                    -- Chama uma vez por waypoint: chamar repetidamente reiniciaria o tween original.
-                    toTarget(waypoint)
-                end
-            end
-            task.wait(0.3)
-        end
-        getgenv()[readyFlag] = false
-    end)
-end
-
 EventGameSection = stackFarmMain.CreateSection("Event Game")
 EventGameSection.CreateToggle(
 	{ Title = "Auto Factory", Desc = nil, Default = Settings["Auto Factory"] or false },
@@ -8603,11 +8567,6 @@ EventGameSection.CreateToggle(
 	{ Title = "Auto Pirate Raid", Desc = nil, Default = Settings["Auto Pirate Raid"] or false },
 	function(f)
 		SaveSettings("Auto Pirate Raid", f)
-		getgenv().__PirateCastleReady = false
-		if f then
-			getgenv().__PirateDestinationName = "Castle on the Sea"
-			BananaMoveToDestination(CFrame.new(-5074, 314, -3150), "Auto Pirate Raid", "__PirateCastleReady", 120)
-		end
 	end
 )
 BossRipIndraSection = stackFarmMain.CreateSection("Boss Rip Indra")
@@ -9644,9 +9603,9 @@ task.spawn(function()
 					end
 				end
 			end
-            if Settings["Auto Elite Hunter"] then
-				-- Mantém a solicitação original da missão e a detecção original dos Elites.
-				-- Se o NPC ainda não estiver carregado, vai ao marcador de spawn e procura novamente.
+			if Settings["Auto Elite Hunter"] then
+				-- Auto Elite Hunter: accept the mission, wait for the spawned Elite,
+				-- then move to and attack the actual Elite target.
 				local EliteNames = { "Deandre", "Urban", "Diablo" }
 
 				local function GetEliteQuestName()
@@ -9655,42 +9614,58 @@ task.spawn(function()
 						local quest = t.PlayerGui.Main.Quest
 						if quest and quest.Visible then
 							local titleObj = quest.Container.QuestTitle.Title
-						local title = titleObj and tostring(titleObj.Text) or ""
-						for _, name in ipairs(EliteNames) do
-							if string.find(title, name, 1, true) then
-								found = name
-								break
+							local title = titleObj and tostring(titleObj.Text) or ""
+							for _, name in ipairs(EliteNames) do
+								if string.find(title, name, 1, true) then
+									found = name
+									break
+								end
 							end
 						end
-					end
 					end)
 					return found
 				end
 
 				local function FindElite(name)
-					local target = name and DetectMob(name) or DetectMob(EliteNames)
-					if target and IsMobAlive(target) then return target end
-					return DetectEliteHunter()
+					local enemies = workspace:FindFirstChild("Enemies")
+					if not enemies then return nil end
+					if name then
+						local exact = enemies:FindFirstChild(name)
+						if exact and exact:IsA("Model") and IsMobAlive(exact) then
+							return exact
+						end
+					end
+					for _, mob in ipairs(enemies:GetChildren()) do
+						if mob:IsA("Model") and table.find(EliteNames, mob.Name) and IsMobAlive(mob) then
+							return mob
+						end
+					end
+					for _, mob in ipairs(enemies:GetDescendants()) do
+						if mob:IsA("Model") and table.find(EliteNames, mob.Name) and IsMobAlive(mob) then
+							return mob
+						end
+					end
+					return nil
 				end
-
 
 				local questName = GetEliteQuestName()
 				if not questName then
 					EliteRequest()
 					local questDeadline = tick() + 10
 					repeat
-						task.wait(0.25)
+						task.wait()
 						questName = GetEliteQuestName()
 					until questName or tick() >= questDeadline or not Settings["Auto Elite Hunter"]
 				end
-				if not Settings["Auto Elite Hunter"] then return end
 
-				-- Usa somente o deslocamento original do hub (toTarget no HRP do Elite).
-				-- Aqui apenas procura/revalida o NPC; não cria deslocamento separado para spawn.
-				local target = FindElite(questName)
-				while not target and Settings["Auto Elite Hunter"] do
-					task.wait(0.5)
-					questName = GetEliteQuestName() or questName
+				if not Settings["Auto Elite Hunter"] then
+					return
+				end
+
+				local target = FindElite(questName) or DetectEliteHunter()
+				local spawnDeadline = tick() + 60
+				while not target and tick() < spawnDeadline and Settings["Auto Elite Hunter"] do
+					task.wait()
 					target = FindElite(questName) or DetectEliteHunter()
 				end
 
@@ -9700,7 +9675,9 @@ task.spawn(function()
 					local targetName = target.Name
 					repeat
 						task.wait(0.05)
-						if not IsMobAlive(target) then target = FindElite(targetName) or DetectEliteHunter() end
+						if not IsMobAlive(target) then
+							target = FindElite(targetName) or DetectEliteHunter()
+						end
 						if target and IsMobAlive(target) then
 							local hrp = target:FindFirstChild("HumanoidRootPart")
 							if hrp then
@@ -9712,22 +9689,21 @@ task.spawn(function()
 								ClickM1(target)
 								UsedualFlock()
 							end
-						else
-							-- O alvo pode ter sido descarregado; volta a procurar o modelo real.
-							target = FindElite(targetName) or DetectEliteHunter()
 						end
 					until not Settings["Auto Elite Hunter"] or not target or not IsMobAlive(target)
 					return
 				end
 
-				if Settings["Auto Elite Hunter"] then
-					if Settings["Hop Server Elite Hunter"] and not DetectItemPlr("God's Chalice") then
-						HopServer()
-					elseif DetectItemPlr("God's Chalice") then
-						toTarget(CFrame.new(-12463.8740234375, 374.9144592285156, -7523.77392578125))
-					else
-						A.CreateNoti({ Title = "Banana Cat Hub", Desc = "Searching Elite spawn", ShowTime = 5 })
-					end
+				if Settings["Hop Server Elite Hunter"] and not DetectItemPlr("God's Chalice") then
+					HopServer()
+				elseif DetectItemPlr("God's Chalice") then
+					toTarget(CFrame.new(-12463.8740234375, 374.9144592285156, -7523.77392578125))
+				else
+					A.CreateNoti({
+						Title = "Banana Cat Hub",
+						Desc = "Waiting Elite Hunter",
+						ShowTime = 5,
+					})
 				end
 			end
 
@@ -9745,7 +9721,7 @@ task.spawn(function()
 					return
 				end
 			end
-			if Settings["Auto Pirate Raid"] and getgenv().__PirateCastleReady then
+			if Settings["Auto Pirate Raid"] then
 				local raidActive = t.PlayerGui.Main.TopHUDList.RaidTimer.Visible
 				local warnFresh = getgenv().__PirateRaidWarn and tick() - getgenv().__PirateRaidWarn < 300
 				local y = GetPirateRaid()
@@ -10718,30 +10694,16 @@ end
 QuestDragonSection.CreateToggle(
 	{ Title = "Auto Quest Dojo Trainer", Desc = nil, Default = Settings["Auto Quest Dojo Trainer"] or false },
 	function(y)
-		SaveSettings("Auto Quest Dojo Trainer", y)
-		if not y then
-			getgenv().__HydraReady_Dojo = false
-			return
-		end
-		getgenv().__HydraDestinationName_Dojo = "Hydra Island / Dragon Dojo"
-		local activeDojoQuest = false
-		pcall(function()
-			local questData = QuestDojoTrainer()
-			activeDojoQuest = questData ~= nil and questData.Quest ~= nil
-		end)
-		getgenv().__HydraReady_Dojo = activeDojoQuest
-		if not activeDojoQuest then
-			getgenv().__HydraReady_Dojo = false
-			BananaMoveToDestination(CFrame.new(5661.5302734375, 1013.411315918, -334.9619140625), "Auto Quest Dojo Trainer", "__HydraReady_Dojo", 100)
-		end
-		spawn(function()
-			while Settings["Auto Quest Dojo Trainer"] do
-				if getgenv().__HydraReady_Dojo and t.Character and t.Character:FindFirstChild("HumanoidRootPart") then
-					pcall(function() AutoQuestDojo() end)
+		if y then
+			spawn(function()
+				while Settings["Auto Quest Dojo Trainer"] and (task.wait()) do
+					local P, P = pcall(function()
+						AutoQuestDojo()
+					end)
 				end
-				task.wait(1)
-			end
-		end)
+			end)
+		end
+		SaveSettings("Auto Quest Dojo Trainer", y)
 	end
 )
 game:GetService("Players").LocalPlayer.PlayerGui.Notifications.ChildAdded:Connect(function(y)
@@ -10945,26 +10907,16 @@ end
 QuestDragonSection.CreateToggle(
 	{ Title = "Auto Quest Dragon Hunter", Desc = nil, Default = Settings["Auto Quest Dragon Hunter"] or false },
 	function(y)
-		SaveSettings("Auto Quest Dragon Hunter", y)
-		if not y then
-			getgenv().__HydraReady_Hunter = false
-			return
-		end
-		getgenv().__HydraDestinationName_Hunter = "Hydra Island / Dragon Dojo"
-		local activeHunterQuest = getgenv().QuestHunterDragon ~= nil and getgenv().QuestHunterDragon ~= ""
-		getgenv().__HydraReady_Hunter = activeHunterQuest
-		if not activeHunterQuest then
-			getgenv().__HydraReady_Hunter = false
-			BananaMoveToDestination(CFrame.new(5661.5302734375, 1013.411315918, -334.9619140625), "Auto Quest Dragon Hunter", "__HydraReady_Hunter", 100)
-		end
-		spawn(function()
-			while Settings["Auto Quest Dragon Hunter"] do
-				if getgenv().__HydraReady_Hunter and t.Character and t.Character:FindFirstChild("HumanoidRootPart") then
-					pcall(function() AutoDragonHunter() end)
+		if y then
+			spawn(function()
+				while Settings["Auto Quest Dragon Hunter"] and (task.wait(0.1)) do
+					local P, P = pcall(function()
+						AutoDragonHunter()
+					end)
 				end
-				task.wait(1)
-			end
-		end)
+			end)
+		end
+		SaveSettings("Auto Quest Dragon Hunter", y)
 	end
 )
 function DetectBerryCFrame(y)
@@ -12182,99 +12134,89 @@ MultiRaidsSection.CreateToggle(
 		SaveSettings("Auto Multi Raid", b)
 	end
 )
--- Módulos protegidos: antes um require que falhasse aqui derrubava o resto do script
--- (e a função RandomFruit nem chegava a ser criada).
-local BannerClientModule = nil
-pcall(function()
-	BannerClientModule = require(game:GetService("ReplicatedStorage").Controllers.BannerClient)
-end)
-local function GetBoxName()
-	local name = "DLCBoxData"
+-- Random Devil Fruit - compatibilidade com a nova interface de NPC da Update 30.
+-- Não usa o diálogo remoto antigo "Cousin" nem teleporta o personagem.
+-- A função só ativa botões reais da interface quando o diálogo do Gacha já estiver aberto.
+local function GetGuiButtonLabel(button)
+	local bits = {button.Name or ""}
 	pcall(function()
-		local item = BannerClientModule and BannerClientModule.TryGetBannerItemIfActiveAsync()
-		if item and item.BoxName then
-			name = item.BoxName
+		if button:IsA("TextButton") or button:IsA("TextLabel") then
+			table.insert(bits, button.Text or "")
+		end
+		for _, child in ipairs(button:GetDescendants()) do
+			if child:IsA("TextLabel") or child:IsA("TextButton") then
+				table.insert(bits, child.Text or "")
+			end
 		end
 	end)
-	return name
+	return string.lower(table.concat(bits, " "))
 end
 
--- Compra de fruta aleatória. Tenta, em ordem, os formatos que o servidor já aceitou:
---   1) Cousin / Buy         2) Cousin / <caixa do banner> (depois de CheckTime)
--- O sucesso é medido pelo EFEITO (beli diminuiu ou a janela de giro abriu), e não por adivinhar
--- o valor retornado. Se nenhum funcionar, escreve no console (F9) o que o servidor respondeu.
+local function IsVisibleGuiObject(obj)
+	local current = obj
+	while current and current ~= game:GetService("Players").LocalPlayer:FindFirstChildOfClass("PlayerGui") do
+		if current:IsA("GuiObject") and not current.Visible then return false end
+		current = current.Parent
+	end
+	return current ~= nil
+end
+
+local function FindNewGachaButton(playerGui)
+	if not playerGui then return nil end
+	local bestButton, bestScore = nil, 0
+	for _, obj in ipairs(playerGui:GetDescendants()) do
+		if obj:IsA("GuiButton") and obj.Active and IsVisibleGuiObject(obj) then
+			local label = GetGuiButtonLabel(obj)
+			local score = 0
+			-- Aceita nomes/textos diferentes entre idiomas e revisões da interface.
+			if string.find(label, "spin", 1, true) or string.find(label, "roll", 1, true) then score = score + 5 end
+			if string.find(label, "random", 1, true) or string.find(label, "gacha", 1, true) then score = score + 4 end
+			if string.find(label, "fruit", 1, true) then score = score + 2 end
+			if string.find(label, "buy", 1, true) or string.find(label, "purchase", 1, true) then score = score + 1 end
+			-- Não clica em botões genéricos de loja/fechar/cancelar.
+			if string.find(label, "close", 1, true) or string.find(label, "cancel", 1, true) or string.find(label, "back", 1, true) then score = 0 end
+			if score > bestScore then bestButton, bestScore = obj, score end
+		end
+	end
+	if bestScore >= 5 then return bestButton end
+	return nil
+end
+
 function RandomFruit()
 	local Players = game:GetService("Players")
 	local LocalPlayer = Players.LocalPlayer
-	local ReplicatedStorage = game:GetService("ReplicatedStorage")
-	local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
-	local CommF = Remotes and Remotes:FindFirstChild("CommF_")
-	if not CommF or not LocalPlayer then return false end
-	if not Settings["Random Devil Fruit"] then return false end
+	if not LocalPlayer or not Settings["Random Devil Fruit"] then return false end
+	if getgenv().__RandomFruitBusy or (getgenv().__RandomFruitNext or 0) > tick() then return false end
 
-	-- Tentativa instantânea: não exige localizar nem caminhar até Zioles/Cousin.
-	-- O servidor ainda pode rejeitar a compra se exigir proximidade do NPC.
+	local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+	if not playerGui then return false end
 
-	local function SpinnerOpen()
-		local gui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-		local win = gui and gui:FindFirstChild("SpinnerWindow")
-		return win and win.Enabled or false
-	end
-	if SpinnerOpen() or (getgenv().__RandomFruitNext or 0) > tick() or getgenv().__RandomFruitBusy then
+	-- Se a animação de giro já está aberta, aguarda terminar para não clicar de novo.
+	local spinner = playerGui:FindFirstChild("SpinnerWindow", true)
+	if spinner and spinner:IsA("GuiObject") and spinner.Visible then
+		getgenv().__RandomFruitNext = tick() + 2
 		return false
 	end
+
+	local button = FindNewGachaButton(playerGui)
+	if not button then
+		-- A interface do Zioles precisa estar aberta pelo jogador. Não teleporta e não
+		-- dispara remotes antigos, pois isso não é compatível de forma confiável com a UI nova.
+		return false
+	end
+
 	getgenv().__RandomFruitBusy = true
-
-	local function GetBeli()
-		local ok, value = pcall(function() return LocalPlayer.Data.Beli.Value end)
-		return ok and value or nil
-	end
-	local before = GetBeli()
-	local responses = {}
-	local success = false
-	local function Try(label, callback)
-		local ok, result = pcall(callback)
-		responses[#responses + 1] = label .. ":" .. (ok and tostring(result) or tostring(result))
-		local untilTime = tick() + 2
-		repeat
-			task.wait(0.1)
-			local now = GetBeli()
-			if SpinnerOpen() or (before and now and now < before) then
-				success = true
-				return
-			end
-		until tick() >= untilTime or not Settings["Random Devil Fruit"]
-		if ok and (result == true or result == 1) then success = true end
-	end
-
-	local okAll = pcall(function()
-		-- Chama o remoto diretamente, sem procurar NPC, andar até ele ou ativar prompt.
-		Try("Cousin-Buy", function() return CommF:InvokeServer("Cousin", "Buy") end)
-		-- Fallback usado por algumas versões do banner; só tenta se a compra não abriu o giro.
-		if not success and Settings["Random Devil Fruit"] then
-			local boxName = GetBoxName()
-			local checkOk, available = pcall(function()
-				return CommF:InvokeServer("Cousin", "CheckTime", boxName)
-			end)
-			responses[#responses + 1] = "CheckTime:" .. tostring(available)
-			if checkOk and (available == true or available == nil) then
-				Try("Cousin-Box", function() return CommF:InvokeServer("Cousin", boxName) end)
-			end
+	local ok = pcall(function()
+		if button.Parent and button:IsA("GuiButton") and IsVisibleGuiObject(button) then
+			button:Activate()
 		end
 	end)
-
+	task.wait(0.8)
 	getgenv().__RandomFruitBusy = false
-	if success then
-		getgenv().__RandomFruitNext = tick() + 2
-		return true
-	end
-	getgenv().__RandomFruitNext = tick() + 5
-	if (getgenv().__RandomFruitWarn or 0) < tick() then
-		getgenv().__RandomFruitWarn = tick() + 20
-		warn("[Banana Cat Hub] Random Devil Fruit: nenhuma janela de giro detectada. " .. table.concat(responses, " | ") .. (okAll and "" or " | erro interno"))
-	end
-	return false
+	getgenv().__RandomFruitNext = tick() + (ok and 3 or 5)
+	return ok
 end
+
 local FruitInfoModule = nil
 pcall(function()
 	FruitInfoModule = require(game:GetService("ReplicatedStorage").FruitInfo)
