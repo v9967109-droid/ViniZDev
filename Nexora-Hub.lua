@@ -1830,7 +1830,7 @@ function Nexora.CreateMain(config)
         end
     end
     resize()
-    if workspace.CurrentCamera then workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(resize) end
+    if workspace.CurrentCamera then workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function() if shell.Size.X.Offset == 690 and shell.Size.Y.Offset == 440 then resize() end end) end
 
     local top = make("Frame", {Size=UDim2.new(1,0,0,54), BackgroundColor3=C.panel, BorderSizePixel=0}, shell)
     corner(top, 12)
@@ -1840,7 +1840,24 @@ function Nexora.CreateMain(config)
     local title = label(make("Frame", {Position=UDim2.new(0,55,0,7), Size=UDim2.new(0,300,0,25), BackgroundTransparency=1}, top), config.Title or "NEXORA", 15, C.text, Enum.Font.GothamBold)
     local desc = label(make("Frame", {Position=UDim2.new(0,55,0,29), Size=UDim2.new(0,350,0,17), BackgroundTransparency=1}, top), config.Desc or "CUSTOM INTERFACE", 9, C.muted)
     local close = button(top, "×", 30); close.Size=UDim2.new(0,30,0,30); close.Position=UDim2.new(1,-42,0,12); close.TextSize=20
-    close.MouseButton1Click:Connect(function() gui:Destroy() end)
+    local reopen = button(gui, "N", 42)
+    reopen.Name = "NexoraReopen"
+    reopen.Size = UDim2.new(0, 44, 0, 44)
+    reopen.Position = UDim2.new(0, 14, 0.5, -22)
+    reopen.AnchorPoint = Vector2.new(0, 0)
+    reopen.Visible = false
+    reopen.TextColor3 = C.bg
+    reopen.TextSize = 18
+    reopen.Font = Enum.Font.GothamBold
+    reopen.BackgroundColor3 = C.gold
+    close.MouseButton1Click:Connect(function()
+        shell.Visible = false
+        reopen.Visible = true
+    end)
+    reopen.MouseButton1Click:Connect(function()
+        shell.Visible = true
+        reopen.Visible = false
+    end)
     local mini = button(top, "—", 30); mini.Size=UDim2.new(0,30,0,30); mini.Position=UDim2.new(1,-78,0,12)
 
     local dragging, dragStart, startPos = false, nil, nil
@@ -1860,15 +1877,44 @@ function Nexora.CreateMain(config)
     end)
     local minimized = false
     mini.MouseButton1Click:Connect(function()
-        minimized=not minimized
-        shell.Size = minimized and UDim2.new(0,690,0,54) or UDim2.new(0,690,0,440)
+        minimized = not minimized
+        local side = shell:FindFirstChild("Sidebar")
+        local body = shell:FindFirstChild("Content")
+        if side then side.Visible = not minimized end
+        if body then body.Visible = not minimized end
+        shell.Size = minimized and UDim2.new(0, 690, 0, 54) or UDim2.new(0, 690, 0, 440)
+        mini.Text = minimized and "□" or "—"
     end)
 
-    local sidebar = make("Frame", {Position=UDim2.new(0,0,0,54), Size=UDim2.new(0,164,1,-54), BackgroundColor3=C.panel, BorderSizePixel=0}, shell)
+    local sidebar = make("Frame", {Name="Sidebar", Position=UDim2.new(0,0,0,54), Size=UDim2.new(0,164,1,-54), BackgroundColor3=C.panel, BorderSizePixel=0}, shell)
     local search = make("TextBox", {Position=UDim2.new(0,12,0,12), Size=UDim2.new(1,-24,0,32), BackgroundColor3=C.bg, BorderSizePixel=0, PlaceholderText="Pesquisar...", Text="", TextColor3=C.text, PlaceholderColor3=C.muted, Font=Enum.Font.Gotham, TextSize=11, ClearTextOnFocus=false}, sidebar); corner(search,7); stroke(search,C.line)
     local nav = make("ScrollingFrame", {Position=UDim2.new(0,8,0,54), Size=UDim2.new(1,-16,1,-62), BackgroundTransparency=1, BorderSizePixel=0, ScrollBarThickness=2, ScrollBarImageColor3=C.gold, CanvasSize=UDim2.new()}, sidebar)
-    make("UIListLayout", {Padding=UDim.new(0,5), SortOrder=Enum.SortOrder.LayoutOrder}, nav)
-    local content = make("Frame", {Position=UDim2.new(0,164,0,54), Size=UDim2.new(1,-164,1,-54), BackgroundTransparency=1}, shell)
+    local navLayout = make("UIListLayout", {Padding=UDim.new(0,5), SortOrder=Enum.SortOrder.LayoutOrder}, nav)
+    navLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        nav.CanvasSize = UDim2.new(0, 0, 0, navLayout.AbsoluteContentSize.Y + 8)
+    end)
+    local content = make("Frame", {Name="Content", Position=UDim2.new(0,164,0,54), Size=UDim2.new(1,-164,1,-54), BackgroundTransparency=1}, shell)
+    -- Alça de redimensionamento no canto inferior direito (mouse e toque).
+    local grip = make("TextButton", {Name="ResizeGrip", AnchorPoint=Vector2.new(1,1), Position=UDim2.new(1,-4,1,-4), Size=UDim2.new(0,22,0,22), BackgroundColor3=C.panel2, BorderSizePixel=0, Text="◢", TextColor3=C.gold, Font=Enum.Font.GothamBold, TextSize=14, AutoButtonColor=false}, shell)
+    corner(grip, 5)
+    local resizing, resizeStart, sizeStart = false, nil, nil
+    grip.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            resizing = true; resizeStart = input.Position; sizeStart = shell.Size
+        end
+    end)
+    UIS.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then resizing = false end
+    end)
+    UIS.InputChanged:Connect(function(input)
+        if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - resizeStart
+            local w = math.clamp(sizeStart.X.Offset + delta.X, 360, 900)
+            local h = math.clamp(sizeStart.Y.Offset + delta.Y, 280, 720)
+            shell.Size = UDim2.new(0, w, 0, h)
+            scale.Scale = 1
+        end
+    end)
     local pages, activePage, navButtons = {}, nil, {}
     local function showPage(p)
         activePage=p
