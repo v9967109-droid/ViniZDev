@@ -1843,7 +1843,8 @@ function Nexora.CreateMain(config)
         pcall(function() if writefile then writefile(SIZE_FILE, game:GetService("HttpService"):JSONEncode(data)) end end)
     end
     local shell = make("Frame", {Name="Window", AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.new(0, persistedW, 0, persistedH), BackgroundColor3=C.bg, BorderSizePixel=0}, gui)
-    corner(shell, 12); stroke(shell, C.gold, 0.18)
+    corner(shell, 12); stroke(shell, C.gold, 0.12)
+    make("UIStroke", {Color=Color3.fromRGB(245,245,245), Transparency=0.82, Thickness=1}, shell)
     make("UIGradient", {Rotation = 135, Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, Color3.fromRGB(13, 12, 16)),
         ColorSequenceKeypoint.new(0.52, Color3.fromRGB(5, 5, 8)),
@@ -1903,14 +1904,15 @@ function Nexora.CreateMain(config)
     reopen.AnchorPoint = Vector2.new(0, 0)
     reopen.Visible = true
     reopen.ZIndex = 100
-    reopen.Text = "N"
-    reopen.TextColor3 = Color3.fromRGB(255, 255, 255)
-    reopen.TextSize = 22
-    reopen.Font = Enum.Font.GothamBold
-    reopen.BackgroundColor3 = Color3.fromRGB(8, 8, 10)
-    reopen.TextColor3 = Color3.fromRGB(255, 190, 55)
+    reopen.Text = "♛\nN"
+    reopen.TextColor3 = Color3.fromRGB(255, 248, 225)
+    reopen.TextSize = 18
     reopen.Font = Enum.Font.GothamBlack
-    corner(reopen, 23); make("UIStroke", {Color=Color3.fromRGB(255,190,55), Thickness=2}, reopen)
+    reopen.BackgroundColor3 = Color3.fromRGB(245, 145, 24)
+    reopen.TextStrokeColor3 = Color3.fromRGB(95, 47, 8)
+    reopen.TextStrokeTransparency = 0.35
+    corner(reopen, 23); make("UIStroke", {Color=Color3.fromRGB(255,235,190), Thickness=2}, reopen)
+    make("UIGradient", {Rotation=45, Color=ColorSequence.new(Color3.fromRGB(255,190,55), Color3.fromRGB(230,105,18))}, reopen)
     -- Estado declarado antes dos eventos para evitar que o clique use uma variável global.
     local floatDragging, floatStart, floatPos, floatMoved = false, nil, nil, false
     local function hideWindow()
@@ -2571,39 +2573,31 @@ local G = {
 }
 NPCManager = require(game:GetService("ReplicatedStorage").NPCManager)
 function DetectNpc(f)
-	local character = t.Character
-	local root = character and character:FindFirstChild("HumanoidRootPart")
-	if not root then return nil end
-	local best, bestDistance
-	local containers = {
-		workspace:FindFirstChild("NPCs"),
-		game:GetService("ReplicatedStorage"):FindFirstChild("NPCs"),
-		workspace:FindFirstChild("Map"),
-	}
-	for _, container in ipairs(containers) do
-		if container then
-			for _, model in ipairs(container:GetDescendants()) do
-				if model:IsA("Model") and model.Name == f then
-					local hrp = model:FindFirstChild("HumanoidRootPart")
-					if hrp then
-						local distance = (root.Position - hrp.Position).Magnitude
-						if not bestDistance or distance < bestDistance then
-							best, bestDistance = model, distance
-						end
-					end
+	local K = t.Character and (t.Character:FindFirstChild("HumanoidRootPart"))
+	if not K then
+		return
+	end
+	local R, m, E, l = next, { workspace.NPCs, game:GetService("ReplicatedStorage").NPCs }, 1 / 0
+	for Q, Q in R, m, nil do
+		local R, m, S = next, Q:GetChildren()
+		for Q, L in R, m, S do
+			if
+				L:GetAttribute("NPCLoaded")
+				and (L:GetAttribute("NPCReady"))
+				and L.Name == f
+				and (L:FindFirstChild("HumanoidRootPart"))
+			then
+				Q = (K.Position - L.HumanoidRootPart.Position).Magnitude
+				if Q < E then
+					E, l = Q, L
 				end
 			end
 		end
 	end
-	if best then return best, bestDistance end
-	-- Safe fallback for NPCManager versions that still expose streamed NPCs.
-	local ok, result = pcall(function()
-		local list = NPCManager.getNPCsByName(f)
-		local item = list and list[1]
-		return item and item._modelState and item._modelState._instance
-	end)
-	if ok and result and result:FindFirstChild("HumanoidRootPart") then return result end
-	return nil
+	if not l then
+		return NPCManager.getNPCsByName(f)[1]._modelState._instance
+	end
+	return l, E
 end
 
 SectionShopFighting.CreateToggle({ Title = "Black Leg", Desc = nil, Default = false }, function(f)
@@ -21943,15 +21937,7 @@ function AutoMultiFindPrehistoric()
 				toTarget(boatShop)
 				return
 			end
-			local remote = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("CommF_")
-			local bought = false
-			local ok = pcall(function()
-				local result = remote:InvokeServer("BuyBoat", "Beast Hunter")
-				bought = result ~= false
-			end)
-			if not ok or not bought then
-				pcall(function() remote:InvokeServer("BuyBoat", "Guardian") end)
-			end
+			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyBoat", "Beast Hunter")
 			task.wait(3)
 			return
 		end
@@ -21972,15 +21958,7 @@ function AutoMultiFindPrehistoric()
 			toTarget(boatShop)
 			return
 		end
-		local remote = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("CommF_")
-		local bought = false
-		local ok = pcall(function()
-			local result = remote:InvokeServer("BuyBoat", "Beast Hunter")
-			bought = result ~= false
-		end)
-		if not ok or not bought then
-			pcall(function() remote:InvokeServer("BuyBoat", "Guardian") end)
-		end
+		game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyBoat", "Beast Hunter")
 		task.wait(3)
 		return
 	end
@@ -23476,12 +23454,7 @@ SettingsAimbotSection.CreateToggle(
 			spawn(function()
 				while Settings["Teleport Player"] and (wait()) do
 					pcall(function()
-						local targetPlayer = TeleportPlayer()
-						local targetCharacter = targetPlayer and targetPlayer.Character
-						local targetRoot = targetCharacter and targetCharacter:FindFirstChild("HumanoidRootPart")
-						if targetRoot then
-							toTarget(targetRoot.CFrame)
-						end
+						toTarget(TeleportPlayer().Character.HumanoidRootPart.CFrame)
 					end)
 				end
 			end)
@@ -23564,19 +23537,16 @@ MISCPVPSection = PvpTab.CreateSection("MISC PVP")
 MISCPVPSection.CreateSlider(
 	{ Title = "Input WalkSpeed", Min = 0, Max = 220, Default = math.min(tonumber(Settings["Input WalkSpeed"]) or 16, 220), Precise = true },
 	function(b)
-		SaveSettings("Input WalkSpeed", math.clamp(tonumber(b) or 0, 0, 220))
-		pcall(function()
-			if ApplyMovementSettings then
-				ApplyMovementSettings()
-			end
+		SaveSettings("Input WalkSpeed", math.clamp(tonumber(b) or 16, 0, 220))
+		task.defer(function()
+			pcall(function() if ApplyMovementSettings then ApplyMovementSettings() end end)
 		end)
 	end
 )
 MISCPVPSection.CreateSlider(
 	{ Title = "Input JumpPower", Min = 0, Max = 220, Default = math.min(tonumber(Settings["Input JumpPower"]) or 50, 220), Precise = true },
 	function(b)
-		SaveSettings("Input JumpPower", math.clamp(tonumber(b) or 50, 0, 220))
-		pcall(function() if ApplyMovementSettings then ApplyMovementSettings() end end)
+		SaveSettings("Input JumpPower", math.clamp(tonumber(b) or 0, 0, 220))
 	end
 )
 MISCPVPSection.CreateToggle(
@@ -23626,18 +23596,18 @@ do
 		end
 	end)
 	getgenv().__WSEarlyConn = game:GetService("RunService").Stepped:Connect(function()
-		if getgenv().__WSEarlyGen ~= WSGen then
-			return
-		end
+		if getgenv().__WSEarlyGen ~= WSGen then return end
+		local Character = t.Character
+		local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
+		if not Humanoid then return end
 		if Settings["Change WalkSpeed"] then
-			local Character = t.Character
-			local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
-			if Humanoid then
-				local sp = math.clamp(tonumber(Settings["Input WalkSpeed"]) or 16, 0, 220)
-				if Humanoid.WalkSpeed ~= sp then
-					Humanoid.WalkSpeed = sp
-				end
-			end
+			local sp = math.clamp(tonumber(Settings["Input WalkSpeed"]) or 16, 0, 220)
+			if math.abs(Humanoid.WalkSpeed - sp) > 0.01 then Humanoid.WalkSpeed = sp end
+		end
+		if Settings["Change JumpPower"] then
+			if not Humanoid.UseJumpPower then Humanoid.UseJumpPower = true end
+			local jp = math.clamp(tonumber(Settings["Input JumpPower"]) or 50, 0, 220)
+			if math.abs(Humanoid.JumpPower - jp) > 0.01 then Humanoid.JumpPower = jp end
 		end
 	end)
 end
@@ -24397,6 +24367,27 @@ end)
 pcall(function()
 	TextUtil = require(game.ReplicatedStorage.Modules.Util.TextUtil)
 end)
+
+-- Auto Trade Bone: loop independente para não depender do ciclo de compra de frutas.
+do
+	getgenv().__NexoraBoneTradeGen = (getgenv().__NexoraBoneTradeGen or 0) + 1
+	local boneGen = getgenv().__NexoraBoneTradeGen
+	task.spawn(function()
+		while getgenv().__NexoraBoneTradeGen == boneGen do
+			if Settings["Auto Trade Bone"] then
+				pcall(function()
+					local rs = game:GetService("ReplicatedStorage")
+					local remote = rs:FindFirstChild("Remotes") and rs.Remotes:FindFirstChild("CommF_")
+					if remote then remote:InvokeServer("Bones", "Buy", 1, 1) end
+				end)
+				task.wait(2)
+			else
+				task.wait(0.5)
+			end
+		end
+	end)
+end
+
 -- Movimento: movido para fora do RenderStepped (antes criava um loop novo a cada frame).
 getgenv().__MoveGen = (getgenv().__MoveGen or 0) + 1
 local MoveGen = getgenv().__MoveGen
@@ -24404,41 +24395,13 @@ function ApplyMovementSettings()
 	local Character = t.Character
 	local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
 	if not Humanoid then return end
-
-	-- O jogo reescreve WalkSpeed por conta própria; reaplica imediatamente quando muda.
-	if Humanoid:GetAttribute("__WSHook") ~= MoveGen then
-		pcall(function()
-			Humanoid:SetAttribute("__WSHook", MoveGen)
-			Humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
-				if getgenv().__MoveGen == MoveGen and Settings["Change WalkSpeed"] then
-					local sp = math.clamp(tonumber(Settings["Input WalkSpeed"]) or 16, 0, 220)
-					if Humanoid.WalkSpeed ~= sp then
-						Humanoid.WalkSpeed = sp
-					end
-				end
-			end)
-		end)
-	end
-
 	pcall(function()
-		-- Só força a velocidade enquanto o toggle está ligado; ao desligar, restaura uma vez.
-		-- (Antes forçava 16 a cada 0.15s e quebrava os buffs de velocidade do próprio jogo.)
 		if Settings["Change WalkSpeed"] then
 			Humanoid.WalkSpeed = math.clamp(tonumber(Settings["Input WalkSpeed"]) or 16, 0, 220)
-			getgenv().__WSApplied = true
-		elseif getgenv().__WSApplied then
-			Humanoid.WalkSpeed = 16
-			getgenv().__WSApplied = false
 		end
-
 		if Settings["Change JumpPower"] then
 			Humanoid.UseJumpPower = true
 			Humanoid.JumpPower = math.clamp(tonumber(Settings["Input JumpPower"]) or 50, 0, 220)
-			getgenv().__JPApplied = true
-		elseif getgenv().__JPApplied then
-			Humanoid.UseJumpPower = true
-			Humanoid.JumpPower = 50
-			getgenv().__JPApplied = false
 		end
 	end)
 end
@@ -24452,18 +24415,18 @@ pcall(function()
 	end
 end)
 getgenv().__MoveStepConn = game:GetService("RunService").Stepped:Connect(function()
-	if getgenv().__MoveGen ~= MoveGen then
-		return
-	end
+	if getgenv().__MoveGen ~= MoveGen then return end
+	local Character = t.Character
+	local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
+	if not Humanoid then return end
 	if Settings["Change WalkSpeed"] then
-		local Character = t.Character
-		local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
-		if Humanoid then
-			local sp = math.clamp(tonumber(Settings["Input WalkSpeed"]) or 16, 0, 220)
-			if Humanoid.WalkSpeed ~= sp then
-				Humanoid.WalkSpeed = sp
-			end
-		end
+		local sp = math.clamp(tonumber(Settings["Input WalkSpeed"]) or 16, 0, 220)
+		if math.abs(Humanoid.WalkSpeed - sp) > 0.01 then Humanoid.WalkSpeed = sp end
+	end
+	if Settings["Change JumpPower"] then
+		Humanoid.UseJumpPower = true
+		local jp = math.clamp(tonumber(Settings["Input JumpPower"]) or 50, 0, 220)
+		if math.abs(Humanoid.JumpPower - jp) > 0.01 then Humanoid.JumpPower = jp end
 	end
 end)
 pcall(function()
@@ -24472,9 +24435,15 @@ pcall(function()
 	end
 end)
 if t.CharacterAdded then
-	getgenv().__MoveCharConn = t.CharacterAdded:Connect(function()
-		task.wait(0.25)
-		ApplyMovementSettings()
+	getgenv().__MoveCharConn = t.CharacterAdded:Connect(function(character)
+		task.spawn(function()
+			for _ = 1, 30 do
+				if getgenv().__MoveGen ~= MoveGen then return end
+				local hum = character and character:FindFirstChildOfClass("Humanoid")
+				if hum then ApplyMovementSettings(); return end
+				task.wait(0.1)
+			end
+		end)
 	end)
 end
 
@@ -24587,9 +24556,6 @@ do
 			lastFruitTick = tick()
 			getgenv().__FruitBusy = true
 			local T, T = pcall(function()
-				if Settings["Auto Trade Bone"] then
-					L.Remotes.CommF_:InvokeServer("Bones", "Buy", 1, 1)
-				end
 				if Settings["Buy Blox Fruit Sniper Shop"] then
 					BuyFruitShop()
 				end
