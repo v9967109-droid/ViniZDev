@@ -1750,13 +1750,14 @@ local old = parentGui:FindFirstChild("NexoraUI")
 if old then old:Destroy() end
 
 local C = {
-    bg = Color3.fromRGB(10, 10, 14),
-    panel = Color3.fromRGB(18, 18, 24),
-    panel2 = Color3.fromRGB(25, 25, 33),
-    line = Color3.fromRGB(47, 43, 36),
-    gold = Color3.fromRGB(225, 174, 67),
-    text = Color3.fromRGB(242, 240, 235),
-    muted = Color3.fromRGB(153, 151, 145),
+    bg = Color3.fromRGB(5, 5, 8),
+    panel = Color3.fromRGB(12, 12, 17),
+    panel2 = Color3.fromRGB(22, 21, 26),
+    line = Color3.fromRGB(105, 75, 28),
+    gold = Color3.fromRGB(255, 190, 55),
+    goldLight = Color3.fromRGB(255, 224, 125),
+    text = Color3.fromRGB(248, 246, 240),
+    muted = Color3.fromRGB(165, 160, 149),
     green = Color3.fromRGB(78, 190, 124),
 }
 
@@ -1840,7 +1841,12 @@ function Nexora.CreateMain(config)
         pcall(function() if writefile then writefile(SIZE_FILE, game:GetService("HttpService"):JSONEncode(data)) end end)
     end
     local shell = make("Frame", {Name="Window", AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.new(0, persistedW, 0, persistedH), BackgroundColor3=C.bg, BorderSizePixel=0}, gui)
-    corner(shell, 12); stroke(shell, C.line)
+    corner(shell, 12); stroke(shell, C.gold, 0.18)
+    make("UIGradient", {Rotation = 135, Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(13, 12, 16)),
+        ColorSequenceKeypoint.new(0.52, Color3.fromRGB(5, 5, 8)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(17, 12, 5)),
+    })}, shell)
     local scale = make("UIScale", {Scale = 1}, shell)
     local function resize()
         local cam = workspace.CurrentCamera
@@ -1854,9 +1860,16 @@ function Nexora.CreateMain(config)
 
     local top = make("Frame", {Size=UDim2.new(1,0,0,54), BackgroundColor3=C.panel, BorderSizePixel=0}, shell)
     corner(top, 12)
+    make("UIGradient", {Rotation=0, Color=ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(28, 21, 10)),
+        ColorSequenceKeypoint.new(0.45, Color3.fromRGB(13, 12, 16)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(5, 5, 8)),
+    })}, top)
+    make("Frame", {Position=UDim2.new(0,0,1,-2), Size=UDim2.new(1,0,0,2), BackgroundColor3=C.gold, BorderSizePixel=0}, top)
     make("Frame", {Position=UDim2.new(0,0,1,-12), Size=UDim2.new(1,0,0,12), BackgroundColor3=C.panel, BorderSizePixel=0}, top)
-    local logo = make("Frame", {Position=UDim2.new(0,15,0,12), Size=UDim2.new(0,30,0,30), BackgroundColor3=C.gold, BorderSizePixel=0}, top); corner(logo, 9)
-    label(logo, "N", 17, C.bg, Enum.Font.GothamBold).TextXAlignment = Enum.TextXAlignment.Center
+    local logo = make("Frame", {Position=UDim2.new(0,15,0,10), Size=UDim2.new(0,34,0,34), BackgroundColor3=Color3.fromRGB(8,8,10), BorderSizePixel=0}, top); corner(logo, 10); stroke(logo, C.gold, 0.05)
+    make("UIGradient", {Rotation=45, Color=ColorSequence.new(Color3.fromRGB(255, 220, 125), C.gold)}, logo)
+    label(logo, "N", 19, Color3.fromRGB(8,8,10), Enum.Font.GothamBlack).TextXAlignment = Enum.TextXAlignment.Center
     local title = label(make("Frame", {Position=UDim2.new(0,55,0,7), Size=UDim2.new(0,300,0,25), BackgroundTransparency=1}, top), config.Title or "NEXORA", 15, C.text, Enum.Font.GothamBold)
     local desc = label(make("Frame", {Position=UDim2.new(0,55,0,29), Size=UDim2.new(0,350,0,17), BackgroundTransparency=1}, top), config.Desc or "CUSTOM INTERFACE", 9, C.muted)
     local close = button(top, "×", 30); close.Size=UDim2.new(0,30,0,30); close.Position=UDim2.new(1,-42,0,12); close.TextSize=20
@@ -1871,6 +1884,9 @@ function Nexora.CreateMain(config)
     reopen.TextSize = 22
     reopen.Font = Enum.Font.GothamBold
     reopen.BackgroundColor3 = C.gold
+    reopen.TextColor3 = Color3.fromRGB(8, 7, 5)
+    corner(reopen, 13); stroke(reopen, C.goldLight, 0.02)
+    make("UIGradient", {Rotation=45, Color=ColorSequence.new(C.goldLight, C.gold)}, reopen)
     -- Estado declarado antes dos eventos para evitar que o clique use uma variável global.
     local floatDragging, floatStart, floatPos, floatMoved = false, nil, nil, false
     local function hideWindow()
@@ -1937,6 +1953,7 @@ function Nexora.CreateMain(config)
     end)
 
     local sidebar = make("Frame", {Name="Sidebar", Position=UDim2.new(0,0,0,54), Size=UDim2.new(0,164,1,-54), BackgroundColor3=C.panel, BorderSizePixel=0}, shell)
+    make("Frame", {Position=UDim2.new(1,-1,0,0), Size=UDim2.new(0,1,1,0), BackgroundColor3=C.line, BorderSizePixel=0}, sidebar)
     local search = make("TextBox", {Position=UDim2.new(0,12,0,12), Size=UDim2.new(1,-24,0,32), BackgroundColor3=C.bg, BorderSizePixel=0, PlaceholderText="Pesquisar...", Text="", TextColor3=C.text, PlaceholderColor3=C.muted, Font=Enum.Font.Gotham, TextSize=11, ClearTextOnFocus=false}, sidebar); corner(search,7); stroke(search,C.line)
     local nav = make("ScrollingFrame", {Position=UDim2.new(0,8,0,54), Size=UDim2.new(1,-16,1,-62), BackgroundTransparency=1, BorderSizePixel=0, ScrollBarThickness=2, ScrollBarImageColor3=C.gold, CanvasSize=UDim2.new()}, sidebar)
     local navLayout = make("UIListLayout", {Padding=UDim.new(0,5), SortOrder=Enum.SortOrder.LayoutOrder}, nav)
@@ -1971,7 +1988,18 @@ function Nexora.CreateMain(config)
     local function showPage(p)
         activePage=p
         for _, item in pairs(pages) do item.frame.Visible=(item==p) end
-        for pg,b in pairs(navButtons) do b.BackgroundColor3=(pages[pg]==p) and Color3.fromRGB(55,45,28) or C.panel end
+        for pg,b in pairs(navButtons) do
+            b.BackgroundColor3=(pages[pg]==p) and Color3.fromRGB(63,43,13) or C.panel
+            if pages[pg]==p then
+                b.TextColor3=C.goldLight
+                if not b:FindFirstChild("NexoraActiveStroke") then
+                    local edge=make("UIStroke", {Name="NexoraActiveStroke", Color=C.gold, Transparency=0.18, Thickness=1}, b)
+                end
+            else
+                b.TextColor3=C.text
+                local edge=b:FindFirstChild("NexoraActiveStroke"); if edge then edge:Destroy() end
+            end
+        end
     end
 
     local Main = {}
