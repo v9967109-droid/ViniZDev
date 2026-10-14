@@ -1999,12 +1999,19 @@ function Nexora.CreateMain(config)
                 return make("Frame", {Size=UDim2.new(1,0,0,height),BackgroundTransparency=1},card)
             end
             function Section.CreateToggle(cfg, callback)
-                cfg=cfg or {}; local t=cfg.Title or "Toggle"; local val=cfg.Default==true
+                cfg=cfg or {}; local t=cfg.Title or "Toggle"
+                -- Reuse the original Banana Cat Hub per-player settings file.
+                Settings = Settings or {}
+                local savedToggle = Settings[t]
+                local val = type(savedToggle) == "boolean" and savedToggle or (cfg.Default == true)
                 local r=row(35); local txt=label(make("Frame",{Size=UDim2.new(1,-60,1,0),BackgroundTransparency=1},r),t,12,C.text)
                 local b=button(r,val and "On" or "Off",27); b:SetAttribute("NexoraKeepColor", true); b.Size=UDim2.new(0,52,0,27); b.Position=UDim2.new(1,-52,.5,-13.5); b.BackgroundColor3=val and C.gold or Color3.fromRGB(0,0,0); b.TextColor3=Color3.fromRGB(255,255,255)
                 local opt=addOption(t,"toggle",val,pageName,sectionName,callback)
                 local function applyToggle(v, fire)
                     val = not not v; opt.value=val; b.Text=val and "On" or "Off"; b.BackgroundColor3=val and C.gold or Color3.fromRGB(0,0,0); b.TextColor3=Color3.fromRGB(255,255,255)
+                    -- Persist using Banana Cat Hub's existing save format/path, not a separate Nexora config.
+                    Settings[t] = val
+                    pcall(function() SaveSettings(t, val) end)
                     if fire and callback then task.spawn(function() pcall(callback,val) end) end
                 end
                 opt._setValue = function(v) applyToggle(v, false) end
