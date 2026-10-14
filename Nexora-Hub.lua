@@ -2607,7 +2607,7 @@ SectionShopFighting.CreateToggle({ Title = "Black Leg", Desc = nil, Default = fa
 					if t:DistanceFromCharacter(R.HumanoidRootPart.Position) < 8 then
 						game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBlackLeg")
 					end
-					getgenv().BackupTween(R.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					NexoraMoveLong(R.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
 				end)
 			end
 		end)
@@ -2624,7 +2624,7 @@ SectionShopFighting.CreateToggle({ Title = "Fishman Karate", Desc = nil, Default
 					if t:DistanceFromCharacter(R.HumanoidRootPart.Position) < 8 then
 						game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyFishmanKarate")
 					end
-					getgenv().BackupTween(R.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					NexoraMoveLong(R.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
 				end)
 			end
 		end)
@@ -2641,7 +2641,7 @@ SectionShopFighting.CreateToggle({ Title = "Electro", Desc = nil, Default = fals
 					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) < 8 then
 						game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyElectro")
 					end
-					getgenv().BackupTween(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					NexoraMoveLong(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
 				end)
 			end
 		end)
@@ -2659,7 +2659,7 @@ SectionShopFighting.CreateToggle({ Title = "Dragon Breath", Desc = nil, Default 
 						game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BlackbeardReward", "DragonClaw", "1")
 						game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BlackbeardReward", "DragonClaw", "2")
 					end
-					getgenv().BackupTween(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					NexoraMoveLong(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
 				end)
 			end
 		end)
@@ -2676,7 +2676,7 @@ SectionShopFighting.CreateToggle({ Title = "SuperHuman", Desc = nil, Default = f
 					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) < 8 then
 						Remote("BuySuperhuman")
 					end
-					getgenv().BackupTween(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					NexoraMoveLong(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
 				end)
 			end
 		end)
@@ -2693,7 +2693,7 @@ SectionShopFighting.CreateToggle({ Title = "Death Step", Desc = nil, Default = f
 					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) < 8 then
 						Remote("BuyDeathStep")
 					end
-					getgenv().BackupTween(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					NexoraMoveLong(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
 				end)
 			end
 		end)
@@ -2710,7 +2710,7 @@ SectionShopFighting.CreateToggle({ Title = "Sharkman Karate", Desc = nil, Defaul
 					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) < 8 then
 						Remote("BuySharkmanKarate")
 					end
-					getgenv().BackupTween(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					NexoraMoveLong(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
 				end)
 			end
 		end)
@@ -2727,7 +2727,7 @@ SectionShopFighting.CreateToggle({ Title = "Electric Claw", Desc = nil, Default 
 					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) < 8 then
 						Remote("BuyElectricClaw")
 					end
-					getgenv().BackupTween(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					NexoraMoveLong(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
 				end)
 			end
 		end)
@@ -2744,7 +2744,7 @@ SectionShopFighting.CreateToggle({ Title = "Dragon Talon", Desc = nil, Default =
 					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) < 8 then
 						Remote("BuyDragonTalon")
 					end
-					getgenv().BackupTween(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					NexoraMoveLong(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
 				end)
 			end
 		end)
@@ -2760,7 +2760,7 @@ SectionShopFighting.CreateToggle({ Title = "God Human", Desc = nil, Default = fa
 					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) < 8 then
 						Remote("BuyGodhuman")
 					end
-					getgenv().BackupTween(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					NexoraMoveLong(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
 				end)
 			end
 		end)
@@ -2776,7 +2776,7 @@ SectionShopFighting.CreateToggle({ Title = "Sanguine Art", Desc = nil, Default =
 					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) < 8 then
 						Remote("BuySanguineArt")
 					end
-					getgenv().BackupTween(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					NexoraMoveLong(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
 				end)
 			end
 		end)
@@ -4341,6 +4341,35 @@ function IsMobAlive(K)
 		and K.Humanoid.Health > 0
 	then
 		return true
+	end
+end
+-- Deslocamento de longa distância em etapas para evitar que um tween único falhe longe.
+function NexoraMoveLong(destination, extra)
+	if not destination then return end
+	local character = t.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+	local state = getgenv().__NexoraLongMoveState
+	if not state or not state.target or (state.target.Position - destination.Position).Magnitude > 180 then
+		state = { target = destination, waypoint = nil }
+		getgenv().__NexoraLongMoveState = state
+	else
+		state.target = destination
+	end
+	local delta = destination.Position - root.Position
+	if delta.Magnitude <= 2200 then
+		if not state.waypoint or (state.waypoint.Position - destination.Position).Magnitude > 80 then
+			state.waypoint = destination
+			toTarget(destination, extra)
+		elseif (root.Position - state.waypoint.Position).Magnitude <= 100 then
+			state.waypoint = destination
+			toTarget(destination, extra)
+		end
+		return
+	end
+	if not state.waypoint or (root.Position - state.waypoint.Position).Magnitude <= 120 then
+		state.waypoint = CFrame.new(root.Position + delta.Unit * 1900)
+		toTarget(state.waypoint, extra)
 	end
 end
 -- Helpers do Elite Hunter (compartilhados).
@@ -7611,82 +7640,12 @@ SettingAutoFarmSection.CreateToggle(
 		SaveSettings("Auto Quest [Katakuri/Bone/Tyrant]", V)
 	end
 )
--- Ciclo Auto Quest: 10s ligado e 75s desligado, somente na ilha do farm selecionado.
--- Fora da ilha correspondente, o ciclo fica pausado e não altera o toggle.
+-- Auto Quest permanece no estado escolhido pelo usuário; desligar um farm não o desativa.
 do
-	getgenv().__AQToggleCycleGeneration = (getgenv().__AQToggleCycleGeneration or 0) + 1
-	local cycleGeneration = getgenv().__AQToggleCycleGeneration
 	local toggleKey = "Auto Quest [Katakuri/Bone/Tyrant]"
-	local function SetAutoQuestToggle(value)
-		getgenv().__AQCycleSync = true
-		pcall(function() SaveSettings(toggleKey, value) end)
-		pcall(function()
-			local option = Options and Options["Auto Quest"]
-			local control = option and option.FunctionCreate
-			if control and control.SetValue then control:SetValue(value) end
-		end)
-		task.delay(0.25, function()
-			if getgenv().__AQToggleCycleGeneration == cycleGeneration then
-				getgenv().__AQCycleSync = false
-			end
-		end)
+	if Settings[toggleKey] == nil then
+		SaveSettings(toggleKey, Settings["Auto Quest"] ~= false)
 	end
-	local function GetSelectedQuestNPCPosition()
-		local selected = GetSelectedIndividualFarm and GetSelectedIndividualFarm()
-		if not selected or selected == "Aura Farm" or Settings["Farm Material"] then return nil end
-		local targetPosition
-		if selected == "Auto Farm Level" then
-			pcall(function()
-				local info = GetLevelQuestInfo(t.Data.Level.Value)
-				if info and info.Pos then
-					targetPosition = typeof(info.Pos) == "CFrame" and info.Pos.Position or info.Pos
-				end
-			end)
-		else
-			local info = AutoQuestInfo and AutoQuestInfo[selected]
-			local points = getgenv().questpoint
-			local cf = info and points and points[info[2]]
-			if cf then targetPosition = cf.Position end
-		end
-		return targetPosition
-	end
-	local function IsOnSelectedFarmIsland()
-		local targetPosition = GetSelectedQuestNPCPosition()
-		local root = t.Character and t.Character:FindFirstChild("HumanoidRootPart")
-		if not root or not targetPosition then return false end
-		-- Distância ampla para reconhecer que chegou à ilha correspondente.
-		return (root.Position - targetPosition).Magnitude <= 2500
-	end
-	local function IsNearSelectedQuestNPC()
-		local targetPosition = GetSelectedQuestNPCPosition()
-		local root = t.Character and t.Character:FindFirstChild("HumanoidRootPart")
-		if not root or not targetPosition then return false end
-		-- O ciclo só começa quando o personagem chega perto do NPC da missão.
-		return (root.Position - targetPosition).Magnitude <= 100
-	end
-	task.spawn(function()
-		local isEnabled = true
-		local startedAtNPC = false
-		SetAutoQuestToggle(true)
-		while getgenv().__AQToggleCycleGeneration == cycleGeneration do
-			if IsOnSelectedFarmIsland() and (startedAtNPC or IsNearSelectedQuestNPC()) then
-				startedAtNPC = true
-				local duration = isEnabled and 10 or 75
-				local deadline = tick() + duration
-				while getgenv().__AQToggleCycleGeneration == cycleGeneration and IsOnSelectedFarmIsland() and tick() < deadline do
-					task.wait(0.25)
-				end
-				if getgenv().__AQToggleCycleGeneration ~= cycleGeneration then break end
-				if IsOnSelectedFarmIsland() then
-					isEnabled = not isEnabled
-					SetAutoQuestToggle(isEnabled)
-				end
-			else
-				-- Na ilha, aguarda chegar perto do NPC; fora dela, também aguarda sem alterar o toggle.
-				task.wait(1)
-			end
-		end
-	end)
 end
 -- Mantém os toggles "Farm Mastery" e "Start Farm" visualmente iguais ao estado real.
 function SyncMasteryToggle(title, v)
@@ -10373,7 +10332,7 @@ task.spawn(function()
 								local offset = Settings["Select Weapon"] == "Blox Fruit"
 									and CFrame.new(-7, getgenv().YPosFruit or 20, 0)
 									or CFrame.new(7, 20, 0)
-								toTarget(hrp.CFrame * offset)
+								NexoraMoveLong(hrp.CFrame * offset)
 								ClickM1(target)
 								UsedualFlock()
 							end
@@ -10461,7 +10420,7 @@ task.spawn(function()
 						task.wait()
 						game:GetService("VirtualInputManager"):SendKeyEvent(false, "Space", false, game)
 					else
-						toTarget(handle.CFrame, true)
+						NexoraMoveLong(handle.CFrame, true)
 					end
 					return
 				elseif Settings["Teleport To Fruit [ Hop Server ]"] then
@@ -21935,8 +21894,13 @@ function AutoMultiFindPrehistoric()
 				toTarget(boatShop)
 				return
 			end
-			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyBoat", "Beast Hunter")
-			task.wait(3)
+			local comm = game:GetService("ReplicatedStorage").Remotes.CommF_
+			pcall(function() comm:InvokeServer("BuyBoat", "Beast Hunter") end)
+			task.wait(2)
+			if not checkboat() then
+				pcall(function() comm:InvokeServer("BuyBoat", "Guardian") end)
+				task.wait(2)
+			end
 			return
 		end
 	end
@@ -21956,9 +21920,14 @@ function AutoMultiFindPrehistoric()
 			toTarget(boatShop)
 			return
 		end
-		game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyBoat", "Beast Hunter")
-		task.wait(3)
-		return
+		local comm = game:GetService("ReplicatedStorage").Remotes.CommF_
+	pcall(function() comm:InvokeServer("BuyBoat", "Beast Hunter") end)
+	task.wait(2)
+	if not checkboat() then
+		pcall(function() comm:InvokeServer("BuyBoat", "Guardian") end)
+		task.wait(2)
+	end
+	return
 	end
 
 	local vehicleSeat = boat:FindFirstChild("VehicleSeat", true)
@@ -22011,6 +21980,19 @@ function AutoMultiFindPrehistoric()
 		getgenv().MultiPrehistoricMovingForward = false
 		SetMultiPrehistoricForward(vehicleSeat, false)
 		toTarget(vehicleSeat.CFrame)
+		return
+	end
+
+	-- O avanço de 650 studs é exclusivo da saída do Tiki Outpost.
+	-- Se já estiver no mar, não repete o avanço: continua pela lógica normal de busca.
+	local localRoot = t.Character and t.Character:FindFirstChild("HumanoidRootPart")
+	local tikiPosition = Vector3.new(-16204.0810546875, 9.0863618850708, 479.2259521484375)
+	if localRoot and (localRoot.Position - tikiPosition).Magnitude > 2500 then
+		SetMultiPrehistoricForward(vehicleSeat, false)
+		getgenv().MultiPrehistoricMovingForward = false
+		if Settings["Auto Multi Find Prehistoric Island"] then
+			AutoFindPrehistoric()
+		end
 		return
 	end
 
@@ -22110,8 +22092,18 @@ function AutoFindPrehistoric()
 				end
 				toTarget(f)
 			else
-				game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyBoat", if Settings["Auto Multi Find Prehistoric Island"] then "Beast Hunter" else "PirateBrigade")
-				wait(3)
+				local comm = game:GetService("ReplicatedStorage").Remotes.CommF_
+				if Settings["Auto Multi Find Prehistoric Island"] then
+					pcall(function() comm:InvokeServer("BuyBoat", "Beast Hunter") end)
+					wait(2)
+					if not checkboat() then
+						pcall(function() comm:InvokeServer("BuyBoat", "Guardian") end)
+						wait(2)
+					end
+				else
+					comm:InvokeServer("BuyBoat", "PirateBrigade")
+					wait(3)
+				end
 			end
 		elseif t.Character.Humanoid.Sit then
 			local f, R, m =
@@ -23439,25 +23431,34 @@ SettingsAimbotSection.CreateButton({ Title = "Refresh Player" }, function()
 	b:GetNewList(DetectNamePlayer())
 end)
 function TeleportPlayer()
-	for b, b in pairs(game:GetService("Players"):GetChildren()) do
-		if b.Name == Settings["Select Player PVP"] then
-			return b
-		end
-	end
+	local Players = game:GetService("Players")
+	local selectedName = Settings["Select Player PVP"]
+	if not selectedName or selectedName == "" then return nil end
+	local target = Players:FindFirstChild(selectedName)
+	if target and target ~= t then return target end
+	return nil
 end
 SettingsAimbotSection.CreateToggle(
 	{ Title = "Teleport Player", Desc = nil, Default = Settings["Teleport Player"] or false },
 	function(b)
-		if b then
-			spawn(function()
-				while Settings["Teleport Player"] and (wait()) do
-					pcall(function()
-						toTarget(TeleportPlayer().Character.HumanoidRootPart.CFrame)
-					end)
-				end
-			end)
-		end
 		SaveSettings("Teleport Player", b)
+		if b then
+			task.spawn(function()
+				while Settings["Teleport Player"] do
+					pcall(function()
+						local targetPlayer = TeleportPlayer()
+						local targetChar = targetPlayer and targetPlayer.Character
+						local targetRoot = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
+					local char = t.Character
+					local root = char and char:FindFirstChild("HumanoidRootPart")
+					if targetRoot and root and (targetRoot.Position - root.Position).Magnitude > 8 then
+						NexoraMoveLong(targetRoot.CFrame * CFrame.new(0, 3, 0), true)
+					end
+				end)
+				task.wait(0.5)
+			end
+		end)
+		end
 	end
 )
 function ClosestPartaimbot()
@@ -23599,14 +23600,17 @@ do
 		if getgenv().__WSEarlyGen ~= WSGen then
 			return
 		end
-		if Settings["Change WalkSpeed"] then
-			local Character = t.Character
-			local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
-			if Humanoid then
+		local Character = t.Character
+		local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
+		if Humanoid then
+			if Settings["Change WalkSpeed"] then
 				local sp = math.clamp(tonumber(Settings["Input WalkSpeed"]) or 16, 0, 220)
-				if Humanoid.WalkSpeed ~= sp then
-					Humanoid.WalkSpeed = sp
-				end
+				if Humanoid.WalkSpeed ~= sp then Humanoid.WalkSpeed = sp end
+			end
+			if Settings["Change JumpPower"] then
+				Humanoid.UseJumpPower = true
+				local jp = math.clamp(tonumber(Settings["Input JumpPower"]) or 50, 0, 220)
+				if Humanoid.JumpPower ~= jp then Humanoid.JumpPower = jp end
 			end
 		end
 	end)
