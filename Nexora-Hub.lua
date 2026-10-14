@@ -1,72 +1,70 @@
--- Tela de carregamento (Nexora Hub)
+-- Tela de carregamento (Nexora Hub): pequena e rápida. O resto do script só roda depois dela terminar.
 do
 	pcall(function()
-		local TweenService_ = game:GetService("TweenService")
+		local TS = game:GetService("TweenService")
 		local host = (gethui and gethui()) or game:GetService("CoreGui")
 		local oldLoad = host:FindFirstChild("NexoraLoading")
 		if oldLoad then oldLoad:Destroy() end
 		local gui = Instance.new("ScreenGui")
 		gui.Name = "NexoraLoading"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true; gui.DisplayOrder = 10000
 		gui.Parent = host
-		local GOLD, GOLD_L = Color3.fromRGB(255,190,55), Color3.fromRGB(255,224,125)
-		local root = Instance.new("CanvasGroup")
-		root.Size = UDim2.fromScale(1,1); root.BackgroundColor3 = Color3.fromRGB(6,6,9); root.BorderSizePixel = 0; root.Parent = gui
+		local GOLD, GOLD_L, GRAY = Color3.fromRGB(255,190,55), Color3.fromRGB(255,224,125), Color3.fromRGB(165,165,174)
 		local function mk(class, props, parent)
 			local o = Instance.new(class)
 			for k, v in pairs(props) do o[k] = v end
 			o.Parent = parent
 			return o
 		end
-		local pulse = mk("Frame", {AnchorPoint=Vector2.new(.5,.5), Position=UDim2.new(.5,0,.5,-46), Size=UDim2.fromOffset(92,92), BackgroundTransparency=1}, root)
-		mk("UICorner", {CornerRadius=UDim.new(1,0)}, pulse)
-		local pulseStroke = mk("UIStroke", {Color=GOLD, Thickness=2, Transparency=0.2}, pulse)
-		local logo = mk("Frame", {AnchorPoint=Vector2.new(.5,.5), Position=UDim2.new(.5,0,.5,-46), Size=UDim2.fromOffset(92,92), BackgroundColor3=Color3.fromRGB(8,8,10), BorderSizePixel=0}, root)
+		local function sfx(id, vol, speed)
+			pcall(function()
+				local snd = Instance.new("Sound")
+				snd.SoundId = id; snd.Volume = vol or 0.5; snd.PlaybackSpeed = speed or 1
+				snd.Parent = game:GetService("SoundService")
+				snd:Play()
+				game:GetService("Debris"):AddItem(snd, 4)
+			end)
+		end
+		local card = mk("CanvasGroup", {AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.fromOffset(230,128), BackgroundColor3=Color3.fromRGB(8,8,11), BorderSizePixel=0, GroupTransparency=1}, gui)
+		mk("UICorner", {CornerRadius=UDim.new(0,16)}, card)
+		mk("UIStroke", {Color=GOLD, Thickness=1, Transparency=0.55}, card)
+		local sc = mk("UIScale", {Scale=0.9}, card)
+		local logo = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,12), Size=UDim2.fromOffset(46,46), BackgroundColor3=Color3.fromRGB(8,8,10), BorderSizePixel=0}, card)
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, logo)
-		mk("UIStroke", {Color=GOLD, Thickness=2.5}, logo)
-		mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,5), Size=UDim2.new(1,0,0,24), Text="♛", TextColor3=GOLD_L, Font=Enum.Font.GothamBold, TextSize=22}, logo)
-		local n = mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,20), Size=UDim2.new(1,0,1,-24), Text="N", TextColor3=GOLD, Font=Enum.Font.GothamBlack, TextSize=50}, logo)
+		mk("UIStroke", {Color=GOLD, Thickness=2}, logo)
+		mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,2), Size=UDim2.new(1,0,0,13), Text="♛", TextColor3=GOLD_L, Font=Enum.Font.GothamBold, TextSize=12}, logo)
+		local n = mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,10), Size=UDim2.new(1,0,1,-12), Text="N", TextColor3=GOLD, Font=Enum.Font.GothamBlack, TextSize=26}, logo)
 		mk("UIGradient", {Rotation=90, Color=ColorSequence.new(GOLD_L, Color3.fromRGB(230,150,20))}, n)
-		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,.5,16), Size=UDim2.fromOffset(400,34), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=GOLD, Font=Enum.Font.GothamBlack, TextSize=28}, root)
-		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,.5,52), Size=UDim2.fromOffset(400,16), BackgroundTransparency=1, Text="B L O X   F R U I T S", TextColor3=Color3.fromRGB(165,165,174), Font=Enum.Font.GothamMedium, TextSize=11}, root)
-		local track = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,.5,86), Size=UDim2.fromOffset(260,4), BackgroundColor3=Color3.fromRGB(30,28,24), BorderSizePixel=0}, root)
+		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,64), Size=UDim2.fromOffset(220,20), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=GOLD, Font=Enum.Font.GothamBlack, TextSize=16}, card)
+		local track = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,92), Size=UDim2.fromOffset(150,3), BackgroundColor3=Color3.fromRGB(30,28,24), BorderSizePixel=0}, card)
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, track)
 		local fill = mk("Frame", {Size=UDim2.new(0,0,1,0), BackgroundColor3=GOLD, BorderSizePixel=0}, track)
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, fill)
 		mk("UIGradient", {Color=ColorSequence.new(GOLD, GOLD_L)}, fill)
-		local status = mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,.5,100), Size=UDim2.fromOffset(300,16), BackgroundTransparency=1, Text="Iniciando...", TextColor3=Color3.fromRGB(165,165,174), Font=Enum.Font.Gotham, TextSize=11}, root)
-		local done, progress = false, 0
-		getgenv().NexoraLoadingFinish = function()
-			if done then return end
-			done = true
-			status.Text = "Pronto!"
-			TweenService_:Create(fill, TweenInfo.new(.3, Enum.EasingStyle.Quad), {Size=UDim2.new(1,0,1,0)}):Play()
-			task.delay(.5, function()
-				local tw = TweenService_:Create(root, TweenInfo.new(.5, Enum.EasingStyle.Quad), {GroupTransparency=1})
-				tw:Play(); tw.Completed:Wait()
-				gui:Destroy()
-			end)
+		local status = mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,102), Size=UDim2.fromOffset(220,14), BackgroundTransparency=1, Text="Carregando...", TextColor3=GRAY, Font=Enum.Font.Gotham, TextSize=10}, card)
+		-- entrada rápida + som de abertura
+		TS:Create(card, TweenInfo.new(.18, Enum.EasingStyle.Quad), {GroupTransparency=0}):Play()
+		TS:Create(sc, TweenInfo.new(.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale=1}):Play()
+		sfx("rbxasset://sounds/electronicpingshort.wav", 0.6, 1)
+		-- progresso curto (~1,3s) bloqueando o resto do script até terminar
+		local steps = { {0,"Carregando..."}, {0.45,"Preparando interface..."}, {0.8,"Quase pronto..."} }
+		local DURATION, startT = 1.3, tick()
+		while true do
+			local p = math.clamp((tick() - startT) / DURATION, 0, 1)
+			fill.Size = UDim2.new(1 - (1 - p) ^ 2, 0, 1, 0)
+			for _, st in ipairs(steps) do if p >= st[1] then status.Text = st[2] end end
+			if p >= 1 then break end
+			task.wait()
 		end
-		task.spawn(function()
-			while gui.Parent and not done do
-				pulse.Size = UDim2.fromOffset(92,92); pulseStroke.Transparency = 0.2
-				local grow = TweenService_:Create(pulse, TweenInfo.new(1.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size=UDim2.fromOffset(150,150)})
-				TweenService_:Create(pulseStroke, TweenInfo.new(1.4), {Transparency=1}):Play()
-				grow:Play(); grow.Completed:Wait()
-			end
-		end)
-		task.spawn(function()
-			local steps = { {0,"Iniciando..."}, {0.25,"Carregando módulos..."}, {0.55,"Preparando interface..."}, {0.8,"Restaurando configurações..."} }
-			local startT = tick()
-			while gui.Parent and not done do
-				local el = tick() - startT
-				progress = math.max(progress, 0.92 * (1 - math.exp(-el / 5)))
-				fill.Size = UDim2.new(progress, 0, 1, 0)
-				for _, st in ipairs(steps) do if progress >= st[1] then status.Text = st[2] end end
-				if el > 30 then getgenv().NexoraLoadingFinish(); break end
-				task.wait(0.05)
-			end
-		end)
+		status.Text = "Pronto!"
+		sfx("rbxasset://sounds/electronicpingshort.wav", 0.6, 1.35)
+		task.wait(0.12)
+		local out = TS:Create(card, TweenInfo.new(.22, Enum.EasingStyle.Quad), {GroupTransparency=1})
+		out:Play()
+		TS:Create(sc, TweenInfo.new(.22, Enum.EasingStyle.Quad), {Scale=0.94}):Play()
+		task.delay(.3, function() gui:Destroy() end)
 	end)
+	-- compatibilidade: o fim do script ainda chama isto, mas a tela já terminou.
+	getgenv().NexoraLoadingFinish = function() end
 end
 AutoFarmLevel = true
 
@@ -1866,6 +1864,15 @@ local function button(parent, text, height)
     b.MouseButton1Up:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.14), {BackgroundColor3 = Color3.fromRGB(36, 34, 31)}):Play() end end)
     return b
 end
+local function playUISound(id, vol, speed)
+    pcall(function()
+        local snd = Instance.new("Sound")
+        snd.SoundId = id; snd.Volume = vol or 0.5; snd.PlaybackSpeed = speed or 1
+        snd.Parent = game:GetService("SoundService")
+        snd:Play()
+        game:GetService("Debris"):AddItem(snd, 3)
+    end)
+end
 local function addOption(title, typ, value, page, section, callback)
     local opt = {Title = title, name = title, type = typ, value = value, Page_Name = page, Section_Name = section, Callback = callback}
     local control = {}
@@ -2270,6 +2277,7 @@ function Nexora.CreateMain(config)
                 local opt=addOption(t,"toggle",val,pageName,sectionName,callback)
                 local function applyToggle(v, fire)
                     val = not not v; opt.value=val; paint(true)
+                    if fire and val then playUISound("rbxasset://sounds/switch.wav", 0.6, 1) end
                     -- Persiste no mesmo formato/caminho do Settings original.
                     Settings[t] = val
                     pcall(function() SaveSettings(t, val) end)
