@@ -1737,7 +1737,7 @@ local A = (function()
 
 local Nexora = {}
 Nexora.Options = {}
-Nexora.PendingDefaults = {}
+Nexora.OptionOrder = {}
 
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
@@ -1814,6 +1814,7 @@ local function addOption(title, typ, value, page, section, callback)
     end
     opt.FunctionCreate = control
     Nexora.Options[title] = opt
+    table.insert(Nexora.OptionOrder, opt)
     return opt
 end
 
@@ -2016,22 +2017,7 @@ function Nexora.CreateMain(config)
                 end
                 opt._setValue = function(v) applyToggle(v, false) end
                 b.MouseButton1Click:Connect(function() applyToggle(not val, true) end)
-                -- Defaults ON ficam amarelos e iniciam sua callback após carregar a source inteira.
-                if val and callback then
-                    table.insert(Nexora.PendingDefaults, function()
-                        -- Keep saved state and UI state synchronized before worker loops start.
-                        Settings = Settings or {}
-                        Settings[t] = true
-                        if getgenv then getgenv().Settings = Settings end
-                        applyToggle(true, false)
-                        local ok, err = pcall(callback, true)
-                        if not ok then
-                            warn("[Nexora] Retry toggle '" .. tostring(t) .. "': " .. tostring(err))
-                            task.wait(1)
-                            pcall(callback, true)
-                        end
-                    end)
-                end
+                -- A restauração das opções salvas é agendada uma por vez ao final do carregamento.
                 return opt
             end
             function Section.CreateButton(cfg, callback)
@@ -2271,7 +2257,7 @@ end
 return Nexora
 
 end)()
-Main = A.CreateMain({ Title = "NEXORA HUB", Desc = "BLOX FRUITS • CUSTOM UI" })
+Main = A.CreateMain({ Title = "NEXORA HUB", Desc = "BLOX FRUITS • ViniZDev" })
 
 PageShop = Main.CreatePage({ Page_Name = "Shop", Page_Title = "Shop" })
 getgenv().Options = A.Options
@@ -27419,20 +27405,19 @@ __PASS38_NAMED_FUNCTIONS = {
 end)()
 
 
--- Inicializa somente os toggles salvos como ON, um por vez, com intervalo real entre eles.
--- Isso evita disparar várias rotinas pesadas simultaneamente na entrada do jogo.
-task.defer(function()
-    task.wait(3)
-    Settings = Settings or {}
-    if getgenv then getgenv().Settings = Settings end
-    local pending = A and A.PendingDefaults or {}
-    for index, startDefault in ipairs(pending) do
-        local ok, err = pcall(startDefault)
-        if not ok then
-            warn("[Nexora] Falha ao iniciar toggle #" .. tostring(index) .. ": " .. tostring(err))
+
+-- Restaura os toggles que estavam salvos como ativos, um por vez.
+-- Usa o mesmo Settings/SaveSettings da source Banana Cat Hub; sem espera fixa de 1,25 s.
+task.spawn(function()
+    task.wait() -- permite que a source termine de registrar todas as opções
+    local ordered = A and A.OptionOrder or {}
+    for _, opt in ipairs(ordered) do
+        if opt and opt.type == "toggle" and Settings and Settings[opt.Title] == true then
+            local callback = opt.Callback
+            if type(callback) == "function" then
+                pcall(callback, true)
+            end
+            task.wait() -- cede execução antes de processar o próximo toggle
         end
-        -- Wait for the current toggle to start before launching the next one.
-        task.wait(1.25)
     end
-    table.clear(pending)
 end)
