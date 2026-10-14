@@ -1895,24 +1895,51 @@ function Nexora.CreateMain(config)
     reopen.Name = "NexoraFloatingButton"
     reopen:SetAttribute("NexoraKeepColor", true)
     reopen.Size = UDim2.new(0, 46, 0, 46)
-    do
+    local FLOAT_POS_FILE = "NexoraHub_FloatPosition.json"
+    local function loadFloatPosition()
+        local saved
+        pcall(function()
+            if readfile and isfile and isfile(FLOAT_POS_FILE) then
+                saved = game:GetService("HttpService"):JSONDecode(readfile(FLOAT_POS_FILE))
+            end
+        end)
+        if type(saved) == "table" and tonumber(saved.x) and tonumber(saved.y) then
+            return UDim2.new(0, tonumber(saved.x), 0, tonumber(saved.y))
+        end
         local cam = workspace.CurrentCamera
         local vp = cam and cam.ViewportSize or Vector2.new(800, 600)
-        -- canto superior direito, em pixels (o arraste usa offsets em pixels)
-        reopen.Position = UDim2.new(0, math.max(10, vp.X - 66), 0, 70)
+        return UDim2.new(0, math.max(10, vp.X - 66), 0, 70)
     end
+    local function saveFloatPosition()
+        pcall(function()
+            if writefile then
+                local p = reopen.Position
+                writefile(FLOAT_POS_FILE, game:GetService("HttpService"):JSONEncode({
+                    x = math.floor(p.X.Offset), y = math.floor(p.Y.Offset)
+                }))
+            end
+        end)
+    end
+    reopen.Position = loadFloatPosition()
     reopen.AnchorPoint = Vector2.new(0, 0)
     reopen.Visible = true
     reopen.ZIndex = 100
-    reopen.Text = "♛\nN"
-    reopen.TextColor3 = Color3.fromRGB(255, 248, 225)
-    reopen.TextSize = 18
+    reopen.Text = "N"
+    reopen.TextColor3 = Color3.fromRGB(255, 190, 55)
+    reopen.TextSize = 25
     reopen.Font = Enum.Font.GothamBlack
-    reopen.BackgroundColor3 = Color3.fromRGB(245, 145, 24)
-    reopen.TextStrokeColor3 = Color3.fromRGB(95, 47, 8)
-    reopen.TextStrokeTransparency = 0.35
-    corner(reopen, 23); make("UIStroke", {Color=Color3.fromRGB(255,235,190), Thickness=2}, reopen)
-    make("UIGradient", {Rotation=45, Color=ColorSequence.new(Color3.fromRGB(255,190,55), Color3.fromRGB(230,105,18))}, reopen)
+    reopen.BackgroundColor3 = Color3.fromRGB(8, 8, 10)
+    reopen.TextStrokeTransparency = 1
+    corner(reopen, 23)
+    -- Círculo dourado completo igual ao emblema da UI, sem borda laranja.
+    make("UIStroke", {Color=Color3.fromRGB(255,190,55), Thickness=2.5, Transparency=0}, reopen)
+    make("TextLabel", {
+        Name="CrownMark", BackgroundTransparency=1,
+        Position=UDim2.new(0,0,0,2), Size=UDim2.new(1,0,0,14),
+        Text="♛", TextColor3=Color3.fromRGB(255,224,125),
+        Font=Enum.Font.GothamBold, TextSize=12, ZIndex=reopen.ZIndex+1
+    }, reopen)
+    reopen.TextYAlignment = Enum.TextYAlignment.Bottom
     -- Estado declarado antes dos eventos para evitar que o clique use uma variável global.
     local floatDragging, floatStart, floatPos, floatMoved = false, nil, nil, false
     local function hideWindow()
@@ -1953,6 +1980,7 @@ function Nexora.CreateMain(config)
     UIS.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             floatDragging = false
+            if floatMoved then saveFloatPosition() end
             -- Mantém floatMoved até Activated decidir se foi clique ou arrasto.
         end
     end)
@@ -1975,6 +2003,7 @@ function Nexora.CreateMain(config)
 
     local sidebar = make("Frame", {Name="Sidebar", Position=UDim2.new(0,0,0,HEADER_H), Size=UDim2.new(0,SIDEBAR_W,1,-HEADER_H), BackgroundColor3=Color3.fromRGB(9,9,12), BorderSizePixel=0}, shell)
     make("Frame", {Position=UDim2.new(1,-1,0,0), Size=UDim2.new(0,1,1,0), BackgroundColor3=C.line, BorderSizePixel=0}, sidebar)
+    make("UIStroke", {Color=Color3.fromRGB(245,245,245), Transparency=0.94, Thickness=1}, sidebar)
     local search = make("TextBox", {Position=UDim2.new(0,12,0,12), Size=UDim2.new(1,-24,0,32), BackgroundColor3=C.bg, BorderSizePixel=0, PlaceholderText="Pesquisar...", Text="", TextColor3=C.text, PlaceholderColor3=C.muted, Font=Enum.Font.Gotham, TextSize=11, ClearTextOnFocus=false}, sidebar); corner(search,7); stroke(search,C.line)
     local nav = make("ScrollingFrame", {Position=UDim2.new(0,8,0,54), Size=UDim2.new(1,-16,1,-62), BackgroundTransparency=1, BorderSizePixel=0, ScrollBarThickness=2, ScrollBarImageColor3=C.gold, CanvasSize=UDim2.new()}, sidebar)
     local navLayout = make("UIListLayout", {Padding=UDim.new(0,5), SortOrder=Enum.SortOrder.LayoutOrder}, nav)
@@ -24407,6 +24436,15 @@ function ApplyMovementSettings()
 end
 
 ApplyMovementSettings()
+-- Reaplicação após carregamento dos settings e respawn, sem depender apenas do estado visual do toggle.
+task.spawn(function()
+    for _ = 1, 20 do
+        if Settings["Change WalkSpeed"] or Settings["Change JumpPower"] then
+            ApplyMovementSettings()
+        end
+        task.wait(0.25)
+    end
+end)
 -- Aplica a velocidade do slider a cada passo de física (depois do RenderStepped do jogo,
 -- que reescrevia o WalkSpeed). Só a execução mais recente fica ativa.
 pcall(function()
