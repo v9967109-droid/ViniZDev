@@ -2012,8 +2012,17 @@ function Nexora.CreateMain(config)
                 -- Defaults ON ficam amarelos e iniciam sua callback após carregar a source inteira.
                 if val and callback then
                     table.insert(Nexora.PendingDefaults, function()
+                        -- Keep saved state and UI state synchronized before worker loops start.
+                        Settings = Settings or {}
+                        Settings[t] = true
+                        if getgenv then getgenv().Settings = Settings end
                         applyToggle(true, false)
-                        pcall(callback, true)
+                        local ok, err = pcall(callback, true)
+                        if not ok then
+                            warn("[Nexora] Retry toggle '" .. tostring(t) .. "': " .. tostring(err))
+                            task.wait(1)
+                            pcall(callback, true)
+                        end
                     end)
                 end
                 return opt
@@ -2108,7 +2117,10 @@ function Nexora.CreateMain(config)
                 b.MouseButton1Click:Connect(function()
                     local menuName = "NexoraDropdownOverlay"
                     local oldMenu = gui:FindFirstChild(menuName)
-                    if oldMenu then oldMenu:Destroy() end
+                    if oldMenu then
+                        if oldMenu:GetAttribute("NexoraOwner") == t then oldMenu:Destroy(); return end
+                        oldMenu:Destroy()
+                    end
                     local vp = (workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize) or Vector2.new(800,600)
                     local h = math.max(35, math.min(210, #listValues * 29 + 8))
                     local bx, by = b.AbsolutePosition.X, b.AbsolutePosition.Y + b.AbsoluteSize.Y + 3
@@ -2116,7 +2128,27 @@ function Nexora.CreateMain(config)
                     local w = math.clamp(math.max(180, b.AbsoluteSize.X), 180, math.max(180, vp.X - 8))
                     local x = math.clamp(b.AbsolutePosition.X, 4, math.max(4, vp.X - w - 4))
                     local menu = make("ScrollingFrame", {Name=menuName, Position=UDim2.fromOffset(x,by), Size=UDim2.fromOffset(w,h), CanvasSize=UDim2.new(0,0,0,0), ScrollBarThickness=4, ScrollBarImageColor3=C.gold, BackgroundColor3=C.bg, BorderSizePixel=0, ZIndex=100, Active=true}, gui)
+                    menu:SetAttribute("NexoraOwner", t)
                     corner(menu,7); stroke(menu,C.line)
+                    -- Close the dropdown when the user taps anywhere outside it.
+                    local outsideConnection
+                    outsideConnection = UIS.InputBegan:Connect(function(input, processed)
+                        if processed then return end
+                        if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then return end
+                        task.defer(function()
+                            if not menu or not menu.Parent then
+                                if outsideConnection then outsideConnection:Disconnect() end
+                                return
+                            end
+                            local p = input.Position
+                            local mp, ms = menu.AbsolutePosition, menu.AbsoluteSize
+                            local bp, bs = b.AbsolutePosition, b.AbsoluteSize
+                            local insideMenu = p.X >= mp.X and p.X <= mp.X + ms.X and p.Y >= mp.Y and p.Y <= mp.Y + ms.Y
+                            local insideButton = p.X >= bp.X and p.X <= bp.X + bs.X and p.Y >= bp.Y and p.Y <= bp.Y + bs.Y
+                            if not insideMenu and not insideButton then menu:Destroy() end
+                        end)
+                    end)
+                    menu.Destroying:Connect(function() if outsideConnection then outsideConnection:Disconnect() end end)
                     local lay = make("UIListLayout", {Padding=UDim.new(0,3),SortOrder=Enum.SortOrder.LayoutOrder}, menu)
                     make("UIPadding", {PaddingTop=UDim.new(0,4),PaddingBottom=UDim.new(0,4),PaddingLeft=UDim.new(0,4),PaddingRight=UDim.new(0,4)}, menu)
                     lay:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() menu.CanvasSize = UDim2.new(0,0,0,lay.AbsoluteContentSize.Y+8) end)
@@ -2137,6 +2169,8 @@ function Nexora.CreateMain(config)
                                 optb.TextColor3 = Color3.fromRGB(255,255,255)
                                 refreshButton()
                                 if callback then task.spawn(function() pcall(callback, value, selected[value]) end) end
+                                -- Close after each choice; tap the dropdown again to choose another item.
+                                menu:Destroy()
                             else
                                 selected = value
                                 refreshButton()
@@ -7135,6 +7169,7 @@ SettingFarmMainSection.CreateSlider(
 SettingFarmMainSection.CreateToggle(
 	{ Title = "Auto Click", Desc = nil, Default = Settings["Auto Click"] or false },
 	function(I)
+		SaveSettings("Auto Click", I)
 		if I then
 			spawn(function()
 				while Settings["Auto Click"] and (task.wait()) do
@@ -7153,7 +7188,6 @@ SettingFarmMainSection.CreateToggle(
 				end
 			end)
 		end
-		SaveSettings("Auto Click", I)
 	end
 )
 SettingFarmMainSection.CreateToggle(
@@ -7186,8 +7220,9 @@ function FFCMatch(m, I)
 	return nil
 end
 SettingFarmMainSection.CreateToggle(
-	{ Title = "Auto Turn On Buso", Desc = nil, Default = Settings["Auto Turn On Buso"] or true },
+	{ Title = "Auto Turn On Buso", Desc = nil, Default = Settings["Auto Turn On Buso"] ~= false },
 	function(m)
+		SaveSettings("Auto Turn On Buso", m)
 		if m then
 			spawn(function()
 				while Settings["Auto Turn On Buso"] and (wait(1)) do
@@ -7200,7 +7235,6 @@ SettingFarmMainSection.CreateToggle(
 				end
 			end)
 		end
-		SaveSettings("Auto Turn On Buso", m)
 	end
 )
 SettingFarmMainSection.CreateToggle(
@@ -7237,6 +7271,7 @@ end
 local m = SettingFarmMainSection.CreateToggle(
 	{ Title = "Auto Turn On V4", Desc = nil, Default = Settings["Auto Turn On V4"] or false },
 	function(I)
+		SaveSettings("Auto Turn On V4", I)
 		if I then
 			spawn(function()
 				while Settings["Auto Turn On V4"] and (task.wait(1)) do
@@ -7244,12 +7279,12 @@ local m = SettingFarmMainSection.CreateToggle(
 				end
 			end)
 		end
-		SaveSettings("Auto Turn On V4", I)
 	end
 )
 SettingFarmMainSection.CreateToggle(
 	{ Title = "Auto Turn On V3", Desc = nil, Default = Settings["Auto Turn On V3"] or false },
 	function(I)
+		SaveSettings("Auto Turn On V3", I)
 		if I then
 			spawn(function()
 				while Settings["Auto Turn On V3"] and (task.wait(1)) do
@@ -7258,7 +7293,6 @@ SettingFarmMainSection.CreateToggle(
 				end
 			end)
 		end
-		SaveSettings("Auto Turn On V3", I)
 	end
 )
 SettingFarmMainSection.CreateToggle(
@@ -18390,16 +18424,21 @@ RaceNormalSection.CreateToggle(
 RaceV4Main = Main.CreatePage({ Page_Name = "Race V4", Page_Title = "Race V4" })
 RaceV4Section = RaceV4Main.CreateSection("Race V4")
 RaceV4Section.CreateToggle({ Title = "No Frog", Desc = nil, Default = Settings["No Frog"] or false }, function(g)
-	if g then
-		local R = game.Lighting
-		R.FogEnd = 100000
-		for m, m in pairs(R:GetDescendants()) do
-			if m:IsA("Atmosphere") then
-				m:Destroy()
-			end
-		end
-	end
 	SaveSettings("No Frog", g)
+	if g then
+		spawn(function()
+			while Settings["No Frog"] do
+				pcall(function()
+					local lighting = game:GetService("Lighting")
+					lighting.FogEnd = 100000
+					for _, obj in ipairs(lighting:GetDescendants()) do
+						if obj:IsA("Atmosphere") then obj:Destroy() end
+					end
+				end)
+				task.wait(2)
+			end
+		end)
+	end
 end)
 RaceV4Section.CreateToggle(
 	{ Title = "Teleport Acient Clock", Desc = nil, Default = Settings["Teleport Acient Clock"] or false },
@@ -27373,15 +27412,20 @@ __PASS38_NAMED_FUNCTIONS = {
 end)()
 
 
--- Inicializa os toggles configurados como ON somente depois que a source terminou de carregar.
+-- Inicializa somente os toggles salvos como ON, um por vez, com intervalo real entre eles.
+-- Isso evita disparar várias rotinas pesadas simultaneamente na entrada do jogo.
 task.defer(function()
-    task.wait(2)
+    task.wait(3)
+    Settings = Settings or {}
+    if getgenv then getgenv().Settings = Settings end
     local pending = A and A.PendingDefaults or {}
-    -- Run in a stable order; each callback updates Settings before its worker loop checks it.
-    for _, startDefault in ipairs(pending) do
+    for index, startDefault in ipairs(pending) do
         local ok, err = pcall(startDefault)
-        if not ok then warn("[Nexora] Falha ao iniciar opção padrão: " .. tostring(err)) end
-        task.wait(0.03)
+        if not ok then
+            warn("[Nexora] Falha ao iniciar toggle #" .. tostring(index) .. ": " .. tostring(err))
+        end
+        -- Wait for the current toggle to start before launching the next one.
+        task.wait(1.25)
     end
     table.clear(pending)
 end)
