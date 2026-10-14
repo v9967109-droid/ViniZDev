@@ -1919,14 +1919,14 @@ function Nexora.CreateMain(config)
     reopen.Visible = true
     reopen.ZIndex = 100
     reopen.Text = ""
-    -- O botão inteiro é o emblema circular N/coroa (sem quadrado laranja por fora).
-    reopen.BackgroundColor3 = Color3.fromRGB(8,8,10)
+    reopen.BackgroundColor3 = Color3.fromRGB(245, 145, 24)
     reopen.AutoButtonColor = false
+    -- Botão flutuante inteiro é o emblema N: sem quadrado/placa interna separada.
+    reopen.BackgroundColor3 = Color3.fromRGB(245, 135, 18)
     corner(reopen, 100)
-    make("UIStroke", {Color=Color3.fromRGB(255,190,55), Thickness=2.2, Transparency=0}, reopen)
-    make("UIGradient", {Rotation=45, Color=ColorSequence.new(Color3.fromRGB(20,16,8), Color3.fromRGB(5,5,8))}, reopen)
-    make("TextLabel", {Name="NexoraCrown", BackgroundTransparency=1, Position=UDim2.new(0,0,0,2), Size=UDim2.new(1,0,.36,0), Text="♛", TextColor3=Color3.fromRGB(255,224,125), Font=Enum.Font.GothamBold, TextSize=13, ZIndex=reopen.ZIndex+1}, reopen)
-    make("TextLabel", {Name="NexoraLetter", BackgroundTransparency=1, Position=UDim2.new(0,0,.24,0), Size=UDim2.new(1,0,.72,0), Text="N", TextColor3=Color3.fromRGB(255,190,55), Font=Enum.Font.GothamBlack, TextSize=25, ZIndex=reopen.ZIndex+1}, reopen)
+    make("UIStroke", {Color=Color3.fromRGB(255,235,190), Thickness=2.2}, reopen)
+    make("UIGradient", {Rotation=45, Color=ColorSequence.new(Color3.fromRGB(255,190,55), Color3.fromRGB(230,105,18))}, reopen)
+    make("TextLabel", {Name="NexoraN", BackgroundTransparency=1, AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.52), Size=UDim2.fromScale(.92,.92), Text="N", TextColor3=Color3.fromRGB(255,245,220), Font=Enum.Font.GothamBlack, TextSize=30, TextStrokeColor3=Color3.fromRGB(130,65,8), TextStrokeTransparency=.18}, reopen)
     -- Estado declarado antes dos eventos para evitar que o clique use uma variável global.
     local floatDragging, floatStart, floatPos, floatMoved = false, nil, nil, false
     local function hideWindow()
@@ -24423,6 +24423,31 @@ function ApplyMovementSettings()
 end
 
 ApplyMovementSettings()
+-- Reaplica imediatamente quando outro script do jogo sobrescreve WalkSpeed/JumpPower.
+-- O callback só escreve quando há diferença para evitar uma cadeia infinita de alterações.
+local function bindMovementPropertyWatch(character)
+    pcall(function() if getgenv().__NexoraMovementWatch then getgenv().__NexoraMovementWatch:Disconnect() end end)
+    local hum = character and character:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+    getgenv().__NexoraMovementWatch = hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+        if not Settings["Change WalkSpeed"] then return end
+        task.defer(function()
+            if not hum.Parent or not Settings["Change WalkSpeed"] then return end
+            local target = math.clamp(tonumber(Settings["Input WalkSpeed"]) or 16, 0, 220)
+            if math.abs(hum.WalkSpeed-target) > 0.01 then hum.WalkSpeed = target end
+        end)
+    end)
+    hum:GetPropertyChangedSignal("JumpPower"):Connect(function()
+        if not Settings["Change JumpPower"] then return end
+        task.defer(function()
+            if not hum.Parent or not Settings["Change JumpPower"] then return end
+            hum.UseJumpPower = true
+            local target = math.clamp(tonumber(Settings["Input JumpPower"]) or 50, 0, 220)
+            if math.abs(hum.JumpPower-target) > 0.01 then hum.JumpPower = target end
+        end)
+    end)
+end
+bindMovementPropertyWatch(t.Character)
 -- Aplica a velocidade do slider a cada passo de física (depois do RenderStepped do jogo,
 -- que reescrevia o WalkSpeed). Só a execução mais recente fica ativa.
 pcall(function()
@@ -24452,10 +24477,10 @@ pcall(function()
 end)
 if t.CharacterAdded then
 	getgenv().__MoveCharConn = t.CharacterAdded:Connect(function(character)
-        task.spawn(function()
-            local hum = character and character:WaitForChild("Humanoid", 5)
-            if hum and getgenv().__MoveGen == MoveGen then bindMovementEnforcement(character) end
-        end)
+		task.spawn(function()
+			task.wait(0.2)
+			if getgenv().__MoveGen == MoveGen then bindMovementPropertyWatch(character) end
+		end)
 		task.spawn(function()
 			for _ = 1, 30 do
 				if getgenv().__MoveGen ~= MoveGen then return end
@@ -24476,33 +24501,6 @@ end)
 pcall(function()
 	if getgenv().__MoveHeartbeatConn then getgenv().__MoveHeartbeatConn:Disconnect() end
 end)
--- Reaplica imediatamente se o jogo sobrescrever os valores do Humanoid.
-local function bindMovementEnforcement(character)
-    local hum = character and character:FindFirstChildOfClass("Humanoid")
-    if not hum then return end
-    pcall(function()
-        if getgenv().__NexoraWSChanged then getgenv().__NexoraWSChanged:Disconnect() end
-        if getgenv().__NexoraJPChanged then getgenv().__NexoraJPChanged:Disconnect() end
-    end)
-    local changingWS, changingJP = false, false
-    getgenv().__NexoraWSChanged = hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
-        if changingWS or not Settings["Change WalkSpeed"] or hum.Parent == nil then return end
-        local wanted = math.clamp(tonumber(Settings["Input WalkSpeed"]) or 16, 0, 220)
-        if math.abs(hum.WalkSpeed - wanted) > 0.01 then
-            changingWS = true; pcall(function() hum.WalkSpeed = wanted end); changingWS = false
-        end
-    end)
-    getgenv().__NexoraJPChanged = hum:GetPropertyChangedSignal("JumpPower"):Connect(function()
-        if changingJP or not Settings["Change JumpPower"] or hum.Parent == nil then return end
-        local wanted = math.clamp(tonumber(Settings["Input JumpPower"]) or 50, 0, 220)
-        if not hum.UseJumpPower then pcall(function() hum.UseJumpPower = true end) end
-        if math.abs(hum.JumpPower - wanted) > 0.01 then
-            changingJP = true; pcall(function() hum.JumpPower = wanted end); changingJP = false
-        end
-    end)
-end
-bindMovementEnforcement(t.Character)
-
 getgenv().__MoveHeartbeatConn = game:GetService("RunService").Heartbeat:Connect(function()
 	if getgenv().__MoveGen ~= MoveGen then return end
 	local character = t.Character
