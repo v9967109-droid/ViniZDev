@@ -1892,7 +1892,8 @@ function Nexora.CreateMain(config)
     reopen.Size = UDim2.new(0, 46, 0, 46)
     reopen.Position = UDim2.new(0, 14, 0.5, -23)
     reopen.AnchorPoint = Vector2.new(0, 0)
-    reopen.Visible = false
+    reopen.Visible = true
+    reopen.ZIndex = 100
     reopen.Text = "N"
     reopen.TextColor3 = Color3.fromRGB(255, 255, 255)
     reopen.TextSize = 22
