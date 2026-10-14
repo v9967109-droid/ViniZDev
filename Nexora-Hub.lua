@@ -197,6 +197,62 @@ function ReadSetting()
 end
 Settings = ReadSetting()
 getgenv().Settings = Settings
+
+-- Nexora movement recovery: initialize before UI creation so saved toggles work on first execution.
+do
+    local Players = game:GetService("Players")
+    local RunService = game:GetService("RunService")
+    local player = Players.LocalPlayer
+
+    local function applyNexoraMovement()
+        local settings = Settings
+        if type(settings) ~= "table" then return end
+        local character = player and player.Character
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+        if not humanoid then return end
+
+        if settings["Change WalkSpeed"] == true then
+            local speed = tonumber(settings["Input WalkSpeed"]) or 16
+            speed = math.clamp(speed, 0, 220)
+            if math.abs(humanoid.WalkSpeed - speed) > 0.01 then
+                humanoid.WalkSpeed = speed
+            end
+        end
+
+        if settings["Change JumpPower"] == true then
+            local jumpPower = tonumber(settings["Input JumpPower"]) or 50
+            jumpPower = math.clamp(jumpPower, 0, 220)
+            pcall(function() humanoid.UseJumpPower = true end)
+            if math.abs(humanoid.JumpPower - jumpPower) > 0.01 then
+                humanoid.JumpPower = jumpPower
+            end
+        end
+    end
+
+    ApplyMovementSettings = applyNexoraMovement
+
+    if getgenv().__NexoraMovementConnection then
+        pcall(function() getgenv().__NexoraMovementConnection:Disconnect() end)
+    end
+    getgenv().__NexoraMovementConnection = RunService.Heartbeat:Connect(function()
+        pcall(applyNexoraMovement)
+    end)
+
+    if getgenv().__NexoraMovementRespawnConnection then
+        pcall(function() getgenv().__NexoraMovementRespawnConnection:Disconnect() end)
+    end
+    getgenv().__NexoraMovementRespawnConnection = player.CharacterAdded:Connect(function(character)
+        task.spawn(function()
+            local humanoid = character:WaitForChild("Humanoid", 10)
+            if humanoid then
+                for _ = 1, 12 do
+                    applyNexoraMovement()
+                    task.wait(0.25)
+                end
+            end
+        end)
+    end)
+end
 function PrepareMultiSelectList(b, t, A)
 	local a = {}
 	for s in pairs(b) do
@@ -23583,6 +23639,7 @@ MISCPVPSection.CreateToggle(
 					Humanoid.JumpPower = 50
 				end
 			end
+			if ApplyMovementSettings then task.defer(ApplyMovementSettings) end
 		end)
 	end
 )
@@ -23601,6 +23658,7 @@ MISCPVPSection.CreateToggle(
 					Humanoid.WalkSpeed = 16
 				end
 			end
+			if ApplyMovementSettings then task.defer(ApplyMovementSettings) end
 		end)
 	end
 )
