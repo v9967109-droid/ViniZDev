@@ -197,62 +197,6 @@ function ReadSetting()
 end
 Settings = ReadSetting()
 getgenv().Settings = Settings
-
--- Nexora movement recovery: initialize before UI creation so saved toggles work on first execution.
-do
-    local Players = game:GetService("Players")
-    local RunService = game:GetService("RunService")
-    local player = Players.LocalPlayer
-
-    local function applyNexoraMovement()
-        local settings = Settings
-        if type(settings) ~= "table" then return end
-        local character = player and player.Character
-        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-        if not humanoid then return end
-
-        if settings["Change WalkSpeed"] == true then
-            local speed = tonumber(settings["Input WalkSpeed"]) or 16
-            speed = math.clamp(speed, 0, 220)
-            if math.abs(humanoid.WalkSpeed - speed) > 0.01 then
-                humanoid.WalkSpeed = speed
-            end
-        end
-
-        if settings["Change JumpPower"] == true then
-            local jumpPower = tonumber(settings["Input JumpPower"]) or 50
-            jumpPower = math.clamp(jumpPower, 0, 220)
-            pcall(function() humanoid.UseJumpPower = true end)
-            if math.abs(humanoid.JumpPower - jumpPower) > 0.01 then
-                humanoid.JumpPower = jumpPower
-            end
-        end
-    end
-
-    ApplyMovementSettings = applyNexoraMovement
-
-    if getgenv().__NexoraMovementConnection then
-        pcall(function() getgenv().__NexoraMovementConnection:Disconnect() end)
-    end
-    getgenv().__NexoraMovementConnection = RunService.Heartbeat:Connect(function()
-        pcall(applyNexoraMovement)
-    end)
-
-    if getgenv().__NexoraMovementRespawnConnection then
-        pcall(function() getgenv().__NexoraMovementRespawnConnection:Disconnect() end)
-    end
-    getgenv().__NexoraMovementRespawnConnection = player.CharacterAdded:Connect(function(character)
-        task.spawn(function()
-            local humanoid = character:WaitForChild("Humanoid", 10)
-            if humanoid then
-                for _ = 1, 12 do
-                    applyNexoraMovement()
-                    task.wait(0.25)
-                end
-            end
-        end)
-    end)
-end
 function PrepareMultiSelectList(b, t, A)
 	local a = {}
 	for s in pairs(b) do
@@ -1975,17 +1919,15 @@ function Nexora.CreateMain(config)
     reopen.Visible = true
     reopen.ZIndex = 100
     reopen.Text = ""
-    -- Botão com o emblema completo da UI: círculo preto, contorno dourado, coroa e N; sem barra laranja.
-    reopen.BackgroundColor3 = Color3.fromRGB(8, 8, 10)
-    reopen.BackgroundTransparency = 0
+    reopen.BackgroundColor3 = Color3.fromRGB(245, 145, 24)
     reopen.AutoButtonColor = false
-    corner(reopen, 100)
-    make("UIStroke", {Color=Color3.fromRGB(255,190,55), Thickness=2, Transparency=0.02}, reopen)
-    -- Emblema usa o mesmo desenho do cabeçalho e ocupa o botão inteiro.
-    local floatLogo = make("Frame", {Name="NexoraEmblem", AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.new(1,0,1,0), BackgroundColor3=Color3.fromRGB(8,8,10), BorderSizePixel=0}, reopen)
+    corner(reopen, 23); make("UIStroke", {Color=Color3.fromRGB(255,235,190), Thickness=2}, reopen)
+    make("UIGradient", {Rotation=45, Color=ColorSequence.new(Color3.fromRGB(255,190,55), Color3.fromRGB(230,105,18))}, reopen)
+    -- Mesmo emblema circular N/coroa da logo da UI no botão flutuante.
+    local floatLogo = make("Frame", {Name="NexoraEmblem", AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.new(.78,0,.78,0), BackgroundColor3=Color3.fromRGB(8,8,10), BorderSizePixel=0}, reopen)
     corner(floatLogo, 100); make("UIStroke", {Color=Color3.fromRGB(255,190,55), Thickness=1.6, Transparency=0.02}, floatLogo)
-    make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,2), Size=UDim2.new(1,0,.34,0), Text="♛", TextColor3=Color3.fromRGB(255,224,125), Font=Enum.Font.GothamBold, TextSize=11}, floatLogo)
-    make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,.23,0), Size=UDim2.new(1,0,.75,0), Text="N", TextColor3=Color3.fromRGB(255,190,55), Font=Enum.Font.GothamBlack, TextSize=25}, floatLogo)
+    make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,0), Size=UDim2.new(1,0,.36,0), Text="♛", TextColor3=Color3.fromRGB(255,224,125), Font=Enum.Font.GothamBold, TextSize=10}, floatLogo)
+    make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,.25,0), Size=UDim2.new(1,0,.72,0), Text="N", TextColor3=Color3.fromRGB(255,190,55), Font=Enum.Font.GothamBlack, TextSize=22}, floatLogo)
     -- Estado declarado antes dos eventos para evitar que o clique use uma variável global.
     local floatDragging, floatStart, floatPos, floatMoved = false, nil, nil, false
     local function hideWindow()
@@ -23639,7 +23581,6 @@ MISCPVPSection.CreateToggle(
 					Humanoid.JumpPower = 50
 				end
 			end
-			if ApplyMovementSettings then task.defer(ApplyMovementSettings) end
 		end)
 	end
 )
@@ -23658,7 +23599,6 @@ MISCPVPSection.CreateToggle(
 					Humanoid.WalkSpeed = 16
 				end
 			end
-			if ApplyMovementSettings then task.defer(ApplyMovementSettings) end
 		end)
 	end
 )
@@ -24511,37 +24451,16 @@ pcall(function()
 		getgenv().__MoveCharConn:Disconnect()
 	end
 end)
-local function bindMovementToCharacter(character)
-	task.spawn(function()
-		local hum
-		for _ = 1, 50 do
-			if getgenv().__MoveGen ~= MoveGen then return end
-			hum = character and character:FindFirstChildOfClass("Humanoid")
-			if hum then break end
-			task.wait(0.1)
-		end
-		if not hum or getgenv().__MoveGen ~= MoveGen then return end
-		ApplyMovementSettings()
-		-- Reaplica também quando o jogo tentar sobrescrever as propriedades do Humanoid.
-		pcall(function()
-			if getgenv().__MoveHumanoidConn then getgenv().__MoveHumanoidConn:Disconnect() end
-		end)
-		getgenv().__MoveHumanoidConn = hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
-			if getgenv().__MoveGen ~= MoveGen or not Settings["Change WalkSpeed"] then return end
-			local wanted = math.clamp(tonumber(Settings["Input WalkSpeed"]) or 16, 0, 220)
-			if math.abs(hum.WalkSpeed - wanted) > 0.01 then task.defer(function() pcall(function() hum.WalkSpeed = wanted end) end) end
-		end)
-		getgenv().__MoveJumpConn = hum:GetPropertyChangedSignal("JumpPower"):Connect(function()
-			if getgenv().__MoveGen ~= MoveGen or not Settings["Change JumpPower"] then return end
-			local wanted = math.clamp(tonumber(Settings["Input JumpPower"]) or 50, 0, 220)
-			if math.abs(hum.JumpPower - wanted) > 0.01 then task.defer(function() pcall(function() hum.UseJumpPower = true; hum.JumpPower = wanted end) end) end
-		end)
-	end)
-end
-if t.Character then bindMovementToCharacter(t.Character) end
 if t.CharacterAdded then
 	getgenv().__MoveCharConn = t.CharacterAdded:Connect(function(character)
-		bindMovementToCharacter(character)
+		task.spawn(function()
+			for _ = 1, 30 do
+				if getgenv().__MoveGen ~= MoveGen then return end
+				local hum = character and character:FindFirstChildOfClass("Humanoid")
+				if hum then ApplyMovementSettings(); return end
+				task.wait(0.1)
+			end
+		end)
 	end)
 end
 
