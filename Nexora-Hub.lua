@@ -1895,39 +1895,24 @@ function Nexora.CreateMain(config)
     reopen.Name = "NexoraFloatingButton"
     reopen:SetAttribute("NexoraKeepColor", true)
     reopen.Size = UDim2.new(0, 46, 0, 46)
-    local FLOAT_POS_FILE = "NexoraHubFloatingButtonPosition.json"
     do
         local cam = workspace.CurrentCamera
         local vp = cam and cam.ViewportSize or Vector2.new(800, 600)
-        local px, py = math.max(10, vp.X - 66), 70
-        pcall(function()
-            local saved = getgenv and getgenv().__NEXORA_FLOAT_POS
-            if not saved and readfile and isfile and isfile(FLOAT_POS_FILE) then
-                saved = game:GetService("HttpService"):JSONDecode(readfile(FLOAT_POS_FILE))
-            end
-            if saved then px, py = tonumber(saved.x) or px, tonumber(saved.y) or py end
-        end)
-        px = math.clamp(px, 0, math.max(0, vp.X - 46)); py = math.clamp(py, 0, math.max(0, vp.Y - 46))
-        reopen.Position = UDim2.new(0, px, 0, py)
-    end
-    local function saveFloatPosition()
-        local pos = {x=reopen.Position.X.Offset, y=reopen.Position.Y.Offset}
-        pcall(function() if getgenv then getgenv().__NEXORA_FLOAT_POS = pos end end)
-        pcall(function() if writefile then writefile(FLOAT_POS_FILE, game:GetService("HttpService"):JSONEncode(pos)) end end)
+        -- canto superior direito, em pixels (o arraste usa offsets em pixels)
+        reopen.Position = UDim2.new(0, math.max(10, vp.X - 66), 0, 70)
     end
     reopen.AnchorPoint = Vector2.new(0, 0)
     reopen.Visible = true
     reopen.ZIndex = 100
-    reopen.Text = ""
+    reopen.Text = "♛\nN"
+    reopen.TextColor3 = Color3.fromRGB(255, 248, 225)
+    reopen.TextSize = 18
+    reopen.Font = Enum.Font.GothamBlack
     reopen.BackgroundColor3 = Color3.fromRGB(245, 145, 24)
-    reopen.AutoButtonColor = false
+    reopen.TextStrokeColor3 = Color3.fromRGB(95, 47, 8)
+    reopen.TextStrokeTransparency = 0.35
     corner(reopen, 23); make("UIStroke", {Color=Color3.fromRGB(255,235,190), Thickness=2}, reopen)
     make("UIGradient", {Rotation=45, Color=ColorSequence.new(Color3.fromRGB(255,190,55), Color3.fromRGB(230,105,18))}, reopen)
-    -- Mesmo emblema circular N/coroa da logo da UI no botão flutuante.
-    local floatLogo = make("Frame", {Name="NexoraEmblem", AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.new(.78,0,.78,0), BackgroundColor3=Color3.fromRGB(8,8,10), BorderSizePixel=0}, reopen)
-    corner(floatLogo, 100); make("UIStroke", {Color=Color3.fromRGB(255,190,55), Thickness=1.6, Transparency=0.02}, floatLogo)
-    make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,0), Size=UDim2.new(1,0,.36,0), Text="♛", TextColor3=Color3.fromRGB(255,224,125), Font=Enum.Font.GothamBold, TextSize=10}, floatLogo)
-    make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,.25,0), Size=UDim2.new(1,0,.72,0), Text="N", TextColor3=Color3.fromRGB(255,190,55), Font=Enum.Font.GothamBlack, TextSize=22}, floatLogo)
     -- Estado declarado antes dos eventos para evitar que o clique use uma variável global.
     local floatDragging, floatStart, floatPos, floatMoved = false, nil, nil, false
     local function hideWindow()
@@ -1968,7 +1953,6 @@ function Nexora.CreateMain(config)
     UIS.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             floatDragging = false
-            if floatMoved then saveFloatPosition() end
             -- Mantém floatMoved até Activated decidir se foi clique ou arrasto.
         end
     end)
@@ -23562,8 +23546,7 @@ MISCPVPSection.CreateSlider(
 MISCPVPSection.CreateSlider(
 	{ Title = "Input JumpPower", Min = 0, Max = 220, Default = math.min(tonumber(Settings["Input JumpPower"]) or 50, 220), Precise = true },
 	function(b)
-		SaveSettings("Input JumpPower", math.clamp(tonumber(b) or 50, 0, 220))
-		task.defer(function() pcall(function() if ApplyMovementSettings then ApplyMovementSettings() end end) end)
+		SaveSettings("Input JumpPower", math.clamp(tonumber(b) or 0, 0, 220))
 	end
 )
 MISCPVPSection.CreateToggle(
@@ -24467,25 +24450,6 @@ end
 task.spawn(function()
 	while task.wait(0.15) and getgenv().__MoveGen == MoveGen do
 		ApplyMovementSettings()
-	end
-end)
--- Aplicação tardia após scripts do jogo tentarem restaurar valores padrão.
-pcall(function()
-	if getgenv().__MoveHeartbeatConn then getgenv().__MoveHeartbeatConn:Disconnect() end
-end)
-getgenv().__MoveHeartbeatConn = game:GetService("RunService").Heartbeat:Connect(function()
-	if getgenv().__MoveGen ~= MoveGen then return end
-	local character = t.Character
-	local hum = character and character:FindFirstChildOfClass("Humanoid")
-	if not hum then return end
-	if Settings["Change WalkSpeed"] then
-		local sp = math.clamp(tonumber(Settings["Input WalkSpeed"]) or 16, 0, 220)
-		if hum.WalkSpeed ~= sp then hum.WalkSpeed = sp end
-	end
-	if Settings["Change JumpPower"] then
-		hum.UseJumpPower = true
-		local jp = math.clamp(tonumber(Settings["Input JumpPower"]) or 50, 0, 220)
-		if hum.JumpPower ~= jp then hum.JumpPower = jp end
 	end
 end)
 
