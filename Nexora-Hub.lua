@@ -1748,6 +1748,8 @@ local parentGui = (gethui and gethui()) or CoreGui
 
 local old = parentGui:FindFirstChild("NexoraUI")
 if old then old:Destroy() end
+local oldFloat = parentGui:FindFirstChild("NexoraFloat")
+if oldFloat then oldFloat:Destroy() end
 
 local C = {
     bg = Color3.fromRGB(5, 5, 8),
@@ -1880,17 +1882,24 @@ function Nexora.CreateMain(config)
         local logoN = make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,10), Size=UDim2.new(1,0,1,-12), Text="N", TextColor3=GOLD, Font=Enum.Font.GothamBlack, TextSize=26}, logo)
         make("UIGradient", {Rotation=90, Color=ColorSequence.new(GOLD_L, Color3.fromRGB(230,150,20))}, logoN)
     end
-    local title = make("TextLabel", {Position=UDim2.new(0,72,0,10), Size=UDim2.new(0,300,0,26), BackgroundTransparency=1, Text="NEXORA", TextColor3=GOLD, Font=Enum.Font.GothamBlack, TextSize=22, TextXAlignment=Enum.TextXAlignment.Left}, top)
+    local title = make("TextLabel", {Position=UDim2.new(0,72,0,10), Size=UDim2.new(0,300,0,26), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=GOLD, Font=Enum.Font.GothamBlack, TextSize=22, TextXAlignment=Enum.TextXAlignment.Left}, top)
     local function tracked(t) return (string.gsub(string.upper(t), "(%S)", "%1\u{2009}")) end
     local desc = make("TextLabel", {Position=UDim2.new(0,73,0,37), Size=UDim2.new(0,300,0,16), BackgroundTransparency=1, Text=tracked(config.Subtitle or "Blox Fruits"), TextColor3=GRAY, Font=Enum.Font.GothamMedium, TextSize=10, TextXAlignment=Enum.TextXAlignment.Left}, top)
     local hamburger = make("TextButton", {Name="Menu", AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,-12,0.5,0), Size=UDim2.new(0,36,0,36), BackgroundTransparency=1, Text="≡", TextColor3=GRAY, Font=Enum.Font.GothamBold, TextSize=28, AutoButtonColor=false}, top)
     hamburger.MouseEnter:Connect(function() hamburger.TextColor3 = GOLD end)
     hamburger.MouseLeave:Connect(function() hamburger.TextColor3 = GRAY end)
-    local reopen = button(gui, "N", 42)
+    -- ScreenGui separado: o botão fica fora da janela e não some junto com a UI (nem com o keybind Toggle GUI).
+    local floatGui = make("ScreenGui", {Name="NexoraFloat", ResetOnSpawn=false, IgnoreGuiInset=true, DisplayOrder=999, ZIndexBehavior=Enum.ZIndexBehavior.Sibling}, parentGui)
+    local reopen = button(floatGui, "N", 42)
     reopen.Name = "NexoraFloatingButton"
     reopen:SetAttribute("NexoraKeepColor", true)
     reopen.Size = UDim2.new(0, 46, 0, 46)
-    reopen.Position = UDim2.new(0, 14, 0.5, -23)
+    do
+        local cam = workspace.CurrentCamera
+        local vp = cam and cam.ViewportSize or Vector2.new(800, 600)
+        -- canto superior direito, em pixels (o arraste usa offsets em pixels)
+        reopen.Position = UDim2.new(0, math.max(10, vp.X - 66), 0, 70)
+    end
     reopen.AnchorPoint = Vector2.new(0, 0)
     reopen.Visible = true
     reopen.ZIndex = 100
@@ -1911,6 +1920,12 @@ function Nexora.CreateMain(config)
     reopen.Activated:Connect(function()
         if floatMoved then
             task.defer(function() floatMoved = false end)
+            return
+        end
+        if not gui.Enabled then
+            gui.Enabled = true
+            pcall(function() getgenv().UIToggled = true end)
+            shell.Visible = true
             return
         end
         shell.Visible = not shell.Visible
