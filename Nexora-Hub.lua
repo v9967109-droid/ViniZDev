@@ -27434,18 +27434,21 @@ end)()
 
 
 
--- Restaura os toggles que estavam salvos como ativos, um por vez.
--- Usa o mesmo Settings/SaveSettings da source Banana Cat Hub; sem espera fixa de 1,25 s.
+-- Restaura os toggles salvos usando o controle real da UI, um por vez.
+-- Isso atualiza o estado visual e dispara o callback pelo mesmo caminho do clique manual.
+-- Mantém o Settings/SaveSettings original da Banana Cat Hub.
 task.spawn(function()
-    task.wait() -- permite que a source termine de registrar todas as opções
+    task.wait() -- deixa a source terminar de registrar controles e funções
     local ordered = A and A.OptionOrder or {}
     for _, opt in ipairs(ordered) do
         if opt and opt.type == "toggle" and Settings and Settings[opt.Title] == true then
-            local callback = opt.Callback
-            if type(callback) == "function" then
-                pcall(callback, true)
+            local control = opt.FunctionCreate
+            if control and type(control.SetStage) == "function" then
+                pcall(function() control:SetStage(true) end)
+            elseif type(opt.Callback) == "function" then
+                pcall(opt.Callback, true)
             end
-            task.wait() -- cede execução antes de processar o próximo toggle
+            task.wait() -- inicia o próximo toggle somente depois de ceder execução
         end
     end
 end)
