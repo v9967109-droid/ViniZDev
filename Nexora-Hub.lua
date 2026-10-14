@@ -1,3 +1,73 @@
+-- Tela de carregamento (Nexora Hub)
+do
+	pcall(function()
+		local TweenService_ = game:GetService("TweenService")
+		local host = (gethui and gethui()) or game:GetService("CoreGui")
+		local oldLoad = host:FindFirstChild("NexoraLoading")
+		if oldLoad then oldLoad:Destroy() end
+		local gui = Instance.new("ScreenGui")
+		gui.Name = "NexoraLoading"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true; gui.DisplayOrder = 10000
+		gui.Parent = host
+		local GOLD, GOLD_L = Color3.fromRGB(255,190,55), Color3.fromRGB(255,224,125)
+		local root = Instance.new("CanvasGroup")
+		root.Size = UDim2.fromScale(1,1); root.BackgroundColor3 = Color3.fromRGB(6,6,9); root.BorderSizePixel = 0; root.Parent = gui
+		local function mk(class, props, parent)
+			local o = Instance.new(class)
+			for k, v in pairs(props) do o[k] = v end
+			o.Parent = parent
+			return o
+		end
+		local pulse = mk("Frame", {AnchorPoint=Vector2.new(.5,.5), Position=UDim2.new(.5,0,.5,-46), Size=UDim2.fromOffset(92,92), BackgroundTransparency=1}, root)
+		mk("UICorner", {CornerRadius=UDim.new(1,0)}, pulse)
+		local pulseStroke = mk("UIStroke", {Color=GOLD, Thickness=2, Transparency=0.2}, pulse)
+		local logo = mk("Frame", {AnchorPoint=Vector2.new(.5,.5), Position=UDim2.new(.5,0,.5,-46), Size=UDim2.fromOffset(92,92), BackgroundColor3=Color3.fromRGB(8,8,10), BorderSizePixel=0}, root)
+		mk("UICorner", {CornerRadius=UDim.new(1,0)}, logo)
+		mk("UIStroke", {Color=GOLD, Thickness=2.5}, logo)
+		mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,5), Size=UDim2.new(1,0,0,24), Text="♛", TextColor3=GOLD_L, Font=Enum.Font.GothamBold, TextSize=22}, logo)
+		local n = mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,20), Size=UDim2.new(1,0,1,-24), Text="N", TextColor3=GOLD, Font=Enum.Font.GothamBlack, TextSize=50}, logo)
+		mk("UIGradient", {Rotation=90, Color=ColorSequence.new(GOLD_L, Color3.fromRGB(230,150,20))}, n)
+		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,.5,16), Size=UDim2.fromOffset(400,34), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=GOLD, Font=Enum.Font.GothamBlack, TextSize=28}, root)
+		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,.5,52), Size=UDim2.fromOffset(400,16), BackgroundTransparency=1, Text="B L O X   F R U I T S", TextColor3=Color3.fromRGB(165,165,174), Font=Enum.Font.GothamMedium, TextSize=11}, root)
+		local track = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,.5,86), Size=UDim2.fromOffset(260,4), BackgroundColor3=Color3.fromRGB(30,28,24), BorderSizePixel=0}, root)
+		mk("UICorner", {CornerRadius=UDim.new(1,0)}, track)
+		local fill = mk("Frame", {Size=UDim2.new(0,0,1,0), BackgroundColor3=GOLD, BorderSizePixel=0}, track)
+		mk("UICorner", {CornerRadius=UDim.new(1,0)}, fill)
+		mk("UIGradient", {Color=ColorSequence.new(GOLD, GOLD_L)}, fill)
+		local status = mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,.5,100), Size=UDim2.fromOffset(300,16), BackgroundTransparency=1, Text="Iniciando...", TextColor3=Color3.fromRGB(165,165,174), Font=Enum.Font.Gotham, TextSize=11}, root)
+		local done, progress = false, 0
+		getgenv().NexoraLoadingFinish = function()
+			if done then return end
+			done = true
+			status.Text = "Pronto!"
+			TweenService_:Create(fill, TweenInfo.new(.3, Enum.EasingStyle.Quad), {Size=UDim2.new(1,0,1,0)}):Play()
+			task.delay(.5, function()
+				local tw = TweenService_:Create(root, TweenInfo.new(.5, Enum.EasingStyle.Quad), {GroupTransparency=1})
+				tw:Play(); tw.Completed:Wait()
+				gui:Destroy()
+			end)
+		end
+		task.spawn(function()
+			while gui.Parent and not done do
+				pulse.Size = UDim2.fromOffset(92,92); pulseStroke.Transparency = 0.2
+				local grow = TweenService_:Create(pulse, TweenInfo.new(1.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size=UDim2.fromOffset(150,150)})
+				TweenService_:Create(pulseStroke, TweenInfo.new(1.4), {Transparency=1}):Play()
+				grow:Play(); grow.Completed:Wait()
+			end
+		end)
+		task.spawn(function()
+			local steps = { {0,"Iniciando..."}, {0.25,"Carregando módulos..."}, {0.55,"Preparando interface..."}, {0.8,"Restaurando configurações..."} }
+			local startT = tick()
+			while gui.Parent and not done do
+				local el = tick() - startT
+				progress = math.max(progress, 0.92 * (1 - math.exp(-el / 5)))
+				fill.Size = UDim2.new(progress, 0, 1, 0)
+				for _, st in ipairs(steps) do if progress >= st[1] then status.Text = st[2] end end
+				if el > 30 then getgenv().NexoraLoadingFinish(); break end
+				task.wait(0.05)
+			end
+		end)
+	end)
+end
 AutoFarmLevel = true
 
 function BuildSchema()
@@ -1755,7 +1825,7 @@ local C = {
     bg = Color3.fromRGB(5, 5, 8),
     panel = Color3.fromRGB(12, 12, 17),
     panel2 = Color3.fromRGB(22, 21, 26),
-    line = Color3.fromRGB(105, 75, 28),
+    line = Color3.fromRGB(52, 44, 32),
     gold = Color3.fromRGB(255, 190, 55),
     goldLight = Color3.fromRGB(255, 224, 125),
     text = Color3.fromRGB(248, 246, 240),
@@ -1792,6 +1862,8 @@ local function button(parent, text, height)
     corner(b, 7)
     b.MouseEnter:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.12), {BackgroundColor3 = Color3.fromRGB(36, 34, 31)}):Play() end end)
     b.MouseLeave:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.12), {BackgroundColor3 = C.panel2}):Play() end end)
+    b.MouseButton1Down:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.08), {BackgroundColor3 = Color3.fromRGB(58, 46, 22)}):Play() end end)
+    b.MouseButton1Up:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.14), {BackgroundColor3 = Color3.fromRGB(36, 34, 31)}):Play() end end)
     return b
 end
 local function addOption(title, typ, value, page, section, callback)
@@ -1843,8 +1915,7 @@ function Nexora.CreateMain(config)
         pcall(function() if writefile then writefile(SIZE_FILE, game:GetService("HttpService"):JSONEncode(data)) end end)
     end
     local shell = make("Frame", {Name="Window", AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.new(0, persistedW, 0, persistedH), BackgroundColor3=C.bg, BorderSizePixel=0}, gui)
-    corner(shell, 12); stroke(shell, C.gold, 0.12)
-    make("UIStroke", {Color=Color3.fromRGB(245,245,245), Transparency=0.82, Thickness=1}, shell)
+    corner(shell, 14); stroke(shell, C.gold, 0.62)
     make("UIGradient", {Rotation = 135, Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, Color3.fromRGB(13, 12, 16)),
         ColorSequenceKeypoint.new(0.52, Color3.fromRGB(5, 5, 8)),
@@ -1872,7 +1943,17 @@ function Nexora.CreateMain(config)
     })}, top)
     -- cobre os cantos de baixo do header e desenha a linha dourada
     make("Frame", {Position=UDim2.new(0,0,1,-12), Size=UDim2.new(1,0,0,12), BackgroundColor3=Color3.fromRGB(10,10,14), BorderSizePixel=0}, top)
-    make("Frame", {Position=UDim2.new(0,0,1,-1), Size=UDim2.new(1,0,0,1), BackgroundColor3=GOLD, BackgroundTransparency=0.45, BorderSizePixel=0}, top)
+    do
+        local hl = make("Frame", {Position=UDim2.new(0,0,1,-1), Size=UDim2.new(1,0,0,1), BackgroundColor3=GOLD, BackgroundTransparency=0, BorderSizePixel=0}, top)
+        local hg = make("UIGradient", {Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,1),NumberSequenceKeypoint.new(0.5,0.1),NumberSequenceKeypoint.new(1,1)}), Offset=Vector2.new(-1,0)}, hl)
+        task.spawn(function()
+            while hl.Parent do
+                hg.Offset = Vector2.new(-1,0)
+                local tw = TweenService:Create(hg, TweenInfo.new(3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Offset=Vector2.new(1,0)})
+                tw:Play(); tw.Completed:Wait(); task.wait(0.8)
+            end
+        end)
+    end
     -- Logo: use config.Logo = "rbxassetid://ID" para usar a sua imagem; sem isso desenha o N com coroa.
     local logo = make("Frame", {Position=UDim2.new(0,14,0,9), Size=UDim2.new(0,46,0,46), BackgroundColor3=Color3.fromRGB(8,8,10), BorderSizePixel=0}, top)
     corner(logo, 23); make("UIStroke", {Color=GOLD, Thickness=2, Transparency=0.05}, logo)
@@ -1945,6 +2026,12 @@ function Nexora.CreateMain(config)
     local function hideWindow()
         shell.Visible = false
     end
+    local function playOpen()
+        local cur = shell.Position
+        shell.Visible = true
+        shell.Position = cur + UDim2.new(0,0,0,18)
+        TweenService:Create(shell, TweenInfo.new(.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position=cur}):Play()
+    end
     -- O mesmo botão flutuante fica sempre visível e alterna abrir/fechar.
     reopen.Activated:Connect(function()
         if floatMoved then
@@ -1954,10 +2041,10 @@ function Nexora.CreateMain(config)
         if not gui.Enabled then
             gui.Enabled = true
             pcall(function() getgenv().UIToggled = true end)
-            shell.Visible = true
+            playOpen()
             return
         end
-        shell.Visible = not shell.Visible
+        if shell.Visible then shell.Visible = false else playOpen() end
     end)
     reopen.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -2042,25 +2129,83 @@ function Nexora.CreateMain(config)
         end
     end)
     local pages, activePage, navButtons = {}, nil, {}
+    -- Ícones desenhados com formas simples (sem emoji): contorno fino, estilo minimalista.
+    local function drawIcon(parent, kind)
+        local holder = make("Frame", {Name="Icon", BackgroundTransparency=1, Position=UDim2.new(0,13,.5,-10), Size=UDim2.new(0,20,0,20)}, parent)
+        local function outline(w,h,x,y,r,rot)
+            local f = make("Frame", {BackgroundTransparency=1, Size=UDim2.new(0,w,0,h), Position=UDim2.new(0,x,0,y), Rotation=rot or 0, BorderSizePixel=0}, holder)
+            corner(f, r or 0); make("UIStroke", {Thickness=1.6, Color=GRAY}, f)
+            return f
+        end
+        local function fill(w,h,x,y,r,rot)
+            local f = make("Frame", {BackgroundColor3=GRAY, Size=UDim2.new(0,w,0,h), Position=UDim2.new(0,x,0,y), Rotation=rot or 0, BorderSizePixel=0}, holder)
+            f:SetAttribute("Fill", true); corner(f, r or 0)
+            return f
+        end
+        if kind == "house" then
+            fill(10,1.6,0.5,6,1,-38); fill(10,1.6,9.5,6,1,38); outline(12,8,4,10,2)
+        elseif kind == "diamond" then
+            outline(10,10,5,5,2,45); fill(4,4,8,8,2)
+        elseif kind == "bag" then
+            outline(7,6,6.5,2,3); outline(14,11,3,7,3)
+        elseif kind == "cross" then
+            fill(19,1.8,0.5,9.1,1,45); fill(19,1.8,0.5,9.1,1,-45)
+        elseif kind == "gear" then
+            outline(14,14,3,3,7); fill(4,4,8,8,2); fill(2,3,9,0,1); fill(2,3,9,17,1); fill(3,2,0,9,1); fill(3,2,17,9,1)
+        elseif kind == "bars" then
+            fill(3,5,3,13,1); fill(3,10,8.5,8,1); fill(3,15,14,3,1)
+        elseif kind == "user" then
+            outline(8,8,6,2,4); outline(14,7,3,12,4)
+        elseif kind == "wave" then
+            fill(12,2,2,5,1); fill(12,2,6,9,1); fill(12,2,4,13,1)
+        elseif kind == "orb" then
+            outline(14,14,3,4,7); fill(5,3,9,1,2,-30)
+        elseif kind == "eye" then
+            outline(18,11,1,4.5,6); fill(5,5,7.5,7.5,3)
+        else
+            outline(7,7,2,2,2); outline(7,7,11,2,2); outline(7,7,2,11,2); outline(7,7,11,11,2)
+        end
+        return holder
+    end
+    local function tintIcon(holder, color, transp)
+        for _, d in ipairs(holder:GetDescendants()) do
+            if d:IsA("UIStroke") then
+                TweenService:Create(d, TweenInfo.new(.18), {Color=color, Transparency=transp}):Play()
+            elseif d:IsA("Frame") and d:GetAttribute("Fill") then
+                TweenService:Create(d, TweenInfo.new(.18), {BackgroundColor3=color, BackgroundTransparency=transp}):Play()
+            end
+        end
+    end
+    local function iconKind(name)
+        local n = string.lower(name)
+        local map = {{"home","house"},{"setting","gear"},{"status","bars"},{"server","bars"},{"local","user"},{"shop","bag"},{"item","bag"},
+            {"farm","diamond"},{"stack","diamond"},{"fishing","wave"},{"sea","wave"},{"volcano","wave"},{"fruit","orb"},{"race","orb"},{"kitsune","orb"},
+            {"raid","cross"},{"pvp","cross"},{"boss","cross"},{"esp","eye"}}
+        for _, m in ipairs(map) do if string.find(n, m[1], 1, true) then return m[2] end end
+        return "grid"
+    end
     local function showPage(p)
+        local changed = (activePage ~= p)
         activePage=p
         for _, item in pairs(pages) do item.frame.Visible=(item==p) end
         for pg,b in pairs(navButtons) do
             local on = (pg==p)
+            local was = b:GetAttribute("NexoraActive")
             b:SetAttribute("NexoraActive", on)
-            b.BackgroundTransparency = on and 0 or 1
-            b.BackgroundColor3 = Color3.fromRGB(22,22,28)
+            b.BackgroundColor3 = Color3.fromRGB(24,22,18)
+            TweenService:Create(b, TweenInfo.new(.18), {BackgroundTransparency = on and 0.35 or 1}):Play()
             b.Bar.Visible = on
-            b.Icon.TextColor3 = on and GOLD or GRAY
-            b.Icon.TextTransparency = on and 0 or 0.45
-            b.Txt.TextColor3 = on and GOLD or GRAY
+            if on and not was then
+                b.Bar.Size = UDim2.new(0,3,0,0)
+                TweenService:Create(b.Bar, TweenInfo.new(.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Size=UDim2.new(0,3,1,-14)}):Play()
+            end
+            tintIcon(b.Icon, on and GOLD or GRAY, on and 0 or 0.4)
+            TweenService:Create(b.Txt, TweenInfo.new(.18), {TextColor3 = on and GOLD or GRAY}):Play()
         end
-    end
-    local function iconFor(name)
-        local n = string.lower(name)
-        local map = {{"home","🏠"},{"setting","⚙️"},{"status","📊"},{"server","🌐"},{"local","👤"},{"shop","🛒"},{"farm","🌾"},{"fishing","🎣"},{"fruit","🍎"},{"raid","⚔️"},{"sea","🌊"},{"kitsune","🦊"},{"volcano","🌋"},{"race","🧬"},{"item","🎒"},{"esp","👁️"},{"pvp","⚔️"},{"webhook","🔗"},{"event","🎯"}}
-        for _, m in ipairs(map) do if string.find(n, m[1], 1, true) then return m[2] end end
-        return "◆"
+        if changed and p.frame then
+            p.frame.Position = UDim2.new(0,18,0,0)
+            TweenService:Create(p.frame, TweenInfo.new(.28, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position=UDim2.new(0,0,0,0)}):Play()
+        end
     end
 
     local Main = {}
@@ -2077,7 +2222,7 @@ function Nexora.CreateMain(config)
         local nb = make("TextButton", {Name="Nav", AutoButtonColor=false, BackgroundColor3=Color3.fromRGB(22,22,28), BackgroundTransparency=1, BorderSizePixel=0, Size=UDim2.new(1,0,0,42), Text=""}, nav)
         corner(nb, 8)
         local bar = make("Frame", {Name="Bar", Position=UDim2.new(0,0,0,7), Size=UDim2.new(0,3,1,-14), BackgroundColor3=GOLD, BorderSizePixel=0, Visible=false}, nb); corner(bar, 2)
-        make("TextLabel", {Name="Icon", BackgroundTransparency=1, Position=UDim2.new(0,14,0,0), Size=UDim2.new(0,24,1,0), Text=iconFor(navText), TextColor3=GRAY, TextTransparency=0.45, Font=Enum.Font.GothamBold, TextSize=16}, nb)
+            do local ic = drawIcon(nb, iconKind(navText)); tintIcon(ic, GRAY, 0.4) end
         make("TextLabel", {Name="Txt", BackgroundTransparency=1, Position=UDim2.new(0,46,0,0), Size=UDim2.new(1,-52,1,0), Text=navText, TextColor3=GRAY, Font=Enum.Font.GothamBold, TextSize=12, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd}, nb)
         nb.MouseEnter:Connect(function() if not nb:GetAttribute("NexoraActive") then nb.BackgroundTransparency = 0.55 end end)
         nb.MouseLeave:Connect(function() if not nb:GetAttribute("NexoraActive") then nb.BackgroundTransparency = 1 end end)
@@ -2087,7 +2232,7 @@ function Nexora.CreateMain(config)
         local Page={}
         function Page.CreateSection(sectionName)
             local card=make("Frame", {Name=sectionName, Size=UDim2.new(1,0,0,40), AutomaticSize=Enum.AutomaticSize.Y, BackgroundColor3=C.panel, BorderSizePixel=0}, frame)
-            corner(card,9); stroke(card,C.line)
+            corner(card,10); stroke(card,C.line,0.35)
             make("UIPadding", {PaddingTop=UDim.new(0,11),PaddingBottom=UDim.new(0,11),PaddingLeft=UDim.new(0,11),PaddingRight=UDim.new(0,11)}, card)
             local list=make("UIListLayout", {Padding=UDim.new(0,7),SortOrder=Enum.SortOrder.LayoutOrder}, card)
             local head=make("TextLabel", {Size=UDim2.new(1,0,0,22),BackgroundTransparency=1,Text=sectionName,TextColor3=C.gold,Font=Enum.Font.GothamBold,TextSize=12,TextXAlignment=Enum.TextXAlignment.Left},card)
@@ -2355,6 +2500,7 @@ function Nexora.CreateMain(config)
             navButtons[p].Visible=(q=="" or has)
         end
     end)
+    task.defer(playOpen)
     return Main
 end
 
@@ -2601,6 +2747,43 @@ local G = {
 	BuySanguineArt = "Shafi",
 }
 NPCManager = require(game:GetService("ReplicatedStorage").NPCManager)
+function GetFarNpcCFrame(name, npc, inst)
+	local RS = game:GetService("ReplicatedStorage")
+	local function fromInstance(i)
+		if typeof(i) ~= "Instance" then return nil end
+		if i:IsA("BasePart") then return i.CFrame end
+		if i:IsA("Model") then
+			local p = i:FindFirstChild("HumanoidRootPart") or i.PrimaryPart or i:FindFirstChildWhichIsA("BasePart", true)
+			if p then return p.CFrame end
+			local ok, cf = pcall(function() return i:GetPivot() end)
+			if ok and typeof(cf) == "CFrame" and cf.Position.Magnitude > 10 then return cf end
+		end
+	end
+	local cf = fromInstance(inst)
+	if cf then return cf end
+	for _, root in ipairs({ workspace:FindFirstChild("NPCs"), RS:FindFirstChild("NPCs"), RS }) do
+		local m = root and root:FindFirstChild(name, true)
+		cf = fromInstance(m)
+		if cf then return cf end
+	end
+	local seen = {}
+	local function scan(v, depth)
+		if depth > 3 then return nil end
+		local tv = typeof(v)
+		if tv == "CFrame" then return (v.Position.Magnitude > 10) and v or nil end
+		if tv == "Vector3" then return (v.Magnitude > 10) and CFrame.new(v) or nil end
+		if tv == "Instance" then return fromInstance(v) end
+		if tv == "table" and not seen[v] then
+			seen[v] = true
+			for _, x in pairs(v) do
+				local r = scan(x, depth + 1)
+				if r then return r end
+			end
+		end
+	end
+	local ok, r = pcall(scan, npc, 0)
+	return ok and r or nil
+end
 function DetectNpc(f)
 	local K = t.Character and (t.Character:FindFirstChild("HumanoidRootPart"))
 	if not K then
@@ -2624,7 +2807,13 @@ function DetectNpc(f)
 		end
 	end
 	if not l then
-		return NPCManager.getNPCsByName(f)[1]._modelState._instance
+		local npc = NPCManager.getNPCsByName(f)[1]
+		local inst = npc and npc._modelState and npc._modelState._instance
+		if inst and inst:FindFirstChild("HumanoidRootPart") then return inst end
+		-- NPC longe/não carregado: acha a posição guardada e devolve um objeto compatível com os toggles.
+		local cf = GetFarNpcCFrame(f, npc, inst)
+		if cf then return { HumanoidRootPart = { CFrame = cf, Position = cf.Position } } end
+		return inst
 	end
 	return l, E
 end
@@ -7639,6 +7828,7 @@ SettingAutoFarmSection.CreateToggle(
 	{ Title = "Auto Quest", Desc = "Only accepts the quest of the selected farm (Level/Bones/Katakuri/Tyrant).", Default = true },
 	function(V)
 		if getgenv().__AQCycleSync then return end
+		getgenv().__AQUserWants = V
 		SaveSettings("Auto Quest [Katakuri/Bone/Tyrant]", V)
 	end
 )
@@ -7649,6 +7839,7 @@ do
 	local cycleGeneration = getgenv().__AQToggleCycleGeneration
 	local toggleKey = "Auto Quest [Katakuri/Bone/Tyrant]"
 	local function SetAutoQuestToggle(value)
+		if value and getgenv().__AQUserWants == false then return end
 		getgenv().__AQCycleSync = true
 		pcall(function() SaveSettings(toggleKey, value) end)
 		pcall(function()
@@ -7714,6 +7905,12 @@ do
 				end
 			else
 				-- Na ilha, aguarda chegar perto do NPC; fora dela, também aguarda sem alterar o toggle.
+				-- Farm desligado (ou ainda fora da ilha): o Auto Quest fica/volta ligado; só desliga se o usuário desligar.
+				if (not GetSelectedIndividualFarm() or not IsOnSelectedFarmIsland()) and not Settings[toggleKey] and getgenv().__AQUserWants ~= false then
+					SetAutoQuestToggle(true)
+					isEnabled = true
+					startedAtNPC = false
+				end
 				task.wait(1)
 			end
 		end
@@ -9438,6 +9635,16 @@ function GetPathFruit()
 	for _, H in ipairs(workspaceService:GetDescendants()) do
 		if IsFruitObject(H) then return H end
 	end
+	for _, H in ipairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+		if IsFruitObject(H) then return H end
+	end
+	local nilFruit
+	pcall(function()
+		for _, H in ipairs(getnilinstances and getnilinstances() or {}) do
+			if IsFruitObject(H) then nilFruit = H; break end
+		end
+	end)
+	return nilFruit
 end
 function GetPirateRaid(f)
 	for V, V in ipairs((if f then game.ReplicatedStorage else game.workspace.Enemies):GetChildren()) do
@@ -10366,7 +10573,25 @@ task.spawn(function()
 				local function FindElite(name)
 					local target = name and DetectMob(name) or DetectMob(EliteNames)
 					if target and IsMobAlive(target) then return target end
-					return DetectEliteHunter()
+					target = DetectEliteHunter()
+					if target then return target end
+					-- Longe: procura em qualquer lugar (ReplicatedStorage, workspace, instâncias fora da árvore).
+					local wanted = name and { name } or EliteNames
+					local function scan(root)
+						if not root then return nil end
+						for _, n in ipairs(wanted) do
+							local m = root:FindFirstChild(n, true)
+							if m and m:IsA("Model") and IsMobAlive(m) then return m end
+						end
+					end
+					local found = scan(game:GetService("ReplicatedStorage")) or scan(workspace)
+					if found then return found end
+					pcall(function()
+						for _, inst in ipairs(getnilinstances and getnilinstances() or {}) do
+							if inst:IsA("Model") and table.find(wanted, inst.Name) and IsMobAlive(inst) then found = inst; break end
+						end
+					end)
+					return found
 				end
 
 
@@ -10388,6 +10613,21 @@ task.spawn(function()
 					task.wait(0.5)
 					questName = GetEliteQuestName() or questName
 					target = FindElite(questName) or DetectEliteHunter()
+					if not target then
+						-- Sem modelo carregado: vai até o ponto de spawn do Elite (toTarget cuida da longa distância).
+						local spawnPart
+						pcall(function()
+							local spawns = workspace._WorldOrigin.EnemySpawns
+							for _, n in ipairs(questName and { questName } or EliteNames) do
+								local sp = spawns:FindFirstChild(n, true)
+								if sp then
+									spawnPart = sp:IsA("BasePart") and sp or sp:FindFirstChildWhichIsA("BasePart", true)
+									if spawnPart then break end
+								end
+							end
+						end)
+						if spawnPart then toTarget(spawnPart.CFrame * CFrame.new(0, 40, 0)) end
+					end
 				end
 
 				if target and IsMobAlive(target) then
@@ -10400,7 +10640,7 @@ task.spawn(function()
 						if target and IsMobAlive(target) then
 							local hrp = target:FindFirstChild("HumanoidRootPart")
 							if hrp then
-								sizepart(target)
+								pcall(sizepart, target)
 								local offset = Settings["Select Weapon"] == "Blox Fruit"
 									and CFrame.new(-7, getgenv().YPosFruit or 20, 0)
 									or CFrame.new(7, 20, 0)
@@ -21966,7 +22206,7 @@ function AutoMultiFindPrehistoric()
 				toTarget(boatShop)
 				return
 			end
-			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyBoat", "Beast Hunter")
+			BuyMultiPrehistoricBoat()
 			task.wait(3)
 			return
 		end
@@ -21987,7 +22227,7 @@ function AutoMultiFindPrehistoric()
 			toTarget(boatShop)
 			return
 		end
-		game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyBoat", "Beast Hunter")
+		BuyMultiPrehistoricBoat()
 		task.wait(3)
 		return
 	end
@@ -22122,6 +22362,16 @@ function AutoMultiFindPrehistoric()
 	end
 end
 
+function BuyMultiPrehistoricBoat()
+	local remote = game:GetService("ReplicatedStorage").Remotes.CommF_
+	pcall(function() remote:InvokeServer("BuyBoat", "Beast Hunter") end)
+	task.wait(1.5)
+	if not checkboat() then
+		-- Sem Beast Hunter (indisponível/sem acesso): compra o Guardian.
+		pcall(function() remote:InvokeServer("BuyBoat", "Guardian") end)
+		pcall(function() A.CreateNoti({ Title = "Nexora Hub", Desc = "Beast Hunter indisponível - comprando Guardian", ShowTime = 4 }) end)
+	end
+end
 function AutoFindPrehistoric()
 	if
 		not game:GetService("Workspace").Map:FindFirstChild("PrehistoricIsland")
@@ -22141,7 +22391,7 @@ function AutoFindPrehistoric()
 				end
 				toTarget(f)
 			else
-				game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyBoat", if Settings["Auto Multi Find Prehistoric Island"] then "Beast Hunter" else "PirateBrigade")
+				if Settings["Auto Multi Find Prehistoric Island"] then BuyMultiPrehistoricBoat() else game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyBoat", "PirateBrigade") end
 				wait(3)
 			end
 		elseif t.Character.Humanoid.Sit then
@@ -23483,7 +23733,15 @@ SettingsAimbotSection.CreateToggle(
 			spawn(function()
 				while Settings["Teleport Player"] and (wait()) do
 					pcall(function()
-						toTarget(TeleportPlayer().Character.HumanoidRootPart.CFrame)
+						local plr = TeleportPlayer()
+						local ch = plr and (plr.Character or (workspace:FindFirstChild("Characters") and workspace.Characters:FindFirstChild(plr.Name)))
+						local hrp = ch and ch:FindFirstChild("HumanoidRootPart")
+						if hrp then
+							toTarget(hrp.CFrame)
+						elseif ch then
+							local ok, cf = pcall(function() return ch:GetPivot() end)
+							if ok then toTarget(cf) end
+						end
 					end)
 				end
 			end)
@@ -23576,6 +23834,7 @@ MISCPVPSection.CreateSlider(
 	{ Title = "Input JumpPower", Min = 0, Max = 220, Default = math.min(tonumber(Settings["Input JumpPower"]) or 50, 220), Precise = true },
 	function(b)
 		SaveSettings("Input JumpPower", math.clamp(tonumber(b) or 0, 0, 220))
+		pcall(function() if ApplyMovementSettings then ApplyMovementSettings() end end)
 	end
 )
 MISCPVPSection.CreateToggle(
@@ -23614,31 +23873,57 @@ MISCPVPSection.CreateToggle(
 		end)
 	end
 )
--- Reaplica a velocidade do slider a cada passo de física. Fica aqui, junto da UI, de propósito:
--- antes ficava no fim do arquivo e nunca rodava se algum erro anterior abortasse o script.
+-- WalkSpeed/JumpPower: enquanto a toggle estiver ligada o valor é imposto a cada frame
+-- e também na hora em que o jogo tenta mudar; ao desligar volta ao normal (feito no callback da toggle).
 do
-	getgenv().__WSEarlyGen = (getgenv().__WSEarlyGen or 0) + 1
-	local WSGen = getgenv().__WSEarlyGen
-	pcall(function()
-		if getgenv().__WSEarlyConn then
-			getgenv().__WSEarlyConn:Disconnect()
-		end
-	end)
-	getgenv().__WSEarlyConn = game:GetService("RunService").Stepped:Connect(function()
-		if getgenv().__WSEarlyGen ~= WSGen then return end
-		local Character = t.Character
-		local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
-		if not Humanoid then return end
+	getgenv().__MoveGen = (getgenv().__MoveGen or 0) + 1
+	local gen = getgenv().__MoveGen
+	for _, c in ipairs(getgenv().__MoveConns or {}) do pcall(function() c:Disconnect() end) end
+	local conns = {}
+	getgenv().__MoveConns = conns
+	local RunService = game:GetService("RunService")
+	local hooked = setmetatable({}, { __mode = "k" })
+	local function enforce(hum)
+		if getgenv().__MoveGen ~= gen or not hum or not hum.Parent then return end
 		if Settings["Change WalkSpeed"] then
 			local sp = math.clamp(tonumber(Settings["Input WalkSpeed"]) or 16, 0, 220)
-			if math.abs(Humanoid.WalkSpeed - sp) > 0.01 then Humanoid.WalkSpeed = sp end
+			if hum.WalkSpeed ~= sp then hum.WalkSpeed = sp end
 		end
 		if Settings["Change JumpPower"] then
-			if not Humanoid.UseJumpPower then Humanoid.UseJumpPower = true end
+			if not hum.UseJumpPower then hum.UseJumpPower = true end
 			local jp = math.clamp(tonumber(Settings["Input JumpPower"]) or 50, 0, 220)
-			if math.abs(Humanoid.JumpPower - jp) > 0.01 then Humanoid.JumpPower = jp end
+			if hum.JumpPower ~= jp then hum.JumpPower = jp end
 		end
-	end)
+	end
+	local function hook(hum)
+		if not hum or hooked[hum] then return end
+		hooked[hum] = true
+		for _, prop in ipairs({ "WalkSpeed", "JumpPower", "UseJumpPower" }) do
+			table.insert(conns, hum:GetPropertyChangedSignal(prop):Connect(function() enforce(hum) end))
+		end
+		enforce(hum)
+	end
+	local function currentHumanoid()
+		local ch = t.Character
+		return ch and ch:FindFirstChildOfClass("Humanoid")
+	end
+	function ApplyMovementSettings()
+		local h = currentHumanoid()
+		if h then hook(h); enforce(h) end
+	end
+	local function onStep()
+		local h = currentHumanoid()
+		if h then hook(h); enforce(h) end
+	end
+	table.insert(conns, RunService.Stepped:Connect(onStep))
+	table.insert(conns, RunService.Heartbeat:Connect(onStep))
+	pcall(function() table.insert(conns, RunService.RenderStepped:Connect(onStep)) end)
+	table.insert(conns, t.CharacterAdded:Connect(function(ch)
+		local h = ch:WaitForChild("Humanoid", 10)
+		if h then hook(h) end
+		task.delay(0.5, ApplyMovementSettings)
+		task.delay(2, ApplyMovementSettings)
+	end))
 end
 MISCPVPSection.CreateToggle(
 	{ Title = "Walk On Water", Desc = nil, Default = Settings["Walk On Water "] or true },
@@ -27548,4 +27833,5 @@ end)()
 task.spawn(function()
     task.wait()
     if A and A.RestoreSavedToggles then A.RestoreSavedToggles() end
+    pcall(function() if getgenv().NexoraLoadingFinish then getgenv().NexoraLoadingFinish() end end)
 end)
