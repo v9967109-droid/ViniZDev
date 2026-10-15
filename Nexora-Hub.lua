@@ -2047,7 +2047,7 @@ function Nexora.CreateMain(config)
     reopen:SetAttribute("NexoraKeepColor", true)
     make("UICorner", {CornerRadius=UDim.new(0, 18)}, reopen)
     make("UIStroke", {Color=Color3.fromRGB(60, 60, 65), Thickness=1, Transparency=0.3}, reopen)
-    -- Ícone à esquerda (logo)
+    -- Ícone à esquerda (logo) - FIX N icon
     local iconFrame = make("Frame", {
         BackgroundColor3=Color3.fromRGB(35, 35, 45),
         Size=UDim2.new(0, 24, 0, 24),
@@ -2056,19 +2056,34 @@ function Nexora.CreateMain(config)
         ZIndex=101
     }, reopen)
     make("UICorner", {CornerRadius=UDim.new(1,0)}, iconFrame)
+    -- N como TextLabel (sempre aparece)
+    local iconText = make("TextLabel", {
+        BackgroundTransparency=1,
+        Size=UDim2.new(1, 0, 1, 0),
+        Position=UDim2.new(0, 0, 0, 0),
+        Text="N",
+        TextColor3=Color3.fromRGB(0, 140, 255),
+        Font=Enum.Font.GothamBlack,
+        TextSize=18,
+        TextStrokeTransparency=0.5,
+        ZIndex=103
+    }, iconFrame)
+    make("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 140, 255))}, iconText)
     local iconImg = make("ImageLabel", {
         BackgroundTransparency=1,
         Size=UDim2.new(1, -4, 1, -4),
         Position=UDim2.new(0, 2, 0, 2),
-        Image="rbxassetid://18747094503", -- ícone placeholder, troca se tiver logo
+        Image="rbxassetid://18747094503",
         ScaleType=Enum.ScaleType.Fit,
         ImageColor3=Color3.fromRGB(80, 180, 255),
-        ZIndex=102
+        ZIndex=102,
+        Visible=false
     }, iconFrame)
-    -- Se tiver config.Logo usa ele
     pcall(function()
         if config.Logo and config.Logo ~= "" then
             iconImg.Image = config.Logo
+            iconImg.Visible = true
+            iconText.Visible = false
         end
     end)
     -- Texto Nexora Hub
@@ -2913,6 +2928,64 @@ local G = {
 	BuyElectricClaw = "Previous Hero",
 	BuySanguineArt = "Shafi",
 }
+
+SectionShopFighting.CreateToggle({ Title = "Black Leg", Desc = nil, Default = false }, function(f)
+	g["Black Leg"] = f
+	if f then spawn(function() while g["Black Leg"] and task.wait(0.3) do pcall(function() local R = DetectNpc(G.BuyBlackLeg) if not R or not R.HumanoidRootPart then return end if t:DistanceFromCharacter(R.HumanoidRootPart.Position) > 10 then toTarget(R.HumanoidRootPart.CFrame * CFrame.new(0,2,2)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBlackLeg") task.wait(1) end end) end end) end
+end)
+
+SectionShopFighting.CreateToggle({ Title = "Fishman Karate", Desc = nil, Default = false }, function(f)
+	g["Fishman Karate"] = f
+	if f then spawn(function() while g["Fishman Karate"] and task.wait(0.3) do pcall(function() local R = DetectNpc(G.BuyFishmanKarate) if not R or not R.HumanoidRootPart then return end if t:DistanceFromCharacter(R.HumanoidRootPart.Position) > 10 then toTarget(R.HumanoidRootPart.CFrame * CFrame.new(0,2,2)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyFishmanKarate") task.wait(1) end end) end end) end
+end)
+
+SectionShopFighting.CreateToggle({ Title = "Electro", Desc = nil, Default = false }, function(f)
+	g.Electro = f
+	if f then spawn(function() while g.Electro and task.wait(0.3) do pcall(function() local K = DetectNpc(G.BuyElectro) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 10 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,2,2)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyElectro") task.wait(1) end end) end end) end
+end)
+
+SectionShopFighting.CreateToggle({ Title = "Dragon Breath", Desc = nil, Default = false }, function(f)
+	g.DragonClaw = f
+	g["Dragon Breath"] = f
+	if f then spawn(function() while (g.DragonClaw or g["Dragon Breath"]) and task.wait(0.3) do pcall(function() local K = DetectNpc(G.DragonClaw) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 10 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,2,2)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BlackbeardReward", "DragonClaw", "1") task.wait(0.3) game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BlackbeardReward", "DragonClaw", "2") task.wait(1) end end) end end) end
+end)
+
+SectionShopFighting.CreateToggle({ Title = "SuperHuman", Desc = nil, Default = false }, function(f)
+	g.SuperHuman = f
+	if f then spawn(function() while g.SuperHuman and task.wait(0.3) do pcall(function() local K = DetectNpc(G.BuySuperhuman) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 10 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,2,2)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuySuperhuman") task.wait(1) end end) end end) end
+end)
+
+SectionShopFighting.CreateToggle({ Title = "Death Step", Desc = nil, Default = false }, function(f)
+	g["Death Step"] = f
+	if f then spawn(function() while g["Death Step"] and task.wait(0.3) do pcall(function() local K = DetectNpc(G.BuyDeathStep) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 10 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,2,2)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyDeathStep") task.wait(1) end end) end end) end
+end)
+
+SectionShopFighting.CreateToggle({ Title = "Sharkman Karate", Desc = nil, Default = false }, function(f)
+	g["Sharkman Karate"] = f
+	if f then spawn(function() while g["Sharkman Karate"] and task.wait(0.3) do pcall(function() local K = DetectNpc(G.BuySharkmanKarate) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 10 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,2,2)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuySharkmanKarate") task.wait(1) end end) end end) end
+end)
+
+SectionShopFighting.CreateToggle({ Title = "Electric Claw", Desc = nil, Default = false }, function(f)
+	g["Electric Claw"] = f
+	if f then spawn(function() while g["Electric Claw"] and task.wait(0.3) do pcall(function() local K = DetectNpc(G.BuyElectricClaw) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 10 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,2,2)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyElectricClaw") task.wait(1) end end) end end) end
+end)
+
+SectionShopFighting.CreateToggle({ Title = "Dragon Talon", Desc = nil, Default = false }, function(f)
+	g["Dragon Talon"] = f
+	if f then spawn(function() while g["Dragon Talon"] and task.wait(0.3) do pcall(function() local K = DetectNpc(G.BuyDragonTalon) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 10 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,2,2)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyDragonTalon") task.wait(1) end end) end end) end
+end)
+
+SectionShopFighting.CreateToggle({ Title = "God Human", Desc = nil, Default = false }, function(f)
+	g["God Human"] = f
+	if f then spawn(function() while g["God Human"] and task.wait(0.3) do pcall(function() local K = DetectNpc(G.BuyGodhuman) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 10 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,2,2)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyGodhuman") task.wait(1) end end) end end) end
+end)
+
+SectionShopFighting.CreateToggle({ Title = "Sanguine Art", Desc = nil, Default = false }, function(f)
+	g["Sanguine Art"] = f
+	if f then spawn(function() while g["Sanguine Art"] and task.wait(0.3) do pcall(function() local K = DetectNpc(G.BuySanguineArt) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 10 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,2,2)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuySanguineArt") task.wait(1) end end) end end) end
+end)
+
+
 NPCManager = require(game:GetService("ReplicatedStorage").NPCManager)
 function GetFarNpcCFrame(name, npc, inst)
 	local RS = game:GetService("ReplicatedStorage")
@@ -2986,60 +3059,17 @@ function DetectNpc(f)
 end
 
 
-SectionShopFighting.CreateToggle({ Title = "Black Leg", Desc = nil, Default = false }, function(f)
-	g["Black Leg"] = f
-	if f then spawn(function() while g["Black Leg"] and task.wait(0.4) do pcall(function() local R = DetectNpc(G.BuyBlackLeg) if not R or not R.HumanoidRootPart then return end if t:DistanceFromCharacter(R.HumanoidRootPart.Position) > 12 then toTarget(R.HumanoidRootPart.CFrame * CFrame.new(0,3,3)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBlackLeg") task.wait(1) end end) end end) end
-end)
 
-SectionShopFighting.CreateToggle({ Title = "Fishman Karate", Desc = nil, Default = false }, function(f)
-	g["Fishman Karate"] = f
-	if f then spawn(function() while g["Fishman Karate"] and task.wait(0.4) do pcall(function() local R = DetectNpc(G.BuyFishmanKarate) if not R or not R.HumanoidRootPart then return end if t:DistanceFromCharacter(R.HumanoidRootPart.Position) > 12 then toTarget(R.HumanoidRootPart.CFrame * CFrame.new(0,3,3)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyFishmanKarate") task.wait(1) end end) end end) end
-end)
 
-SectionShopFighting.CreateToggle({ Title = "Electro", Desc = nil, Default = false }, function(f)
-	g.Electro = f
-	if f then spawn(function() while g.Electro and task.wait(0.4) do pcall(function() local K = DetectNpc(G.BuyElectro) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 12 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,3,3)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyElectro") task.wait(1) end end) end end) end
-end)
 
-SectionShopFighting.CreateToggle({ Title = "Dragon Breath", Desc = nil, Default = false }, function(f)
-	g.DragonClaw = f g["Dragon Breath"] = f
-	if f then spawn(function() while (g.DragonClaw or g["Dragon Breath"]) and task.wait(0.4) do pcall(function() local K = DetectNpc(G.DragonClaw) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 12 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,3,3)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BlackbeardReward", "DragonClaw", "1") task.wait(0.3) game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BlackbeardReward", "DragonClaw", "2") task.wait(1) end end) end end) end
-end)
 
-SectionShopFighting.CreateToggle({ Title = "SuperHuman", Desc = nil, Default = false }, function(f)
-	g.SuperHuman = f
-	if f then spawn(function() while g.SuperHuman and task.wait(0.4) do pcall(function() local K = DetectNpc(G.BuySuperhuman) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 12 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,3,3)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuySuperhuman") task.wait(1) end end) end end) end
-end)
 
-SectionShopFighting.CreateToggle({ Title = "Death Step", Desc = nil, Default = false }, function(f)
-	g["Death Step"] = f
-	if f then spawn(function() while g["Death Step"] and task.wait(0.4) do pcall(function() local K = DetectNpc(G.BuyDeathStep) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 12 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,3,3)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyDeathStep") task.wait(1) end end) end end) end
-end)
 
-SectionShopFighting.CreateToggle({ Title = "Sharkman Karate", Desc = nil, Default = false }, function(f)
-	g["Sharkman Karate"] = f
-	if f then spawn(function() while g["Sharkman Karate"] and task.wait(0.4) do pcall(function() local K = DetectNpc(G.BuySharkmanKarate) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 12 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,3,3)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuySharkmanKarate") task.wait(1) end end) end end) end
-end)
 
-SectionShopFighting.CreateToggle({ Title = "Electric Claw", Desc = nil, Default = false }, function(f)
-	g["Electric Claw"] = f
-	if f then spawn(function() while g["Electric Claw"] and task.wait(0.4) do pcall(function() local K = DetectNpc(G.BuyElectricClaw) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 12 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,3,3)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyElectricClaw") task.wait(1) end end) end end) end
-end)
 
-SectionShopFighting.CreateToggle({ Title = "Dragon Talon", Desc = nil, Default = false }, function(f)
-	g["Dragon Talon"] = f
-	if f then spawn(function() while g["Dragon Talon"] and task.wait(0.4) do pcall(function() local K = DetectNpc(G.BuyDragonTalon) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 12 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,3,3)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyDragonTalon") task.wait(1) end end) end end) end
-end)
 
-SectionShopFighting.CreateToggle({ Title = "God Human", Desc = nil, Default = false }, function(f)
-	g["God Human"] = f
-	if f then spawn(function() while g["God Human"] and task.wait(0.4) do pcall(function() local K = DetectNpc(G.BuyGodhuman) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 12 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,3,3)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyGodhuman") task.wait(1) end end) end end) end
-end)
 
-SectionShopFighting.CreateToggle({ Title = "Sanguine Art", Desc = nil, Default = false }, function(f)
-	g["Sanguine Art"] = f
-	if f then spawn(function() while g["Sanguine Art"] and task.wait(0.4) do pcall(function() local K = DetectNpc(G.BuySanguineArt) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 12 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,3,3)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuySanguineArt") task.wait(1) end end) end end) end
-end)
+
 
 SectionShopAbilities = PageShop.CreateSection("Abilities Shop")
 SectionShopAbilities.CreateButton({ Title = "Skyjump [ $10,000 Beli ]" }, function()
@@ -5959,18 +5989,41 @@ do
 	function BorrowTempleOfTime()
 		local G = game.ReplicatedStorage.MapStash:FindFirstChild("Temple of Time")
 		if not G then
-			return
+			G = game.ReplicatedStorage:FindFirstChild("Temple of Time") or workspace.Map:FindFirstChild("Temple of Time")
+			if not G then return end
 		end
-		G:SetAttribute("ClientBorrowed", true)
-		G.Parent = workspace.Map
+		pcall(function()
+			G:SetAttribute("ClientBorrowed", true)
+			if G.Parent ~= workspace.Map then
+				G.Parent = workspace.Map
+			end
+		end)
 		task.spawn(function()
 			local N = tick() + 30
-			repeat
-				task.wait(0.25)
+			repeat task.wait(0.25)
 			until G.Parent ~= workspace.Map or (V()) or tick() > N
-			G:SetAttribute("ClientBorrowed", nil)
-			if not V() and G.Parent == workspace.Map then
-				G.Parent = game.ReplicatedStorage.MapStash
+			pcall(function()
+				G:SetAttribute("ClientBorrowed", nil)
+				if not V() and G.Parent == workspace.Map then
+					G.Parent = game.ReplicatedStorage.MapStash
+				end
+			end)
+		end)
+	end
+	function JoinTempleOfTimeTrial()
+		pcall(function()
+			BorrowTempleOfTime()
+			local temple = GetTempleOfTime() or workspace.Map:FindFirstChild("Temple of Time")
+			if not temple then
+				toTarget(CFrame.new(28282.5703125,14896.8505859375,105.1042709350586))
+				return
+			end
+			-- Entra pela porta
+			local door = temple:FindFirstChild("TempleDoor") or temple:FindFirstChild("Door") or temple:FindFirstChild("Prompt")
+			if door and door:FindFirstChild("TouchInterest") then
+				toTarget(door.CFrame)
+			else
+				toTarget(CFrame.new(28282.5703125,14896.8505859375,105.1042709350586))
 			end
 		end)
 	end
@@ -7543,50 +7596,30 @@ function isnetworkowner2(Q)
 	return true
 end
 function BringMob(Q)
-	if not Settings["Bring Mob"] then
-		return
-	end
-	if not Q or not Q.Parent or not Q:FindFirstChild("HumanoidRootPart") then
-		return
-	end
+	if not Settings["Bring Mob"] then return end
+	if not Q or not Q.Parent or not Q:FindFirstChild("HumanoidRootPart") then return end
 	local Character = t.Character
 	local Root = Character and Character:FindFirstChild("HumanoidRootPart")
-	if not Root then
-		return
-	end
-	-- Limita a frequência (a cada chamada de farm não precisa reunir de novo).
-	if tick() - (getgenv().__BringLast or 0) < 0.12 then
-		return
-	end
+	if not Root then return end
+	if tick() - (getgenv().__BringLast or 0) < 0.25 then return end
 	getgenv().__BringLast = tick()
-	-- Só reúne quando já está perto do mob alvo.
 	local anchor = Q.HumanoidRootPart.CFrame
-	if (Root.Position - anchor.Position).Magnitude > 120 then
-		return
-	end
-	-- Sem isso o servidor não aceita a posição dos mobs movidos pelo cliente.
-	pcall(function()
-		sethiddenproperty(t, "SimulationRadius", math.huge)
-		sethiddenproperty(t, "MaxSimulationRadius", math.huge)
-	end)
+	if (Root.Position - anchor.Position).Magnitude > 120 then return end
+	pcall(function() sethiddenproperty(t, "SimulationRadius", math.huge) sethiddenproperty(t, "MaxSimulationRadius", math.huge) end)
 	local count = math.clamp(tonumber(Settings["Bring Mob Count"]) or 2, 2, 6)
 	local radius = count > 2 and 350 or 250
 	local gathered = 1
 	for _, mob in ipairs(workspace.Enemies:GetChildren()) do
-		if gathered >= count then
-			break
-		end
+		if gathered >= count then break end
 		if mob ~= Q and mob.Name == Q.Name and not mob:FindFirstChild("Ignored") and IsMobAlive(mob) then
 			local hrp = mob.HumanoidRootPart
 			if (hrp.Position - anchor.Position).Magnitude <= radius then
 				hrp.CFrame = anchor * CFrame.new(math.random(-3, 3), 0, math.random(-3, 3))
 				hrp.CanCollide = false
-				pcall(function()
-					mob.Humanoid.WalkSpeed = 0
-					mob.Humanoid.JumpPower = 0
-				end)
+				pcall(function() mob.Humanoid.WalkSpeed = 0 mob.Humanoid.JumpPower = 0 end)
 				sizepart(mob)
 				gathered += 1
+				task.wait(0.15)
 			end
 		end
 	end
@@ -7704,21 +7737,33 @@ SettingFarmMainSection.CreateToggle(
 SettingFarmMainSection.CreateToggle(
 	{ Title = "Auto Turn On Observation", Desc = nil, Default = Settings["Auto Turn On Observation"] or false },
 	function(m)
+		SaveSettings("Auto Turn On Observation", m)
 		if m then
 			spawn(function()
-				while Settings["Auto Turn On Observation"] and (wait(1)) do
+				while Settings["Auto Turn On Observation"] and task.wait(0.5) do
 					pcall(function()
-						if not game:GetService("Lighting").Blur.Enabled then
-							game:GetService("VirtualInputManager"):SendKeyEvent(true, "E", false, game)
-							wait()
-							game:GetService("VirtualInputManager"):SendKeyEvent(false, "E", false, game)
-							wait(3)
+						local blur = game:GetService("Lighting"):FindFirstChild("Blur")
+						if not blur or not blur.Enabled then
+							-- Clica no botão de ativar Haki da observação (tecla E)
+							pcall(function()
+								game:GetService("VirtualInputManager"):SendKeyEvent(true, "E", false, game)
+								task.wait(0.1)
+								game:GetService("VirtualInputManager"):SendKeyEvent(false, "E", false, game)
+							end)
+							task.wait(0.3)
+							pcall(function()
+								game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.E, false, game)
+								task.wait(0.1)
+								game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.E, false, game)
+							end)
+							pcall(function()
+								game:GetService("ReplicatedStorage").Remotes.CommE:FireServer("Ken", true)
+							end)
 						end
 					end)
 				end
 			end)
 		end
-		SaveSettings("Auto Turn On Observation", m)
 	end
 )
 function TurnOnV4()
@@ -7788,6 +7833,51 @@ game:GetService("Workspace").Enemies.DescendantAdded:Connect(function(_)
 		getgenv().ReadyToDodge = false
 	end
 end)
+
+
+-- Auto Dodge Skill Mobs - FIX DEFINITIVO: não sobe, só desvia quando mob realmente usa skill perto
+getgenv().Doding = false
+getgenv().ReadyToDodge = false
+if getgenv().DodgeConnection then getgenv().DodgeConnection:Disconnect() end
+getgenv().DodgeConnection = game:GetService("Workspace").Enemies.DescendantAdded:Connect(function(skill)
+	pcall(function()
+		if not Settings["Auto Dodge Skill Mobs"] then return end
+		if getgenv().Doding then return end
+		if skill.Name ~= "BodyGyro" and skill.Name ~= "BodyPosition" and skill.Name ~= "BodyVelocity" then return end
+		local parent = skill.Parent
+		if not parent or parent.Name ~= "HumanoidRootPart" then return end
+		local mob = parent.Parent
+		if not mob or not mob:FindFirstChild("Humanoid") or not mob:FindFirstChild("HumanoidRootPart") then return end
+		-- Só se for o mob que tá atacando você
+		local attacking = getgenv().AttackingMob
+		if attacking and mob.Name ~= attacking.Name then return end
+		local char = game:GetService("Players").LocalPlayer.Character
+		local root = char and char:FindFirstChild("HumanoidRootPart")
+		if not root then return end
+		local dist = (root.Position - mob.HumanoidRootPart.Position).Magnitude
+		if dist > 55 then return end
+		-- Skill com P alto = skill real de ataque
+		if skill:IsA("BodyGyro") and skill.P and skill.P < 500 then return end
+		getgenv().Doding = true
+		getgenv().ReadyToDodge = true
+		local oldPos = root.Position
+		local away = (root.Position - mob.HumanoidRootPart.Position)
+		away = Vector3.new(away.X, 0, away.Z)
+		if away.Magnitude < 1 then away = Vector3.new(math.random(-1,1), 0, math.random(-1,1)) end
+		away = away.Unit * 20
+		local targetPos = Vector3.new(oldPos.X + away.X, oldPos.Y, oldPos.Z + away.Z)
+		pcall(function()
+			root.CFrame = CFrame.new(targetPos.X, oldPos.Y, targetPos.Z)
+			root.AssemblyLinearVelocity = Vector3.new(0,0,0)
+		end)
+		local start = tick()
+		repeat task.wait(0.1) until not skill.Parent or tick()-start > 1.8
+		task.wait(0.2)
+		getgenv().Doding = false
+		getgenv().ReadyToDodge = false
+	end)
+end)
+
 SettingFarmMainSection.CreateToggle(
 	{ Title = "Teleport Y if low health", Desc = nil, Default = Settings["Teleport Y"] or false },
 	function(I)
@@ -8556,9 +8646,9 @@ function DetectMobsAuraNear()
 		end
 	end
 	table.sort(mobsNear, function(a,b)
-		local da = (a.HumanoidRootPart.Position - game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-		local db = (b.HumanoidRootPart.Position - game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-		return da < db
+		local distA = (a.HumanoidRootPart.Position - game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+		local distB = (b.HumanoidRootPart.Position - game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+		return distA < distB
 	end)
 	return mobsNear
 end
@@ -8866,30 +8956,11 @@ function FarmMethod()
 		for _, mob in ipairs(mobsNear) do
 			if not Settings["Aura Farm"] then break end
 			if not IsMobAlive(mob) then continue end
-			repeat task.wait()
-				if not IsMobAlive(mob) then break end
-				sizepart(mob)
-				BringMob(mob)
-				UsedualFlock()
-				ClickM1(mob)
-				if Settings["Select Weapon"] == "Blox Fruit" then
-					toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(-7, getgenv().YPosFruit or 20, 0))
-				else
-					toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(7, 20, 0))
-				end
-			until not IsMobAlive(mob) or not Settings["Aura Farm"] or not Settings["Auto Farm Active"] or not StackFarm
+			repeat task.wait() if not IsMobAlive(mob) then break end sizepart(mob) BringMob(mob) UsedualFlock() ClickM1(mob) if Settings["Select Weapon"] == "Blox Fruit" then toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(-7, getgenv().YPosFruit or 20, 0)) else toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(7, 20, 0)) end until not IsMobAlive(mob) or not Settings["Aura Farm"] or not Settings["Auto Farm Active"] or not StackFarm
 		end
 		return
 	end
 	local f, V, H
-	local SelectedFarmMethod = ({
-		["Auto Farm Level"] = "Level Farm",
-		["Auto Farm Bones"] = "Farm Bones",
-		["Auto Farm Katakuri"] = "Farm Katakuri",
-		["Auto Farm Tyrant of the Skies"] = "Farm Tyrant of the Skies",
-		["Aura Farm"] = "Aura Farm",
-	})[selectedToggle]
-	f = SelectedFarmMethod
 	local C, J = 9999, 2
 	if f == "Farm Katakuri" then
 		C, V, H = 2275, y, "CakeQuest2"
@@ -12009,33 +12080,58 @@ function DetectEmberTemplate()
 end
 function AutoDragonHunter()
 	local y = DetectNpc("Dragon Hunter")
+	if not y or not y:FindFirstChild("HumanoidRootPart") then
+		-- Se NPC não carregou, tenta achar
+		y = workspace.NPCs:FindFirstChild("Dragon Hunter") or game:GetService("ReplicatedStorage").NPCs:FindFirstChild("Dragon Hunter")
+		if not y then return end
+	end
 	if not getgenv().QuestHunterDragon then
-		if t:DistanceFromCharacter(y.HumanoidRootPart.Position) > 8 then
+		if t:DistanceFromCharacter(y.HumanoidRootPart.Position) > 12 then
 			toTarget(y.HumanoidRootPart.CFrame * CFrame.new(0, 0, 4))
 		else
-			local y = game:GetService("ReplicatedStorage")
-				:WaitForChild("Modules")
-				:WaitForChild("Net")
-				:WaitForChild("RF/DragonHunter")
-				:InvokeServer(unpack({ [1] = { Context = "Check" } }))
-			if not y or y and not y.Text then
-				getgenv().QuestHunterDragon = game:GetService("ReplicatedStorage")
-					:WaitForChild("Modules")
-					:WaitForChild("Net")
-					:WaitForChild("RF/DragonHunter")
-					:InvokeServer(unpack({ [1] = { Context = "RequestQuest" } })).Text
-			else
-				getgenv().QuestHunterDragon = y.Text
-			end
+			pcall(function()
+				local res = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({ Context = "Check" })
+				if not res or not res.Text then
+					local req = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({ Context = "RequestQuest" })
+					if req and req.Text then
+						getgenv().QuestHunterDragon = req.Text
+					else
+						getgenv().QuestHunterDragon = "Hydra Enforcers"
+					end
+				else
+					getgenv().QuestHunterDragon = res.Text
+				end
+				-- Se já tem 15 Blaze Ember, tenta claim
+				if CheckCountItem("Blaze Ember", 15) then
+					pcall(function()
+						game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({ Context = "ClaimReward" })
+						game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({ Context = "Claim" })
+						game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({ Context = "Complete" })
+					end)
+				end
+			end)
 		end
 	else
+		-- Se já tem 15 Blaze Ember, vai claimar no NPC
+		if CheckCountItem("Blaze Ember", 15) then
+			pcall(function()
+				if t:DistanceFromCharacter(y.HumanoidRootPart.Position) > 12 then
+					toTarget(y.HumanoidRootPart.CFrame * CFrame.new(0, 0, 4))
+				else
+					game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({ Context = "ClaimReward" })
+					game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({ Context = "Claim" })
+					game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({ Context = "CompleteQuest" })
+					getgenv().QuestHunterDragon = nil
+				end
+			end)
+			return
+		end
 		local y = DetectEmberTemplate()
 		if y then
 			Instance.new("IntValue", y).Name = "Ignored"
-			repeat
-				wait()
+			repeat wait()
 				toTarget(y.Part.CFrame)
-			until not y or not y.Parent
+			until not y or not y.Parent or not Settings["Auto Quest Dragon Hunter"]
 			return
 		end
 		if string.find(getgenv().QuestHunterDragon, "Hydra Enforcers") then
@@ -12156,6 +12252,25 @@ QuestDragonSection.CreateToggle(
 		end)
 	end
 )
+
+function AutoCraftingVolcanicMagnet()
+	pcall(function()
+		if not CheckCountItem("Blaze Ember", 10) then return end
+		if not CheckCountItem("Scrap Metal", 20) then return end
+		-- Vai no Volcano e crafta
+		local npc = DetectNpc("Dragon Hunter") or workspace.NPCs:FindFirstChild("Dragon Hunter")
+		if npc and npc:FindFirstChild("HumanoidRootPart") then
+			if t:DistanceFromCharacter(npc.HumanoidRootPart.Position) > 12 then
+				toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0,0,4))
+			else
+				game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({ Context = "Craft", Item = "Volcanic Magnet" })
+				game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CraftItem", "Volcanic Magnet")
+			end
+		end
+	end)
+end
+
+
 function DetectBerryCFrame(y)
 	for P, P in next, y, nil do
 		if P then
@@ -18692,51 +18807,32 @@ function UpgradeRaceV2AndV3()
 			wait(5)
 			return
 		end
-		if game.ReplicatedStorage.Remotes.CommF_:InvokeServer("Alchemist", "1") == 0 then
+		local alch = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("Alchemist", "1")
+		if alch == 0 then
 			game.ReplicatedStorage.Remotes.CommF_:InvokeServer("Alchemist", "2")
-		elseif game.ReplicatedStorage.Remotes.CommF_:InvokeServer("Alchemist", "1") == 1 then
+			return
+		elseif alch == 1 then
+			-- V2: precisa das 3 flores
 			if not DetectItemPlr("Flower 1") then
-				toTarget(game:GetService("Workspace").Flower1.CFrame)
+				local f = workspace:FindFirstChild("Flower1") or workspace:FindFirstChild("Flower 1")
+				if f then toTarget(f.CFrame) else toTarget(CFrame.new(-2772, 72, -3572)) end
+				return
 			elseif not DetectItemPlr("Flower 2") then
-				toTarget(game:GetService("Workspace").Flower2.CFrame)
+				local f = workspace:FindFirstChild("Flower2") or workspace:FindFirstChild("Flower 2")
+				if f then toTarget(f.CFrame) else toTarget(CFrame.new(-2738, 72, -3600)) end
+				return
 			elseif not DetectItemPlr("Flower 3") then
 				local l = DetectMob("Swan Pirate")
 				if not l then
-					local S = "Swan Pirate"
-					if typeof(S) == "table" then
-						if #N >= 11 then
-							N = {}
-							return
-						end
-						local I = DetectPartSpawnMob(DetectNameTablePart(S))
-						if I then
-							table.insert(N, DetectNameTablePart(S))
-							repeat
-								wait()
-								toTarget(I.CFrame * CFrame.new(0, 60, 0))
-							until (I.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
-								or (DetectMob(S))
-								or not Settings["Auto Upgrade Race V2-V3"]
-							wait(1)
-						end
+					local spawn = DetectPartSpawnMob("Swan Pirate", true) or DetectPartSpawnMob(DetectNameTablePart("Swan Pirate"))
+					if spawn then
+						toTarget(spawn.CFrame * CFrame.new(0, 60, 0))
 					else
-						local I = DetectPartSpawnMob(S, true)
-						if I then
-							Instance.new("IntValue", I).Name = "Ignored"
-							repeat
-								wait()
-								toTarget(I.CFrame * CFrame.new(0, 60, 0))
-							until (I.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100
-								or (DetectMob(S))
-								or not Settings["Auto Upgrade Race V2-V3"]
-							wait(1)
-						else
-							DeleteIgnoredMobSpawn()
-						end
+						toTarget(CFrame.new(-735, 75, 1275))
 					end
+					return
 				else
-					repeat
-						task.wait()
+					repeat task.wait()
 						sizepart(l)
 						BringMob(l)
 						UsedualFlock()
@@ -18748,18 +18844,19 @@ function UpgradeRaceV2AndV3()
 						end
 					until not IsMobAlive(l) or not Settings["Auto Upgrade Race V2-V3"]
 				end
+				return
 			end
-		elseif game.ReplicatedStorage.Remotes.CommF_:InvokeServer("Alchemist", "1") == 2 then
-			if
-				(CFrame.new(-2777.6001, 72.9661407, -3571.42285).Position - t.Character.HumanoidRootPart.Position).Magnitude
-				< 8
-			then
+		elseif alch == 2 then
+			-- Entregar flores
+			if (CFrame.new(-2777.6001, 72.9661407, -3571.42285).Position - t.Character.HumanoidRootPart.Position).Magnitude > 10 then
 				toTarget(CFrame.new(-2777.6001, 72.9661407, -3571.42285))
 			else
 				game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Alchemist", "3")
 			end
+			return
 		else
 			AutoQuestBarito()
+			return
 		end
 	else
 		local l = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("Wenlocktoad", "1")
@@ -25617,7 +25714,7 @@ function AutoSeaEvent(...)local __args = {...};local b = __args[1];local Z = __a
 function AutoSoulGuitarPuzzle()if not CommF:InvokeServer("GuitarPuzzleProgress","Check")then local Z=CheckMoon();if Z=="Unknown Moon"then return;end;if Z=="Full Moon"and(game.Lighting.ClockTime>16 or game.Lighting.ClockTime<5)then if b[1]:DistanceFromCharacter(Vector3.new(-8654.314453125,140.9499053955078,6167.5283203125))>50 then toTarget(CFrame.new(-8654.314453125,140.9499053955078,6167.5283203125));end;CommF:InvokeServer("gravestoneEvent",2);CommF:InvokeServer("gravestoneEvent",2,true);task.wait(1);else b[2].CreateNoti({Title="Nexora Hub",Desc="Hop Full Moon",ShowTime=5});SpecialHop("FullMoon");end;else if b[1].PlayerGui.Main.Dialogue.Visible then game:GetService("VirtualUser"):Button1Down(Vector2.new(0,0));game:GetService("VirtualUser"):Button1Down(Vector2.new(0,0));end;if not CommF:InvokeServer("GuitarPuzzleProgress","Check").Swamp then if(CFrame.new(-10171.7607421875,138.62667846679688,6008.0654296875).Position-b[1].Character.HumanoidRootPart.Position).Magnitude>100 then toTarget(CFrame.new(-10171.7607421875,158.62667846679688,6008.0654296875));elseif CountZombie()==6 then repeat task.wait();local Z=(DetectHighHealthMob("Living Zombie"));repeat task.wait();Z=DetectHighHealthMob("Living Zombie");sizepart(Z);UsedualFlock();ClickM1(Z);if Settings["Select Weapon"]=="Blox Fruit"then toTarget(Z.HumanoidRootPart.CFrame*CFrame.new(-7,getgenv().YPosFruit or 20,0));else toTarget(Z.HumanoidRootPart.CFrame*CFrame.new(7,20,0));end;until not IsMobAlive(Z);until CountZombie()==0;end;return;elseif not CommF:InvokeServer("GuitarPuzzleProgress","Check").Gravestones then if b[1]:DistanceFromCharacter(Vector3.new(-8761.4765625,142.10487365722656,6086.07861328125))>50 then toTarget(CFrame.new(-8761.4765625,142.10487365722656,6086.07861328125));else local Z={game.workspace.Map["Haunted Castle"].Placard1.Right.ClickDetector,game.workspace.Map["Haunted Castle"].Placard2.Right.ClickDetector,game.workspace.Map["Haunted Castle"].Placard3.Left.ClickDetector,game.workspace.Map["Haunted Castle"].Placard4.Right.ClickDetector,game.workspace.Map["Haunted Castle"].Placard5.Left.ClickDetector,game.workspace.Map["Haunted Castle"].Placard6.Left.ClickDetector,game.workspace.Map["Haunted Castle"].Placard7.Left.ClickDetector};for F,F in b[3](Z)do fireclickdetector(F);end;end;elseif not CommF:InvokeServer("GuitarPuzzleProgress","Check").Ghost then if b[1]:DistanceFromCharacter(Vector3.new(-9755.6591796875,271.0661315917969,6290.61474609375))>50 then toTarget(CFrame.new(-9755.6591796875,271.0661315917969,6290.61474609375));end;CommF:InvokeServer("GuitarPuzzleProgress","Ghost");task.wait(0.1);elseif not CommF:InvokeServer("GuitarPuzzleProgress","Check").Trophies then if b[1]:DistanceFromCharacter(Vector3.new(-9530.0126953125,6.104853630065918,6054.83349609375))>50 then toTarget(CFrame.new(-9530.0126953125,6.104853630065918,6054.83349609375));end;local Z=game.workspace.Map["Haunted Castle"].Tablet;for F,c in b[3](BlankTablets)do F=Z[c];if F.Line.Position.X~=-9707.86328125 then repeat task.wait();fireclickdetector(F.ClickDetector);until F.Line.Position.X==-9707.86328125;end;end;for F,c in b[3](Trophy)do local l=b[4](game.workspace.Map["Haunted Castle"].Trophies.Quest[c].Handle.CFrame):split(", ")[4];c=if l=="1"or l=="-1"then"90"else"180";if not string.find(b[4](Z[F].Line.Rotation.Z),c)then repeat task.wait();fireclickdetector(Z[F].ClickDetector);until string.find(b[4](Z[F].Line.Rotation.Z),c);end;end;elseif not CommF:InvokeServer("GuitarPuzzleProgress","Check").Pipes then for Z,F in b[3](Pipes)do local b=game.workspace.Map["Haunted Castle"]["Lab Puzzle"].ColorFloor.Model[Z];if b.BrickColor.Name~=F then repeat task.wait();fireclickdetector(b.ClickDetector);until b.BrickColor.Name==F;end;end;end;end;end
 
 -- TARGET-V14 FUNCTION: AutoTrial (source-recovery line 532)
-function AutoTrial()if Settings["Auto Finish Train Quest"]and Settings["Stack Train With Trial Race"]and(CheckGoTrain())then return;end;local Z,F=game.Lighting.ClockTime,CheckMoon();if F=="Unknown Moon"and Settings["Hop Server [Trial Or Pull Lever]"]then return;end;if(F=="Full Moon"and not(Z>5 and Z<12)or F=="Next Night")and Settings["Hop Server [Trial Or Pull Lever]"]then if getgenv().TurnOffHOPSVPullAndTrial then getgenv().TurnOffHOPSVPullAndTrial:SetStage(false);end;task.wait(0.1);elseif Settings["Hop Server [Trial Or Pull Lever]"]then HopServer();return;end;Z=GetTempleOfTime();if not Z and not VerifyNearbyTrial()then toTarget(CFrame.new(28282.5703125,14896.8505859375,105.1042709350586));return;end;if Z and(Z.FFABorder:FindFirstChild("Forcefield"))and Z.FFABorder.Forcefield.Transparency==1 or(VerifyNearbyTrial())then if game:GetService("Players").LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible then if VerifyNearbyTrial()and not getgenv().VerifyTrial then getgenv().VerifyTrial=true;end;repeat wait();until VerifyNearbyTrial()or not game:GetService("Players").LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible;F=game.Players.LocalPlayer.Data.Race.Value;if F=="Human"then repeat task.wait();local c=TrialHuman();if c then repeat task.wait();sizepart(c);if Settings["Select Weapon"]=="Blox Fruit"then toTarget(c.HumanoidRootPart.CFrame*CFrame.new(-7,getgenv().YPosFruit or 20,0));else toTarget(c.HumanoidRootPart.CFrame*CFrame.new(7,20,0));end;ClickM1(c);UsedualFlock();until not IsMobAlive(c)or not game:GetService("Players").LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible or(game.Players.LocalPlayer.Character.HumanoidRootPart.Position-game:GetService("Workspace")._WorldOrigin.Locations["Trial of Strength"].Position).Magnitude>1000;end;until not game:GetService("Players").LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible or(game.Players.LocalPlayer.Character.HumanoidRootPart.Position-game:GetService("Workspace")._WorldOrigin.Locations["Trial of Strength"].Position).Magnitude>1000;elseif F=="Skypiea"then repeat task.wait();if game:GetService("Workspace")._WorldOrigin.Locations["Trial of the King"]and(game.Players.LocalPlayer.Character.HumanoidRootPart.Position-game:GetService("Workspace")._WorldOrigin.Locations["Trial of the King"].CFrame.Position).Magnitude<=1000 then toTarget(game:GetService("Workspace").Map.SkyTrial.Model.FinishPart.CFrame);task.wait(0.1);end;until not game:GetService("Players").LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible or workspace.Map:FindFirstChild("Temple of Time")and workspace.Map["Temple of Time"].FFABorder.Forcefield.Transparency==0 or b[1]:DistanceFromCharacter(game:GetService("Workspace").Map.SkyTrial.Model.FinishPart.Position)>1000;elseif F=="Fishman"then local c=if game:GetService("Workspace")._WorldOrigin.Locations:FindFirstChild("Trial of Water")then(game:GetService("Workspace")._WorldOrigin.Locations:FindFirstChild("Trial of Water"))else nil;if c and(c.Position-b[1].Character.HumanoidRootPart.Position).Magnitude<1500 then local c=GetSeaBeastTrial();repeat task.wait();if c then local l=c:FindFirstChild("HumanoidRootPart");getgenv().AimPos=CFrame.new(l.Position.X,40,l.Position.Z);TeleportSeabeast2(c);if b[1]:DistanceFromCharacter(l.Position)<400 then AutoAllSkill();end;end;until not c or not c.Parent or c.Health.Value==0 or not game:GetService("Players").LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible or workspace.Map:FindFirstChild("Temple of Time")and workspace.Map["Temple of Time"].FFABorder.Forcefield.Transparency==0 or b[1]:DistanceFromCharacter(game:GetService("Workspace")._WorldOrigin.Locations:FindFirstChild("Trial of Water").Position)>1000;end;elseif F=="Mink"then repeat task.wait();if(game.Players.LocalPlayer.Character.HumanoidRootPart.Position-game:GetService("Workspace")._WorldOrigin.Locations["Trial of Speed"].Position).Magnitude<=1000 then toTarget(game:GetService("Workspace").StartPoint.CFrame*CFrame.new(0,2,0));end;until not game:GetService("Players").LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible or b[1]:DistanceFromCharacter(game:GetService("Workspace")._WorldOrigin.Locations:FindFirstChild("Trial of Speed").Position)>1000;elseif F=="Ghoul"then repeat task.wait();local c=TrialGhoul();if c then repeat task.wait();sizepart(c);if Settings["Select Weapon"]=="Blox Fruit"then toTarget(c.HumanoidRootPart.CFrame*CFrame.new(-7,getgenv().YPosFruit or 20,0));else toTarget(c.HumanoidRootPart.CFrame*CFrame.new(7,20,0));end;UsedualFlock();ClickM1(c);until not IsMobAlive(c)or not game:GetService("Players").LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible or b[1]:DistanceFromCharacter(game:GetService("Workspace")._WorldOrigin.Locations:FindFirstChild("Trial of Carnage").Position)>1000;end;until not game:GetService("Players").LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible or b[1]:DistanceFromCharacter(game:GetService("Workspace")._WorldOrigin.Locations:FindFirstChild("Trial of Carnage").Position)>1000;elseif F=="Cyborg"then repeat task.wait();toTarget(CFrame.new(28282.5703125,14896.8505859375,105.1042709350586));until not game:GetService("Players").LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible;end;else if not Z then return;end;local F=Z[b[1].Data.Race.Value.."Corridor"].Door.Door.RightDoor.Union;if b[1]:DistanceFromCharacter(F.Position)>8 then toTarget(F.CFrame);end;if Settings["Multi Trial"]and(CheckMultiTeleDoor())and b[1]:DistanceFromCharacter(F.Position)<=8 then game:service("VirtualInputManager"):SendKeyEvent(true,"T",false,game);task.wait();game:service("VirtualInputManager"):SendKeyEvent(false,"T",false,game);return;end;if Settings["Auto Turn On V3 Near Door"]and(CheckMultiPlayerNearDoor())then game:service("VirtualInputManager"):SendKeyEvent(true,"T",false,game);task.wait();game:service("VirtualInputManager"):SendKeyEvent(false,"T",false,game);end;end;elseif getgenv().VerifyTrial then if not Settings["Multi Trial"]and not Settings["Auto Reset Character"]then Settings["Auto Trial"]=false;ToggleAutoTrial:SetStage(false);end;getgenv().VerifyTrial=false;end;end
+function AutoTrial()if Settings["Auto Finish Train Quest"]and Settings["Stack Train With Trial Race"]and(CheckGoTrain())then return;end;local Z,F=game.Lighting.ClockTime,CheckMoon();if F=="Unknown Moon"and Settings["Hop Server [Trial Or Pull Lever]"]then return;end;if(F=="Full Moon"and not(Z>5 and Z<12)or F=="Next Night")and Settings["Hop Server [Trial Or Pull Lever]"]then if getgenv().TurnOffHOPSVPullAndTrial then getgenv().TurnOffHOPSVPullAndTrial:SetStage(false);end;task.wait(0.1);elseif Settings["Hop Server [Trial Or Pull Lever]"]then HopServer();return;end;Z=GetTempleOfTime();if not Z and not VerifyNearbyTrial()then BorrowTempleOfTime();toTarget(CFrame.new(28282.5703125,14896.8505859375,105.1042709350586));return;end;if Z and(Z.FFABorder:FindFirstChild("Forcefield"))and Z.FFABorder.Forcefield.Transparency==1 or(VerifyNearbyTrial())then if game:GetService("Players").LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible then if VerifyNearbyTrial()and not getgenv().VerifyTrial then getgenv().VerifyTrial=true;end;repeat wait();until VerifyNearbyTrial()or not game:GetService("Players").LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible;F=game.Players.LocalPlayer.Data.Race.Value;if F=="Human"then repeat task.wait();local c=TrialHuman();if c then repeat task.wait();sizepart(c);if Settings["Select Weapon"]=="Blox Fruit"then toTarget(c.HumanoidRootPart.CFrame*CFrame.new(-7,getgenv().YPosFruit or 20,0));else toTarget(c.HumanoidRootPart.CFrame*CFrame.new(7,20,0));end;ClickM1(c);UsedualFlock();until not IsMobAlive(c)or not game:GetService("Players").LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible or(game.Players.LocalPlayer.Character.HumanoidRootPart.Position-game:GetService("Workspace")._WorldOrigin.Locations["Trial of Strength"].Position).Magnitude>1000;end;until not game:GetService("Players").LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible or(game.Players.LocalPlayer.Character.HumanoidRootPart.Position-game:GetService("Workspace")._WorldOrigin.Locations["Trial of Strength"].Position).Magnitude>1000;elseif F=="Skypiea"then repeat task.wait();if game:GetService("Workspace")._WorldOrigin.Locations["Trial of the King"]and(game.Players.LocalPlayer.Character.HumanoidRootPart.Position-game:GetService("Workspace")._WorldOrigin.Locations["Trial of the King"].CFrame.Position).Magnitude<=1000 then toTarget(game:GetService("Workspace").Map.SkyTrial.Model.FinishPart.CFrame);task.wait(0.1);end;until not game:GetService("Players").LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible or workspace.Map:FindFirstChild("Temple of Time")and workspace.Map["Temple of Time"].FFABorder.Forcefield.Transparency==0 or b[1]:DistanceFromCharacter(game:GetService("Workspace").Map.SkyTrial.Model.FinishPart.Position)>1000;elseif F=="Fishman"then local c=if game:GetService("Workspace")._WorldOrigin.Locations:FindFirstChild("Trial of Water")then(game:GetService("Workspace")._WorldOrigin.Locations:FindFirstChild("Trial of Water"))else nil;if c and(c.Position-b[1].Character.HumanoidRootPart.Position).Magnitude<1500 then local c=GetSeaBeastTrial();repeat task.wait();if c then local l=c:FindFirstChild("HumanoidRootPart");getgenv().AimPos=CFrame.new(l.Position.X,40,l.Position.Z);TeleportSeabeast2(c);if b[1]:DistanceFromCharacter(l.Position)<400 then AutoAllSkill();end;end;until not c or not c.Parent or c.Health.Value==0 or not game:GetService("Players").LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible or workspace.Map:FindFirstChild("Temple of Time")and workspace.Map["Temple of Time"].FFABorder.Forcefield.Transparency==0 or b[1]:DistanceFromCharacter(game:GetService("Workspace")._WorldOrigin.Locations:FindFirstChild("Trial of Water").Position)>1000;end;elseif F=="Mink"then repeat task.wait();if(game.Players.LocalPlayer.Character.HumanoidRootPart.Position-game:GetService("Workspace")._WorldOrigin.Locations["Trial of Speed"].Position).Magnitude<=1000 then toTarget(game:GetService("Workspace").StartPoint.CFrame*CFrame.new(0,2,0));end;until not game:GetService("Players").LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible or b[1]:DistanceFromCharacter(game:GetService("Workspace")._WorldOrigin.Locations:FindFirstChild("Trial of Speed").Position)>1000;elseif F=="Ghoul"then repeat task.wait();local c=TrialGhoul();if c then repeat task.wait();sizepart(c);if Settings["Select Weapon"]=="Blox Fruit"then toTarget(c.HumanoidRootPart.CFrame*CFrame.new(-7,getgenv().YPosFruit or 20,0));else toTarget(c.HumanoidRootPart.CFrame*CFrame.new(7,20,0));end;UsedualFlock();ClickM1(c);until not IsMobAlive(c)or not game:GetService("Players").LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible or b[1]:DistanceFromCharacter(game:GetService("Workspace")._WorldOrigin.Locations:FindFirstChild("Trial of Carnage").Position)>1000;end;until not game:GetService("Players").LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible or b[1]:DistanceFromCharacter(game:GetService("Workspace")._WorldOrigin.Locations:FindFirstChild("Trial of Carnage").Position)>1000;elseif F=="Cyborg"then repeat task.wait();toTarget(CFrame.new(28282.5703125,14896.8505859375,105.1042709350586));until not game:GetService("Players").LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible;end;else if not Z then return;end;local F=Z[b[1].Data.Race.Value.."Corridor"].Door.Door.RightDoor.Union;if b[1]:DistanceFromCharacter(F.Position)>8 then toTarget(F.CFrame);end;if Settings["Multi Trial"]and(CheckMultiTeleDoor())and b[1]:DistanceFromCharacter(F.Position)<=8 then game:service("VirtualInputManager"):SendKeyEvent(true,"T",false,game);task.wait();game:service("VirtualInputManager"):SendKeyEvent(false,"T",false,game);return;end;if Settings["Auto Turn On V3 Near Door"]and(CheckMultiPlayerNearDoor())then game:service("VirtualInputManager"):SendKeyEvent(true,"T",false,game);task.wait();game:service("VirtualInputManager"):SendKeyEvent(false,"T",false,game);end;end;elseif getgenv().VerifyTrial then if not Settings["Multi Trial"]and not Settings["Auto Reset Character"]then Settings["Auto Trial"]=false;ToggleAutoTrial:SetStage(false);end;getgenv().VerifyTrial=false;end;end
 
 -- TARGET-V14 FUNCTION: AutoTushita (source-recovery line 247)
 function AutoTushita(...)local __args = {...};local b = __args[1];local Z = __args[5];return function()local Z=game.ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_");if Z:InvokeServer("TushitaProgress").OpenedDoor then if CheckNameBoss("Longma")then local F=CheckNameBoss("Longma");if F then repeat task.wait();sizepart(F);if Settings["Select Weapon"]=="Blox Fruit"then toTarget(F.HumanoidRootPart.CFrame*CFrame.new(-7,getgenv().YPosFruit or 20,0));else toTarget(F.HumanoidRootPart.CFrame*CFrame.new(7,20,0));end;UsedualFlock();ClickM1(F);until not IsMobAlive(F)or not Settings["Auto Tushita"];end;end;else local F=GetHitBoxTouch();if not F then toTarget((CFrame.new(5677.541015625,28.533447265625,357.9483642578125)));return;end;if F:FindFirstChild("TouchInterest")then if not b[1].Character:FindFirstChild("Holy Torch")and not b[1].Backpack:FindFirstChild("Holy Torch")then toTarget(F.CFrame);else equiptool("Holy Torch");if checkTorch()then for F=1,5,1 do Z:InvokeServer("TushitaProgress","Torch",F);end;wait(2);end;end;else b[2].CreateNoti({Title="Nexora Hub",Desc="Rip Indra Dont Spawn",ShowTime=5});wait(5);end;end;end;end
