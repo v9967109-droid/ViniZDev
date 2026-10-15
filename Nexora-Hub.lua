@@ -3228,8 +3228,15 @@ do
     -- PATCH FIX: estoque 100% dinamico - usa lista real da loja
     local function ParseFruit(v)
         if type(v)=="table" then
-            local n = v.Name or v[1] or v.name
-            local p = v.Price or v[2] or v.price or 0
+            -- Blox Fruits retorna: {Name, Price, OnSale, InStock, etc}
+            -- Só queremos frutas que dão pra comprar
+            if v.OnSale == false then return nil, nil end
+            if v.InStock == false then return nil, nil end
+            if v.CanBuy == false then return nil, nil end
+            -- Se tem campo Stock ou Amount e é 0, pula
+            if v.Stock == 0 or v.Amount == 0 then return nil, nil end
+            local n = v.Name or v[1] or v.name or v.FruitName
+            local p = v.Price or v[2] or v.price or v.Cost or 0
             if n then return n, p end
         elseif type(v)=="string" then
             return v, 0
@@ -3250,20 +3257,26 @@ do
         if not stock or type(stock)~="table" then return end
         local list = {}
         if #stock>0 then list=stock else for k,v in pairs(stock) do if type(v)=="table" then table.insert(list,v) elseif type(k)=="string" then table.insert(list,{Name=k, Price=v}) end end end
-        if #list==0 then
-            if labels[1] then labels[1].SetText("Nenhuma fruta no momento") end
+        -- FILTRA SÓ AS QUE DÁ PRA COMPRAR
+        local filtered = {}
+        for _, v in ipairs(list) do
+            local name, price = ParseFruit(v)
+            if name then table.insert(filtered, {Name=name, Price=price, _raw=v}) end
+        end
+        if #filtered==0 then
+            if labels[1] then labels[1].SetText("Nenhuma fruta no stock agora") end
+            for i=2, #labels do if labels[i] then labels[i].SetText("Slot "..i..": Empty") end end
             return
         end
-        Ensure(section, labels, #list)
-        for i,v in ipairs(list) do
-            local name, price = ParseFruit(v)
-            if name and labels[i] then
-                local disp = name
+        Ensure(section, labels, #filtered)
+        for i, data in ipairs(filtered) do
+            if labels[i] then
+                local disp = data.Name
                 if not disp:find("-") then disp = disp.."-"..disp end
-                labels[i].SetText(disp .. FormatPrice(price))
+                labels[i].SetText(disp .. FormatPrice(data.Price))
             end
         end
-        for i=#list+1, #labels do if labels[i] then labels[i].SetText("Slot "..i..": Empty") end end
+        for i=#filtered+1, #labels do if labels[i] then labels[i].SetText("Slot "..i..": Empty") end end
     end
 
     spawn(function()
