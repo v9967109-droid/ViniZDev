@@ -1943,17 +1943,13 @@ function Nexora.CreateMain(config)
         pcall(function() if getgenv then getgenv().__NEXORA_WINDOW_SIZE = data end end)
         pcall(function() if writefile then writefile(SIZE_FILE, game:GetService("HttpService"):JSONEncode(data)) end end)
     end
-    local shell = make("CanvasGroup", {Name="Window", GroupTransparency=0, AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.new(0, persistedW, 0, persistedH), BackgroundColor3=C.bg, BorderSizePixel=0}, gui)
+    local shell = make("Frame", {Name="Window", AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.new(0, persistedW, 0, persistedH), BackgroundColor3=C.bg, BorderSizePixel=0}, gui)
     corner(shell, 14); stroke(shell, Color3.fromRGB(255,255,255), 0.88)
-    -- O degradê NÃO pode ficar direto no CanvasGroup (ele escureceria a janela inteira): vai num fundo separado.
-    shell.BackgroundTransparency = 1
-    local shellBg = make("Frame", {Name="Background", Size=UDim2.new(1,0,1,0), BackgroundColor3=Color3.fromRGB(255,255,255), BorderSizePixel=0, ZIndex=0}, shell)
-    corner(shellBg, 14)
     make("UIGradient", {Rotation = 135, Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, Color3.fromRGB(13, 12, 16)),
         ColorSequenceKeypoint.new(0.52, Color3.fromRGB(5, 5, 8)),
         ColorSequenceKeypoint.new(1, Color3.fromRGB(17, 12, 5)),
-    })}, shellBg)
+    })}, shell)
     local scale = make("UIScale", {Scale = 1}, shell)
     local function resize()
         local cam = workspace.CurrentCamera
@@ -2072,21 +2068,25 @@ function Nexora.CreateMain(config)
     local function playOpen()
         closing = false
         local cur = shell.Position
-        shell.GroupTransparency = 1
+        local base = scale.Scale
         shell.Visible = true
         shell.Position = cur + UDim2.new(0,0,0,22)
+        scale.Scale = base * 0.93
         sfxPlay("open")
-        TweenService:Create(shell, TweenInfo.new(.34, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position=cur, GroupTransparency=0}):Play()
+        TweenService:Create(shell, TweenInfo.new(.34, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position=cur}):Play()
+        TweenService:Create(scale, TweenInfo.new(.34, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale=base}):Play()
     end
     playClose = function()
         if closing or not shell.Visible then return end
         closing = true
         local cur = shell.Position
+        local base = scale.Scale
         sfxPlay("close")
-        local tw = TweenService:Create(shell, TweenInfo.new(.22, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {Position=cur + UDim2.new(0,0,0,18), GroupTransparency=1})
+        TweenService:Create(scale, TweenInfo.new(.2, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {Scale=base * 0.93}):Play()
+        local tw = TweenService:Create(shell, TweenInfo.new(.2, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {Position=cur + UDim2.new(0,0,0,18)})
         tw:Play()
         tw.Completed:Connect(function()
-            if closing then shell.Visible = false; shell.Position = cur; shell.GroupTransparency = 0 end
+            if closing then shell.Visible = false; shell.Position = cur; scale.Scale = base end
             closing = false
         end)
     end
