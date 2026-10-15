@@ -6231,7 +6231,7 @@ function travelFunctions.TweenBypass(y, x)
 		end)
 		local H = e:FindFirstChild("LastSpawnPoint")
 		if H then
-			H.Disabled = true
+			pcall(function() if H:FindFirstChild('Disabled') or H:GetAttribute('Disabled') ~= nil or H:IsA('SpawnLocation') or H:IsA('BasePart') then H.Disabled = true end end)
 		end
 		task.wait()
 		for B, Z in ipairs(Y) do
@@ -6249,7 +6249,7 @@ function travelFunctions.TweenBypass(y, x)
 							task.wait()
 						until localPlayerFunctions.IsAlive()
 						if H then
-							H.Disabled = false
+							pcall(function() if H:FindFirstChild('Disabled') or H:GetAttribute('Disabled') ~= nil or H:IsA('SpawnLocation') or H:IsA('BasePart') then H.Disabled = false end end)
 						end
 						travelFunctions.TweenBypass(y, x + 1)
 						return true
@@ -6258,7 +6258,7 @@ function travelFunctions.TweenBypass(y, x)
 			end
 		end
 		if H then
-			H.Disabled = false
+			pcall(function() if H:FindFirstChild('Disabled') or H:GetAttribute('Disabled') ~= nil or H:IsA('SpawnLocation') or H:IsA('BasePart') then H.Disabled = false end end)
 		end
 	end)
 	return false
@@ -7160,7 +7160,7 @@ getgenv().SpamGunDragonStorm = function(E)
 	-- Validação do jogo: depende de índices de upvalue que mudam a cada update.
 	-- Antes um erro aqui impedia o tiro; agora é tentativa protegida e o tiro sai de qualquer forma.
 	pcall(function()
-		local l = getupvalues(require(L.Controllers.CombatController).Attack)[9]
+		local l = (debug and debug.getupvalues or getupvalues)(require(L.Controllers.CombatController).Attack)[9]
 		local I, _, o, V, N, y, P =
 			debug.getupvalue(l, 15),
 			debug.getupvalue(l, 13),
@@ -7311,7 +7311,7 @@ function ShootM1(E)
 	-- The validator uses upvalue indexes that change on game updates, so it is protected.
 	pcall(function()
 		local rs = game:GetService("ReplicatedStorage")
-		local l = getupvalues(require(rs.Controllers.CombatController).Attack)[9]
+		local l = (debug and debug.getupvalues or getupvalues)(require(rs.Controllers.CombatController).Attack)[9]
 		local Q, d, I, _, o, V, N =
 			debug.getupvalue(l, 15),
 			debug.getupvalue(l, 13),
@@ -7650,10 +7650,8 @@ SettingFarmMainSection.CreateToggle(
 	end
 )
 
--- FAST ATTACK OP - Deixa Melee, Fruit, Sword, Gun rapidão
+-- FAST ATTACK OP - FIX DELTA: sem getupvalues nil, Melee Fruit Sword Gun rapidão
 getgenv().FastAttackOP = Settings["Fast Attack OP"] or false
-local CombatFramework = require(game:GetService("Players").LocalPlayer.PlayerScripts:WaitForChild("CombatFramework"))
-local CombatFrameworkR = getupvalues(CombatFramework)[2]
 
 SettingFarmMainSection.CreateToggle(
 	{ Title = "Fast Attack OP", Desc = "Melee, Fruit, Sword, Gun fica OP rapidão", Default = Settings["Fast Attack OP"] or false },
@@ -7661,9 +7659,33 @@ SettingFarmMainSection.CreateToggle(
 		SaveSettings("Fast Attack OP", state)
 		getgenv().FastAttackOP = state
 		if state then
+			-- Loop 1: Zera cooldown do CombatFramework (safe, sem getupvalues quebrado)
 			spawn(function()
 				while getgenv().FastAttackOP and task.wait(0.03) do
 					pcall(function()
+						local plr = game:GetService("Players").LocalPlayer
+						local cf = plr.PlayerScripts:FindFirstChild("CombatFramework")
+						if not cf then return end
+						local CombatFrameworkR = nil
+						pcall(function()
+							-- Tenta pegar com debug.getupvalues e getupvalues (compatível Delta/Fluxus)
+							local mod = require(cf)
+							local getup = debug and debug.getupvalues or getupvalues
+							if getup then
+								local upvals = getup(mod)
+								for _, v in pairs(upvals) do
+									if type(v) == "table" and v.activeController then
+										CombatFrameworkR = v
+										break
+									end
+								end
+								-- Tenta índice 2 como fallback
+								if not CombatFrameworkR then
+									local ok, res = pcall(function() return getup(mod)[2] end)
+									if ok and res then CombatFrameworkR = res end
+								end
+							end
+						end)
 						if CombatFrameworkR and CombatFrameworkR.activeController then
 							CombatFrameworkR.activeController.timeToNextAttack = 0
 							CombatFrameworkR.activeController.timeToNextBlock = 0
@@ -7671,38 +7693,33 @@ SettingFarmMainSection.CreateToggle(
 							CombatFrameworkR.activeController.blocking = false
 							CombatFrameworkR.activeController.focusStart = 0
 							CombatFrameworkR.activeController.increment = 4
-							-- Para Sword, Gun, Melee e Fruit
-							CombatFrameworkR.activeController.humanoid.AutoRotate = true
+							if CombatFrameworkR.activeController.humanoid then
+								CombatFrameworkR.activeController.humanoid.AutoRotate = true
+							end
 						end
 					end)
 				end
 			end)
-			-- Loop de click ultra rápido pra todas as armas
+			-- Loop 2: Click ultra rápido pra todas as armas
 			spawn(function()
 				while getgenv().FastAttackOP and task.wait(0.05) do
 					pcall(function()
 						local char = game:GetService("Players").LocalPlayer.Character
-						if not char then return end
+						if not char or not char:FindFirstChild("HumanoidRootPart") then return end
 						local tool = char:FindFirstChildOfClass("Tool")
-						if tool then
-							-- Melee, Sword, Gun, Blox Fruit - tudo
-							if tool.ToolTip == "Melee" or tool.ToolTip == "Sword" or tool.ToolTip == "Gun" or tool.ToolTip == "Blox Fruit" then
-								-- Ataca sem delay
-								local targets = {}
-								for _, mob in pairs(workspace.Enemies:GetChildren()) do
-									if mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
-										if (mob.HumanoidRootPart.Position - char.HumanoidRootPart.Position).Magnitude <= 80 then
-											table.insert(targets, mob)
-										end
+						if not tool then return end
+						if tool.ToolTip == "Melee" or tool.ToolTip == "Sword" or tool.ToolTip == "Gun" or tool.ToolTip == "Blox Fruit" then
+							for _, mob in pairs(workspace.Enemies:GetChildren()) do
+								if mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+									if (mob.HumanoidRootPart.Position - char.HumanoidRootPart.Position).Magnitude <= 80 then
+										game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Attack", mob)
 									end
 								end
-								for _, mob in pairs(targets) do
-									game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Attack", mob)
-								end
-								-- Click rapidão
+							end
+							pcall(function()
 								game:GetService("VirtualUser"):CaptureController()
 								game:GetService("VirtualUser"):ClickButton1(Vector2.new(0,0))
-							end
+							end)
 						end
 					end)
 				end
@@ -7710,6 +7727,7 @@ SettingFarmMainSection.CreateToggle(
 		end
 	end
 )
+
 
 SettingFarmMainSection.CreateToggle(
 	{ Title = "Kill Aura With DragonStorm", Desc = nil, Default = Settings["Kill Aura With DragonStorm"] or false },
@@ -24992,7 +25010,7 @@ a.CreateToggle(
 		SaveSettings("Remove Notifications", T)
 	end
 )
-DisplayNoti = getupvalues(require(game:GetService("ReplicatedStorage").Notification).Display)[1]
+DisplayNoti = (debug and debug.getupvalues or getupvalues)(require(game:GetService("ReplicatedStorage").Notification).Display)[1]
 spawn(function()
 	repeat
 		wait(1)
@@ -27692,10 +27710,10 @@ local __BC_FastAttackCameraShaker = nil
 pcall(function()
     local __cfModule = require(game:GetService("Players").LocalPlayer.PlayerScripts.CombatFramework)
     if type(getupvalues) == "function" then
-        local __ups = getupvalues(__cfModule)
+        local __ups = (debug and debug.getupvalues or getupvalues)(__cfModule)
         __BC_FastAttackCombatFramework = __ups and __ups[2]
     elseif debug and type(debug.getupvalues) == "function" then
-        local __ups = debug.getupvalues(__cfModule)
+        local __ups = debug.(debug and debug.getupvalues or getupvalues)(__cfModule)
         __BC_FastAttackCombatFramework = __ups and __ups[2]
     end
 end)
