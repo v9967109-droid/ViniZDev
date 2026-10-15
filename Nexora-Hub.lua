@@ -12474,6 +12474,24 @@ function GetDragonHunterNPC()
     return npc
 end
 
+
+game:GetService("Players").LocalPlayer.PlayerGui.Notifications.ChildAdded:Connect(function(y)
+    if y.Name == "NotificationTemplate" then
+        task.wait(0.2)
+        local txt = y:FindFirstChild("TranslateMe") and y.TranslateMe.Text or ""
+        if txt == "Head back to the Dojo to complete more tasks." or txt:find("complete more tasks") or txt:find("Head back") then
+            getgenv().QuestHunterDragon = nil
+            -- Já força ir pro NPC
+            pcall(function()
+                local npc = GetDragonHunterNPC()
+                if npc then
+                    toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0,4,4))
+                end
+            end)
+        end
+    end
+end)
+
 function AutoDragonHunterQuestLoop()
     pcall(function()
         local t = game.Players.LocalPlayer
@@ -12546,18 +12564,44 @@ function AutoDragonHunterQuestLoop()
             return
         end
 
-        -- Verifica se já tem 15 Ember, se sim, claim
-        if CheckCountItem("Blaze Ember", 15) then
+        -- Se a missão completou, SEMPRE volta no NPC pra claimar e pegar outra (independente de ter 15)
+        -- Detecta notificação de missão completa ou quest sem progresso
+        local shouldClaim = false
+        pcall(function()
+            local check = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({Context="Check"})
+            if check then
+                -- Se tem progresso completo ou Text vazio, precisa claimar
+                if check.Progress and check.Goal and check.Progress >= check.Goal then
+                    shouldClaim = true
+                end
+                if check.Completed or check.ReadyToClaim then
+                    shouldClaim = true
+                end
+            end
+        end)
+
+        if shouldClaim or CheckCountItem("Blaze Ember", 15) then
             pcall(function()
-                if distToNPC > 12 then
-                    toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0,0,4))
+                if distToNPC > 15 then
+                    toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0,4,4))
                 else
-                    game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({Context="ClaimReward"})
-                    game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({Context="Claim"})
-                    game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({Context="Complete"})
-                    game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({Context="CompleteQuest"})
-                    getgenv().QuestHunterDragon = nil
+                    -- Tenta todos os Claims possíveis
+                    for _, ctx in ipairs({"ClaimReward","Claim","Complete","CompleteQuest","ClaimQuest","Finish"}) do
+                        pcall(function()
+                            game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({Context=ctx})
+                        end)
+                    end
                     task.wait(1)
+                    getgenv().QuestHunterDragon = nil
+                    -- Força pedir nova missão na próxima volta
+                    pcall(function()
+                        local req = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({Context="RequestQuest"})
+                        if req and req.Text then
+                            getgenv().QuestHunterDragon = req.Text
+                        else
+                            getgenv().QuestHunterDragon = nil
+                        end
+                    end)
                 end
             end)
             return
