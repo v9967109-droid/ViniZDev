@@ -8707,20 +8707,41 @@ getgenv().StackFarmOther = true
 StackFarm = getgenv().StackFarm
 StackFarmOther = getgenv().StackFarmOther
 function DetectMobAura()
-	local V, H = typeof(Settings["Distance Farm Aura"]) ~= "number" and (tonumber(Settings["Distance Farm Aura"]))
-		or Settings["Distance Farm Aura"]
-		or 300
-	for B, C in pairs(game.Workspace.Enemies:GetChildren()) do
-		if IsMobAlive(C) then
-			B = (
-				C.HumanoidRootPart.Position - game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position
-			).magnitude
-			if B < V then
-				V, H = B, C.Name
+	-- Aura Farm: pega mobs que estão perto de você (dentro do Distance Farm Aura)
+	local distance = typeof(Settings["Distance Farm Aura"]) ~= "number" and tonumber(Settings["Distance Farm Aura"]) or Settings["Distance Farm Aura"] or 300
+	local closestDist = distance
+	local closestName = nil
+	for _, mob in pairs(game.Workspace.Enemies:GetChildren()) do
+		if IsMobAlive(mob) and mob:FindFirstChild("HumanoidRootPart") then
+			local dist = (mob.HumanoidRootPart.Position - game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+			if dist < closestDist then
+				closestDist = dist
+				closestName = mob.Name
 			end
 		end
 	end
-	return H
+	return closestName
+end
+
+function DetectMobsAuraNear()
+	-- Retorna TODOS os mobs que estão perto de você pra farmar
+	local distance = typeof(Settings["Distance Farm Aura"]) ~= "number" and tonumber(Settings["Distance Farm Aura"]) or Settings["Distance Farm Aura"] or 300
+	local mobsNear = {}
+	for _, mob in pairs(game.Workspace.Enemies:GetChildren()) do
+		if IsMobAlive(mob) and mob:FindFirstChild("HumanoidRootPart") then
+			local dist = (mob.HumanoidRootPart.Position - game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+			if dist <= distance then
+				table.insert(mobsNear, mob)
+			end
+		end
+	end
+	-- Ordena por distância (mais perto primeiro)
+	table.sort(mobsNear, function(a,b)
+		local distA = (a.HumanoidRootPart.Position - game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+		local distB = (b.HumanoidRootPart.Position - game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+		return distA < distB
+	end)
+	return mobsNear
 end
 getgenv().StackFarm = true
 getgenv().YPosFruit = 20
@@ -9018,6 +9039,32 @@ local SpecialQuestCycleState = {
 function FarmMethod()
 	local selectedToggle = GetSelectedIndividualFarm()
 	if not selectedToggle then
+		return
+	end
+	-- AURA FARM FIX: Farmar mobs que estão perto de você
+	if selectedToggle == "Aura Farm" then
+		local mobsNear = DetectMobsAuraNear()
+		if #mobsNear == 0 then
+			task.wait(0.5)
+			return
+		end
+		for _, mob in ipairs(mobsNear) do
+			if not Settings["Aura Farm"] then break end
+			if not IsMobAlive(mob) then continue end
+			repeat
+				task.wait()
+				if not IsMobAlive(mob) then break end
+				sizepart(mob)
+				BringMob(mob)
+				UsedualFlock()
+				ClickM1(mob)
+				if Settings["Select Weapon"] == "Blox Fruit" then
+					toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(-7, getgenv().YPosFruit or 20, 0))
+				else
+					toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(7, 20, 0))
+				end
+			until not IsMobAlive(mob) or not Settings["Aura Farm"] or not Settings["Auto Farm Active"] or not StackFarm
+		end
 		return
 	end
 	local f, V, H
