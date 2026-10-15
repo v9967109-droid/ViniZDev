@@ -3175,57 +3175,63 @@ do
         end
         
         while task.wait(1.5) do
-    local SectionPlayer = PageStatusAndServer.CreateSection("Player - State")
-    local LabelBeli = SectionPlayer.CreateLabel({ Title = "Beli: Loading..." })
-    local LabelBounty = SectionPlayer.CreateLabel({ Title = "Bounty / Honor: Loading..." })
-    local LabelFragments = SectionPlayer.CreateLabel({ Title = "Fragments: Loading..." })
-    local LabelLevel = SectionPlayer.CreateLabel({ Title = "Level: Loading..." })
-    
-    spawn(function()
-        local function FormatBounty(val)
-            if val >= 1000000 then
-                local mi = val / 1000000
-                local s = string.format("%.1f", mi):gsub("%.", ",")
-                return s .. " mi (" .. tostring(val) .. ")"
-            else
-                return tostring(val)
-            end
-        end
-        while task.wait(2) do
             pcall(function()
-                local plr = game.Players.LocalPlayer
-                if plr then
-                    pcall(function() LabelBeli.SetText("Beli: $" .. tostring(plr.Data.Beli.Value)) end)
+                local data = game.Players.LocalPlayer:FindFirstChild("Data")
+                if data then
+                    if data:FindFirstChild("Beli") then LabelBeli.SetText("Beli: " .. tostring(data.Beli.Value)) end
+                    if data:FindFirstChild("Fragments") then LabelFragments.SetText("Fragments: " .. tostring(data.Fragments.Value)) end
+                    if data:FindFirstChild("Level") then LabelLevel.SetText("Level: " .. tostring(data.Level.Value)) end
+                    
+                    -- Bounty/Honor verifica nas classificacoes detectando seu Nick (igual print)
+                    local bountyVal = 0
+                    local b = data:FindFirstChild("Bounty") or data:FindFirstChild("Honor")
+                    if b then bountyVal = b.Value end
+                    
+                    -- Tenta pegar da Classificacao/Leaderboard tambem
                     pcall(function()
-                        local leader = plr.leaderstats
-                        local bountyVal = 0
-                        if leader then
-                            if leader:FindFirstChild("Bounty") then bountyVal = leader.Bounty.Value
-                            elseif leader:FindFirstChild("Honor") then bountyVal = leader.Honor.Value end
+                        local leaderboard = game.Players.LocalPlayer:FindFirstChild("leaderstats")
+                        if leaderboard then
+                            local bountyStat = leaderboard:FindFirstChild("Bounty/Honor") or leaderboard:FindFirstChild("Bounty") or leaderboard:FindFirstChild("Honor")
+                            if bountyStat and bountyStat.Value and bountyStat.Value > 0 then
+                                bountyVal = bountyStat.Value
+                            end
                         end
-                        LabelBounty.SetText("Bounty / Honor: " .. FormatBounty(bountyVal))
                     end)
-                    pcall(function() LabelFragments.SetText("Fragments: " .. tostring(plr.Data.Fragments.Value)) end)
-                    pcall(function() LabelLevel.SetText("Level: " .. tostring(plr.Data.Level.Value)) end)
+                    
+                    if bountyVal > 0 then
+                        LabelBounty.SetText("Bounty / Honor: " .. FormatBounty(bountyVal))
+                    end
                 end
             end)
         end
     end)
     
     local SectionNormal = PageStatusAndServer.CreateSection("Normal Fruit Stock - Normal Dealer")
-    SectionNormal.CreateLabel({ Title = "Fruits on sale at the normal dealer - Atualiza automatico" })
+    SectionNormal.CreateLabel({ Title = "Fruits on sale at the normal dealer" })
     local NormalLabels = {}
-
+    NormalLabels[1] = SectionNormal.CreateLabel({ Title = "Ghost-Ghost - $940,000" })
+    NormalLabels[2] = SectionNormal.CreateLabel({ Title = "Light-Light - $650,000" })
+    NormalLabels[3] = SectionNormal.CreateLabel({ Title = "Spin-Spin - $7,500" })
+    NormalLabels[4] = SectionNormal.CreateLabel({ Title = "Rocket-Rocket - $5,000" })
+    NormalLabels[5] = SectionNormal.CreateLabel({ Title = "Loading..." })
+    NormalLabels[6] = SectionNormal.CreateLabel({ Title = "Loading..." })
+    
     local SectionAdvance = PageStatusAndServer.CreateSection("Advance Fruit Stock - Mirage Island Dealer")
-    SectionAdvance.CreateLabel({ Title = "Fruits on sale at the Mirage Island dealer - Atualiza automatico" })
+    SectionAdvance.CreateLabel({ Title = "Fruits on sale at the Mirage Island dealer" })
     local AdvanceLabels = {}
-
-    local function ParseFruitEntry(v)
-        if type(v) == "table" then
-            local name = v.Name or v[1] or v.name or v.FruitName
-            local price = v.Price or v[2] or v.price or v.Cost or 0
-            if name then return name, price end
-        elseif type(v) == "string" then
+    AdvanceLabels[1] = SectionAdvance.CreateLabel({ Title = "Flame-Flame - $250,000" })
+    AdvanceLabels[2] = SectionAdvance.CreateLabel({ Title = "Smoke-Smoke - $100,000" })
+    AdvanceLabels[3] = SectionAdvance.CreateLabel({ Title = "Bomb-Bomb - $80,000" })
+    AdvanceLabels[4] = SectionAdvance.CreateLabel({ Title = "Spin-Spin - $7,500" })
+    AdvanceLabels[5] = SectionAdvance.CreateLabel({ Title = "Rocket-Rocket - $5,000" })
+    
+    -- PATCH FIX: estoque 100% dinamico - usa lista real da loja
+    local function ParseFruit(v)
+        if type(v)=="table" then
+            local n = v.Name or v[1] or v.name
+            local p = v.Price or v[2] or v.price or 0
+            if n then return n, p end
+        elseif type(v)=="string" then
             return v, 0
         end
         return nil, nil
@@ -3235,43 +3241,29 @@ do
         local s = tostring(math.floor(p))
         return " - $" .. s:reverse():gsub("(%d%d%d)","%1,"):reverse():gsub("^,","")
     end
-    local function EnsureLabels(section, labels, needed)
-        for i=#labels+1, needed do
+    local function Ensure(section, labels, need)
+        for i=#labels+1, need do
             labels[i] = section.CreateLabel({ Title = "Slot "..i..": Loading..." })
         end
-        for i=needed+1, #labels do
-            if labels[i] then pcall(function() labels[i].SetText("Slot "..i..": Empty") end) end
-        end
     end
-    local function UpdateStock(section, labels, stockTable)
-        if not stockTable or type(stockTable) ~= "table" then
-            EnsureLabels(section, labels, 1)
-            labels[1].SetText("Nenhuma fruta no momento")
-            return
-        end
+    local function UpdateStock(section, labels, stock)
+        if not stock or type(stock)~="table" then return end
         local list = {}
-        if #stockTable > 0 then
-            list = stockTable
-        else
-            for k, v in pairs(stockTable) do
-                if type(v)=="table" then table.insert(list, v)
-                elseif type(k)=="string" then table.insert(list, {Name=k, Price=v}) end
-            end
-        end
-        if #list == 0 then
-            EnsureLabels(section, labels, 1)
-            labels[1].SetText("Nenhuma fruta no momento")
+        if #stock>0 then list=stock else for k,v in pairs(stock) do if type(v)=="table" then table.insert(list,v) elseif type(k)=="string" then table.insert(list,{Name=k, Price=v}) end end end
+        if #list==0 then
+            if labels[1] then labels[1].SetText("Nenhuma fruta no momento") end
             return
         end
-        EnsureLabels(section, labels, #list)
-        for i, v in ipairs(list) do
-            local name, price = ParseFruitEntry(v)
+        Ensure(section, labels, #list)
+        for i,v in ipairs(list) do
+            local name, price = ParseFruit(v)
             if name and labels[i] then
-                local display = name
-                if not display:find("-") then display = display .. "-" .. display end
-                labels[i].SetText(display .. FormatPrice(price))
+                local disp = name
+                if not disp:find("-") then disp = disp.."-"..disp end
+                labels[i].SetText(disp .. FormatPrice(price))
             end
         end
+        for i=#list+1, #labels do if labels[i] then labels[i].SetText("Slot "..i..": Empty") end end
     end
 
     spawn(function()
@@ -3289,12 +3281,14 @@ do
                 if not mirageStock or type(mirageStock)~="table" or #mirageStock==0 then
                     pcall(function() mirageStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetStock", "Mirage") end)
                 end
+                if not mirageStock or type(mirageStock)~="table" or #mirageStock==0 then
+                    pcall(function() mirageStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetFruits", "Mirage") end)
+                end
                 UpdateStock(SectionAdvance, AdvanceLabels, mirageStock)
             end)
         end
     end)
 end
-
 
 -- ===================== Status Boss Server =====================
 -- Aba: bosses que nascem NORMALMENTE (por tempo). Cada boss mostra só uma bolinha:
