@@ -3147,6 +3147,83 @@ StatusPrehistoricIsland = SectionStatus.CreateLabel({ Title = "Prehistoric Islan
 StatusFrozenDimension = SectionStatus.CreateLabel({ Title = "Frozen Dimension" })
 StatusMoon = SectionStatus.CreateLabel({ Title = "Moon" })
 StatusGear = SectionStatus.CreateLabel({ Title = "Acient One Status" })
+
+
+-- ============================================
+-- Fruit Stock & Player State (English) - Like Hub Vxeze Principal > Estado
+-- Added to Status And Server
+-- ============================================
+do
+    local SectionPlayer = PageStatusAndServer.CreateSection("Player - State")
+    local LabelBeli = SectionPlayer.CreateLabel({ Title = "Beli: Loading..." })
+    local LabelBounty = SectionPlayer.CreateLabel({ Title = "Bounty / Honor: Loading..." })
+    local LabelFragments = SectionPlayer.CreateLabel({ Title = "Fragments: Loading..." })
+    local LabelLevel = SectionPlayer.CreateLabel({ Title = "Level: Loading..." })
+    
+    spawn(function()
+        while task.wait(2) do
+            pcall(function()
+                local data = game.Players.LocalPlayer:FindFirstChild("Data")
+                if data then
+                    if data:FindFirstChild("Beli") then LabelBeli.SetText("Beli: " .. tostring(data.Beli.Value)) end
+                    if data:FindFirstChild("Fragments") then LabelFragments.SetText("Fragments: " .. tostring(data.Fragments.Value)) end
+                    local bounty = data:FindFirstChild("Bounty") or data:FindFirstChild("Honor")
+                    if bounty then LabelBounty.SetText("Bounty / Honor: " .. tostring(bounty.Value)) end
+                    if data:FindFirstChild("Level") then LabelLevel.SetText("Level: " .. tostring(data.Level.Value)) end
+                end
+            end)
+        end
+    end)
+    
+    local SectionNormal = PageStatusAndServer.CreateSection("Normal Fruit Stock - Normal Dealer")
+    SectionNormal.CreateLabel({ Title = "Fruits on sale at the normal dealer" })
+    local NormalLabels = {}
+    NormalLabels[1] = SectionNormal.CreateLabel({ Title = "Ghost-Ghost - $940,000" })
+    NormalLabels[2] = SectionNormal.CreateLabel({ Title = "Light-Light - $650,000" })
+    NormalLabels[3] = SectionNormal.CreateLabel({ Title = "Spin-Spin - $7,500" })
+    NormalLabels[4] = SectionNormal.CreateLabel({ Title = "Rocket-Rocket - $5,000" })
+    NormalLabels[5] = SectionNormal.CreateLabel({ Title = "Loading..." })
+    NormalLabels[6] = SectionNormal.CreateLabel({ Title = "Loading..." })
+    
+    local SectionAdvance = PageStatusAndServer.CreateSection("Advance Fruit Stock - Mirage Island Dealer")
+    SectionAdvance.CreateLabel({ Title = "Fruits on sale at the Mirage Island dealer" })
+    local AdvanceLabels = {}
+    AdvanceLabels[1] = SectionAdvance.CreateLabel({ Title = "Flame-Flame - $250,000" })
+    AdvanceLabels[2] = SectionAdvance.CreateLabel({ Title = "Smoke-Smoke - $100,000" })
+    AdvanceLabels[3] = SectionAdvance.CreateLabel({ Title = "Bomb-Bomb - $80,000" })
+    AdvanceLabels[4] = SectionAdvance.CreateLabel({ Title = "Spin-Spin - $7,500" })
+    AdvanceLabels[5] = SectionAdvance.CreateLabel({ Title = "Rocket-Rocket - $5,000" })
+    
+    spawn(function()
+        while task.wait(3) do
+            pcall(function()
+                -- Normal Stock
+                local normalStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetFruits", false)
+                if normalStock and type(normalStock) == "table" then
+                    for i, v in ipairs(normalStock) do
+                        if i <= 6 and NormalLabels[i] and v.Name then
+                            NormalLabels[i].SetText(v.Name:gsub("-", "-") .. " - $" .. tostring(v.Price or 0))
+                        end
+                    end
+                end
+                -- Mirage / Advance Stock - tenta pegar
+                local mirageStock = nil
+                pcall(function() mirageStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetFruits", true) end)
+                if not mirageStock then
+                    pcall(function() mirageStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetStock", "Mirage") end)
+                end
+                if mirageStock and type(mirageStock) == "table" then
+                    for i, v in ipairs(mirageStock) do
+                        if i <= 5 and AdvanceLabels[i] and v.Name then
+                            AdvanceLabels[i].SetText(v.Name:gsub("-", "-") .. " - $" .. tostring(v.Price or 0))
+                        end
+                    end
+                end
+            end)
+        end
+    end)
+end
+
 -- ===================== Status Boss Server =====================
 -- Aba: bosses que nascem NORMALMENTE (por tempo). Cada boss mostra só uma bolinha:
 --   🟢 = o script detectou o boss spawnado agora (vivo em Enemies ou ReplicatedStorage)
@@ -4846,16 +4923,7 @@ spawn(function()
 		end)
 	end
 end)
-LocalPlayerMain = 
--- NOVA ABA: Notifications abaixo de Status Boss Server
-local NotificationsPage = Main.CreatePage({ Page_Name = "Notifications", Page_Title = "Notifications" })
-local NotifStatusSection = NotificationsPage.CreateSection("Collect Status")
-NotifStatusSection.CreateLabel({ Title = "Status Fruits: Checking..." })
-NotifStatusSection.CreateLabel({ Title = "Status Berries: Checking..." })
-NotifStatusSection.CreateLabel({ Title = "Baús Collected: 0 / 20 | Baús before hop" })
-
-
-Main.CreatePage({ Page_Name = "LocalPlayer", Page_Title = "LocalPlayer" })
+LocalPlayerMain = Main.CreatePage({ Page_Name = "LocalPlayer", Page_Title = "LocalPlayer" })
 SectionLocalPlayerMain = LocalPlayerMain.CreateSection("Local Player")
 SectionLocalPlayerMain.CreateToggle(
 	{
