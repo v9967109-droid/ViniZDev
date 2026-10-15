@@ -3161,15 +3161,46 @@ do
     local LabelLevel = SectionPlayer.CreateLabel({ Title = "Level: Loading..." })
     
     spawn(function()
-        while task.wait(2) do
+        local function FormatBounty(val)
+            if val >= 1000000 then
+                local mi = val / 1000000
+                -- Formato brasileiro 2,5 mi
+                local s = string.format("%.1f", mi):gsub("%.", ",")
+                return s .. " mi (" .. tostring(val) .. ")"
+            elseif val >= 1000 then
+                return tostring(math.floor(val/1000)) .. "K (" .. tostring(val) .. ")"
+            else
+                return tostring(val)
+            end
+        end
+        
+        while task.wait(1.5) do
             pcall(function()
                 local data = game.Players.LocalPlayer:FindFirstChild("Data")
                 if data then
                     if data:FindFirstChild("Beli") then LabelBeli.SetText("Beli: " .. tostring(data.Beli.Value)) end
                     if data:FindFirstChild("Fragments") then LabelFragments.SetText("Fragments: " .. tostring(data.Fragments.Value)) end
-                    local bounty = data:FindFirstChild("Bounty") or data:FindFirstChild("Honor")
-                    if bounty then LabelBounty.SetText("Bounty / Honor: " .. tostring(bounty.Value)) end
                     if data:FindFirstChild("Level") then LabelLevel.SetText("Level: " .. tostring(data.Level.Value)) end
+                    
+                    -- Bounty/Honor verifica nas classificacoes detectando seu Nick (igual print)
+                    local bountyVal = 0
+                    local b = data:FindFirstChild("Bounty") or data:FindFirstChild("Honor")
+                    if b then bountyVal = b.Value end
+                    
+                    -- Tenta pegar da Classificacao/Leaderboard tambem
+                    pcall(function()
+                        local leaderboard = game.Players.LocalPlayer:FindFirstChild("leaderstats")
+                        if leaderboard then
+                            local bountyStat = leaderboard:FindFirstChild("Bounty/Honor") or leaderboard:FindFirstChild("Bounty") or leaderboard:FindFirstChild("Honor")
+                            if bountyStat and bountyStat.Value and bountyStat.Value > 0 then
+                                bountyVal = bountyStat.Value
+                            end
+                        end
+                    end)
+                    
+                    if bountyVal > 0 then
+                        LabelBounty.SetText("Bounty / Honor: " .. FormatBounty(bountyVal))
+                    end
                 end
             end)
         end
