@@ -5806,7 +5806,7 @@ function ToggleNoclip()
 		end
 	end
 end
--- Character + equipped Tool noclip enforcement.
+-- Character + equipped Tool noclip enforcement - FIX sem quebrar boat seat
 do
     task.spawn(function()
         while task.wait() do
@@ -5819,6 +5819,46 @@ do
                         end
                     end
                 end
+            else
+                -- Quando nenhuma toggle ativa, restaura colisão se não estiver sentado no barco
+                pcall(function()
+                    if getgenv().noclip then
+                        local char = t.Character
+                        if char then
+                            local hum = char:FindFirstChildOfClass("Humanoid")
+                            local root = char:FindFirstChild("HumanoidRootPart")
+                            -- Só reseta se NÃO estiver sentado (boat seat) e não tiver FloatForce de barco
+                            if hum and not hum.Sit and root then
+                                -- Verifica se não está em barco
+                                local inBoat = false
+                                pcall(function()
+                                    local boat = root:FindFirstChild("WeldConstraint") or hum.SeatPart
+                                    if hum.SeatPart and hum.SeatPart.Parent and string.find(hum.SeatPart.Parent.Name:lower(), "boat") then
+                                        inBoat = true
+                                    end
+                                end)
+                                if not inBoat then
+                                    getgenv().noclip = false
+                                    for _, Part in ipairs(char:GetDescendants()) do
+                                        if Part:IsA("BasePart") then
+                                            Part.CanCollide = true
+                                        end
+                                    end
+                                    if root:FindFirstChild("FloatForce") then
+                                        root.FloatForce:Destroy()
+                                    end
+                                    for _,v in ipairs(root:GetChildren()) do
+                                        if v:IsA("BodyVelocity") or v:IsA("BodyGyro") or v:IsA("BodyPosition") then
+                                            v:Destroy()
+                                        end
+                                    end
+                                    hum.PlatformStand = false
+                                    hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+                                end
+                            end
+                        end
+                    end
+                end)
             end
         end
     end)
