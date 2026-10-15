@@ -14087,7 +14087,7 @@ SettingSeaEventSection.CreateToggle(
 	end
 )
 SettingSeaEventSection.CreateSlider(
-	{ Title = "Boat Height", Min = 5, Max = 450, Default = Settings["Boat Height"] or 450, Precise = false },
+	{ Title = "Boat Height", Min = 5, Max = 175, Default = Settings["Boat Height"] or 175, Precise = false },
 	function(l)
 		SaveSettings("Boat Height", l)
 	end
@@ -14114,21 +14114,20 @@ do
 				base = (seat.Position.Y < 30) and seat.Position.Y or 8
 				boat:SetAttribute("NexoraBaseY", base)
 			end
-			local height = math.clamp(tonumber(Settings["Boat Height"]) or 450, 5, 450)
+			local height = math.clamp(tonumber(Settings["Boat Height"]) or 175, 5, 175)
 			local targetY = base + height
 			local pivot = boat:GetPivot()
-			-- TRAVA TOTAL NO EIXO Y (sem balançar)
+			-- trava Y sem interferir na velocidade
 			if math.abs(pivot.Position.Y - targetY) > 0.05 then
 				local pos = pivot.Position
-				local rot = pivot - pos -- preserva rotação
-				local newCF = CFrame.new(pos.X, targetY, pos.Z) * rot
-				boat:PivotTo(newCF)
+				local rot = pivot - pos
+				boat:PivotTo(CFrame.new(pos.X, targetY, pos.Z) * rot)
 			end
-			-- Zera qualquer velocidade vertical e balanço
+			-- só zera Y, mantém X/Z (velocidade do barco)
 			local v = seat.AssemblyLinearVelocity
-			if v.Y ~= 0 then seat.AssemblyLinearVelocity = Vector3.new(v.X, 0, v.Z) end
-			local av = seat.AssemblyAngularVelocity
-			if av.Magnitude > 0.1 then seat.AssemblyAngularVelocity = Vector3.new(0, 0, 0) end
+			if math.abs(v.Y) > 0.01 then
+				seat.AssemblyLinearVelocity = Vector3.new(v.X, 0, v.Z)
+			end
 		end)
 	end)
 end
