@@ -2034,10 +2034,73 @@ function Nexora.CreateMain(config)
     hamburger.MouseLeave:Connect(function() hamburger.TextColor3 = GRAY end)
     -- ScreenGui separado: o botão fica fora da janela e não some junto com a UI (nem com o keybind Toggle GUI).
     local floatGui = make("ScreenGui", {Name="NexoraFloat", ResetOnSpawn=false, IgnoreGuiInset=true, DisplayOrder=999, ZIndexBehavior=Enum.ZIndexBehavior.Sibling}, parentGui)
-    local reopen = button(floatGui, "N", 42)
-    reopen.Name = "NexoraFloatingButton"
+    -- Botão igual da imagem: pílula preta com ícone + texto + bolinha verde (Maru Hub style)
+    local reopen = make("TextButton", {
+        Name="NexoraFloatingButton",
+        AutoButtonColor=false,
+        BackgroundColor3=Color3.fromRGB(20, 20, 25),
+        BorderSizePixel=0,
+        Size=UDim2.new(0, 145, 0, 36),
+        Text="",
+        ZIndex=100
+    }, floatGui)
     reopen:SetAttribute("NexoraKeepColor", true)
-    reopen.Size = UDim2.new(0, 46, 0, 46)
+    make("UICorner", {CornerRadius=UDim.new(0, 18)}, reopen)
+    make("UIStroke", {Color=Color3.fromRGB(60,60,65), Thickness=1, Transparency=0.3}, reopen)
+    -- Ícone à esquerda (logo)
+    local iconFrame = make("Frame", {
+        BackgroundColor3=Color3.fromRGB(40, 40, 50),
+        Size=UDim2.new(0, 24, 0, 24),
+        Position=UDim2.new(0, 6, 0.5, -12),
+        BorderSizePixel=0,
+        ZIndex=101
+    }, reopen)
+    make("UICorner", {CornerRadius=UDim.new(1,0)}, iconFrame)
+    local iconImg = make("ImageLabel", {
+        BackgroundTransparency=1,
+        Size=UDim2.new(1, -4, 1, -4),
+        Position=UDim2.new(0, 2, 0, 2),
+        Image="rbxassetid://18747094503", -- ícone placeholder, troca se tiver logo
+        ScaleType=Enum.ScaleType.Fit,
+        ZIndex=102
+    }, iconFrame)
+    -- Se tiver config.Logo usa ele
+    pcall(function()
+        if config.Logo and config.Logo ~= "" then
+            iconImg.Image = config.Logo
+        end
+    end)
+    -- Texto Nexora Hub
+    local textLabel = make("TextLabel", {
+        BackgroundTransparency=1,
+        Position=UDim2.new(0, 36, 0, 0),
+        Size=UDim2.new(0, 85, 1, 0),
+        Text="Nexora Hub",
+        TextColor3=Color3.fromRGB(255,255,255),
+        TextSize=13,
+        Font=Enum.Font.GothamMedium,
+        TextXAlignment=Enum.TextXAlignment.Left,
+        ZIndex=101
+    }, reopen)
+    -- Bolinha verde online igual da imagem
+    local greenDot = make("Frame", {
+        BackgroundColor3=Color3.fromRGB(0, 255, 100),
+        Size=UDim2.new(0, 10, 0, 10),
+        Position=UDim2.new(1, -18, 0.5, -5),
+        BorderSizePixel=0,
+        ZIndex=101
+    }, reopen)
+    make("UICorner", {CornerRadius=UDim.new(1,0)}, greenDot)
+    make("UIStroke", {Color=Color3.fromRGB(0,0,0), Thickness=1, Transparency=0.5}, greenDot)
+    -- Efeito de brilho na bolinha verde
+    task.spawn(function()
+        while greenDot.Parent do
+            local tw = TweenService:Create(greenDot, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.3})
+            tw:Play(); tw.Completed:Wait()
+            tw = TweenService:Create(greenDot, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0})
+            tw:Play(); tw.Completed:Wait()
+        end
+    end)
     local FLOAT_POS_FILE = "NexoraHub_FloatPosition.json"
     local function loadFloatPosition()
         local saved
@@ -2066,36 +2129,9 @@ function Nexora.CreateMain(config)
     reopen.Position = loadFloatPosition()
     reopen.AnchorPoint = Vector2.new(0, 0)
     reopen.Visible = true
-    reopen.ZIndex = 100
-    reopen.Text = ""
-    reopen.TextColor3 = Color3.fromRGB(255, 190, 55)
-    reopen.TextSize = 25
-    reopen.Font = Enum.Font.GothamBlack
-    reopen.BackgroundColor3 = Color3.fromRGB(8, 8, 10)
-    reopen.TextStrokeTransparency = 1
-    corner(reopen, 23)
-    -- Círculo dourado completo igual ao emblema da UI, sem borda laranja.
-    local fStroke = make("UIStroke", {Color=Color3.fromRGB(255,190,55), Thickness=2.5, Transparency=0}, reopen)
-    task.spawn(function()
-        while reopen.Parent do
-            local tw = TweenService:Create(fStroke, TweenInfo.new(1.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency=0.55})
-            tw:Play(); tw.Completed:Wait()
-            tw = TweenService:Create(fStroke, TweenInfo.new(1.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency=0})
-            tw:Play(); tw.Completed:Wait()
-        end
-    end)
     do
-        local z = reopen.ZIndex + 1
-        if config.Logo and config.Logo ~= "" then
-            make("ImageLabel", {BackgroundTransparency=1, Position=UDim2.new(0,3,0,3), Size=UDim2.new(1,-6,1,-6), Image=config.Logo, ScaleType=Enum.ScaleType.Fit, ZIndex=z}, reopen)
-        else
-            local ring = make("Frame", {BackgroundTransparency=1, AnchorPoint=Vector2.new(.5,.5), Position=UDim2.new(.5,0,.5,0), Size=UDim2.new(1,-10,1,-10), ZIndex=z}, reopen)
-            corner(ring, 23); make("UIStroke", {Color=GOLD, Thickness=1, Transparency=0.55}, ring)
-            make("TextLabel", {Name="CrownMark", BackgroundTransparency=1, Position=UDim2.new(0,0,0,3), Size=UDim2.new(1,0,0,14), Text="♛", TextColor3=GOLD_L, Font=Enum.Font.GothamBold, TextSize=13, ZIndex=z}, reopen)
-            local fn = make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,11), Size=UDim2.new(1,0,1,-13), Text="N", TextColor3=GOLD, Font=Enum.Font.GothamBlack, TextSize=27, ZIndex=z}, reopen)
-            make("UIGradient", {Rotation=90, Color=ColorSequence.new(GOLD_L, Color3.fromRGB(230,150,20))}, fn)
-        end
-        local fScale = make("UIScale", {Scale=1}, reopen)
+        local z = 103
+local fScale = make("UIScale", {Scale=1}, reopen)
         function bounceFloat()
             TweenService:Create(fScale, TweenInfo.new(.08), {Scale=.8}):Play()
             task.delay(.08, function() TweenService:Create(fScale, TweenInfo.new(.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale=1}):Play() end)
