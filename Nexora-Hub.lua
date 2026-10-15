@@ -31,10 +31,10 @@ do
 		local logo = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,12), Size=UDim2.fromOffset(46,46), BackgroundColor3=Color3.fromRGB(8,8,10), BorderSizePixel=0}, card)
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, logo)
 		mk("UIStroke", {Color=GOLD, Thickness=2}, logo)
-		mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,2), Size=UDim2.new(1,0,0,13), Text="♛", TextColor3=GOLD_L, Font=Enum.Font.GothamBold, TextSize=12}, logo)
-		local n = mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,10), Size=UDim2.new(1,0,1,-12), Text="N", TextColor3=GOLD, Font=Enum.Font.GothamBlack, TextSize=26}, logo)
+		mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,2), Size=UDim2.new(1,0,0,13), Text="♛", TextColor3=Color3.fromRGB(80, 180, 255), Font=Enum.Font.GothamBold, TextSize=12}, logo)
+		local n = mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,10), Size=UDim2.new(1,0,1,-12), Text="N", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.GothamBlack, TextSize=26}, logo)
 		mk("UIGradient", {Rotation=90, Color=ColorSequence.new(GOLD_L, Color3.fromRGB(230,150,20))}, n)
-		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,64), Size=UDim2.fromOffset(220,20), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=GOLD, Font=Enum.Font.GothamBlack, TextSize=16}, card)
+		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,64), Size=UDim2.fromOffset(220,20), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.GothamBlack, TextSize=16}, card)
 		local track = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,92), Size=UDim2.fromOffset(150,3), BackgroundColor3=Color3.fromRGB(30,28,24), BorderSizePixel=0}, card)
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, track)
 		local fill = mk("Frame", {Size=UDim2.new(0,0,1,0), BackgroundColor3=GOLD, BorderSizePixel=0}, track)
@@ -2035,11 +2035,11 @@ function Nexora.CreateMain(config)
     hamburger.MouseLeave:Connect(function() hamburger.TextColor3 = GRAY end)
     -- ScreenGui separado: o botão fica fora da janela e não some junto com a UI (nem com o keybind Toggle GUI).
     local floatGui = make("ScreenGui", {Name="NexoraFloat", ResetOnSpawn=false, IgnoreGuiInset=true, DisplayOrder=999, ZIndexBehavior=Enum.ZIndexBehavior.Sibling}, parentGui)
-    -- Botão igual da imagem: pílula preta com ícone + texto + bolinha verde (Maru Hub style)
+    -- Botão preto com nome branco igual você pediu
     local reopen = make("TextButton", {
         Name="NexoraFloatingButton",
         AutoButtonColor=false,
-        BackgroundColor3=Color3.fromRGB(5, 5, 15),
+        BackgroundColor3=Color3.fromRGB(20, 20, 25),
         BorderSizePixel=0,
         Size=UDim2.new(0, 145, 0, 36),
         Text="",
@@ -2047,10 +2047,10 @@ function Nexora.CreateMain(config)
     }, floatGui)
     reopen:SetAttribute("NexoraKeepColor", true)
     make("UICorner", {CornerRadius=UDim.new(0, 18)}, reopen)
-    make("UIStroke", {Color=Color3.fromRGB(0, 80, 180), Thickness=1, Transparency=0.3}, reopen)
+    make("UIStroke", {Color=Color3.fromRGB(60, 60, 65), Thickness=1, Transparency=0.3}, reopen)
     -- Ícone à esquerda (logo)
     local iconFrame = make("Frame", {
-        BackgroundColor3=Color3.fromRGB(40, 40, 50),
+        BackgroundColor3=Color3.fromRGB(35, 35, 45),
         Size=UDim2.new(0, 24, 0, 24),
         Position=UDim2.new(0, 6, 0.5, -12),
         BorderSizePixel=0,
@@ -2063,6 +2063,7 @@ function Nexora.CreateMain(config)
         Position=UDim2.new(0, 2, 0, 2),
         Image="rbxassetid://18747094503", -- ícone placeholder, troca se tiver logo
         ScaleType=Enum.ScaleType.Fit,
+        ImageColor3=Color3.fromRGB(80, 180, 255),
         ZIndex=102
     }, iconFrame)
     -- Se tiver config.Logo usa ele
@@ -2077,7 +2078,7 @@ function Nexora.CreateMain(config)
         Position=UDim2.new(0, 36, 0, 0),
         Size=UDim2.new(0, 85, 1, 0),
         Text="Nexora Hub",
-        TextColor3=Color3.fromRGB(255,255,255),
+        TextColor3=Color3.fromRGB(255, 255, 255),
         TextSize=13,
         Font=Enum.Font.GothamMedium,
         TextXAlignment=Enum.TextXAlignment.Left,
@@ -9857,65 +9858,75 @@ BossDarkbeardSection.CreateToggle(
 )
 
 function GetPathFruit()
-	-- DETECTA TODAS AS FRUTAS DROPADAS: spawnadas no chão + dropadas por player + missões
+	-- OTIMIZADO: Não laga, pega frutas longe, e continua pegando várias
 	local workspaceService = game:GetService("Workspace")
 	local Players = game:GetService("Players")
 	local LocalPlayer = Players.LocalPlayer
 	local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+	if not root then return nil end
+
 	local function IsFruitObject(H)
 		if not H then return false end
-		-- Aceita Tool, Model e Part (frutas dropadas podem vir de jeitos diferentes)
-		if not (H:IsA("Tool") or H:IsA("Model") or H:IsA("BasePart")) then return false end
-		-- Procura Handle
-		local handle = H:FindFirstChild("Handle", true)
-		if not handle then
-			-- Se o próprio objeto é uma BasePart com nome de fruta
-			if H:IsA("BasePart") then handle = H else return false end
-		end
+		if not (H:IsA("Tool") or H:IsA("Model")) then return false end
+		local handle = H:FindFirstChild("Handle")
 		if not handle or not handle:IsA("BasePart") then return false end
 		local name = tostring(H.Name)
-		-- Verifica lista oficial
 		if TableDevilFruit and TableDevilFruit[name] ~= nil then return true end
-		-- Verifica nome com "fruit"
 		if string.find(string.lower(name), "fruit", 1, true) then return true end
-		-- Verifica padrão "X-X" tipo "Bomb-Bomb", "Dragon-Dragon" etc (frutas dropadas)
-		if string.find(name, "%-", 1, true) and #name >= 5 then
-			-- Evita falsos positivos
-			local left = string.split(name, "-")[1]
-			if left and #left >= 2 then return true end
-		end
-		-- Verifica se tem atributo de fruta ou Handle com mesh de fruta
-		if H:GetAttribute("Fruit") or handle:GetAttribute("Fruit") then return true end
+		if string.find(name, "-", 1, true) and #name >= 5 then return true end
 		return false
 	end
 
-	local allFruits = {}
-	-- Busca em todo workspace (spawn + dropadas no chão + missões)
-	for _, obj in ipairs(workspaceService:GetDescendants()) do
+	local closest = nil
+	local closestDist = math.huge
+	local closestHandle = nil
+
+	-- Só checa filhos diretos do workspace (onde frutas spawnam) - MUITO mais rápido que GetDescendants
+	for _, obj in ipairs(workspaceService:GetChildren()) do
 		if IsFruitObject(obj) then
-			local handle = obj:FindFirstChild("Handle", true) or obj
-			if handle and handle:IsA("BasePart") then
-				local dist = root and (handle.Position - root.Position).Magnitude or 0
-				table.insert(allFruits, {obj = obj, handle = handle, dist = dist})
+			local handle = obj:FindFirstChild("Handle")
+			if handle then
+				local dist = (handle.Position - root.Position).Magnitude
+				if dist < closestDist then
+					closestDist = dist
+					closest = obj
+					closestHandle = handle
+				end
 			end
 		end
 	end
 
-	-- Ordena pela mais próxima
-	if #allFruits > 0 then
-		table.sort(allFruits, function(a,b) return a.dist < b.dist end)
-		return allFruits[1].obj
+	-- Também checa Tools soltas (frutas dropadas por player às vezes ficam soltas)
+	if not closest then
+		for _, obj in ipairs(workspaceService:GetChildren()) do
+			if obj:IsA("Tool") then
+				local handle = obj:FindFirstChild("Handle")
+				if handle and string.find(obj.Name, "-", 1, true) then
+					local dist = (handle.Position - root.Position).Magnitude
+					if dist < closestDist then
+						closestDist = dist
+						closest = obj
+					end
+				end
+			end
+		end
 	end
 
-	-- Fallback: nilinstances (frutas escondidas)
-	local nilFruit
-	pcall(function()
-		for _, H in ipairs(getnilinstances and getnilinstances() or {}) do
-			if IsFruitObject(H) then nilFruit = H; break end
-		end
-	end)
-	return nilFruit
+	return closest
 end
+
+-- Cache para não ficar escaneando todo frame
+getgenv().__LastFruitScan = 0
+getgenv().__CachedFruit = nil
+function GetPathFruitCached()
+	local now = tick()
+	if now - (getgenv().__LastFruitScan or 0) > 0.5 then
+		getgenv().__LastFruitScan = now
+		getgenv().__CachedFruit = GetPathFruit()
+	end
+	return getgenv().__CachedFruit
+end
+
 
 function GetPirateRaid(f)
 	for V, V in ipairs((if f then game.ReplicatedStorage else game.workspace.Enemies):GetChildren()) do
@@ -10991,51 +11002,62 @@ task.spawn(function()
 			end
 			
 			if Settings["Teleport To Fruit"] then
-				local y = GetPathFruit()
+				local y = GetPathFruitCached()
 				local character = t.Character
 				local root = character and character:FindFirstChild("HumanoidRootPart")
-				local handle = y and y:FindFirstChild("Handle", true)
+				local handle = y and y:FindFirstChild("Handle")
 				if not handle and y and y:IsA("BasePart") then handle = y end
 				if y and handle and root then
 					StackFarm = false
 					StackFarmOther = false
 					local dist = (handle.Position - root.Position).Magnitude
-					if dist <= 12 then
+					if dist <= 15 then
 						getgenv().noclip = false
-						-- Tenta pegar de vários jeitos: Space + Touch + ProximityPrompt
+						-- Pega a fruta sem lag
 						pcall(function()
-							game:GetService("VirtualInputManager"):SendKeyEvent(true, "Space", false, game)
-							task.wait(0.1)
-							game:GetService("VirtualInputManager"):SendKeyEvent(false, "Space", false, game)
+							root.CFrame = handle.CFrame
 						end)
-						-- Toca na fruta
+						task.wait(0.15)
 						pcall(function()
 							firetouchinterest(root, handle, 0)
 							task.wait(0.1)
 							firetouchinterest(root, handle, 1)
 						end)
-						-- Ativa ProximityPrompt se tiver
 						pcall(function()
 							for _, pp in ipairs(y:GetDescendants()) do
 								if pp:IsA("ProximityPrompt") then
 									fireproximityprompt(pp)
 								end
 							end
-							if handle then
-								for _, pp in ipairs(handle:GetDescendants()) do
-									if pp:IsA("ProximityPrompt") then
-										fireproximityprompt(pp)
-									end
-								end
-							end
 						end)
+						pcall(function()
+							game:GetService("VirtualInputManager"):SendKeyEvent(true, "Space", false, game)
+							task.wait(0.1)
+							game:GetService("VirtualInputManager"):SendKeyEvent(false, "Space", false, game)
+						end)
+						-- Limpa cache pra procurar próxima fruta
+						getgenv().__CachedFruit = nil
+						getgenv().__LastFruitScan = 0
+						-- NÃO dá return, continua procurando próxima fruta
 					else
-						-- Vai até a fruta (spawnada OU dropada por player/missão)
-						toTarget(handle.CFrame * CFrame.new(0, 2, 0), true)
+						-- Vai até a fruta mesmo se estiver longe - SEM LAG
+						-- Se muito longe, teleporta direto em etapas
+						if dist > 1500 then
+							-- Teleporta direto pra perto da fruta (sem tween lento)
+							pcall(function()
+								getgenv().noclip = true
+								root.CFrame = handle.CFrame * CFrame.new(0, 10, 0)
+							end)
+							task.wait(0.3)
+						else
+							toTarget(handle.CFrame * CFrame.new(0, 3, 0))
+						end
 					end
-					return
-				elseif Settings["Teleport To Fruit [ Hop Server ]"] then
-
+				else
+					-- Nenhuma fruta encontrada, espera um pouco
+					task.wait(0.5)
+				end
+				if Settings["Teleport To Fruit [ Hop Server ]"] and not GetPathFruitCached() then
 					HopServer()
 					task.wait(5)
 				end
@@ -13474,8 +13496,31 @@ function RandomFruit()
 	end
 
 	pcall(function()
-		-- 1) Tenta comprar direto SEM ir até o NPC e SEM abrir interface
+		-- 1) Tenta comprar direto SEM ir até o NPC - inclui Zioles BloxFruitsGacha
 		TryRemote("Cousin-Buy", function() return CommF:InvokeServer("Cousin", "Buy") end)
+		TryRemote("Zioles-Buy", function() return CommF:InvokeServer("Zioles", "Buy") end)
+		TryRemote("BloxFruitsGacha-Buy", function() return CommF:InvokeServer("BloxFruitsGacha", "Buy") end)
+		TryRemote("BloxFruitsGacha", function() return CommF:InvokeServer("BloxFruitsGacha") end)
+		TryRemote("Gacha-Buy", function() return CommF:InvokeServer("Gacha", "Buy") end)
+		TryRemote("Gacha", function() return CommF:InvokeServer("Gacha") end)
+		TryRemote("Cousin-Buy2", function() return CommF:InvokeServer("Cousin", "Buy", true) end)
+		TryRemote("BloxFruitDealer-Buy", function() return CommF:InvokeServer("BloxFruitDealer", "Buy") end)
+		TryRemote("Shop-Buy", function() return CommF:InvokeServer("Shop", "BuyRandomFruit") end)
+		TryRemote("RandomFruit", function() return CommF:InvokeServer("RandomFruit") end)
+		TryRemote("Zioless-Buy", function() return CommF:InvokeServer("Zioless", "Buy") end)
+		-- Tenta todos os Comm (CommF_, CommE_ etc)
+		pcall(function()
+			local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
+			if Remotes then
+				for _, remote in ipairs(Remotes:GetChildren()) do
+					if remote.Name:find("Comm") then
+						pcall(function() remote:InvokeServer("Cousin", "Buy") end)
+						pcall(function() remote:InvokeServer("Zioles", "Buy") end)
+						pcall(function() remote:InvokeServer("BloxFruitsGacha", "Buy") end)
+					end
+				end
+			end
+		end)
 		-- 2) Fallbacks de caixa/banner
 		if not success then
 			local boxName = GetBoxName()
@@ -13484,6 +13529,10 @@ function RandomFruit()
 				if checkOk then
 					TryRemote("Cousin-Box", function() return CommF:InvokeServer("Cousin", boxName) end)
 				end
+			end)
+			pcall(function()
+				TryRemote("Zioles-Check", function() return CommF:InvokeServer("Zioles", "CheckTime", boxName) end)
+				TryRemote("Zioles-Box", function() return CommF:InvokeServer("Zioles", boxName) end)
 			end)
 		end
 		-- 3) Tenta girar direto sem interface - tenta vários remotos possíveis
@@ -13503,10 +13552,32 @@ function RandomFruit()
 			end)
 			-- Tenta remotos de giro direto
 			pcall(function() CommF:InvokeServer("Cousin", "Spin") end)
+			pcall(function() CommF:InvokeServer("Zioles", "Spin") end)
+			pcall(function() CommF:InvokeServer("Zioles", "Buy") end)
 			pcall(function() CommF:InvokeServer("Cousin", "Roll") end)
 			pcall(function() CommF:InvokeServer("Cousin", "Gacha") end)
 			pcall(function() CommF:InvokeServer("Cousin", "Buy", true) end)
-			-- Se ainda não girou, força clique invisível no botão (sem precisar ir até NPC)
+			-- Fallback: se remoto não funcionou, tenta interagir com NPC Zioles / Cousin / BloxFruitsGacha no mapa (sem teleportar longe)
+		if not success then
+			pcall(function()
+				local NPCs = {"Zioles", "Cousin", "Blox Fruit Dealer Cousin", "BloxFruitsGacha", "Gacha", "Cousin"}
+				for _, npcName in ipairs(NPCs) do
+					local npc = workspace:FindFirstChild(npcName, true) or game:GetService("Workspace").NPCs:FindFirstChild(npcName, true)
+					if npc then
+						for _, pp in ipairs(npc:GetDescendants()) do
+							if pp:IsA("ProximityPrompt") or pp:IsA("ClickDetector") then
+								pcall(function()
+									if pp:IsA("ProximityPrompt") then fireproximityprompt(pp) else fireclickdetector(pp) end
+								end)
+								task.wait(0.3)
+							end
+						end
+					end
+				end
+			end)
+		end
+
+		-- Se ainda não girou, força clique invisível no botão (sem precisar ir até NPC)
 			pcall(function()
 				local above = win:FindFirstChild("AboveSpinner")
 				if above then
