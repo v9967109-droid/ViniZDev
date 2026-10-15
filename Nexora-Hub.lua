@@ -7846,24 +7846,30 @@ SettingFarmMainSection.CreateToggle(
 		SaveSettings("Auto Turn On Observation", m)
 		if m then
 			spawn(function()
-				while Settings["Auto Turn On Observation"] and task.wait(1) do
+				while Settings["Auto Turn On Observation"] and task.wait(0.8) do
 					pcall(function()
 						local char = game:GetService("Players").LocalPlayer.Character
-						local hasKen = char and (char:FindFirstChild("HasBuso") or char:FindFirstChild("HasKen") or char:FindFirstChild("HasObservation"))
+						if not char then return end
 						local blur = game:GetService("Lighting"):FindFirstChild("Blur")
 						local kenActive = blur and blur.Enabled
-						-- Se não tiver Ken Haki ativo, liga
+						-- Se o Haki da Observação NÃO estiver ativo, clica no botão pra ativar
 						if not kenActive then
-							game:GetService("VirtualInputManager"):SendKeyEvent(true, "E", false, game)
-							task.wait(0.1)
-							game:GetService("VirtualInputManager"):SendKeyEvent(false, "E", false, game)
-							task.wait(1)
-							-- Tenta de novo se ainda não ligou
-							if not game:GetService("Lighting").Blur.Enabled then
-								task.wait(0.5)
+							-- Método 1: Clica no botão de ativar Haki (tecla E)
+							pcall(function()
 								game:GetService("VirtualInputManager"):SendKeyEvent(true, "E", false, game)
-								task.wait(0.1)
+								task.wait(0.15)
 								game:GetService("VirtualInputManager"):SendKeyEvent(false, "E", false, game)
+							end)
+							task.wait(0.5)
+							-- Método 2: Tenta ativar via Remote (caso o E não funcione)
+							if not game:GetService("Lighting").Blur.Enabled then
+								pcall(function()
+									-- Tenta ativar Ken Haki via remote
+									game:GetService("ReplicatedStorage").Remotes.CommE:FireServer("Ken", true)
+								end)
+								pcall(function()
+									game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("KenTalk2", "Start")
+								end)
 							end
 						end
 					end)
@@ -7916,37 +7922,46 @@ SettingFarmMainSection.CreateToggle(
 		SaveSettings("Auto Dodge Skill Mobs", I)
 	end
 )
--- Auto Dodge Skill Mobs - CORRIGIDO: usa AttackingMob e desvia de verdade
+-- Auto Dodge Skill Mobs - CORRIGIDO: só desvia quando detectar que o mob vai usar skill
 getgenv().Doding = false
 getgenv().ReadyToDodge = false
 game:GetService("Workspace").Enemies.DescendantAdded:Connect(function(skill)
 	pcall(function()
 		if not Settings["Auto Dodge Skill Mobs"] then return end
 		if getgenv().Doding then return end
-		local mob = getgenv().AttackingMob or AttackingMob
-		if not mob or not mob.Parent then return end
-		if not (skill.Name == "BodyGyro" or skill.Name == "BodyPosition" or skill.Name == "KiBlastFireShort" or skill.Name == "BodyVelocity") then return end
+		-- Só desvia se detectar skill do mob: BodyGyro, BodyPosition, BodyVelocity, KiBlastFireShort são skills
+		if not (skill.Name == "BodyGyro" or skill.Name == "BodyPosition" or skill.Name == "BodyVelocity" or skill.Name == "KiBlastFireShort" or string.find(skill.Name, "Blast") or string.find(skill.Name, "Skill")) then return end
 		local parent = skill.Parent
 		if not parent then return end
-		-- Verifica se é do mob que está atacando
-		local mobName = mob.Name
-		local skillMob = parent.Parent
-		if not skillMob or skillMob.Name ~= mobName then return end
-		getgenv().Doding = true
-		getgenv().ReadyToDodge = true
-		-- Desvia: move pro lado
+		-- Pega o mob que está usando a skill
+		local mobUsingSkill = parent.Parent
+		if not mobUsingSkill then mobUsingSkill = parent end
+		-- Verifica se é um mob válido e está vivo
+		if not mobUsingSkill or not mobUsingSkill:FindFirstChild("Humanoid") then return end
+		-- Só desvia se o mob estiver perto do player (vai usar skill no player)
 		local char = game:GetService("Players").LocalPlayer.Character
 		local root = char and char:FindFirstChild("HumanoidRootPart")
+		local mobHRP = mobUsingSkill:FindFirstChild("HumanoidRootPart")
+		if not root or not mobHRP then return end
+		local dist = (root.Position - mobHRP.Position).Magnitude
+		if dist > 100 then return end -- Só desvia se mob estiver perto (vai usar skill)
+		-- Detectou que mob vai usar skill - DESVIA
+		getgenv().Doding = true
+		getgenv().ReadyToDodge = true
+		-- Desvia pro lado
 		if root then
 			local oldCF = root.CFrame
-			-- Move 15 studs pro lado pra desviar
 			pcall(function()
-				root.CFrame = oldCF * CFrame.new(math.random(-15,15), 0, math.random(-15,15))
+				-- Move 20 studs pro lado aleatório pra desviar da skill
+				local dodgeDir = Vector3.new(math.random(-20,20), 0, math.random(-20,20))
+				root.CFrame = oldCF * CFrame.new(dodgeDir)
+				root.AssemblyLinearVelocity = Vector3.new(0,0,0)
 			end)
 		end
+		-- Espera a skill acabar
 		local start = tick()
-		repeat task.wait() until not skill or not skill.Parent or tick() - start > 3
-		task.wait(0.5)
+		repeat task.wait(0.1) until not skill or not skill.Parent or tick() - start > 2.5
+		task.wait(0.4)
 		getgenv().Doding = false
 		getgenv().ReadyToDodge = false
 	end)
