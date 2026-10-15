@@ -14395,11 +14395,11 @@ function manageTween(J, F, q, c)
 	return D
 end
 
--- Restaura a velocidade configurada do Tween Boat a cada 5 segundos.
+-- Restaura a velocidade configurada do Tween Boat a cada 0.05 segundos.
 -- Se a velocidade/cap tiver sido reduzida pela fisica ou por uma colisao,
 -- o valor salvo em Value Speed Tween Boat volta a ser aplicado automaticamente.
 task.spawn(function()
-	while task.wait(5) do
+	while task.wait(0.05) do
 		pcall(function()
 			local configuredSpeed = math.clamp(tonumber(Settings["Value Speed Tween Boat"]) or 390, 1, 390)
 			local activeTween = getgenv().TweenBoat
