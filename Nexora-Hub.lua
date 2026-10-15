@@ -12457,22 +12457,237 @@ QuestDragonSection.CreateToggle(
 	end
 )
 
-function AutoCraftingVolcanicMagnet()
-	pcall(function()
-		if not CheckCountItem("Blaze Ember", 10) then return end
-		if not CheckCountItem("Scrap Metal", 20) then return end
-		-- Vai no Volcano e crafta
-		local npc = DetectNpc("Dragon Hunter") or workspace.NPCs:FindFirstChild("Dragon Hunter")
-		if npc and npc:FindFirstChild("HumanoidRootPart") then
-			if t:DistanceFromCharacter(npc.HumanoidRootPart.Position) > 12 then
-				toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0,0,4))
-			else
-				game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({ Context = "Craft", Item = "Volcanic Magnet" })
-				game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CraftItem", "Volcanic Magnet")
-			end
-		end
-	end)
+
+-- ===== NEXORA FIX: Auto Craft Volcanic Magnet Completo =====
+-- Detecta de longe, vai no Dragon Hunter no Dragon Dojo em Hydra, pega missão, completa, volta até 15 Blaze Ember e crafta
+
+function GetDragonHunterNPC()
+    local npc = nil
+    pcall(function() npc = workspace.NPCs:FindFirstChild("Dragon Hunter") end)
+    if not npc then pcall(function() npc = game:GetService("ReplicatedStorage").NPCs:FindFirstChild("Dragon Hunter") end) end
+    if not npc then
+        pcall(function()
+            local list = NPCManager.getNPCsByName("Dragon Hunter")
+            if list and list[1] then npc = list[1]._modelState._instance end
+        end)
+    end
+    return npc
 end
+
+function AutoDragonHunterQuestLoop()
+    pcall(function()
+        local t = game.Players.LocalPlayer
+        if not t or not t.Character or not t.Character:FindFirstChild("HumanoidRootPart") then return end
+
+        -- Posição do Dragon Dojo / Hydra - Dragon Hunter
+        local DOJO_CFRAME = CFrame.new(5661.5302734375, 1013.411315918, -334.9619140625)
+
+        -- Se já tem 15 Blaze Ember, vai craftar
+        if CheckCountItem("Blaze Ember", 15) and CheckCountItem("Scrap Metal", 10) then
+            local npc = GetDragonHunterNPC()
+            if npc and npc:FindFirstChild("HumanoidRootPart") then
+                if t:DistanceFromCharacter(npc.HumanoidRootPart.Position) > 12 then
+                    toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0,0,4))
+                else
+                    -- Tenta todos os métodos de craft
+                    pcall(function()
+                        game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/Craft"):InvokeServer(unpack({[1]="Craft",[2]="Volcanic Magnet",[3]=1,[4]={}}))
+                    end)
+                    pcall(function()
+                        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CraftItem", "Volcanic Magnet")
+                    end)
+                    task.wait(2)
+                end
+            else
+                -- Se NPC não encontrado, vai pro Dojo
+                toTarget(DOJO_CFRAME)
+            end
+            return
+        end
+
+        -- Se não tem quest, pega quest no Dragon Hunter
+        local npc = GetDragonHunterNPC()
+        if not npc then
+            toTarget(DOJO_CFRAME)
+            return
+        end
+
+        -- DETECTA DE LONGE: se está longe, vai até o NPC
+        local distToNPC = t:DistanceFromCharacter(npc.HumanoidRootPart.Position)
+        if distToNPC > 1500 then
+            -- Longe: usa tween até Hydra/Dojo
+            toTarget(DOJO_CFRAME)
+            return
+        end
+
+        if not getgenv().QuestHunterDragon then
+            if distToNPC > 12 then
+                toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0,4,4))
+            else
+                pcall(function()
+                    local check = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({Context="Check"})
+                    if not check or not check.Text then
+                        local req = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({Context="RequestQuest"})
+                        if req and req.Text then
+                            getgenv().QuestHunterDragon = req.Text
+                        end
+                    else
+                        getgenv().QuestHunterDragon = check.Text
+                    end
+                end)
+                -- Se ainda não tem, tenta RequestQuest direto
+                if not getgenv().QuestHunterDragon then
+                    pcall(function()
+                        local req = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({Context="RequestQuest"})
+                        if req and req.Text then getgenv().QuestHunterDragon = req.Text end
+                    end)
+                end
+            end
+            return
+        end
+
+        -- Verifica se já tem 15 Ember, se sim, claim
+        if CheckCountItem("Blaze Ember", 15) then
+            pcall(function()
+                if distToNPC > 12 then
+                    toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0,0,4))
+                else
+                    game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({Context="ClaimReward"})
+                    game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({Context="Claim"})
+                    game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({Context="Complete"})
+                    game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({Context="CompleteQuest"})
+                    getgenv().QuestHunterDragon = nil
+                    task.wait(1)
+                end
+            end)
+            return
+        end
+
+        -- Verifica EmberTemplate no chão (detecta de longe)
+        local ember = DetectEmberTemplate()
+        if ember and ember:FindFirstChild("Part") then
+            pcall(function()
+                toTarget(ember.Part.CFrame)
+            end)
+            return
+        end
+
+        -- Farm baseado na quest atual
+        if getgenv().QuestHunterDragon then
+            local questText = getgenv().QuestHunterDragon
+            if string.find(questText, "Hydra Enforcers") then
+                local mob = DetectMob("Hydra Enforcer")
+                if not mob then
+                    local spawnPart = DetectPartSpawnMob("Hydra Enforcer", true)
+                    if spawnPart then
+                        toTarget(spawnPart.CFrame * CFrame.new(0,60,0))
+                    else
+                        -- Vai para Hydra Island area
+                        toTarget(CFrame.new(5661, 1013, -334))
+                    end
+                else
+                    pcall(function()
+                        sizepart(mob)
+                        BringMob(mob)
+                        UsedualFlock()
+                        ClickM1(mob)
+                        if Settings["Select Weapon"] == "Blox Fruit" then
+                            toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(-7, getgenv().YPosFruit or 20, 0))
+                        else
+                            toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(7, 20, 0))
+                        end
+                    end)
+                end
+            elseif string.find(questText, "Venomous Assailants") or string.find(questText, "Venomous") then
+                local mob = DetectMob("Venomous Assailant")
+                if not mob then
+                    local spawnPart = DetectPartSpawnMob("Venomous Assailant", true)
+                    if spawnPart then
+                        toTarget(spawnPart.CFrame * CFrame.new(0,60,0))
+                    end
+                else
+                    pcall(function()
+                        sizepart(mob)
+                        BringMob(mob)
+                        UsedualFlock()
+                        ClickM1(mob)
+                        toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(7, 20, 0))
+                    end)
+                end
+            else
+                -- Quest genérica, tenta Hydra Enforcer como fallback
+                local mob = DetectMob("Hydra Enforcer")
+                if mob then
+                    toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(7,20,0))
+                else
+                    toTarget(DOJO_CFRAME)
+                end
+            end
+        end
+    end)
+end
+
+function AutoCraftingVolcanicMagnet()
+    pcall(function()
+        if CheckItemInventory("Volcanic Magnet") then
+            A.CreateNoti({ Title = "Nexora Hub", Desc = "Volcanic Magnet já craftado!", ShowTime = 5 })
+            if ToggleAutoCraftingVolcanicMagnet then ToggleAutoCraftingVolcanicMagnet:SetStage(false) end
+            return
+        end
+
+        -- 1. Se não tem Scrap Metal, farm Jungle Pirate
+        if not CheckCountItem("Scrap Metal", 10) then
+            local mobs = {"Jungle Pirate", "Musketeer Pirate"}
+            local mob = DetectMob(mobs)
+            if not mob then
+                local part = DetectPartSpawnMob(DetectNameTablePart(mobs))
+                if part then
+                    toTarget(part.CFrame * CFrame.new(0,60,0))
+                end
+            else
+                pcall(function()
+                    sizepart(mob)
+                    BringMob(mob)
+                    UsedualFlock()
+                    ClickM1(mob)
+                    toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(7,20,0))
+                end)
+            end
+            return
+        end
+
+        -- 2. Se não tem 15 Blaze Ember, entra no loop do Dragon Hunter
+        if not CheckCountItem("Blaze Ember", 15) then
+            AutoDragonHunterQuestLoop()
+            return
+        end
+
+        -- 3. Tem tudo, crafta!
+        local npc = GetDragonHunterNPC()
+        if npc and npc:FindFirstChild("HumanoidRootPart") then
+            if game.Players.LocalPlayer:DistanceFromCharacter(npc.HumanoidRootPart.Position) > 12 then
+                toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0,0,4))
+            else
+                pcall(function()
+                    game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RF/Craft"):InvokeServer(unpack({[1]="Craft",[2]="Volcanic Magnet",[3]=1,[4]={}}))
+                end)
+                pcall(function()
+                    game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({ Context = "Craft", Item = "Volcanic Magnet" })
+                end)
+                task.wait(2)
+                if CheckItemInventory("Volcanic Magnet") then
+                    A.CreateNoti({ Title = "Nexora Hub", Desc = "Done Craft Volcanic Magnet", ShowTime = 5 })
+                    ToggleAutoCraftingVolcanicMagnet:SetStage(false)
+                end
+            end
+        end
+    end)
+end
+
+function AutoCraftinMagnetVol()
+    return AutoCraftingVolcanicMagnet()
+end
+
 
 
 function DetectBerryCFrame(y)
