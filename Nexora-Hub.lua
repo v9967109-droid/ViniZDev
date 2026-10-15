@@ -5676,7 +5676,541 @@ function ResetAirState()
 end
 
 
+-- FAILSAFE: Se desativar qualquer toggle e ficar preso no ar, volta ao normal INSTANTANEO
+function ForceResetAirState()
+	pcall(function()
+		getgenv().noclip = false
+		local char = game:GetService("Players").LocalPlayer.Character
+		if not char then return end
+		local root = char:FindFirstChild("HumanoidRootPart")
+		local hum = char:FindFirstChildOfClass("Humanoid")
+		if root then
+			root.AssemblyLinearVelocity = Vector3.new(0,0,0)
+			root.AssemblyAngularVelocity = Vector3.new(0,0,0)
+			for _, v in ipairs(root:GetChildren()) do
+				if v:IsA("BodyVelocity") or v:IsA("BodyGyro") or v:IsA("BodyPosition") or v.Name == "FloatForce" then
+					v:Destroy()
+				end
+			end
+			for _, v in ipairs(char:GetDescendants()) do
+				if v:IsA("BasePart") then
+					v.CanCollide = true
+				end
+			end
+		end
+		if hum then
+			hum.PlatformStand = false
+			hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+		end
+	end)
+end
 
+-- Hook em TODAS as toggles: quando desativa, reseta na hora
+pcall(function()
+	local oldSave = SaveSettings
+	if oldSave then
+		_G.SaveSettings = function(name, value, ...)
+			pcall(oldSave, name, value, ...)
+			if value == false then
+				task.spawn(function()
+					task.wait(0.1)
+					ForceResetAirState()
+				end)
+			end
+		end
+	end
+end)
+
+task.spawn(function()
+	while task.wait(0.5) do
+		pcall(function()
+			local char = game:GetService("Players").LocalPlayer.Character
+			if not char then return end
+			local root = char:FindFirstChild("HumanoidRootPart")
+			if not root then return end
+			local anyActive = Settings["Raise Boat Manual Drive"] or Settings["Fly Boat"] or Settings["Start Farm"] or Settings["Auto Find Leviathan"] or Settings["Auto Sea Event"] or Settings["Teleport To Fruit"] or Settings["Auto Farm Level"] or Settings["Tween Boat To Frozen Dimension"] or Settings["Multi Find Leviathan"] or Settings["Auto Farm Bone"] or Settings["Auto Farm Ectoplasm"] or Settings["Auto Elite Hunter"] or Settings["Auto Factory"] or Settings["Auto Raid"] or Settings["Tween Safe if have Items"] or Settings["Auto Present Event"] or Settings["Auto Celestial Soldier"] or Settings["Auto Attack Dungeon"] or Settings["Auto Fishing"] or Settings["Auto Get Ghoul"] or Settings["Auto Get Cyborg"] or Settings["Auto Trial"] or Settings["Auto Pull Lever"] or Settings["Drive Boat To Tiki"] or Settings["Drive Boat To Hydra"] or Settings["Auto Fire Shoot Heart Leviathan"]
+			if not anyActive and getgenv().noclip then
+				ForceResetAirState()
+			end
+		end)
+	end
+end)
+
+
+function SetNoClip(l)
+	getgenv().noclip = l
+	local Q = t.Character
+	if not Q then
+		return
+	end
+	local S, L = Q:FindFirstChild("HumanoidRootPart"), Q:FindFirstChildOfClass("Humanoid")
+	if not l then
+		for l, l in ipairs(Q:GetDescendants()) do
+			if l:IsA("BasePart") then
+				l.CanCollide = true
+			end
+		end
+		if L then
+			L.PlatformStand = false
+		end
+		if S and (S:FindFirstChild("FloatForce")) and not ToggleNoclip() then
+			S.FloatForce:Destroy()
+		end
+	end
+end
+function ToggleNoclip()
+	if
+		Settings["Auto Farm Active"]
+		or Settings["Start Farm"]
+		or Settings["Auto Present Event"]
+		or Settings["Auto Celestial Soldier"]
+		or Settings["Auto Rip Commander"]
+		or Settings["Auto Event Halloween"]
+		or Settings["Auto Attack Dungeon"]
+		or Settings["Auto Fishing"]
+		or Settings["Teleport To Fruit"]
+		or Settings["Auto Factory"]
+		or Settings["Auto Pirate Raid"]
+		or Settings["Auto Elite Hunter"]
+		or Settings["Auto Touch Pad Haki"]
+		or Settings["Auto Summon Rip Indra"]
+		or Settings["Attack Rip Indra"]
+		or Settings["Attack Soul Reaper"]
+		or Settings["Attack Dough King"]
+		or Settings["Attack Darkbeard"]
+		or Settings["Auto Raid"]
+		or Settings["Auto Sea Event"]
+		or Settings["Auto Shipwright"]
+		or Settings["Teleport Acient Clock"]
+		or Settings["Auto Upgrade Race V2-V3"]
+		or Settings["Auto Trial"]
+		or Settings["Auto Get Ghoul"]
+		or Settings["Auto Get Cyborg"]
+		or Settings["Auto Pull Lever"]
+		or g["Teleport Mirage"]
+		or g["Teleport To Island"]
+		or g["Teleport To Npc"]
+		or g["Teleport Prehistoric Island"]
+		or g["Sanguine Art"]
+		or g["God Human"]
+		or g["Dragon Talon"]
+		or g["Electric Claw"]
+		or g["Sharkman Karate"]
+		or g["Death Step"]
+		or g.SuperHuman
+		or g.DragonClaw
+		or g.Electro
+		or g["Fishman Karate"]
+		or g["Black Leg"]
+		or Settings["Teleport To Kitsune Island"]
+		or Settings["Auto Spawn Kitsune Island"]
+		or Settings["Auto Collect Soul Ember"]
+		or Settings["Auto Summon Soul Ember"]
+		or Settings["Auto Attack Leviathan"]
+		or Settings["Auto Soul Guitar"]
+		or Settings["Auto CDK"]
+		or Settings["Auto Yama"]
+		or Settings["Auto Tushita"]
+		or Settings["Auto Upgrade Sword Inventory"]
+		or Settings["Teleport Player"]
+		or Settings["Auto Chest"]
+		or Settings["Farm Observation"]
+		or Settings["Auto Upgrade Gun Inventory"]
+		or Settings["Kill Boss"]
+		or Settings["Kill Mob"]
+		or Settings["Auto UP Observation V2"]
+		or Settings["Auto New World"]
+		or Settings["Auto Third World"]
+		or Settings["Tween Safe if have Items"]
+		or Settings["Teleport Frozen Dimension"]
+		or Settings["Auto Yoru Mini"]
+		or Settings["Auto Quest Dojo Trainer"]
+		or Settings["Auto Quest Dragon Hunter"]
+		or Settings["Auto Crafting Volcanic Magnet"]
+		or Settings["Auto Find Prehistoric Island"]
+		or Settings["Auto Find Mirage"]
+		or Settings["Auto Event Prehistoric Island"]
+		or Settings["Auto Collect Bone"]
+		or Settings["Auto Collect Berry"]
+		or Settings["Auto Upgrade Race V2-V3 Draco"]
+		or Settings["Auto Trial Draco"]
+		or Settings["Auto Get Rainbow Haki"]
+		or Settings["Follow Player Select"]
+		or Settings["Auto Tween To Prehistoric Island"]
+		or Settings["Auto Kill Golem"]
+		or Settings["Auto Fix Volcano"]
+		or Settings["Multi Find Leviathan"]
+		or Settings["Fully Event Prehistoric Island"]
+		or Settings["Auto Multi Raid"]
+		or Settings["Auto Fire Shoot Heart Leviathan"]
+		or Settings["Auto Buy Chip and Attack Law"]
+		or Settings["Fully Trial Draco"]
+		or Settings["Auto Finish Train Quest"]
+		or Settings["Auto Destroy IDK"]
+		or Settings["Auto Finish Train Draco Quest"]
+		or Settings["Auto TTK"]
+		or Settings["Auto Attack All Mob and Boss"]
+		or Settings["Auto Collect Egg"]
+		or Settings["Collect Chest When Server Spawn God's Chalice or Fist of Darkness"]
+	then
+		return true
+	end
+
+	-- Any enabled boolean option keeps character collision disabled while active.
+	for _, value in pairs(Settings) do
+		if type(value) == "boolean" and value then
+			return true
+		end
+	end
+end
+-- Character + equipped Tool noclip enforcement.
+do
+    task.spawn(function()
+        while task.wait() do
+            if ToggleNoclip() then
+                local Character = t.Character
+                if Character then
+                    for _, Part in ipairs(Character:GetDescendants()) do
+                        if Part:IsA("BasePart") then
+                            Part.CanCollide = false
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end
+local l = game:GetService("TweenService")
+getgenv().TweenManager = {
+	currentTween = nil,
+	currentPart = nil,
+	currentGoal = nil,
+	TweenRunning = false,
+	CancelTweenOnly = function()
+		local Q, S = TweenManager.currentTween, getgenv().Tween
+		if Q then
+			pcall(function()
+				Q:Cancel()
+				Q:Destroy()
+			end)
+		end
+		if S and S ~= Q then
+			pcall(function()
+				S:Cancel()
+				S:Destroy()
+			end)
+		end
+		TweenManager.currentTween = nil
+		TweenManager.currentPart = nil
+		TweenManager.currentGoal = nil
+		TweenManager.TweenRunning = false
+		getgenv().Tween = nil
+	end,
+	PlayTween = function(Q, S, L, d)
+		if not Q or not S or not L or not L.CFrame then
+			return
+		end
+		local I = (d or {}).TargetEpsilon or 12
+		if
+			TweenManager.currentTween
+			and TweenManager.currentPart == Q
+			and TweenManager.currentGoal
+			and I >= (TweenManager.currentGoal.Position - L.CFrame.Position).Magnitude
+		then
+			return TweenManager.currentTween
+		end
+		TweenManager.CancelTweenOnly()
+		local d = l:Create(Q, S, L)
+		TweenManager.currentTween = d
+		TweenManager.currentPart = Q
+		TweenManager.currentGoal = L.CFrame
+		TweenManager.TweenRunning = true
+		getgenv().Tween = d
+		d.Completed:Connect(function()
+			if TweenManager.currentTween == d then
+				TweenManager.currentTween = nil
+				TweenManager.currentPart = nil
+				TweenManager.currentGoal = nil
+				TweenManager.TweenRunning = false
+				getgenv().Tween = nil
+				pcall(function()
+					d:Destroy()
+				end)
+			end
+		end)
+		d:Play()
+		return d
+	end,
+	CancelCurrent = function()
+		local l = t.Character
+		local Q = l and (l:FindFirstChild("HumanoidRootPart"))
+		if TweenManager.currentTween or getgenv().Tween or Q and (Q:FindFirstChild("FloatForce")) then
+			TweenManager.CancelTweenOnly()
+			pcall(function()
+				if not l then
+					return
+				end
+				for S, S in ipairs(l:GetDescendants()) do
+					if S:IsA("BasePart") then
+						S.CanCollide = true
+					end
+				end
+				local S = l:FindFirstChildOfClass("Humanoid")
+				if S then
+					S.PlatformStand = false
+				end
+				if Q and (Q:FindFirstChild("FloatForce")) then
+					Q.FloatForce:Destroy()
+				end
+			end)
+		end
+	end,
+}
+TweenManager = getgenv().TweenManager
+local l, Q, S, L, d =
+	{
+		Sea1 = {
+			Colosseum = Vector3.new(-2143.41333, 152.074326, -3025.54614),
+			Desert = Vector3.new(1330.68298, 103.55368, 4489.30615),
+			Fountain = Vector3.new(5420.33643, 431.04068, 4396.38721),
+			Jungle = Vector3.new(-1340.21948, 136.020538, -101.374214),
+			["Marine Fortress"] = Vector3.new(-5180.23828, 281.343445, 4383.03174),
+			["Middle Town"] = Vector3.new(-703.16748, 9.55188751, 1575.1864),
+			["Pirate Village"] = Vector3.new(-807.662109, 27.8020515, 4119.30127),
+			Prison = Vector3.new(5270.56934, 163.508469, 844.72821),
+			Sky = Vector3.new(-4808.76904, 721.326355, -2668.81787),
+			Snow = Vector3.new(1394.46399, 39.0448875, -1321.63904),
+			["Starter Island"] = Vector3.new(1038.29968, 112.1365051, 1287.83447),
+			["Starter Marine"] = Vector3.new(-3096.51929, 231.443558, 2087.51929),
+			Underwater = Vector3.new(61147.9766, 20.5708408, 1366.09839),
+			["Upper Sky"] = Vector3.new(-7950.03662, 5815.68457, -1968.3374),
+			Volcano = Vector3.new(-5513.97852, 64.4943161, 8577.40039),
+		},
+		Sea2 = {
+			Cafe = Vector3.new(-382, 74, 356),
+			Colosseum = Vector3.new(-1836, 46, 1642),
+			["Dark Arena"] = Vector3.new(3948, 13, -3479),
+			["Docks 1"] = Vector3.new(-923, 8, 1810),
+			["Docks 2"] = Vector3.new(-13, 39, 2708),
+			["Docks 3"] = Vector3.new(-1944, 9, -2594),
+			["Docks 4"] = Vector3.new(-5798, 1, -5021),
+			Doghouse = Vector3.new(-1984, 125, -82),
+			Graveyard = Vector3.new(-5710, 126, -775),
+			["Haunted Ship"] = Vector3.new(937, 125, 32879),
+			Lab = Vector3.new(-5542, 335, -5924),
+			Lava = Vector3.new(-5280, 7, -5618),
+			Mansion = Vector3.new(-494, 339, 593),
+			Raid = Vector3.new(-6503, 251, -4495),
+			Remote = Vector3.new(4766, 8, 2911),
+			Skull = Vector3.new(-2956.24341, 123.399323, -9981.06934),
+			Snow = Vector3.new(1210, 429, -4663),
+			["Winter Castle"] = Vector3.new(5544.71777, 60.1393852, -6359.08887),
+		},
+		Sea3 = {
+			["Cake Land"] = Vector3.new(-2098.970458984375, 76.39494323730469, -12128.359375),
+			["Chocolate Land"] = Vector3.new(379.1396179199219, 130.20599365234375, -12720.83984375),
+			["Great Tree"] = Vector3.new(4345.09375, 575.0524291992188, -6159.00439453125),
+			["Haunted Castle"] = Vector3.new(-9515.0009765625, 149.18876647949, 5534.0502929688),
+			["Hydra Arena"] = Vector3.new(5020.94580078125, 174.08645629882812, -2011.18505859375),
+			["Hydra Town"] = Vector3.new(5288.62158203125, 1011.6527709960938, 392.4296875),
+			["Ice Cream Land"] = Vector3.new(-917.54852294922, 63.364143371582, -10858.696289062),
+			["Peanut Land"] = Vector3.new(-2037.8001708984, 13.651118278503, -9948.2021484375),
+			Port = Vector3.new(-342.4343566894531, 23.8315486907959, 5547.345703125),
+			["Sea Castle"] = Vector3.new(-5502.1787109375, 323.6708984375, -2863.4616699219),
+			["Tiki Outpost"] = Vector3.new(-16456.4629, 530.251953, 436.231812),
+			["Turtle Center"] = Vector3.new(-12007.979492188, 339.15548706055, -9178.580078125),
+			["Turtle Entrance"] = Vector3.new(-10163.96484375, 340.29028320313, -8320.767578125),
+			["Turtle Mansion"] = Vector3.new(-12538.421875, 339.39358520508, -7817.0708007813),
+			["Turtle Mountain"] = Vector3.new(-12856.61328125, 852.75360107422, -10715.23046875),
+		},
+	},
+	{},
+	game:GetService("CollectionService"),
+	0,
+	false
+local function I()
+	L = tick() + 1.5
+	if not S:HasTag(t, "Teleporting") then
+		S:AddTag(t, "Teleporting")
+		d = true
+	end
+end
+task.spawn(function()
+	while task.wait(0.1) do
+		if d and tick() >= L then
+			S:RemoveTag(t, "Teleporting")
+			d = false
+		end
+	end
+end)
+spawn(function()
+	local S = (game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetUnlockables"))
+	repeat
+		task.wait()
+		S = (game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetUnlockables"))
+	until S
+	if S.DefeatedIndraTrueForm and game.PlaceId == getgenv().CheckPlaceId then
+		Q["Caslte On The Sea"] = Vector3.new(-4967.6826171875, 314.88238525390625, -3157.098388671875)
+		Q.Hydra = Vector3.new(5661.5302734375, 1013.4113159179688, -334.9619140625)
+		Q.Mansion = Vector3.new(-12463.8740234375, 374.9144592285156, -7523.77392578125)
+	end
+	if game.PlaceId == getgenv().CheckPlaceId then
+		Q["Temple Clock"] = Vector3.new(28282.5703125, 14896.8505859375, 105.1042709350586)
+	end
+	if game.PlaceId == getgenv().CheckPlaceId2 then
+		Q["122"] = Vector3.new(923.21252441406, 126.9760055542, 32852.83203125)
+		Q["3032"] = Vector3.new(-6508.5581054688, 89.034996032715, -132.83953857422)
+	end
+	if S.FlamingoAccess and game.PlaceId == getgenv().CheckPlaceId2 then
+		Q.Mansion = Vector3.new(-288.46246337890625, 306.130615234375, 597.9988403320312)
+		Q.Flamingo = Vector3.new(2284.912109375, 15.152046203613281, 905.48291015625)
+	end
+	local S, L = game.PlaceId, getgenv().CheckPlaceId3
+	if S == L then
+		Q = {
+			["1"] = Vector3.new(-7894.6201171875, 5545.49169921875, -380.2467346191406),
+			["2"] = Vector3.new(-4607.82275390625, 872.5422973632812, -1667.556884765625),
+			["3"] = Vector3.new(61163.8515625, 11.759522438049316, 1819.7841796875),
+			["4"] = Vector3.new(3876.280517578125, 35.10614013671875, -1939.3201904296875),
+		}
+	end
+end)
+local S, L, d = game:GetService("Players"), game:GetService("ReplicatedStorage"), game:GetService("VirtualInputManager")
+
+-- Portal helpers
+-- The old implementation only worked when the player owned the Portal Fruit.
+-- Keep it available as a fallback, but do not require the fruit for the setting itself.
+local function _()
+	local o = t.Data:FindFirstChild("DevilFruit")
+	if not o or o.Value ~= "Portal-Portal" then
+		return false
+	end
+	local V = t.PlayerGui.Main.Skills:FindFirstChild(o.Value)
+	o = V and (V:FindFirstChild("C"))
+	if not o or not o:IsA("Frame") then
+		V = t.Character:FindFirstChild("Portal-Portal") or (t.Backpack:FindFirstChild("Portal-Portal"))
+		if not V then
+			return false
+		end
+		t.Character:FindFirstChildOfClass("Humanoid"):EquipTool(V)
+		return false
+	end
+	V = o:FindFirstChild("Cooldown")
+	return o.Title.TextColor3 == Color3.new(1, 1, 1)
+		and (V.Size == UDim2.new(0, 0, 1, -1) or V.Size == UDim2.new(1, 0, 1, -1))
+end
+local function o(V)
+	local N = t.Character:FindFirstChild("Portal-Portal") or (t.Backpack:FindFirstChild("Portal-Portal"))
+	if not N then
+		return false
+	end
+	t.Character:FindFirstChildOfClass("Humanoid"):EquipTool(N)
+	N = t.PlayerGui.Main:FindFirstChild("Gateway")
+	if not N then
+		return false
+	end
+	d:SendKeyEvent(true, "C", false, game)
+	d:SendKeyEvent(false, "C", false, game)
+	local y = tick() + 3
+	repeat
+		task.wait(0.1)
+	until N.Visible or tick() > y
+	if not N.Visible then
+		return false
+	end
+	y = N:FindFirstChild("MainContent")
+	if not y then
+		return false
+	end
+	N = y.ScrollingFrame:FindFirstChild(tostring(V))
+	if N and N.MouseButton1Click then
+		for V, V in pairs(getconnections(N.MouseButton1Click)) do
+			pcall(function()
+				V.Function()
+			end)
+		end
+		return true
+	end
+	return false
+end
+G = {
+	[Vector3.new(-16455.29, 527.75, 436.11)] = Vector3.new(-4967.68, 314.88, -3157.1),
+	[Vector3.new(-9513.47, 142.1, 5528.84)] = Vector3.new(-4967.68, 314.88, -3157.1),
+	[Vector3.new(-340.89, 20.6, 5549.8)] = Vector3.new(5661.53, 1013.41, -334.96),
+	[Vector3.new(-2100.75, 69.98, -12128.27)] = Vector3.new(28282.57, 14896.85, 105.1),
+	[Vector3.new(380.74, 126.58, -12726.16)] = Vector3.new(28282.57, 14896.85, 105.1),
+	[Vector3.new(-916.08, 56.24, -10858.4)] = Vector3.new(28282.57, 14896.85, 105.1),
+	[Vector3.new(-2039.6, 9.67, -9947.76)] = Vector3.new(28282.57, 14896.85, 105.1),
+}
+do
+	local G = Vector3.new(28282.5703125, 14896.8505859375, 105.1042709350586)
+	local function V()
+		local N = t.Character and (t.Character:FindFirstChild("HumanoidRootPart"))
+		return N ~= nil and (N.Position - G).Magnitude < 1000
+	end
+	function BorrowTempleOfTime()
+		local G = game.ReplicatedStorage.MapStash:FindFirstChild("Temple of Time")
+		if not G then
+			return
+		end
+		G:SetAttribute("ClientBorrowed", true)
+		G.Parent = workspace.Map
+		task.spawn(function()
+			local N = tick() + 30
+			repeat
+				task.wait(0.25)
+			until G.Parent ~= workspace.Map or (V()) or tick() > N
+			G:SetAttribute("ClientBorrowed", nil)
+			if not V() and G.Parent == workspace.Map then
+				G.Parent = game.ReplicatedStorage.MapStash
+			end
+		end)
+	end
+	function GetTempleOfTime()
+		local G = workspace.Map:FindFirstChild("Temple of Time")
+		if G and not G:GetAttribute("ClientBorrowed") then
+			return G
+		end
+	end
+end
+local G = false
+getgenv().IsPlayerDead = function()
+	if not t.Character or not t.Character:FindFirstChild("Humanoid") or t.Character.Humanoid.Health == 0 then
+		return true
+	end
+end
+CS = game:GetService("CollectionService")
+cam = workspace.CurrentCamera
+function LoadIslandByFakePoint(V)
+	local N = Instance.new("Part")
+	N.Transparency = 1
+	N.CanCollide = false
+	N.Anchored = true
+	N.Size = Vector3.new(0, 0, 0)
+	N.CFrame = CFrame.new(V:GetPivot().Position)
+	CS:AddTag(N, "LoDPosition")
+	N.Parent = cam
+	return N
+end
+spawn(function()
+	pcall(function()
+		for V, V in ipairs(workspace:GetChildren()) do
+			if V:IsA("Model") and (V:GetAttribute("LevelOfDetailDiameter")) then
+				LoadIslandByFakePoint(V)
+			end
+		end
+		for V, V in ipairs(workspace.Map:GetChildren()) do
+			if V:IsA("Model") then
+				LoadIslandByFakePoint(V)
+			end
+		end
+		for V, V in ipairs(game:GetService("ReplicatedStorage").FakeIslands:GetChildren()) do
+			if V:IsA("Model") then
+				LoadIslandByFakePoint(V)
+			end
+		end
+	end)
+end)
 getgenv().TweenGuidePart = nil
 getgenv().TweenConnection = nil
 getgenv().TweenInProgress = false
@@ -10634,7 +11168,12 @@ task.spawn(function()
 					StackFarmOther = false
 					local dist = (handle.Position - root.Position).Magnitude
 					if dist <= 15 then
-						-- Chegou na fruta - pega sem TP
+						getgenv().noclip = false
+						-- Pega a fruta sem lag
+						pcall(function()
+							root.CFrame = handle.CFrame
+						end)
+						task.wait(0.15)
 						pcall(function()
 							firetouchinterest(root, handle, 0)
 							task.wait(0.1)
@@ -10652,11 +11191,23 @@ task.spawn(function()
 							task.wait(0.1)
 							game:GetService("VirtualInputManager"):SendKeyEvent(false, "Space", false, game)
 						end)
+						-- Limpa cache pra procurar próxima fruta
 						getgenv().__CachedFruit = nil
 						getgenv().__LastFruitScan = 0
+						-- NÃO dá return, continua procurando próxima fruta
 					else
-						pcall(function() getgenv().noclip = true end)
-						toTarget(handle.CFrame * CFrame.new(0, 5, 0))
+						-- Vai até a fruta mesmo se estiver longe - SEM LAG
+						-- Se muito longe, teleporta direto em etapas
+						if dist > 1500 then
+							-- Teleporta direto pra perto da fruta (sem tween lento)
+							pcall(function()
+								getgenv().noclip = true
+								root.CFrame = handle.CFrame * CFrame.new(0, 10, 0)
+							end)
+							task.wait(0.3)
+						else
+							toTarget(handle.CFrame * CFrame.new(0, 3, 0))
+						end
 					end
 				else
 					-- Nenhuma fruta encontrada, espera um pouco
