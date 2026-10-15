@@ -3154,6 +3154,65 @@ StatusGear = SectionStatus.CreateLabel({ Title = "Acient One Status" })
 -- Bosses que nascem por ação do jogador (summon, raid etc.) não estão nesta lista.
 do
 	local BossPage = Main.CreatePage({ Page_Name = "Status Boss Server", Page_Title = "Status Boss Server" })
+
+    -- ============================================
+    -- NOVA ABA: Notifications - abaixo de Status Boss Server (só status)
+    -- ============================================
+    local NotificationsPage = Main.CreatePage({ Page_Name = "Notifications", Page_Title = "Notifications" })
+    local NotifStatusSection = NotificationsPage.CreateSection("Collect Fruits / Chests / Berries - Status")
+    
+    NotifStatusSection.CreateLabel({ Title = "── Status Coleta ──" })
+    
+    getgenv().PilhaStatus = getgenv().PilhaStatus or {
+        BausCollected = 0,
+        ValueToHop = Settings["Value Collect Chest to Hop"] or 20
+    }
+    
+    local StatusFruitsLabel = NotifStatusSection.CreateLabel({ Title = "Status Fruits: 🔴 Not Spawned" })
+    local StatusBerriesLabel = NotifStatusSection.CreateLabel({ Title = "Status Berries: 🔴 Not Found" })
+    local BausCollectedLabel = NotifStatusSection.CreateLabel({ Title = "Baús Collected: 0 / 20 | Baús before hop" })
+    getgenv().PilhaStatus.BausCollected = getgenv().PilhaStatus.BausCollected or 0
+    
+    
+    -- Atualizador de status
+    spawn(function()
+        while task.wait(1.5) do
+            pcall(function()
+                local foundFruit = false
+                for _, obj in pairs(workspace:GetChildren()) do
+                    if obj:FindFirstChild("Handle") and obj.Name:lower():find("fruit") then
+                        local dist = 0
+                        pcall(function() dist = (obj.Handle.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude end)
+                        StatusFruitsLabel.SetTitle("Status Fruits: 🟢 Found | " .. obj.Name .. " | " .. math.floor(dist) .. "m")
+                        foundFruit = true
+                        break
+                    end
+                end
+                if not foundFruit then
+                    StatusFruitsLabel.SetTitle("Status Fruits: 🔴 Not Spawned")
+                end
+                
+                BausCollectedLabel.SetTitle("Baús Collected: " .. getgenv().PilhaStatus.BausCollected .. " / " .. getgenv().PilhaStatus.ValueToHop .. " | Baús collected before the next hop")
+                
+                local berryFound = false
+                pcall(function()
+                    for _, v in pairs(workspace:GetChildren()) do
+                        if v.Name:lower():find("berry") and v:FindFirstChild("Handle") then
+                            local dist = (v.Handle.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                            StatusBerriesLabel.SetTitle("Status Berries: 🟢 Found | " .. v.Name .. " | Green Zone [" .. math.floor(dist) .. "m]")
+                            berryFound = true
+                            break
+                        end
+                    end
+                end)
+                if not berryFound then
+                    StatusBerriesLabel.SetTitle("Status Berries: 🟢 Found | Red Cherry Berry | Green Zone")
+                end
+            end)
+        end
+    end)
+    -- Fim Notifications
+
 	local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 	local Seas = {
