@@ -5701,67 +5701,6 @@ function SetNoClip(l)
 		end
 	end
 end
-
--- FIX SIMPLES: Só quando desativa toggle que pode deixar travado no ar
-pcall(function()
-    if getgenv().__NexoraAirHook then return end
-    getgenv().__NexoraAirHook = true
-    local oldSave = SaveSettings
-    SaveSettings = function(name, val, ...)
-        local ret = nil
-        pcall(function() ret = oldSave(name, val, ...) end)
-        -- Só quando desativa (val == false)
-        if val == false then
-            task.spawn(function()
-                task.wait(0.3)
-                pcall(function()
-                    -- Verifica se ainda tem alguma toggle ativa
-                    local anyActive = false
-                    for k,v in pairs(Settings) do
-                        if type(v)=="boolean" and v==true then
-                            anyActive = true
-                            break
-                        end
-                    end
-                    -- Se não tem nenhuma ativa e ainda tá com noclip, desativa
-                    if not anyActive and getgenv().noclip then
-                        getgenv().noclip = false
-                        local char = game:GetService("Players").LocalPlayer.Character
-                        if char then
-                            local root = char:FindFirstChild("HumanoidRootPart")
-                            local hum = char:FindFirstChildOfClass("Humanoid")
-                            if root then
-                                root.AssemblyLinearVelocity = Vector3.new(0,0,0)
-                                for _,v in ipairs(root:GetChildren()) do
-                                    if v:IsA("BodyVelocity") or v:IsA("BodyGyro") or v:IsA("BodyPosition") then
-                                        v:Destroy()
-                                    end
-                                end
-                                if root:FindFirstChild("FloatForce") then
-                                    root.FloatForce:Destroy()
-                                end
-                            end
-                            if char then
-                                for _,v in ipairs(char:GetDescendants()) do
-                                    if v:IsA("BasePart") then
-                                        v.CanCollide = true
-                                    end
-                                end
-                            end
-                            if hum then
-                                hum.PlatformStand = false
-                                hum:ChangeState(Enum.HumanoidStateType.GettingUp)
-                            end
-                        end
-                    end
-                end)
-            end)
-        end
-        return ret
-    end
-    _G.SaveSettings = SaveSettings
-end)
-
 function ToggleNoclip()
 	if
 		Settings["Auto Farm Active"]
