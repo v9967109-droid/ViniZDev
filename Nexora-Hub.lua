@@ -14087,7 +14087,7 @@ SettingSeaEventSection.CreateToggle(
 	end
 )
 SettingSeaEventSection.CreateSlider(
-	{ Title = "Boat Height", Min = 5, Max = 80, Default = Settings["Boat Height"] or 25, Precise = false },
+	{ Title = "Boat Height", Min = 5, Max = 3500, Default = Settings["Boat Height"] or 3500, Precise = false },
 	function(l)
 		SaveSettings("Boat Height", l)
 	end
@@ -14114,7 +14114,7 @@ do
 				base = (seat.Position.Y < 30) and seat.Position.Y or 8
 				boat:SetAttribute("NexoraBaseY", base)
 			end
-			local height = math.clamp(tonumber(Settings["Boat Height"]) or 25, 5, 80)
+			local height = math.clamp(tonumber(Settings["Boat Height"]) or 3500, 5, 3500)
 			local targetY = base + height
 			local pivot = boat:GetPivot()
 			local dy = targetY - pivot.Position.Y
