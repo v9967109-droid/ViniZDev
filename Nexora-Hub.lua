@@ -2639,7 +2639,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
                 return opt
             end
             function Section.CreateNoti(text, duration)
-                local note=make("TextLabel",{AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-15,1,-15),Size=UDim2.new(0,260,0,48),BackgroundColor3=C.panel,Text=tostring(text),TextColor3=C.text,Font=Enum.Font.Gotham,TextSize=12,TextWrapped=true},gui); corner(note,8); stroke(note,C.gold,0); make("UIStroke", {Color=C.goldLight, Transparency=0.35, Thickness=2}, note); task.delay(duration or 3,function() if note then note:Destroy() end end); return note
+                return Main.CreateNoti(text, duration)
             end
             return Section
         end
@@ -2664,12 +2664,71 @@ local fScale = make("UIScale", {Scale=1}, reopen)
     Main.CreateNotification = function(payload)
         return Main.CreateNoti(payload)
     end
+    -- NOTIFICAÇÕES TOP BONITAS - Nexora Hub
+    local NotifContainer = nil
+    local function getNotifContainer()
+        if NotifContainer and NotifContainer.Parent then return NotifContainer end
+        local containerGui = parentGui:FindFirstChild("NexoraNotifs")
+        if containerGui then containerGui:Destroy() end
+        containerGui = make("ScreenGui", {Name="NexoraNotifs", ResetOnSpawn=false, IgnoreGuiInset=true, DisplayOrder=1000, ZIndexBehavior=Enum.ZIndexBehavior.Sibling}, parentGui)
+        NotifContainer = make("Frame", {Name="Container", AnchorPoint=Vector2.new(1,0), Position=UDim2.new(1,-12,0,12), Size=UDim2.new(0,320,1,-24), BackgroundTransparency=1}, containerGui)
+        make("UIListLayout", {FillDirection=Enum.FillDirection.Vertical, HorizontalAlignment=Enum.HorizontalAlignment.Right, VerticalAlignment=Enum.VerticalAlignment.Top, Padding=UDim.new(0,8), SortOrder=Enum.SortOrder.LayoutOrder}, NotifContainer)
+        return NotifContainer
+    end
+    
     function Main.CreateNoti(text, duration)
+        local title, desc
         if type(text) == "table" then
-            duration = text.ShowTime or duration
-            text = (tostring(text.Title or "NEXORA") .. "\n" .. tostring(text.Desc or ""))
+            duration = text.ShowTime or duration or 4
+            title = tostring(text.Title or "NEXORA HUB")
+            desc = tostring(text.Desc or text.Text or "")
+        else
+            duration = duration or 4
+            title = "NEXORA HUB"
+            desc = tostring(text)
         end
-        local note=make("TextLabel",{AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-15,1,-15),Size=UDim2.new(0,260,0,48),BackgroundColor3=C.panel,Text=tostring(text),TextColor3=C.text,Font=Enum.Font.Gotham,TextSize=12},gui); corner(note,8); stroke(note,C.gold,0); make("UIStroke", {Color=C.goldLight, Transparency=0.35, Thickness=2}, note); task.delay(duration or 3,function() if note then note:Destroy() end end); return note
+        
+        local container = getNotifContainer()
+        local card = make("Frame", {Name="Notif", BackgroundColor3=Color3.fromRGB(15,15,20), BorderSizePixel=0, Size=UDim2.new(0,310,0,72), ClipsDescendants=true}, container)
+        corner(card, 14)
+        local border = make("UIStroke", {Color=Color3.fromRGB(0,140,255), Thickness=1.2, Transparency=0.2, ApplyStrokeMode=Enum.ApplyStrokeMode.Border}, card)
+        make("UIGradient", {Color=ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(25,25,35)), ColorSequenceKeypoint.new(1, Color3.fromRGB(12,12,18))}, Rotation=90}, card)
+        local sideBar = make("Frame", {Name="SideBar", BackgroundColor3=Color3.fromRGB(0,140,255), BorderSizePixel=0, Size=UDim2.new(0,3,1,0), Position=UDim2.new(0,0,0,0)}, card)
+        corner(sideBar, 2)
+        make("UIGradient", {Color=ColorSequence.new(Color3.fromRGB(80,180,255), Color3.fromRGB(0,100,220)), Rotation=90}, sideBar)
+        local iconBg = make("Frame", {BackgroundColor3=Color3.fromRGB(28,28,40), Size=UDim2.new(0,36,0,36), Position=UDim2.new(0,14,0,10), BorderSizePixel=0}, card)
+        corner(iconBg, 10)
+        make("UIStroke", {Color=Color3.fromRGB(0,140,255), Transparency=0.6, Thickness=1}, iconBg)
+        local iconText = make("TextLabel", {BackgroundTransparency=1, Size=UDim2.new(1,0,1,0), Text="N", TextColor3=Color3.fromRGB(0,140,255), Font=Enum.Font.GothamBlack, TextSize=20}, iconBg)
+        make("UIGradient", {Color=ColorSequence.new(Color3.fromRGB(80,180,255), Color3.fromRGB(0,140,255)), Rotation=90}, iconText)
+        local titleLabel = make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,62,0,8), Size=UDim2.new(1,-70,0,18), Text=string.upper(title), TextColor3=Color3.fromRGB(255,255,255), Font=Enum.Font.GothamBold, TextSize=12, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd}, card)
+        local descLabel = make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,62,0,28), Size=UDim2.new(1,-70,0,32), Text=desc, TextColor3=Color3.fromRGB(180,190,210), Font=Enum.Font.Gotham, TextSize=11, TextXAlignment=Enum.TextXAlignment.Left, TextYAlignment=Enum.TextYAlignment.Top, TextWrapped=true, TextTruncate=Enum.TextTruncate.AtEnd}, card)
+        local progressBg = make("Frame", {BackgroundColor3=Color3.fromRGB(30,30,40), BorderSizePixel=0, Size=UDim2.new(1,-16,0,2), Position=UDim2.new(0,8,1,-6)}, card)
+        corner(progressBg, 1)
+        local progressBar = make("Frame", {BackgroundColor3=Color3.fromRGB(0,140,255), BorderSizePixel=0, Size=UDim2.new(1,0,1,0)}, progressBg)
+        corner(progressBar, 1)
+        make("UIGradient", {Color=ColorSequence.new(Color3.fromRGB(80,180,255), Color3.fromRGB(0,100,220)), Rotation=0}, progressBar)
+        card.Position = UDim2.new(0,340,0,0)
+        card.Size = UDim2.new(0,310,0,0)
+        TweenService:Create(card, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position=UDim2.new(0,0,0,0), Size=UDim2.new(0,310,0,72)}):Play()
+        TweenService:Create(progressBar, TweenInfo.new(duration, Enum.EasingStyle.Linear), {Size=UDim2.new(0,0,1,0)}):Play()
+        spawn(function()
+            while card.Parent do
+                TweenService:Create(border, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency=0.5}):Play()
+                task.wait(1)
+                TweenService:Create(border, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency=0.1}):Play()
+                task.wait(1)
+            end
+        end)
+        task.delay(duration, function()
+            if card and card.Parent then
+                TweenService:Create(card, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position=UDim2.new(0,340,0,0), Size=UDim2.new(0,310,0,0)}):Play()
+                task.wait(0.3)
+                if card then card:Destroy() end
+            end
+        end)
+        return card
+    endote:Destroy() end end); return note
     end
     if pages[1] then showPage(pages[1]) end
     search:GetPropertyChangedSignal("Text"):Connect(function()
