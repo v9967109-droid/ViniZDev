@@ -1841,21 +1841,18 @@ game:GetService("Players").LocalPlayer.Idled:connect(function()
 end)
 
 local A = (function()
--- Maru Dark UI Library - Replaces original NexoraUI.lua
--- API compatible: CreateMain, CreatePage, CreateSection, CreateToggle, CreateButton, CreateLabel, CreateDropdown, CreateSlider, CreateNoti
-
-local Maru = {}
-Maru.Options = {}
-Maru.OptionOrder = {}
+local Nexora = {}
+Nexora.Options = {}
+Nexora.OptionOrder = {}
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local host = (gethui and gethui()) or game:GetService("CoreGui")
+local CoreGui = (gethui and gethui()) or game:GetService("CoreGui")
 
-function Maru:CreateMain(config)
+function Nexora:CreateMain(cfg)
     pcall(function()
-        local old = host:FindFirstChild("NexoraMaruFull")
+        local old = CoreGui:FindFirstChild("NexoraMaruFull")
         if old then old:Destroy() end
     end)
     local gui = Instance.new("ScreenGui")
@@ -1863,7 +1860,7 @@ function Maru:CreateMain(config)
     gui.ResetOnSpawn = false
     gui.IgnoreGuiInset = true
     gui.DisplayOrder = 10000
-    gui.Parent = host
+    gui.Parent = CoreGui
 
     local MainFrame = Instance.new("Frame")
     MainFrame.Size = UDim2.fromOffset(720, 520)
@@ -1889,13 +1886,13 @@ function Maru:CreateMain(config)
     TopFix.Parent = TopBar
 
     local Title = Instance.new("TextLabel")
-    Title.Text = config and config.Title or "Nexora Hub - Maru Dark FULL"
+    Title.Text = (cfg and cfg.Title) or "Nexora Hub - Maru Dark"
     Title.Font = Enum.Font.GothamBold
     Title.TextSize = 14
     Title.TextColor3 = Color3.fromRGB(255,255,255)
     Title.BackgroundTransparency = 1
     Title.Position = UDim2.fromOffset(15,0)
-    Title.Size = UDim2.new(1,-100,1,0)
+    Title.Size = UDim2.new(1,-20,1,0)
     Title.TextXAlignment = Enum.TextXAlignment.Left
     Title.Parent = TopBar
 
@@ -1914,18 +1911,6 @@ function Maru:CreateMain(config)
     SideList.SortOrder = Enum.SortOrder.LayoutOrder
     SideList.Parent = Sidebar
     Instance.new("UIPadding", {PaddingTop=UDim.new(0,10), PaddingLeft=UDim.new(0,8), PaddingRight=UDim.new(0,8), PaddingBottom=UDim.new(0,10), Parent=Sidebar})
-
-    local SearchBox = Instance.new("TextBox")
-    SearchBox.Size = UDim2.new(1,0,0,30)
-    SearchBox.BackgroundColor3 = Color3.fromRGB(22,22,26)
-    SearchBox.Text = "  Search..."
-    SearchBox.TextColor3 = Color3.fromRGB(120,120,130)
-    SearchBox.Font = Enum.Font.Gotham
-    SearchBox.TextSize = 12
-    SearchBox.TextXAlignment = Enum.TextXAlignment.Left
-    SearchBox.LayoutOrder = 0
-    SearchBox.Parent = Sidebar
-    Instance.new("UICorner", {CornerRadius=UDim.new(0,8), Parent=SearchBox})
 
     local ContentHolder = Instance.new("Frame")
     ContentHolder.Size = UDim2.new(1,-175,1,-46)
@@ -1963,7 +1948,6 @@ function Maru:CreateMain(config)
 
     local MainObj = {}
     MainObj.Gui = gui
-    MainObj.MainFrame = MainFrame
 
     function MainObj:CreatePage(cfg)
         local pageName = cfg.Page_Name or cfg.Page_Title or "Page"
@@ -1975,7 +1959,6 @@ function Maru:CreateMain(config)
         btn.TextSize = 12
         btn.TextColor3 = Color3.fromRGB(180,180,190)
         btn.TextXAlignment = Enum.TextXAlignment.Left
-        btn.LayoutOrder = #Sidebar:GetChildren()+1
         btn.Parent = Sidebar
         Instance.new("UICorner", {CornerRadius=UDim.new(0,8), Parent=btn})
 
@@ -2083,7 +2066,10 @@ function Maru:CreateMain(config)
                     if callback then pcall(callback, state) end
                 end
                 btn.MouseButton1Click:Connect(function() SetStage(not state) end)
-                return { SetStage = SetStage, SetValue = SetStage }
+                local obj = {}
+                function obj:SetStage(v) SetStage(v) end
+                function obj:SetValue(v) SetStage(v) end
+                return obj
             end
 
             function SecObj:CreateLabel(cfg)
@@ -2098,11 +2084,11 @@ function Maru:CreateMain(config)
                 t.Size = UDim2.new(1,0,1,0)
                 t.TextXAlignment = Enum.TextXAlignment.Left
                 t.Parent = row
-                return {
-                    SetText = function(_, newText) t.Text = newText end,
-                    SetTitle = function(_, newText) t.Text = newText end,
-                    Label = t
-                }
+                local obj = {}
+                function obj:SetText(newText) t.Text = newText end
+                function obj:SetTitle(newText) t.Text = newText end
+                obj.Label = t
+                return obj
             end
 
             function SecObj:CreateButton(cfg, callback)
@@ -2134,19 +2120,23 @@ function Maru:CreateMain(config)
                 t.Size = UDim2.new(1,0,1,0)
                 t.TextXAlignment = Enum.TextXAlignment.Left
                 t.Parent = row
-                local btn = Instance.new("TextButton")
-                btn.Size = UDim2.new(1,0,1,0)
-                btn.BackgroundTransparency = 1
-                btn.Text = ""
-                btn.Parent = row
-                btn.MouseButton1Click:Connect(function()
-                    local idx = table.find(list, def) or 1
+                local b = Instance.new("TextButton")
+                b.Size = UDim2.new(1,0,1,0)
+                b.BackgroundTransparency = 1
+                b.Text = ""
+                b.Parent = row
+                b.MouseButton1Click:Connect(function()
+                    if #list == 0 then return end
+                    local idx = 1
+                    for i, v in ipairs(list) do if v == def then idx = i break end end
                     idx = idx % #list + 1
                     def = list[idx]
                     t.Text = title.." : "..tostring(def)
                     if callback then pcall(callback, def) end
                 end)
-                return { SetValue = function(_, v) def=v t.Text=title.." : "..tostring(v) end }
+                local obj = {}
+                function obj:SetValue(v) def=v t.Text=title.." : "..tostring(v) end
+                return obj
             end
 
             function SecObj:CreateSlider(cfg, callback)
@@ -2171,11 +2161,14 @@ function Maru:CreateMain(config)
                 sliderBg.Parent = row
                 Instance.new("UICorner", {CornerRadius=UDim.new(1,0), Parent=sliderBg})
                 local fill = Instance.new("Frame")
-                fill.Size = UDim2.new((def-min)/(max-min),0,1,0)
+                local pct = (def-min)/math.max(1,(max-min))
+                fill.Size = UDim2.new(pct,0,1,0)
                 fill.BackgroundColor3 = Color3.fromRGB(90,100,255)
                 fill.Parent = sliderBg
                 Instance.new("UICorner", {CornerRadius=UDim.new(1,0), Parent=fill})
-                return { SetValue = function(_, v) fill.Size = UDim2.new((v-min)/(max-min),0,1,0) t.Text=title.." : "..tostring(v) end }
+                local obj = {}
+                function obj:SetValue(v) fill.Size = UDim2.new((v-min)/math.max(1,(max-min)),0,1,0) t.Text=title.." : "..tostring(v) end
+                return obj
             end
 
             return SecObj
@@ -2183,9 +2176,9 @@ function Maru:CreateMain(config)
         return PageObj
     end
 
-    function Maru:CreateNoti(cfg)
+    function Nexora:CreateNoti(cfg)
         pcall(function()
-            local gui = host:FindFirstChild("NexoraMaruFull")
+            local gui = CoreGui:FindFirstChild("NexoraMaruFull")
             if not gui then return end
             local notif = Instance.new("Frame")
             notif.Size = UDim2.fromOffset(300,60)
@@ -2219,9 +2212,8 @@ function Maru:CreateMain(config)
         end)
     end
 
-    return Maru
+    return Nexora
 end)()
-
 
 local t = cfg.Title or "Dropdown"
                 local rawList = cfg.List or cfg.Values or cfg.Options or {}
