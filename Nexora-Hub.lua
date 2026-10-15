@@ -3209,47 +3209,100 @@ do
     local SectionNormal = PageStatusAndServer.CreateSection("Normal Fruit Stock - Normal Dealer")
     SectionNormal.CreateLabel({ Title = "Fruits on sale at the normal dealer" })
     local NormalLabels = {}
-    NormalLabels[1] = SectionNormal.CreateLabel({ Title = "Ghost-Ghost - $940,000" })
-    NormalLabels[2] = SectionNormal.CreateLabel({ Title = "Light-Light - $650,000" })
-    NormalLabels[3] = SectionNormal.CreateLabel({ Title = "Spin-Spin - $7,500" })
-    NormalLabels[4] = SectionNormal.CreateLabel({ Title = "Rocket-Rocket - $5,000" })
-    NormalLabels[5] = SectionNormal.CreateLabel({ Title = "Loading..." })
-    NormalLabels[6] = SectionNormal.CreateLabel({ Title = "Loading..." })
+    for i=1,6 do NormalLabels[i] = SectionNormal.CreateLabel({ Title = i<=2 and "Loading..." or "Empty slot" }) end
     
     local SectionAdvance = PageStatusAndServer.CreateSection("Advance Fruit Stock - Mirage Island Dealer")
     SectionAdvance.CreateLabel({ Title = "Fruits on sale at the Mirage Island dealer" })
     local AdvanceLabels = {}
-    AdvanceLabels[1] = SectionAdvance.CreateLabel({ Title = "Flame-Flame - $250,000" })
-    AdvanceLabels[2] = SectionAdvance.CreateLabel({ Title = "Smoke-Smoke - $100,000" })
-    AdvanceLabels[3] = SectionAdvance.CreateLabel({ Title = "Bomb-Bomb - $80,000" })
-    AdvanceLabels[4] = SectionAdvance.CreateLabel({ Title = "Spin-Spin - $7,500" })
-    AdvanceLabels[5] = SectionAdvance.CreateLabel({ Title = "Rocket-Rocket - $5,000" })
+    for i=1,5 do AdvanceLabels[i] = SectionAdvance.CreateLabel({ Title = "Loading..." }) end
     
-    spawn(function()
-        while task.wait(3) do
-            pcall(function()
-                -- Normal Stock
-                local normalStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetFruits", false)
-                if normalStock and type(normalStock) == "table" then
-                    for i, v in ipairs(normalStock) do
-                        if i <= 6 and NormalLabels[i] and v.Name then
-                            NormalLabels[i].SetText(v.Name:gsub("-", "-") .. " - $" .. tostring(v.Price or 0))
-                        end
+    -- Função que normaliza qualquer formato que o Blox Fruits retornar
+    local function ParseFruitEntry(v)
+        if type(v) == "table" then
+            -- Formato 1: {Name="Flame-Flame", Price=250000} ou {Name="Flame", Price=...}
+            -- Formato 2: { "Flame-Flame", 250000 } (array)
+            local name = v.Name or v[1] or v.name or v.FruitName
+            local price = v.Price or v[2] or v.price or v.Cost or 0
+            if name and type(name)=="string" then
+                return name, price
+            end
+        elseif type(v) == "string" then
+            return v, 0
+        end
+        return nil, nil
+    end
+    local function FormatPrice(p)
+        if not p or p==0 then return "" end
+        local s = tostring(p)
+        -- coloca ponto como separador de milhar estilo BR? mantem $ simples
+        return " - $" .. s:reverse():gsub("(%d%d%d)","%1,"):reverse():gsub("^,","")
+    end
+    local function UpdateLabels(labels, stockTable, maxSlots)
+        local count = 0
+        if stockTable and type(stockTable) == "table" then
+            -- suporta tanto ipairs quanto pairs (dicionário)
+            local list = {}
+            if #stockTable > 0 then
+                list = stockTable
+            else
+                -- dicionário: transforma em lista
+                for k, v in pairs(stockTable) do
+                    if type(v)=="table" then table.insert(list, v)
+                    elseif type(k)=="string" then table.insert(list, {Name=k, Price=v})
                     end
                 end
-                -- Mirage / Advance Stock - tenta pegar
+            end
+            for _, v in ipairs(list) do
+                local name, price = ParseFruitEntry(v)
+                if name then
+                    count = count + 1
+                    if count <= maxSlots and labels[count] then
+                        local display = name
+                        if not display:find("-") then display = display .. "-" .. display end
+                        local priceText = FormatPrice(price)
+                        if priceText=="" then priceText = " - $"..tostring(price)
+                        end
+                        labels[count].SetText(display .. priceText)
+                        if count>=maxSlots then break end
+                    end
+                end
+            end
+        end
+        -- preenche resto com Empty
+        for i=count+1, maxSlots do
+            if labels[i] then labels[i].SetText("Slot " .. i .. ": Empty")
+            end
+        end
+        if count==0 then
+            -- debug: mostra que tentou mas veio vazio
+            if labels[1] then labels[1].SetText("Nenhuma fruta no momento - atualiza em 3s") end
+        end
+    end
+
+    spawn(function()
+        while task.wait(2) do
+            pcall(function()
+                -- Normal Stock - tenta 3 métodos
+                local normalStock = nil
+                pcall(function() normalStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetFruits", false) end)
+                if not normalStock or type(normalStock)~="table" or #normalStock==0 then
+                    pcall(function() normalStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetFruits") end)
+                end
+                UpdateLabels(NormalLabels, normalStock, 6)
+                
+                -- Mirage / Advance Stock - tenta todos os métodos conhecidos
                 local mirageStock = nil
                 pcall(function() mirageStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetFruits", true) end)
-                if not mirageStock then
+                if not mirageStock or type(mirageStock)~="table" or #mirageStock==0 then
+                    pcall(function() mirageStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetFruits", "Mirage") end)
+                end
+                if not mirageStock or type(mirageStock)~="table" or #mirageStock==0 then
                     pcall(function() mirageStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetStock", "Mirage") end)
                 end
-                if mirageStock and type(mirageStock) == "table" then
-                    for i, v in ipairs(mirageStock) do
-                        if i <= 5 and AdvanceLabels[i] and v.Name then
-                            AdvanceLabels[i].SetText(v.Name:gsub("-", "-") .. " - $" .. tostring(v.Price or 0))
-                        end
-                    end
+                if not mirageStock or type(mirageStock)~="table" or #mirageStock==0 then
+                    pcall(function() mirageStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetAdvancedFruits") end)
                 end
+                UpdateLabels(AdvanceLabels, mirageStock, 5)
             end)
         end
     end)
