@@ -44,7 +44,10 @@ do
 		-- entrada rápida + som de abertura
 		TS:Create(card, TweenInfo.new(.18, Enum.EasingStyle.Quad), {GroupTransparency=0}):Play()
 		TS:Create(sc, TweenInfo.new(.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale=1}):Play()
-		sfx("rbxasset://sounds/electronicpingshort.wav", 0.6, 1)
+		local PING = "rbxasset://sounds/electronicpingshort.wav"
+		sfx(PING, 0.5, 1.0)
+		task.delay(.09, function() sfx(PING, 0.45, 1.26) end)
+		task.delay(.18, function() sfx(PING, 0.4, 1.5) end)
 		-- progresso curto (~1,3s) bloqueando o resto do script até terminar
 		local steps = { {0,"Carregando..."}, {0.45,"Preparando interface..."}, {0.8,"Quase pronto..."} }
 		local DURATION, startT = 1.3, tick()
@@ -56,7 +59,8 @@ do
 			task.wait()
 		end
 		status.Text = "Pronto!"
-		sfx("rbxasset://sounds/electronicpingshort.wav", 0.6, 1.35)
+		sfx(PING, 0.55, 1.5)
+		task.delay(.1, function() sfx(PING, 0.5, 2.0) end)
 		task.wait(0.12)
 		local out = TS:Create(card, TweenInfo.new(.22, Enum.EasingStyle.Quad), {GroupTransparency=1})
 		out:Play()
@@ -1864,6 +1868,9 @@ local function button(parent, text, height)
     b.MouseButton1Up:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.14), {BackgroundColor3 = Color3.fromRGB(36, 34, 31)}):Play() end end)
     return b
 end
+-- Sons da UI. Para usar os seus: getgenv().NexoraSounds = { ping="rbxassetid://ID", switch="rbxassetid://ID", click="rbxassetid://ID" } antes de executar.
+local SND = { ping = "rbxasset://sounds/electronicpingshort.wav", switch = "rbxasset://sounds/switch.wav", click = "rbxasset://sounds/button.wav" }
+pcall(function() for k, v in pairs(getgenv().NexoraSounds or {}) do SND[k] = v end end)
 local function playUISound(id, vol, speed)
     pcall(function()
         local snd = Instance.new("Sound")
@@ -1872,6 +1879,21 @@ local function playUISound(id, vol, speed)
         snd:Play()
         game:GetService("Debris"):AddItem(snd, 3)
     end)
+end
+-- Cada efeito é uma sequência curta de camadas {som, volume, velocidade, atraso}.
+local SFX = {
+    open  = { {"ping",.5,1.25,0}, {"ping",.35,1.7,.07}, {"click",.25,1.4,0} },
+    close = { {"ping",.45,1.0,0}, {"ping",.3,.75,.07} },
+    on    = { {"switch",.6,1.05,0}, {"ping",.35,1.9,.03}, {"ping",.22,2.4,.09} },
+    off   = { {"switch",.35,.8,0}, {"ping",.2,.9,.04} },
+    tab   = { {"click",.3,1.35,0} },
+}
+local function sfxPlay(name)
+    local seq = SFX[name]
+    if not seq then return end
+    for _, n in ipairs(seq) do
+        task.delay(n[4], function() playUISound(SND[n[1]], n[2], n[3]) end)
+    end
 end
 local function addOption(title, typ, value, page, section, callback)
     local opt = {Title = title, name = title, type = typ, value = value, Page_Name = page, Section_Name = section, Callback = callback}
@@ -1921,8 +1943,8 @@ function Nexora.CreateMain(config)
         pcall(function() if getgenv then getgenv().__NEXORA_WINDOW_SIZE = data end end)
         pcall(function() if writefile then writefile(SIZE_FILE, game:GetService("HttpService"):JSONEncode(data)) end end)
     end
-    local shell = make("Frame", {Name="Window", AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.new(0, persistedW, 0, persistedH), BackgroundColor3=C.bg, BorderSizePixel=0}, gui)
-    corner(shell, 14); stroke(shell, C.gold, 0.62)
+    local shell = make("CanvasGroup", {Name="Window", GroupTransparency=0, AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.new(0, persistedW, 0, persistedH), BackgroundColor3=C.bg, BorderSizePixel=0}, gui)
+    corner(shell, 14); stroke(shell, Color3.fromRGB(255,255,255), 0.88)
     make("UIGradient", {Rotation = 135, Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, Color3.fromRGB(13, 12, 16)),
         ColorSequenceKeypoint.new(0.52, Color3.fromRGB(5, 5, 8)),
@@ -1961,19 +1983,9 @@ function Nexora.CreateMain(config)
             end
         end)
     end
-    -- Logo: use config.Logo = "rbxassetid://ID" para usar a sua imagem; sem isso desenha o N com coroa.
-    local logo = make("Frame", {Position=UDim2.new(0,14,0,9), Size=UDim2.new(0,46,0,46), BackgroundColor3=Color3.fromRGB(8,8,10), BorderSizePixel=0}, top)
-    corner(logo, 23); make("UIStroke", {Color=GOLD, Thickness=2, Transparency=0.05}, logo)
-    if config.Logo and config.Logo ~= "" then
-        make("ImageLabel", {BackgroundTransparency=1, Size=UDim2.new(1,0,1,0), Image=config.Logo, ScaleType=Enum.ScaleType.Fit}, logo)
-    else
-        local crown = make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,2), Size=UDim2.new(1,0,0,14), Text="♛", TextColor3=GOLD_L, Font=Enum.Font.GothamBold, TextSize=13}, logo)
-        local logoN = make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,10), Size=UDim2.new(1,0,1,-12), Text="N", TextColor3=GOLD, Font=Enum.Font.GothamBlack, TextSize=26}, logo)
-        make("UIGradient", {Rotation=90, Color=ColorSequence.new(GOLD_L, Color3.fromRGB(230,150,20))}, logoN)
-    end
-    local title = make("TextLabel", {Position=UDim2.new(0,72,0,10), Size=UDim2.new(0,300,0,26), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=GOLD, Font=Enum.Font.GothamBlack, TextSize=22, TextXAlignment=Enum.TextXAlignment.Left}, top)
+    local title = make("TextLabel", {Position=UDim2.new(0,18,0,10), Size=UDim2.new(0,300,0,26), BackgroundTransparency=1, RichText=true, Text='<font color="#FFFFFF">NEXORA</font> <font color="#FFBE37">HUB</font>', TextColor3=Color3.fromRGB(255,255,255), Font=Enum.Font.GothamBlack, TextSize=22, TextXAlignment=Enum.TextXAlignment.Left}, top)
     local function tracked(t) return (string.gsub(string.upper(t), "(%S)", "%1\u{2009}")) end
-    local desc = make("TextLabel", {Position=UDim2.new(0,73,0,37), Size=UDim2.new(0,300,0,16), BackgroundTransparency=1, Text=tracked(config.Subtitle or "Blox Fruits"), TextColor3=GRAY, Font=Enum.Font.GothamMedium, TextSize=10, TextXAlignment=Enum.TextXAlignment.Left}, top)
+    local desc = make("TextLabel", {Position=UDim2.new(0,19,0,37), Size=UDim2.new(0,300,0,16), BackgroundTransparency=1, Text=tracked(config.Subtitle or "Blox Fruits"), TextColor3=GRAY, Font=Enum.Font.GothamMedium, TextSize=10, TextXAlignment=Enum.TextXAlignment.Left}, top)
     local hamburger = make("TextButton", {Name="Menu", AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,-12,0.5,0), Size=UDim2.new(0,36,0,36), BackgroundTransparency=1, Text="≡", TextColor3=GRAY, Font=Enum.Font.GothamBold, TextSize=28, AutoButtonColor=false}, top)
     hamburger.MouseEnter:Connect(function() hamburger.TextColor3 = GOLD end)
     hamburger.MouseLeave:Connect(function() hamburger.TextColor3 = GRAY end)
@@ -2012,7 +2024,7 @@ function Nexora.CreateMain(config)
     reopen.AnchorPoint = Vector2.new(0, 0)
     reopen.Visible = true
     reopen.ZIndex = 100
-    reopen.Text = "N"
+    reopen.Text = ""
     reopen.TextColor3 = Color3.fromRGB(255, 190, 55)
     reopen.TextSize = 25
     reopen.Font = Enum.Font.GothamBlack
@@ -2020,24 +2032,59 @@ function Nexora.CreateMain(config)
     reopen.TextStrokeTransparency = 1
     corner(reopen, 23)
     -- Círculo dourado completo igual ao emblema da UI, sem borda laranja.
-    make("UIStroke", {Color=Color3.fromRGB(255,190,55), Thickness=2.5, Transparency=0}, reopen)
-    make("TextLabel", {
-        Name="CrownMark", BackgroundTransparency=1,
-        Position=UDim2.new(0,0,0,2), Size=UDim2.new(1,0,0,14),
-        Text="♛", TextColor3=Color3.fromRGB(255,224,125),
-        Font=Enum.Font.GothamBold, TextSize=12, ZIndex=reopen.ZIndex+1
-    }, reopen)
-    reopen.TextYAlignment = Enum.TextYAlignment.Bottom
+    local fStroke = make("UIStroke", {Color=Color3.fromRGB(255,190,55), Thickness=2.5, Transparency=0}, reopen)
+    task.spawn(function()
+        while reopen.Parent do
+            local tw = TweenService:Create(fStroke, TweenInfo.new(1.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency=0.55})
+            tw:Play(); tw.Completed:Wait()
+            tw = TweenService:Create(fStroke, TweenInfo.new(1.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency=0})
+            tw:Play(); tw.Completed:Wait()
+        end
+    end)
+    do
+        local z = reopen.ZIndex + 1
+        if config.Logo and config.Logo ~= "" then
+            make("ImageLabel", {BackgroundTransparency=1, Position=UDim2.new(0,3,0,3), Size=UDim2.new(1,-6,1,-6), Image=config.Logo, ScaleType=Enum.ScaleType.Fit, ZIndex=z}, reopen)
+        else
+            local ring = make("Frame", {BackgroundTransparency=1, AnchorPoint=Vector2.new(.5,.5), Position=UDim2.new(.5,0,.5,0), Size=UDim2.new(1,-10,1,-10), ZIndex=z}, reopen)
+            corner(ring, 23); make("UIStroke", {Color=GOLD, Thickness=1, Transparency=0.55}, ring)
+            make("TextLabel", {Name="CrownMark", BackgroundTransparency=1, Position=UDim2.new(0,0,0,3), Size=UDim2.new(1,0,0,14), Text="♛", TextColor3=GOLD_L, Font=Enum.Font.GothamBold, TextSize=13, ZIndex=z}, reopen)
+            local fn = make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,11), Size=UDim2.new(1,0,1,-13), Text="N", TextColor3=GOLD, Font=Enum.Font.GothamBlack, TextSize=27, ZIndex=z}, reopen)
+            make("UIGradient", {Rotation=90, Color=ColorSequence.new(GOLD_L, Color3.fromRGB(230,150,20))}, fn)
+        end
+        local fScale = make("UIScale", {Scale=1}, reopen)
+        function bounceFloat()
+            TweenService:Create(fScale, TweenInfo.new(.08), {Scale=.8}):Play()
+            task.delay(.08, function() TweenService:Create(fScale, TweenInfo.new(.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale=1}):Play() end)
+        end
+    end
     -- Estado declarado antes dos eventos para evitar que o clique use uma variável global.
     local floatDragging, floatStart, floatPos, floatMoved = false, nil, nil, false
+    local playClose
     local function hideWindow()
-        shell.Visible = false
+        if playClose then playClose() else shell.Visible = false end
     end
+    local closing = false
     local function playOpen()
+        closing = false
         local cur = shell.Position
+        shell.GroupTransparency = 1
         shell.Visible = true
-        shell.Position = cur + UDim2.new(0,0,0,18)
-        TweenService:Create(shell, TweenInfo.new(.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position=cur}):Play()
+        shell.Position = cur + UDim2.new(0,0,0,22)
+        sfxPlay("open")
+        TweenService:Create(shell, TweenInfo.new(.34, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position=cur, GroupTransparency=0}):Play()
+    end
+    playClose = function()
+        if closing or not shell.Visible then return end
+        closing = true
+        local cur = shell.Position
+        sfxPlay("close")
+        local tw = TweenService:Create(shell, TweenInfo.new(.22, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {Position=cur + UDim2.new(0,0,0,18), GroupTransparency=1})
+        tw:Play()
+        tw.Completed:Connect(function()
+            if closing then shell.Visible = false; shell.Position = cur; shell.GroupTransparency = 0 end
+            closing = false
+        end)
     end
     -- O mesmo botão flutuante fica sempre visível e alterna abrir/fechar.
     reopen.Activated:Connect(function()
@@ -2045,13 +2092,14 @@ function Nexora.CreateMain(config)
             task.defer(function() floatMoved = false end)
             return
         end
+        pcall(function() if bounceFloat then bounceFloat() end end)
         if not gui.Enabled then
             gui.Enabled = true
             pcall(function() getgenv().UIToggled = true end)
             playOpen()
             return
         end
-        if shell.Visible then shell.Visible = false else playOpen() end
+        if shell.Visible then playClose() else playOpen() end
     end)
     reopen.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -2207,7 +2255,7 @@ function Nexora.CreateMain(config)
                 TweenService:Create(b.Bar, TweenInfo.new(.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Size=UDim2.new(0,3,1,-14)}):Play()
             end
             tintIcon(b.Icon, on and GOLD or GRAY, on and 0 or 0.4)
-            TweenService:Create(b.Txt, TweenInfo.new(.18), {TextColor3 = on and GOLD or GRAY}):Play()
+            TweenService:Create(b.Txt, TweenInfo.new(.18), {TextColor3 = on and Color3.fromRGB(255,255,255) or GRAY}):Play()
         end
         if changed and p.frame then
             p.frame.Position = UDim2.new(0,18,0,0)
@@ -2234,7 +2282,7 @@ function Nexora.CreateMain(config)
         nb.MouseEnter:Connect(function() if not nb:GetAttribute("NexoraActive") then nb.BackgroundTransparency = 0.55 end end)
         nb.MouseLeave:Connect(function() if not nb:GetAttribute("NexoraActive") then nb.BackgroundTransparency = 1 end end)
         navButtons[p]=nb
-        nb.MouseButton1Click:Connect(function() showPage(p) end)
+        nb.MouseButton1Click:Connect(function() if activePage ~= p then sfxPlay("tab") end showPage(p) end)
         nb.LayoutOrder=#pages
         local Page={}
         function Page.CreateSection(sectionName)
@@ -2242,9 +2290,10 @@ function Nexora.CreateMain(config)
             corner(card,10); stroke(card,C.line,0.35)
             make("UIPadding", {PaddingTop=UDim.new(0,11),PaddingBottom=UDim.new(0,11),PaddingLeft=UDim.new(0,11),PaddingRight=UDim.new(0,11)}, card)
             local list=make("UIListLayout", {Padding=UDim.new(0,7),SortOrder=Enum.SortOrder.LayoutOrder}, card)
-            local head=make("TextLabel", {Size=UDim2.new(1,0,0,22),BackgroundTransparency=1,Text=sectionName,TextColor3=C.gold,Font=Enum.Font.GothamBold,TextSize=12,TextXAlignment=Enum.TextXAlignment.Left},card)
+            local head=make("TextLabel", {Size=UDim2.new(1,0,0,22),BackgroundTransparency=1,Text=sectionName,TextColor3=Color3.fromRGB(245,245,250),Font=Enum.Font.GothamBold,TextSize=12,TextXAlignment=Enum.TextXAlignment.Left},card)
             make("UIPadding", {PaddingLeft=UDim.new(0,10)}, head)
             do local hb=make("Frame", {Position=UDim2.new(0,-10,.5,-7),Size=UDim2.new(0,3,0,14),BackgroundColor3=C.gold,BorderSizePixel=0},head); corner(hb,2) end
+            make("Frame", {Size=UDim2.new(1,0,0,1), BackgroundColor3=Color3.fromRGB(255,255,255), BackgroundTransparency=0.92, BorderSizePixel=0}, card)
             local Section={}
             local function row(height)
                 return make("Frame", {Size=UDim2.new(1,0,0,height),BackgroundTransparency=1},card)
@@ -2277,7 +2326,7 @@ function Nexora.CreateMain(config)
                 local opt=addOption(t,"toggle",val,pageName,sectionName,callback)
                 local function applyToggle(v, fire)
                     val = not not v; opt.value=val; paint(true)
-                    if fire and val then playUISound("rbxasset://sounds/switch.wav", 0.6, 1) end
+                    if fire then sfxPlay(val and "on" or "off") end
                     -- Persiste no mesmo formato/caminho do Settings original.
                     Settings[t] = val
                     pcall(function() SaveSettings(t, val) end)
