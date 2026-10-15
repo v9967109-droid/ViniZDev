@@ -1945,11 +1945,15 @@ function Nexora.CreateMain(config)
     end
     local shell = make("CanvasGroup", {Name="Window", GroupTransparency=0, AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.new(0, persistedW, 0, persistedH), BackgroundColor3=C.bg, BorderSizePixel=0}, gui)
     corner(shell, 14); stroke(shell, Color3.fromRGB(255,255,255), 0.88)
+    -- O degradê NÃO pode ficar direto no CanvasGroup (ele escureceria a janela inteira): vai num fundo separado.
+    shell.BackgroundTransparency = 1
+    local shellBg = make("Frame", {Name="Background", Size=UDim2.new(1,0,1,0), BackgroundColor3=Color3.fromRGB(255,255,255), BorderSizePixel=0, ZIndex=0}, shell)
+    corner(shellBg, 14)
     make("UIGradient", {Rotation = 135, Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, Color3.fromRGB(13, 12, 16)),
         ColorSequenceKeypoint.new(0.52, Color3.fromRGB(5, 5, 8)),
         ColorSequenceKeypoint.new(1, Color3.fromRGB(17, 12, 5)),
-    })}, shell)
+    })}, shellBg)
     local scale = make("UIScale", {Scale = 1}, shell)
     local function resize()
         local cam = workspace.CurrentCamera
