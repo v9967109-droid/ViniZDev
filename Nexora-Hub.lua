@@ -258,6 +258,10 @@ function SaveSettings(b, t, A)
 		Settings[b] = t
 		if t == false then
 			pcall(function()
+				-- QUANDO DESATIVAR QUALQUER TOGGLE, VOLTA AO NORMAL PRA NÃO FICAR PRESO NO AR
+				ResetAirState()
+			end)
+			pcall(function()
 				if TweenManager and TweenManager.CancelCurrent then
 					TweenManager.CancelCurrent()
 				end
@@ -5533,6 +5537,72 @@ function DetectPrehistoricIsland()
 		end
 	end
 end
+
+function ResetAirState()
+	pcall(function()
+		getgenv().noclip = false
+		if TweenManager and TweenManager.CancelCurrent then
+			TweenManager.CancelCurrent()
+		end
+		local Players = game:GetService("Players")
+		local LocalPlayer = Players.LocalPlayer
+		local char = LocalPlayer and LocalPlayer.Character
+		if char then
+			for _, part in ipairs(char:GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.CanCollide = true
+				end
+			end
+			local hum = char:FindFirstChildOfClass("Humanoid")
+			if hum then
+				hum.PlatformStand = false
+				pcall(function() hum:ChangeState(Enum.HumanoidStateType.GettingUp) end)
+			end
+			local root = char:FindFirstChild("HumanoidRootPart")
+			if root then
+				for _, obj in ipairs(root:GetChildren()) do
+					if obj.Name == "FloatForce" or obj:IsA("BodyVelocity") or obj:IsA("BodyForce") or obj:IsA("BodyGyro") or obj:IsA("BodyPosition") then
+						obj:Destroy()
+					end
+				end
+				root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+				root.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+			end
+		end
+		-- Reseta barco também
+		pcall(function()
+			local boat = checkboat()
+			if boat then
+				TurnOffNoclipBoat(boat)
+			end
+		end)
+	end)
+end
+
+
+-- FAILSAFE: Se desativar qualquer toggle e ficar preso no ar, volta ao normal
+task.spawn(function()
+	while task.wait(1) do
+		pcall(function()
+			local char = game:GetService("Players").LocalPlayer.Character
+			if not char then return end
+			local root = char:FindFirstChild("HumanoidRootPart")
+			local hum = char:FindFirstChildOfClass("Humanoid")
+			if not root or not hum then return end
+			-- Se noclip ligado mas nenhuma toggle de voo/farm ativa, reseta
+			local anyActive = Settings["Raise Boat Manual Drive"] or Settings["Fly Boat"] or Settings["Start Farm"] or Settings["Auto Find Leviathan"] or Settings["Auto Sea Event"] or Settings["Teleport To Fruit"] or Settings["Auto Farm Level"] or Settings["Tween Boat To Frozen Dimension"] or Settings["Multi Find Leviathan"] or Settings["Auto Farm Bone"] or Settings["Auto Farm Ectoplasm"] or Settings["Auto Elite Hunter"] or Settings["Auto Factory"] or Settings["Auto Raid"] or Settings["Tween Safe if have Items"] or Settings["Auto Present Event"] or Settings["Auto Celestial Soldier"] or Settings["Auto Attack Dungeon"] or Settings["Auto Fishing"] or Settings["Auto Get Ghoul"] or Settings["Auto Get Cyborg"] or Settings["Auto Trial"] or Settings["Auto Pull Lever"] or Settings["Drive Boat To Tiki"] or Settings["Drive Boat To Hydra"] or Settings["Auto Fire Shoot Heart Leviathan"]
+			if not anyActive and getgenv().noclip then
+				-- Verifica se está no ar (sem chão por 3 segundos)
+				local ray = workspace:Raycast(root.Position, Vector3.new(0, -100, 0))
+				if not ray then
+					ResetAirState()
+				end
+			end
+		end)
+	end
+end)
+
+
 function SetNoClip(l)
 	getgenv().noclip = l
 	local Q = t.Character
@@ -14179,6 +14249,10 @@ SettingSeaEventSection.CreateToggle(
 	},
 	function(l)
 		SaveSettings("Raise Boat Manual Drive", l)
+		if not l then
+			-- Desativou: volta ao normal pra não ficar preso no ar
+			ResetAirState()
+		end
 	end
 )
 SettingSeaEventSection.CreateSlider(
@@ -14194,7 +14268,12 @@ do
 	local gen = getgenv().__BoatRaiseGen
 	pcall(function() if getgenv().__BoatRaiseConn then getgenv().__BoatRaiseConn:Disconnect() end end)
 	getgenv().__BoatRaiseConn = game:GetService("RunService").Heartbeat:Connect(function()
-		if getgenv().__BoatRaiseGen ~= gen or not Settings["Raise Boat Manual Drive"] then return end
+		if getgenv().__BoatRaiseGen ~= gen then return end
+		if not Settings["Raise Boat Manual Drive"] then
+			-- Quando desativa, volta ao normal pra não ficar preso no ar
+			pcall(function() ResetAirState() end)
+			return
+		end
 		-- NÃO INTERFERIR NO AUTO FIND LEVIATHAN
 		if Settings["Auto Find Leviathan"] or Settings["Multi Find Leviathan"] or Settings["Auto Start Leviathan"] or Settings["Teleport Frozen Dimension"] or Settings["Tween Boat To Frozen Dimension"] or Settings["Auto Fire Shoot Heart Leviathan"] then return end
 		pcall(function()
