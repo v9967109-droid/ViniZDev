@@ -2034,20 +2034,82 @@ function Nexora.CreateMain(config)
     local hamburger = make("TextButton", {Name="Menu", AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,-12,0.5,0), Size=UDim2.new(0,36,0,36), BackgroundTransparency=1, Text="", TextTransparency=1, Visible=false, AutoButtonColor=false}, top)
     -- ScreenGui separado: o botão fica fora da janela e não some junto com a UI (nem com o keybind Toggle GUI).
     local floatGui = make("ScreenGui", {Name="NexoraFloat", ResetOnSpawn=false, IgnoreGuiInset=true, DisplayOrder=999, ZIndexBehavior=Enum.ZIndexBehavior.Sibling}, parentGui)
-    -- Botão preto com nome branco igual você pediu
+    
+    -- Carrega posição salva do botão
+    local savedPos = nil
+    pcall(function()
+        if isfile and isfile("Nexora Hub/FloatButtonPos.json") then
+            local data = readfile("Nexora Hub/FloatButtonPos.json")
+            savedPos = game:GetService("HttpService"):JSONDecode(data)
+        end
+        if not savedPos and getgenv().__NexoraFloatPos then
+            savedPos = getgenv().__NexoraFloatPos
+        end
+    end)
+    local defaultPos = UDim2.new(0, 20, 0, 120)
+    if savedPos and savedPos.X and savedPos.Y then
+        defaultPos = UDim2.new(0, savedPos.X, 0, savedPos.Y)
+    end
+
+    -- Botão preto com nome branco - arrastável e salva posição
     local reopen = make("TextButton", {
         Name="NexoraFloatingButton",
         AutoButtonColor=false,
         BackgroundColor3=Color3.fromRGB(20, 20, 25),
         BorderSizePixel=0,
         Size=UDim2.new(0, 145, 0, 36),
+        Position=defaultPos,
         Text="",
         ZIndex=100
     }, floatGui)
     reopen:SetAttribute("NexoraKeepColor", true)
     make("UICorner", {CornerRadius=UDim.new(0, 18)}, reopen)
     make("UIStroke", {Color=Color3.fromRGB(60, 60, 65), Thickness=1, Transparency=0.3}, reopen)
-    -- Ícone à esquerda (logo)
+    
+    -- Sistema de arrastar e salvar posição
+    pcall(function()
+        local UserInputService = game:GetService("UserInputService")
+        local dragging, dragInput, dragStart, startPos
+        local function update(input)
+            local delta = input.Position - dragStart
+            local newPos = UDim2.new(0, startPos.X.Offset + delta.X, 0, startPos.Y.Offset + delta.Y)
+            reopen.Position = newPos
+        end
+        reopen.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+                dragStart = input.Position
+                startPos = reopen.Position
+                input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then
+                        dragging = false
+                        -- Salva posição
+                        pcall(function()
+                            local pos = reopen.Position
+                            local data = {X = pos.X.Offset, Y = pos.Y.Offset}
+                            getgenv().__NexoraFloatPos = data
+                            if writefile then
+                                if not isfolder("Nexora Hub") then makefolder("Nexora Hub") end
+                                writefile("Nexora Hub/FloatButtonPos.json", game:GetService("HttpService"):JSONEncode(data))
+                            end
+                        end)
+                    end
+                end)
+            end
+        end)
+        reopen.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+                dragInput = input
+            end
+        end)
+        UserInputService.InputChanged:Connect(function(input)
+            if input == dragInput and dragging then
+                update(input)
+            end
+        end)
+    end)
+    
+    -- Ícone à esquerda - círculo cinza com N azul como você pediu
     local iconFrame = make("Frame", {
         BackgroundColor3=Color3.fromRGB(35, 35, 45),
         Size=UDim2.new(0, 24, 0, 24),
@@ -2056,21 +2118,18 @@ function Nexora.CreateMain(config)
         ZIndex=101
     }, reopen)
     make("UICorner", {CornerRadius=UDim.new(1,0)}, iconFrame)
-    local iconImg = make("ImageLabel", {
+    make("UIStroke", {Color=Color3.fromRGB(0, 140, 255), Thickness=1, Transparency=0.5}, iconFrame)
+    -- N azul dentro do círculo cinza
+    local nLabel = make("TextLabel", {
         BackgroundTransparency=1,
-        Size=UDim2.new(1, -4, 1, -4),
-        Position=UDim2.new(0, 2, 0, 2),
-        Image="rbxassetid://18747094503", -- ícone placeholder, troca se tiver logo
-        ScaleType=Enum.ScaleType.Fit,
-        ImageColor3=Color3.fromRGB(80, 180, 255),
+        Size=UDim2.new(1, 0, 1, 0),
+        Position=UDim2.new(0, 0, 0, 0),
+        Text="N",
+        TextColor3=Color3.fromRGB(0, 140, 255),
+        Font=Enum.Font.GothamBlack,
+        TextSize=16,
         ZIndex=102
     }, iconFrame)
-    -- Se tiver config.Logo usa ele
-    pcall(function()
-        if config.Logo and config.Logo ~= "" then
-            iconImg.Image = config.Logo
-        end
-    end)
     -- Texto Nexora Hub
     local textLabel = make("TextLabel", {
         BackgroundTransparency=1,
@@ -4732,7 +4791,9 @@ function IsMobAlive(K)
 end
 -- Helpers do Elite Hunter (compartilhados).
 function EliteRequest()
-	-- Vai na hora, sem espera dos 3 tracinhos
+	if tick() - (getgenv().__EliteReq or 0) <= 5 then
+		return
+	end
 	getgenv().__EliteReq = tick()
 	pcall(function()
 		game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("EliteHunter")
@@ -4755,15 +4816,17 @@ function EliteQuestOK(name)
 			end
 		end
 	end
-	-- Sem missão de elite: pede uma INSTANTANEO, sem esperar 5 segundos, já vai atrás
-	getgenv().__EliteReq = tick()
-	local R = game:GetService("ReplicatedStorage").Remotes.CommF_
-	pcall(function()
-		if visible then
-			R:InvokeServer("AbandonQuest")
-		end
-		R:InvokeServer("EliteHunter")
-	end)
+	-- Sem missão de elite: pede uma (com intervalo; antes abandonava e pedia a cada frame).
+	if tick() - (getgenv().__EliteReq or 0) > 5 then
+		getgenv().__EliteReq = tick()
+		local R = game:GetService("ReplicatedStorage").Remotes.CommF_
+		pcall(function()
+			if visible then
+				R:InvokeServer("AbandonQuest")
+			end
+			R:InvokeServer("EliteHunter")
+		end)
+	end
 	return false
 end
 local K = { "Deandre", "Urban", "Diablo" }
@@ -7125,7 +7188,30 @@ local function m(E, l, Q)
 	return ok and result == true
 end
 getgenv().UseFruitM1 = function(g, E)
-	return m(g, E, false)
+	-- Garante que fruta está equipada e clica
+	pcall(function()
+		local char = t.Character
+		local tool = char and char:FindFirstChildOfClass("Tool")
+		if not tool or not tool:FindFirstChild("RemoteFunction") then
+			-- Tenta equipar fruta do inventário
+			for _, it in ipairs(t.Backpack:GetChildren()) do
+				if it:IsA("Tool") and it:FindFirstChild("RemoteFunction") then
+					char:FindFirstChildOfClass("Humanoid"):EquipTool(it)
+					break
+				end
+			end
+		end
+	end)
+	local ok = m(g, E, false)
+	-- Fallback: click virtual se não disparou
+	if not ok then
+		pcall(function()
+			game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,true,game,0)
+			task.wait(0.05)
+			game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,false,game,0)
+		end)
+	end
+	return ok
 end
 getgenv().UseFruitM1Boat = function(g, E)
 	return m(g, E, true)
@@ -7226,6 +7312,13 @@ function M1TurboStep()
 	if getgenv().M1Turbo == false then
 		return
 	end
+	-- Fix click geral: garante que Humanoid está em estado de ataque
+	pcall(function()
+		local hum = t.Character and t.Character:FindFirstChildOfClass("Humanoid")
+		if hum then
+			hum:ChangeState(Enum.HumanoidStateType.Freefall)
+		end
+	end)
 	local tgt = getgenv().M1Target
 	if not tgt or os.clock() - (getgenv().M1TargetTime or 0) > 0.35 then
 		return
@@ -7260,10 +7353,30 @@ end)
 local m = L:WaitForChild("Modules")
 getgenv().SpamGunDragonStorm = function(E)
 	local Q = t.Character
-	local d = Q and (Q:FindFirstChild("Dragonstorm"))
-	if not d or not E or not E.Position then
+	local d = Q and (Q:FindFirstChild("Dragonstorm") or Q:FindFirstChild("DragonStorm") or t.Backpack:FindFirstChild("Dragonstorm") or t.Backpack:FindFirstChild("DragonStorm"))
+	if not d then
+		pcall(function()
+			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("LoadItem", "Dragonstorm")
+		end)
 		return
 	end
+	if d.Parent == t.Backpack then
+		Q:FindFirstChildOfClass("Humanoid"):EquipTool(d)
+		task.wait(0.15)
+		Q = t.Character
+		d = Q and (Q:FindFirstChild("Dragonstorm") or Q:FindFirstChild("DragonStorm"))
+	end
+	if not d or not E then
+		return
+	end
+	local pos = E.Position or E
+	if typeof(pos) ~= "Vector3" then
+		if E:IsA("BasePart") then pos = E.Position
+		elseif E:IsA("Model") then pos = E:GetPivot().Position
+		end
+	end
+	if not pos then return end
+	E = {Position = pos}
 	local reloading = false
 	pcall(function()
 		reloading = require(m.CombatUtil):IsGunReloading(d)
@@ -7463,8 +7576,18 @@ function ShootM1(E)
 end
 getgenv().SpamGunSkullGuitar = function(E)
 	local combatUtil, character = require(m.CombatUtil), t.Character
-	local gun = character and character:FindFirstChild("Skull Guitar")
-	if not gun or not E or not character then
+	local gun = character and (character:FindFirstChild("Skull Guitar") or t.Backpack:FindFirstChild("Skull Guitar"))
+	if not gun then
+		pcall(function()
+			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("LoadItem", "Skull Guitar")
+		end)
+		return false
+	end
+	if gun.Parent == t.Backpack then
+		character:FindFirstChildOfClass("Humanoid"):EquipTool(gun)
+		task.wait(0.15)
+	end
+	if not E or not character then
 		return false
 	end
 	-- Tyrant's destructible Tree is a Model; aim at a real BasePart instead
