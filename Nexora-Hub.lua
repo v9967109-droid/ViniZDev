@@ -1863,7 +1863,7 @@ local oldFloat = parentGui:FindFirstChild("NexoraFloat")
 if oldFloat then oldFloat:Destroy() end
 
 local C = {
-    -- Fundo preto e azul igual você pediu
+    -- Maru Hub Premium estrutura mas preto e azul como você pediu
     bg = Color3.fromRGB(0, 0, 0),
     panel = Color3.fromRGB(10, 10, 15),
     panel2 = Color3.fromRGB(18, 18, 28),
@@ -1873,6 +1873,11 @@ local C = {
     text = Color3.fromRGB(240, 245, 255),
     muted = Color3.fromRGB(140, 150, 170),
     green = Color3.fromRGB(0, 200, 255),
+    sidebar = Color3.fromRGB(8, 8, 12),
+    sidebarSelect = Color3.fromRGB(0, 40, 100),
+    card = Color3.fromRGB(15, 15, 22),
+    toggleOn = Color3.fromRGB(0, 140, 255),
+    toggleOff = Color3.fromRGB(60, 60, 70),
 }
 
 local function make(class, props, parent)
@@ -2007,15 +2012,14 @@ function Nexora.CreateMain(config)
 
     local HEADER_H, SIDEBAR_W = 64, 190
     local GOLD, GOLD_L, GRAY = Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255), Color3.fromRGB(165,165,174)
-    local top = make("Frame", {Size=UDim2.new(1,0,0,HEADER_H), BackgroundColor3=Color3.fromRGB(10,10,14), BorderSizePixel=0}, shell)
+    local top = make("Frame", {Size=UDim2.new(1,0,0,HEADER_H), BackgroundColor3=Color3.fromRGB(0,0,0), BorderSizePixel=0}, shell)
     corner(top, 12)
     make("UIGradient", {Rotation=0, Color=ColorSequence.new({
         ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 15, 40)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(13,13,18)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(8,8,11)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0)),
     })}, top)
-    -- cobre os cantos de baixo do header e desenha a linha dourada
-    make("Frame", {Position=UDim2.new(0,0,1,-12), Size=UDim2.new(1,0,0,12), BackgroundColor3=Color3.fromRGB(10,10,14), BorderSizePixel=0}, top)
+    -- cobre os cantos de baixo do header e desenha a linha azul clara
+    make("Frame", {Position=UDim2.new(0,0,1,-12), Size=UDim2.new(1,0,0,12), BackgroundColor3=Color3.fromRGB(0,0,0), BorderSizePixel=0}, top)
     do
         local hl = make("Frame", {Position=UDim2.new(0,0,1,-1), Size=UDim2.new(1,0,0,1), BackgroundColor3=GOLD, BackgroundTransparency=0, BorderSizePixel=0}, top)
         local hg = make("UIGradient", {Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,1),NumberSequenceKeypoint.new(0.5,0.1),NumberSequenceKeypoint.new(1,1)}), Offset=Vector2.new(-1,0)}, hl)
@@ -2051,11 +2055,11 @@ function Nexora.CreateMain(config)
         defaultPos = UDim2.new(0, savedPos.X, 0, savedPos.Y)
     end
 
-    -- Botão preto com nome branco - arrastável e salva posição
+    -- Botão estilo Maru Hub Premium mas preto e azul - arrastável e salva posição
     local reopen = make("TextButton", {
         Name="NexoraFloatingButton",
         AutoButtonColor=false,
-        BackgroundColor3=Color3.fromRGB(20, 20, 25),
+        BackgroundColor3=Color3.fromRGB(10, 10, 15),
         BorderSizePixel=0,
         Size=UDim2.new(0, 145, 0, 36),
         Position=defaultPos,
@@ -2064,7 +2068,8 @@ function Nexora.CreateMain(config)
     }, floatGui)
     reopen:SetAttribute("NexoraKeepColor", true)
     make("UICorner", {CornerRadius=UDim.new(0, 18)}, reopen)
-    make("UIStroke", {Color=Color3.fromRGB(60, 60, 65), Thickness=1, Transparency=0.3}, reopen)
+    make("UIStroke", {Color=Color3.fromRGB(0, 80, 180), Thickness=1, Transparency=0.3}, reopen)
+    make("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(15,15,22), Color3.fromRGB(0,0,0))}, reopen)
     
     -- Sistema de arrastar e salvar posição
     pcall(function()
@@ -2109,25 +2114,25 @@ function Nexora.CreateMain(config)
         end)
     end)
     
-    -- Ícone à esquerda - círculo cinza com N azul como você pediu
+    -- Ícone à esquerda - estilo Maru mas preto e azul com N azul
     local iconFrame = make("Frame", {
-        BackgroundColor3=Color3.fromRGB(35, 35, 45),
+        BackgroundColor3=Color3.fromRGB(0, 30, 80),
         Size=UDim2.new(0, 24, 0, 24),
         Position=UDim2.new(0, 6, 0.5, -12),
         BorderSizePixel=0,
         ZIndex=101
     }, reopen)
-    make("UICorner", {CornerRadius=UDim.new(1,0)}, iconFrame)
-    make("UIStroke", {Color=Color3.fromRGB(0, 140, 255), Thickness=1, Transparency=0.5}, iconFrame)
-    -- N azul dentro do círculo cinza
+    make("UICorner", {CornerRadius=UDim.new(0, 6)}, iconFrame)
+    make("UIStroke", {Color=Color3.fromRGB(0, 140, 255), Thickness=1, Transparency=0.2}, iconFrame)
+    -- N azul
     local nLabel = make("TextLabel", {
         BackgroundTransparency=1,
         Size=UDim2.new(1, 0, 1, 0),
         Position=UDim2.new(0, 0, 0, 0),
         Text="N",
-        TextColor3=Color3.fromRGB(0, 140, 255),
+        TextColor3=Color3.fromRGB(80, 180, 255),
         Font=Enum.Font.GothamBlack,
-        TextSize=16,
+        TextSize=14,
         ZIndex=102
     }, iconFrame)
     -- Texto Nexora Hub
@@ -2136,7 +2141,7 @@ function Nexora.CreateMain(config)
         Position=UDim2.new(0, 36, 0, 0),
         Size=UDim2.new(0, 85, 1, 0),
         Text="Nexora Hub",
-        TextColor3=Color3.fromRGB(255, 255, 255),
+        TextColor3=Color3.fromRGB(240, 245, 255),
         TextSize=13,
         Font=Enum.Font.GothamMedium,
         TextXAlignment=Enum.TextXAlignment.Left,
