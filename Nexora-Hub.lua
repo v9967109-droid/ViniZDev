@@ -2992,189 +2992,224 @@ function DetectNpc(f)
 end
 
 SectionShopFighting.CreateToggle({ Title = "Black Leg", Desc = nil, Default = false }, function(f)
+	g["Black Leg"] = f
 	if f then
 		spawn(function()
-			while g["Black Leg"] and (task.wait()) do
-				local K, K = pcall(function()
+			while g["Black Leg"] and task.wait(0.5) do
+				pcall(function()
 					local R = DetectNpc(G.BuyBlackLeg)
-					if t:DistanceFromCharacter(R.HumanoidRootPart.Position) < 8 then
+					if not R or not R.HumanoidRootPart then return end
+					if t:DistanceFromCharacter(R.HumanoidRootPart.Position) > 8 then
+						toTarget(R.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					else
 						game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBlackLeg")
+						task.wait(0.5)
 					end
-					getgenv().BackupTween(R.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
 				end)
 			end
 		end)
 	end
-	g["Black Leg"] = f
 end)
 
 SectionShopFighting.CreateToggle({ Title = "Fishman Karate", Desc = nil, Default = false }, function(f)
+	g["Fishman Karate"] = f
 	if f then
 		spawn(function()
-			while g["Fishman Karate"] and (task.wait()) do
-				local K, K = pcall(function()
+			while g["Fishman Karate"] and task.wait(0.5) do
+				pcall(function()
 					local R = DetectNpc(G.BuyFishmanKarate)
-					if t:DistanceFromCharacter(R.HumanoidRootPart.Position) < 8 then
+					if not R or not R.HumanoidRootPart then return end
+					if t:DistanceFromCharacter(R.HumanoidRootPart.Position) > 8 then
+						toTarget(R.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					else
 						game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyFishmanKarate")
+						task.wait(0.5)
 					end
-					getgenv().BackupTween(R.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
 				end)
 			end
 		end)
 	end
-	g["Fishman Karate"] = f
 end)
 
 SectionShopFighting.CreateToggle({ Title = "Electro", Desc = nil, Default = false }, function(f)
+	g.Electro = f
 	if f then
 		spawn(function()
-			while g.Electro and (task.wait()) do
+			while g.Electro and task.wait(0.5) do
 				pcall(function()
 					local K = DetectNpc(G.BuyElectro)
-					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) < 8 then
+					if not K or not K.HumanoidRootPart then return end
+					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 8 then
+						toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					else
 						game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyElectro")
+						task.wait(0.5)
 					end
-					getgenv().BackupTween(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
 				end)
 			end
 		end)
 	end
-	g.Electro = f
 end)
 
 SectionShopFighting.CreateToggle({ Title = "Dragon Breath", Desc = nil, Default = false }, function(f)
+	g.DragonClaw = f
+	g["Dragon Breath"] = f
 	if f then
 		spawn(function()
-			while g.DragonClaw and (task.wait()) do
+			while (g.DragonClaw or g["Dragon Breath"]) and task.wait(0.5) do
 				pcall(function()
 					local K = DetectNpc(G.DragonClaw)
-					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) < 8 then
+					if not K or not K.HumanoidRootPart then return end
+					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 8 then
+						toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					else
 						game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BlackbeardReward", "DragonClaw", "1")
+						task.wait(0.3)
 						game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BlackbeardReward", "DragonClaw", "2")
+						task.wait(0.5)
 					end
-					getgenv().BackupTween(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
 				end)
 			end
 		end)
 	end
-	g.DragonClaw = f
 end)
 
 SectionShopFighting.CreateToggle({ Title = "SuperHuman", Desc = nil, Default = false }, function(f)
+	g.SuperHuman = f
 	if f then
 		spawn(function()
-			while g.SuperHuman and (task.wait()) do
+			while g.SuperHuman and task.wait(0.5) do
 				pcall(function()
 					local K = DetectNpc(G.BuySuperhuman)
-					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) < 8 then
-						Remote("BuySuperhuman")
+					if not K or not K.HumanoidRootPart then return end
+					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 8 then
+						toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					else
+						game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuySuperhuman")
+						task.wait(0.5)
 					end
-					getgenv().BackupTween(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
 				end)
 			end
 		end)
 	end
-	g.SuperHuman = f
 end)
 
 SectionShopFighting.CreateToggle({ Title = "Death Step", Desc = nil, Default = false }, function(f)
+	g["Death Step"] = f
 	if f then
 		spawn(function()
-			while g["Death Step"] and (task.wait()) do
+			while g["Death Step"] and task.wait(0.5) do
 				pcall(function()
 					local K = DetectNpc(G.BuyDeathStep)
-					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) < 8 then
-						Remote("BuyDeathStep")
+					if not K or not K.HumanoidRootPart then return end
+					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 8 then
+						toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					else
+						game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyDeathStep")
+						task.wait(0.5)
 					end
-					getgenv().BackupTween(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
 				end)
 			end
 		end)
 	end
-	g["Death Step"] = f
 end)
 
 SectionShopFighting.CreateToggle({ Title = "Sharkman Karate", Desc = nil, Default = false }, function(f)
+	g["Sharkman Karate"] = f
 	if f then
 		spawn(function()
-			while g["Sharkman Karate"] and (task.wait()) do
+			while g["Sharkman Karate"] and task.wait(0.5) do
 				pcall(function()
 					local K = DetectNpc(G.BuySharkmanKarate)
-					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) < 8 then
-						Remote("BuySharkmanKarate")
+					if not K or not K.HumanoidRootPart then return end
+					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 8 then
+						toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					else
+						game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuySharkmanKarate")
+						task.wait(0.5)
 					end
-					getgenv().BackupTween(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
 				end)
 			end
 		end)
 	end
-	g["Sharkman Karate"] = f
 end)
 
 SectionShopFighting.CreateToggle({ Title = "Electric Claw", Desc = nil, Default = false }, function(f)
+	g["Electric Claw"] = f
 	if f then
 		spawn(function()
-			while g["Electric Claw"] and (task.wait()) do
+			while g["Electric Claw"] and task.wait(0.5) do
 				pcall(function()
 					local K = DetectNpc(G.BuyElectricClaw)
-					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) < 8 then
-						Remote("BuyElectricClaw")
+					if not K or not K.HumanoidRootPart then return end
+					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 8 then
+						toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					else
+						game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyElectricClaw")
+						task.wait(0.5)
 					end
-					getgenv().BackupTween(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
 				end)
 			end
 		end)
 	end
-	g["Electric Claw"] = f
 end)
 
 SectionShopFighting.CreateToggle({ Title = "Dragon Talon", Desc = nil, Default = false }, function(f)
+	g["Dragon Talon"] = f
 	if f then
 		spawn(function()
-			while g["Dragon Talon"] and (task.wait()) do
+			while g["Dragon Talon"] and task.wait(0.5) do
 				pcall(function()
 					local K = DetectNpc(G.BuyDragonTalon)
-					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) < 8 then
-						Remote("BuyDragonTalon")
+					if not K or not K.HumanoidRootPart then return end
+					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 8 then
+						toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					else
+						game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyDragonTalon")
+						task.wait(0.5)
 					end
-					getgenv().BackupTween(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
 				end)
 			end
 		end)
 	end
-	g["Dragon Talon"] = f
 end)
 SectionShopFighting.CreateToggle({ Title = "God Human", Desc = nil, Default = false }, function(f)
+	g["God Human"] = f
 	if f then
 		spawn(function()
-			while g["God Human"] and (task.wait()) do
+			while g["God Human"] and task.wait(0.5) do
 				pcall(function()
 					local K = DetectNpc(G.BuyGodhuman)
-					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) < 8 then
-						Remote("BuyGodhuman")
+					if not K or not K.HumanoidRootPart then return end
+					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 8 then
+						toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					else
+						game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyGodhuman")
+						task.wait(0.5)
 					end
-					getgenv().BackupTween(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
 				end)
 			end
 		end)
 	end
-	g["God Human"] = f
 end)
 SectionShopFighting.CreateToggle({ Title = "Sanguine Art", Desc = nil, Default = false }, function(f)
+	g["Sanguine Art"] = f
 	if f then
 		spawn(function()
-			while g["Sanguine Art"] and (task.wait()) do
+			while g["Sanguine Art"] and task.wait(0.5) do
 				pcall(function()
 					local K = DetectNpc(G.BuySanguineArt)
-					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) < 8 then
-						Remote("BuySanguineArt")
+					if not K or not K.HumanoidRootPart then return end
+					if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 8 then
+						toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
+					else
+						game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuySanguineArt")
+						task.wait(0.5)
 					end
-					getgenv().BackupTween(K.HumanoidRootPart.CFrame * CFrame.new(0, 4, 4))
 				end)
 			end
 		end)
 	end
-	g["Sanguine Art"] = f
 end)
 SectionShopAbilities = PageShop.CreateSection("Abilities Shop")
 SectionShopAbilities.CreateButton({ Title = "Skyjump [ $10,000 Beli ]" }, function()
