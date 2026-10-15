@@ -2913,64 +2913,6 @@ local G = {
 	BuyElectricClaw = "Previous Hero",
 	BuySanguineArt = "Shafi",
 }
-
-SectionShopFighting.CreateToggle({ Title = "Black Leg", Desc = nil, Default = false }, function(f)
-	g["Black Leg"] = f
-	if f then spawn(function() while g["Black Leg"] and task.wait(0.3) do pcall(function() local R = DetectNpc(G.BuyBlackLeg) if not R or not R.HumanoidRootPart then return end if t:DistanceFromCharacter(R.HumanoidRootPart.Position) > 10 then toTarget(R.HumanoidRootPart.CFrame * CFrame.new(0,2,2)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBlackLeg") task.wait(1) end end) end end) end
-end)
-
-SectionShopFighting.CreateToggle({ Title = "Fishman Karate", Desc = nil, Default = false }, function(f)
-	g["Fishman Karate"] = f
-	if f then spawn(function() while g["Fishman Karate"] and task.wait(0.3) do pcall(function() local R = DetectNpc(G.BuyFishmanKarate) if not R or not R.HumanoidRootPart then return end if t:DistanceFromCharacter(R.HumanoidRootPart.Position) > 10 then toTarget(R.HumanoidRootPart.CFrame * CFrame.new(0,2,2)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyFishmanKarate") task.wait(1) end end) end end) end
-end)
-
-SectionShopFighting.CreateToggle({ Title = "Electro", Desc = nil, Default = false }, function(f)
-	g.Electro = f
-	if f then spawn(function() while g.Electro and task.wait(0.3) do pcall(function() local K = DetectNpc(G.BuyElectro) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 10 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,2,2)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyElectro") task.wait(1) end end) end end) end
-end)
-
-SectionShopFighting.CreateToggle({ Title = "Dragon Breath", Desc = nil, Default = false }, function(f)
-	g.DragonClaw = f
-	g["Dragon Breath"] = f
-	if f then spawn(function() while (g.DragonClaw or g["Dragon Breath"]) and task.wait(0.3) do pcall(function() local K = DetectNpc(G.DragonClaw) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 10 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,2,2)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BlackbeardReward", "DragonClaw", "1") task.wait(0.3) game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BlackbeardReward", "DragonClaw", "2") task.wait(1) end end) end end) end
-end)
-
-SectionShopFighting.CreateToggle({ Title = "SuperHuman", Desc = nil, Default = false }, function(f)
-	g.SuperHuman = f
-	if f then spawn(function() while g.SuperHuman and task.wait(0.3) do pcall(function() local K = DetectNpc(G.BuySuperhuman) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 10 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,2,2)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuySuperhuman") task.wait(1) end end) end end) end
-end)
-
-SectionShopFighting.CreateToggle({ Title = "Death Step", Desc = nil, Default = false }, function(f)
-	g["Death Step"] = f
-	if f then spawn(function() while g["Death Step"] and task.wait(0.3) do pcall(function() local K = DetectNpc(G.BuyDeathStep) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 10 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,2,2)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyDeathStep") task.wait(1) end end) end end) end
-end)
-
-SectionShopFighting.CreateToggle({ Title = "Sharkman Karate", Desc = nil, Default = false }, function(f)
-	g["Sharkman Karate"] = f
-	if f then spawn(function() while g["Sharkman Karate"] and task.wait(0.3) do pcall(function() local K = DetectNpc(G.BuySharkmanKarate) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 10 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,2,2)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuySharkmanKarate") task.wait(1) end end) end end) end
-end)
-
-SectionShopFighting.CreateToggle({ Title = "Electric Claw", Desc = nil, Default = false }, function(f)
-	g["Electric Claw"] = f
-	if f then spawn(function() while g["Electric Claw"] and task.wait(0.3) do pcall(function() local K = DetectNpc(G.BuyElectricClaw) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 10 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,2,2)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyElectricClaw") task.wait(1) end end) end end) end
-end)
-
-SectionShopFighting.CreateToggle({ Title = "Dragon Talon", Desc = nil, Default = false }, function(f)
-	g["Dragon Talon"] = f
-	if f then spawn(function() while g["Dragon Talon"] and task.wait(0.3) do pcall(function() local K = DetectNpc(G.BuyDragonTalon) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 10 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,2,2)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyDragonTalon") task.wait(1) end end) end end) end
-end)
-
-SectionShopFighting.CreateToggle({ Title = "God Human", Desc = nil, Default = false }, function(f)
-	g["God Human"] = f
-	if f then spawn(function() while g["God Human"] and task.wait(0.3) do pcall(function() local K = DetectNpc(G.BuyGodhuman) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 10 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,2,2)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyGodhuman") task.wait(1) end end) end end) end
-end)
-
-SectionShopFighting.CreateToggle({ Title = "Sanguine Art", Desc = nil, Default = false }, function(f)
-	g["Sanguine Art"] = f
-	if f then spawn(function() while g["Sanguine Art"] and task.wait(0.3) do pcall(function() local K = DetectNpc(G.BuySanguineArt) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 10 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,2,2)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuySanguineArt") task.wait(1) end end) end end) end
-end)
-
-
 NPCManager = require(game:GetService("ReplicatedStorage").NPCManager)
 function GetFarNpcCFrame(name, npc, inst)
 	local RS = game:GetService("ReplicatedStorage")
@@ -3044,17 +2986,60 @@ function DetectNpc(f)
 end
 
 
+SectionShopFighting.CreateToggle({ Title = "Black Leg", Desc = nil, Default = false }, function(f)
+	g["Black Leg"] = f
+	if f then spawn(function() while g["Black Leg"] and task.wait(0.4) do pcall(function() local R = DetectNpc(G.BuyBlackLeg) if not R or not R.HumanoidRootPart then return end if t:DistanceFromCharacter(R.HumanoidRootPart.Position) > 12 then toTarget(R.HumanoidRootPart.CFrame * CFrame.new(0,3,3)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBlackLeg") task.wait(1) end end) end end) end
+end)
 
+SectionShopFighting.CreateToggle({ Title = "Fishman Karate", Desc = nil, Default = false }, function(f)
+	g["Fishman Karate"] = f
+	if f then spawn(function() while g["Fishman Karate"] and task.wait(0.4) do pcall(function() local R = DetectNpc(G.BuyFishmanKarate) if not R or not R.HumanoidRootPart then return end if t:DistanceFromCharacter(R.HumanoidRootPart.Position) > 12 then toTarget(R.HumanoidRootPart.CFrame * CFrame.new(0,3,3)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyFishmanKarate") task.wait(1) end end) end end) end
+end)
 
+SectionShopFighting.CreateToggle({ Title = "Electro", Desc = nil, Default = false }, function(f)
+	g.Electro = f
+	if f then spawn(function() while g.Electro and task.wait(0.4) do pcall(function() local K = DetectNpc(G.BuyElectro) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 12 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,3,3)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyElectro") task.wait(1) end end) end end) end
+end)
 
+SectionShopFighting.CreateToggle({ Title = "Dragon Breath", Desc = nil, Default = false }, function(f)
+	g.DragonClaw = f g["Dragon Breath"] = f
+	if f then spawn(function() while (g.DragonClaw or g["Dragon Breath"]) and task.wait(0.4) do pcall(function() local K = DetectNpc(G.DragonClaw) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 12 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,3,3)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BlackbeardReward", "DragonClaw", "1") task.wait(0.3) game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BlackbeardReward", "DragonClaw", "2") task.wait(1) end end) end end) end
+end)
 
+SectionShopFighting.CreateToggle({ Title = "SuperHuman", Desc = nil, Default = false }, function(f)
+	g.SuperHuman = f
+	if f then spawn(function() while g.SuperHuman and task.wait(0.4) do pcall(function() local K = DetectNpc(G.BuySuperhuman) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 12 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,3,3)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuySuperhuman") task.wait(1) end end) end end) end
+end)
 
+SectionShopFighting.CreateToggle({ Title = "Death Step", Desc = nil, Default = false }, function(f)
+	g["Death Step"] = f
+	if f then spawn(function() while g["Death Step"] and task.wait(0.4) do pcall(function() local K = DetectNpc(G.BuyDeathStep) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 12 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,3,3)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyDeathStep") task.wait(1) end end) end end) end
+end)
 
+SectionShopFighting.CreateToggle({ Title = "Sharkman Karate", Desc = nil, Default = false }, function(f)
+	g["Sharkman Karate"] = f
+	if f then spawn(function() while g["Sharkman Karate"] and task.wait(0.4) do pcall(function() local K = DetectNpc(G.BuySharkmanKarate) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 12 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,3,3)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuySharkmanKarate") task.wait(1) end end) end end) end
+end)
 
+SectionShopFighting.CreateToggle({ Title = "Electric Claw", Desc = nil, Default = false }, function(f)
+	g["Electric Claw"] = f
+	if f then spawn(function() while g["Electric Claw"] and task.wait(0.4) do pcall(function() local K = DetectNpc(G.BuyElectricClaw) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 12 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,3,3)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyElectricClaw") task.wait(1) end end) end end) end
+end)
 
+SectionShopFighting.CreateToggle({ Title = "Dragon Talon", Desc = nil, Default = false }, function(f)
+	g["Dragon Talon"] = f
+	if f then spawn(function() while g["Dragon Talon"] and task.wait(0.4) do pcall(function() local K = DetectNpc(G.BuyDragonTalon) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 12 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,3,3)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyDragonTalon") task.wait(1) end end) end end) end
+end)
 
+SectionShopFighting.CreateToggle({ Title = "God Human", Desc = nil, Default = false }, function(f)
+	g["God Human"] = f
+	if f then spawn(function() while g["God Human"] and task.wait(0.4) do pcall(function() local K = DetectNpc(G.BuyGodhuman) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 12 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,3,3)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyGodhuman") task.wait(1) end end) end end) end
+end)
 
-
+SectionShopFighting.CreateToggle({ Title = "Sanguine Art", Desc = nil, Default = false }, function(f)
+	g["Sanguine Art"] = f
+	if f then spawn(function() while g["Sanguine Art"] and task.wait(0.4) do pcall(function() local K = DetectNpc(G.BuySanguineArt) if not K or not K.HumanoidRootPart then return end if t:DistanceFromCharacter(K.HumanoidRootPart.Position) > 12 then toTarget(K.HumanoidRootPart.CFrame * CFrame.new(0,3,3)) else game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuySanguineArt") task.wait(1) end end) end end) end
+end)
 
 SectionShopAbilities = PageShop.CreateSection("Abilities Shop")
 SectionShopAbilities.CreateButton({ Title = "Skyjump [ $10,000 Beli ]" }, function()
@@ -7558,30 +7543,50 @@ function isnetworkowner2(Q)
 	return true
 end
 function BringMob(Q)
-	if not Settings["Bring Mob"] then return end
-	if not Q or not Q.Parent or not Q:FindFirstChild("HumanoidRootPart") then return end
+	if not Settings["Bring Mob"] then
+		return
+	end
+	if not Q or not Q.Parent or not Q:FindFirstChild("HumanoidRootPart") then
+		return
+	end
 	local Character = t.Character
 	local Root = Character and Character:FindFirstChild("HumanoidRootPart")
-	if not Root then return end
-	if tick() - (getgenv().__BringLast or 0) < 0.25 then return end
+	if not Root then
+		return
+	end
+	-- Limita a frequência (a cada chamada de farm não precisa reunir de novo).
+	if tick() - (getgenv().__BringLast or 0) < 0.12 then
+		return
+	end
 	getgenv().__BringLast = tick()
+	-- Só reúne quando já está perto do mob alvo.
 	local anchor = Q.HumanoidRootPart.CFrame
-	if (Root.Position - anchor.Position).Magnitude > 120 then return end
-	pcall(function() sethiddenproperty(t, "SimulationRadius", math.huge) sethiddenproperty(t, "MaxSimulationRadius", math.huge) end)
+	if (Root.Position - anchor.Position).Magnitude > 120 then
+		return
+	end
+	-- Sem isso o servidor não aceita a posição dos mobs movidos pelo cliente.
+	pcall(function()
+		sethiddenproperty(t, "SimulationRadius", math.huge)
+		sethiddenproperty(t, "MaxSimulationRadius", math.huge)
+	end)
 	local count = math.clamp(tonumber(Settings["Bring Mob Count"]) or 2, 2, 6)
 	local radius = count > 2 and 350 or 250
 	local gathered = 1
 	for _, mob in ipairs(workspace.Enemies:GetChildren()) do
-		if gathered >= count then break end
+		if gathered >= count then
+			break
+		end
 		if mob ~= Q and mob.Name == Q.Name and not mob:FindFirstChild("Ignored") and IsMobAlive(mob) then
 			local hrp = mob.HumanoidRootPart
 			if (hrp.Position - anchor.Position).Magnitude <= radius then
 				hrp.CFrame = anchor * CFrame.new(math.random(-3, 3), 0, math.random(-3, 3))
 				hrp.CanCollide = false
-				pcall(function() mob.Humanoid.WalkSpeed = 0 mob.Humanoid.JumpPower = 0 end)
+				pcall(function()
+					mob.Humanoid.WalkSpeed = 0
+					mob.Humanoid.JumpPower = 0
+				end)
 				sizepart(mob)
 				gathered += 1
-				task.wait(0.15)
 			end
 		end
 	end
@@ -7699,33 +7704,21 @@ SettingFarmMainSection.CreateToggle(
 SettingFarmMainSection.CreateToggle(
 	{ Title = "Auto Turn On Observation", Desc = nil, Default = Settings["Auto Turn On Observation"] or false },
 	function(m)
-		SaveSettings("Auto Turn On Observation", m)
 		if m then
 			spawn(function()
-				while Settings["Auto Turn On Observation"] and task.wait(0.5) do
+				while Settings["Auto Turn On Observation"] and (wait(1)) do
 					pcall(function()
-						local blur = game:GetService("Lighting"):FindFirstChild("Blur")
-						if not blur or not blur.Enabled then
-							-- Clica no botão de ativar Haki da observação (tecla E)
-							pcall(function()
-								game:GetService("VirtualInputManager"):SendKeyEvent(true, "E", false, game)
-								task.wait(0.1)
-								game:GetService("VirtualInputManager"):SendKeyEvent(false, "E", false, game)
-							end)
-							task.wait(0.3)
-							pcall(function()
-								game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.E, false, game)
-								task.wait(0.1)
-								game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.E, false, game)
-							end)
-							pcall(function()
-								game:GetService("ReplicatedStorage").Remotes.CommE:FireServer("Ken", true)
-							end)
+						if not game:GetService("Lighting").Blur.Enabled then
+							game:GetService("VirtualInputManager"):SendKeyEvent(true, "E", false, game)
+							wait()
+							game:GetService("VirtualInputManager"):SendKeyEvent(false, "E", false, game)
+							wait(3)
 						end
 					end)
 				end
 			end)
 		end
+		SaveSettings("Auto Turn On Observation", m)
 	end
 )
 function TurnOnV4()
@@ -7795,51 +7788,6 @@ game:GetService("Workspace").Enemies.DescendantAdded:Connect(function(_)
 		getgenv().ReadyToDodge = false
 	end
 end)
-
-
--- Auto Dodge Skill Mobs - FIX DEFINITIVO: não sobe, só desvia quando mob realmente usa skill perto
-getgenv().Doding = false
-getgenv().ReadyToDodge = false
-if getgenv().DodgeConnection then getgenv().DodgeConnection:Disconnect() end
-getgenv().DodgeConnection = game:GetService("Workspace").Enemies.DescendantAdded:Connect(function(skill)
-	pcall(function()
-		if not Settings["Auto Dodge Skill Mobs"] then return end
-		if getgenv().Doding then return end
-		if skill.Name ~= "BodyGyro" and skill.Name ~= "BodyPosition" and skill.Name ~= "BodyVelocity" then return end
-		local parent = skill.Parent
-		if not parent or parent.Name ~= "HumanoidRootPart" then return end
-		local mob = parent.Parent
-		if not mob or not mob:FindFirstChild("Humanoid") or not mob:FindFirstChild("HumanoidRootPart") then return end
-		-- Só se for o mob que tá atacando você
-		local attacking = getgenv().AttackingMob
-		if attacking and mob.Name ~= attacking.Name then return end
-		local char = game:GetService("Players").LocalPlayer.Character
-		local root = char and char:FindFirstChild("HumanoidRootPart")
-		if not root then return end
-		local dist = (root.Position - mob.HumanoidRootPart.Position).Magnitude
-		if dist > 55 then return end
-		-- Skill com P alto = skill real de ataque
-		if skill:IsA("BodyGyro") and skill.P and skill.P < 500 then return end
-		getgenv().Doding = true
-		getgenv().ReadyToDodge = true
-		local oldPos = root.Position
-		local away = (root.Position - mob.HumanoidRootPart.Position)
-		away = Vector3.new(away.X, 0, away.Z)
-		if away.Magnitude < 1 then away = Vector3.new(math.random(-1,1), 0, math.random(-1,1)) end
-		away = away.Unit * 20
-		local targetPos = Vector3.new(oldPos.X + away.X, oldPos.Y, oldPos.Z + away.Z)
-		pcall(function()
-			root.CFrame = CFrame.new(targetPos.X, oldPos.Y, targetPos.Z)
-			root.AssemblyLinearVelocity = Vector3.new(0,0,0)
-		end)
-		local start = tick()
-		repeat task.wait(0.1) until not skill.Parent or tick()-start > 1.8
-		task.wait(0.2)
-		getgenv().Doding = false
-		getgenv().ReadyToDodge = false
-	end)
-end)
-
 SettingFarmMainSection.CreateToggle(
 	{ Title = "Teleport Y if low health", Desc = nil, Default = Settings["Teleport Y"] or false },
 	function(I)
@@ -8608,9 +8556,9 @@ function DetectMobsAuraNear()
 		end
 	end
 	table.sort(mobsNear, function(a,b)
-		local distA = (a.HumanoidRootPart.Position - game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-		local distB = (b.HumanoidRootPart.Position - game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-		return distA < distB
+		local da = (a.HumanoidRootPart.Position - game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+		local db = (b.HumanoidRootPart.Position - game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+		return da < db
 	end)
 	return mobsNear
 end
@@ -8918,11 +8866,30 @@ function FarmMethod()
 		for _, mob in ipairs(mobsNear) do
 			if not Settings["Aura Farm"] then break end
 			if not IsMobAlive(mob) then continue end
-			repeat task.wait() if not IsMobAlive(mob) then break end sizepart(mob) BringMob(mob) UsedualFlock() ClickM1(mob) if Settings["Select Weapon"] == "Blox Fruit" then toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(-7, getgenv().YPosFruit or 20, 0)) else toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(7, 20, 0)) end until not IsMobAlive(mob) or not Settings["Aura Farm"] or not Settings["Auto Farm Active"] or not StackFarm
+			repeat task.wait()
+				if not IsMobAlive(mob) then break end
+				sizepart(mob)
+				BringMob(mob)
+				UsedualFlock()
+				ClickM1(mob)
+				if Settings["Select Weapon"] == "Blox Fruit" then
+					toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(-7, getgenv().YPosFruit or 20, 0))
+				else
+					toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(7, 20, 0))
+				end
+			until not IsMobAlive(mob) or not Settings["Aura Farm"] or not Settings["Auto Farm Active"] or not StackFarm
 		end
 		return
 	end
 	local f, V, H
+	local SelectedFarmMethod = ({
+		["Auto Farm Level"] = "Level Farm",
+		["Auto Farm Bones"] = "Farm Bones",
+		["Auto Farm Katakuri"] = "Farm Katakuri",
+		["Auto Farm Tyrant of the Skies"] = "Farm Tyrant of the Skies",
+		["Aura Farm"] = "Aura Farm",
+	})[selectedToggle]
+	f = SelectedFarmMethod
 	local C, J = 9999, 2
 	if f == "Farm Katakuri" then
 		C, V, H = 2275, y, "CakeQuest2"
