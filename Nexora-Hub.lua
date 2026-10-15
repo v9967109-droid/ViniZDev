@@ -14970,19 +14970,17 @@ do
 	getgenv().__BoatRaiseConn = game:GetService("RunService").Heartbeat:Connect(function()
 		if getgenv().__BoatRaiseGen ~= gen then return end
 		if not Settings["Raise Boat Manual Drive"] then
-			-- V9 FIX: Não reseta se Auto Sea Event estiver ativo, pra permitir funcionar sem Raise Boat
-			if Settings["Auto Sea Event"] or Settings["Auto Multi Sea Event"] then
+			-- V11: Só reseta quando o próprio Raise Boat desliga e nenhuma outra opção de barco precisa manter o ar
+			-- Auto Sea Event e Multi funcionam sem Raise Boat, então não força reset se eles estiverem ativos
+			if Settings["Auto Sea Event"] or Settings["Auto Multi Sea Event"] or Settings["Auto Find Leviathan"] or Settings["Multi Find Leviathan"] or Settings["Auto Start Leviathan"] then
 				return
 			end
 			pcall(function() ResetAirState() end)
 			return
 		end
-		-- NÃO INTERFERIR NO AUTO FIND LEVIATHAN E SEA EVENT
-		if Settings["Auto Find Leviathan"] or Settings["Multi Find Leviathan"] or Settings["Auto Start Leviathan"] or Settings["Teleport Frozen Dimension"] or Settings["Tween Boat To Frozen Dimension"] or Settings["Auto Fire Shoot Heart Leviathan"] then return end
-		-- V9: Se Auto Sea Event ou Multi estiver ativo, Raise Boat não deve interferir - deixa Sea Event controlar
-		if Settings["Auto Sea Event"] or Settings["Auto Multi Sea Event"] then
-			return
-		end
+		-- V11: Raise Boat Manual Drive totalmente independente - NÃO bloqueia nenhuma outra função de barco
+		-- Ele só trava o Y, mantendo X/Z livre, então pode coexistir com Sea Event, Leviathan, Prehistoric, etc.
+		-- Sem returns que impeçam outras funções
 		pcall(function()
 			local char = t.Character
 			local hum = char and char:FindFirstChildOfClass("Humanoid")
