@@ -2047,24 +2047,30 @@ function Nexora.CreateMain(config)
     reopen:SetAttribute("NexoraKeepColor", true)
     make("UICorner", {CornerRadius=UDim.new(0, 18)}, reopen)
     make("UIStroke", {Color=Color3.fromRGB(60, 60, 65), Thickness=1, Transparency=0.3}, reopen)
-    -- Ícone à esquerda (logo)
+    -- Ícone à esquerda - CÍRCULO CINZA com N AZUL (ícone no botão fechar/abrir UI)
     local iconFrame = make("Frame", {
-        BackgroundColor3=Color3.fromRGB(35, 35, 45),
-        Size=UDim2.new(0, 24, 0, 24),
-        Position=UDim2.new(0, 6, 0.5, -12),
+        BackgroundColor3=Color3.fromRGB(165, 165, 174), -- CÍRCULO CINZA como pediu
+        Size=UDim2.new(0, 26, 0, 26),
+        Position=UDim2.new(0, 5, 0.5, -13),
         BorderSizePixel=0,
         ZIndex=101
     }, reopen)
     make("UICorner", {CornerRadius=UDim.new(1,0)}, iconFrame)
-    local iconImg = make("ImageLabel", {
+    make("UIStroke", {Color=Color3.fromRGB(100,100,110), Thickness=1}, iconFrame)
+    -- N azul dentro do círculo cinza
+    local iconLabel = make("TextLabel", {
         BackgroundTransparency=1,
-        Size=UDim2.new(1, -4, 1, -4),
-        Position=UDim2.new(0, 2, 0, 2),
-        Image="rbxassetid://18747094503", -- ícone placeholder, troca se tiver logo
-        ScaleType=Enum.ScaleType.Fit,
-        ImageColor3=Color3.fromRGB(80, 180, 255),
+        Size=UDim2.new(1, 0, 1, 0),
+        Position=UDim2.new(0, 0, 0, 0),
+        Text="N",
+        TextColor3=Color3.fromRGB(0, 140, 255), -- N AZUL
+        Font=Enum.Font.GothamBlack,
+        TextSize=16,
+        TextScaled=false,
         ZIndex=102
     }, iconFrame)
+    make("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 140, 255))}, iconLabel)
+    local iconImg = iconLabel -- mantém referência pro resto do código
     -- Se tiver config.Logo usa ele
     pcall(function()
         if config.Logo and config.Logo ~= "" then
@@ -7701,21 +7707,25 @@ function BringMob(Q)
 	local count = math.clamp(tonumber(Settings["Bring Mob Count"]) or 2, 2, 6)
 	local radius = count > 2 and 350 or 250
 	local gathered = 1
+	-- Bring Mob um por um para não bugar - com delay
 	for _, mob in ipairs(workspace.Enemies:GetChildren()) do
 		if gathered >= count then
 			break
 		end
 		if mob ~= Q and mob.Name == Q.Name and not mob:FindFirstChild("Ignored") and IsMobAlive(mob) then
-			local hrp = mob.HumanoidRootPart
-			if (hrp.Position - anchor.Position).Magnitude <= radius then
+			local hrp = mob:FindFirstChild("HumanoidRootPart")
+			if hrp and (hrp.Position - anchor.Position).Magnitude <= radius then
+				-- Puxa um por um com delay pra não bugar
 				hrp.CFrame = anchor * CFrame.new(math.random(-3, 3), 0, math.random(-3, 3))
 				hrp.CanCollide = false
 				pcall(function()
 					mob.Humanoid.WalkSpeed = 0
 					mob.Humanoid.JumpPower = 0
+					mob.HumanoidRootPart.CanCollide = false
 				end)
 				sizepart(mob)
 				gathered += 1
+				task.wait(0.08) -- Delay entre cada mob pra não bugar
 			end
 		end
 	end
@@ -7833,21 +7843,33 @@ SettingFarmMainSection.CreateToggle(
 SettingFarmMainSection.CreateToggle(
 	{ Title = "Auto Turn On Observation", Desc = nil, Default = Settings["Auto Turn On Observation"] or false },
 	function(m)
+		SaveSettings("Auto Turn On Observation", m)
 		if m then
 			spawn(function()
-				while Settings["Auto Turn On Observation"] and (wait(1)) do
+				while Settings["Auto Turn On Observation"] and task.wait(1) do
 					pcall(function()
-						if not game:GetService("Lighting").Blur.Enabled then
+						local char = game:GetService("Players").LocalPlayer.Character
+						local hasKen = char and (char:FindFirstChild("HasBuso") or char:FindFirstChild("HasKen") or char:FindFirstChild("HasObservation"))
+						local blur = game:GetService("Lighting"):FindFirstChild("Blur")
+						local kenActive = blur and blur.Enabled
+						-- Se não tiver Ken Haki ativo, liga
+						if not kenActive then
 							game:GetService("VirtualInputManager"):SendKeyEvent(true, "E", false, game)
-							wait()
+							task.wait(0.1)
 							game:GetService("VirtualInputManager"):SendKeyEvent(false, "E", false, game)
-							wait(3)
+							task.wait(1)
+							-- Tenta de novo se ainda não ligou
+							if not game:GetService("Lighting").Blur.Enabled then
+								task.wait(0.5)
+								game:GetService("VirtualInputManager"):SendKeyEvent(true, "E", false, game)
+								task.wait(0.1)
+								game:GetService("VirtualInputManager"):SendKeyEvent(false, "E", false, game)
+							end
 						end
 					end)
 				end
 			end)
 		end
-		SaveSettings("Auto Turn On Observation", m)
 	end
 )
 function TurnOnV4()
@@ -7894,28 +7916,40 @@ SettingFarmMainSection.CreateToggle(
 		SaveSettings("Auto Dodge Skill Mobs", I)
 	end
 )
-local I
-game:GetService("Workspace").Enemies.DescendantAdded:Connect(function(_)
-	if
-		Settings["Auto Dodge Skill Mobs"]
-		and I
-		and I.Parent
-		and not Doding
-		and (_.Name == "BodyGyro" or _.Name == "BodyPosition" or _.Name == "KiBlastFireShort")
-		and _.Parent.Parent.Name == I.Name
-	then
+-- Auto Dodge Skill Mobs - CORRIGIDO: usa AttackingMob e desvia de verdade
+getgenv().Doding = false
+getgenv().ReadyToDodge = false
+game:GetService("Workspace").Enemies.DescendantAdded:Connect(function(skill)
+	pcall(function()
+		if not Settings["Auto Dodge Skill Mobs"] then return end
+		if getgenv().Doding then return end
+		local mob = getgenv().AttackingMob or AttackingMob
+		if not mob or not mob.Parent then return end
+		if not (skill.Name == "BodyGyro" or skill.Name == "BodyPosition" or skill.Name == "KiBlastFireShort" or skill.Name == "BodyVelocity") then return end
+		local parent = skill.Parent
+		if not parent then return end
+		-- Verifica se é do mob que está atacando
+		local mobName = mob.Name
+		local skillMob = parent.Parent
+		if not skillMob or skillMob.Name ~= mobName then return end
 		getgenv().Doding = true
 		getgenv().ReadyToDodge = true
-		local I = tick()
-		repeat
-			wait()
-		until not _ or not _.Parent or tick() - I > 14
-		if tick() - I < 2 then
-			wait(0.5)
+		-- Desvia: move pro lado
+		local char = game:GetService("Players").LocalPlayer.Character
+		local root = char and char:FindFirstChild("HumanoidRootPart")
+		if root then
+			local oldCF = root.CFrame
+			-- Move 15 studs pro lado pra desviar
+			pcall(function()
+				root.CFrame = oldCF * CFrame.new(math.random(-15,15), 0, math.random(-15,15))
+			end)
 		end
+		local start = tick()
+		repeat task.wait() until not skill or not skill.Parent or tick() - start > 3
+		task.wait(0.5)
 		getgenv().Doding = false
 		getgenv().ReadyToDodge = false
-	end
+	end)
 end)
 SettingFarmMainSection.CreateToggle(
 	{ Title = "Teleport Y if low health", Desc = nil, Default = Settings["Teleport Y"] or false },
@@ -11045,12 +11079,7 @@ task.spawn(function()
 					StackFarmOther = false
 					local dist = (handle.Position - root.Position).Magnitude
 					if dist <= 15 then
-						getgenv().noclip = false
-						-- Pega a fruta sem lag
-						pcall(function()
-							root.CFrame = handle.CFrame
-						end)
-						task.wait(0.15)
+						-- Chegou na fruta - pega sem TP
 						pcall(function()
 							firetouchinterest(root, handle, 0)
 							task.wait(0.1)
@@ -11068,23 +11097,12 @@ task.spawn(function()
 							task.wait(0.1)
 							game:GetService("VirtualInputManager"):SendKeyEvent(false, "Space", false, game)
 						end)
-						-- Limpa cache pra procurar próxima fruta
 						getgenv().__CachedFruit = nil
 						getgenv().__LastFruitScan = 0
-						-- NÃO dá return, continua procurando próxima fruta
 					else
-						-- Vai até a fruta mesmo se estiver longe - SEM LAG
-						-- Se muito longe, teleporta direto em etapas
-						if dist > 1500 then
-							-- Teleporta direto pra perto da fruta (sem tween lento)
-							pcall(function()
-								getgenv().noclip = true
-								root.CFrame = handle.CFrame * CFrame.new(0, 10, 0)
-							end)
-							task.wait(0.3)
-						else
-							toTarget(handle.CFrame * CFrame.new(0, 3, 0))
-						end
+						-- Vai até a fruta SEM TP - sempre com toTarget
+						pcall(function() getgenv().noclip = true end)
+						toTarget(handle.CFrame * CFrame.new(0, 5, 0))
 					end
 				else
 					-- Nenhuma fruta encontrada, espera um pouco
