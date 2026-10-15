@@ -14970,16 +14970,18 @@ do
 	getgenv().__BoatRaiseConn = game:GetService("RunService").Heartbeat:Connect(function()
 		if getgenv().__BoatRaiseGen ~= gen then return end
 		if not Settings["Raise Boat Manual Drive"] then
-			-- Quando desativa, volta ao normal pra não ficar preso no ar
+			-- V9 FIX: Não reseta se Auto Sea Event estiver ativo, pra permitir funcionar sem Raise Boat
+			if Settings["Auto Sea Event"] or Settings["Auto Multi Sea Event"] then
+				return
+			end
 			pcall(function() ResetAirState() end)
 			return
 		end
-		-- NÃO INTERFERIR NO AUTO FIND LEVIATHAN
+		-- NÃO INTERFERIR NO AUTO FIND LEVIATHAN E SEA EVENT
 		if Settings["Auto Find Leviathan"] or Settings["Multi Find Leviathan"] or Settings["Auto Start Leviathan"] or Settings["Teleport Frozen Dimension"] or Settings["Tween Boat To Frozen Dimension"] or Settings["Auto Fire Shoot Heart Leviathan"] then return end
-		-- V8: Auto Sea Event e Auto Multi Sea Event funcionam independente do Raise Boat Manual Drive
+		-- V9: Se Auto Sea Event ou Multi estiver ativo, Raise Boat não deve interferir - deixa Sea Event controlar
 		if Settings["Auto Sea Event"] or Settings["Auto Multi Sea Event"] then
-			-- Não aplica raise quando está em Sea Event, deixa o Sea Event controlar
-			-- Mas não bloqueia o Sea Event
+			return
 		end
 		pcall(function()
 			local char = t.Character
@@ -16263,9 +16265,7 @@ FarmingMultiSeaEvent.Section.CreateToggle(
 		local runId = getgenv().MultiSeaEventRunId
 
 		if not enabled then
-			pcall(function()
-				game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.W, false, game)
-			end)
+			pcall(function() local b=checkboat() local s=b and b:FindFirstChild("VehicleSeat", true) if s then s.ThrottleFloat=0 s.Throttle=0 end end)
 			return
 		end
 
@@ -16369,32 +16369,42 @@ FarmingMultiSeaEvent.Section.CreateToggle(
 						if currentHumanoid and currentHumanoid.SeatPart == seat then
 							local startPosition = seat.Position
 							local movementValid = true
-							pcall(function() VIM:SendKeyEvent(true, Enum.KeyCode.W, false, game) end)
+							-- V10: Usa lógica nativa do Roblox igual ao Multi Find Prehistoric Island (ThrottleFloat) - funciona mobile e PC sem W
+							local function SetMultiSeaForward(vSeat, enabled)
+								if not vSeat or not vSeat.Parent then return end
+								pcall(function() vSeat.ThrottleFloat = enabled and 1 or 0 end)
+								pcall(function() vSeat.Throttle = enabled and 1 or 0 end)
+							end
+							SetMultiSeaForward(seat, true)
 							while Settings["Auto Multi Sea Event"] and getgenv().MultiSeaEventRunId == runId and seat.Parent and (seat.Position - startPosition).Magnitude < 650 do
 								local stillSeated = areSelectedPlayersSeatedInBoat(boat)
 								local charNow = t.Character
 								local humNow = charNow and charNow:FindFirstChildOfClass("Humanoid")
-								-- V8 FIX: Se player saiu do SEAT, espera ele sair e voltar, não quebra
+								-- V10: Espera robusta nativa
 								if not stillSeated or not humNow or humNow.SeatPart ~= seat then
-									-- Pausa o barco
-									pcall(function() VIM:SendKeyEvent(false, Enum.KeyCode.W, false, game) end)
-									-- Espera o player sair totalmente do SEAT (SeatPart == nil) se ainda estiver no barco mas levantado
+									SetMultiSeaForward(seat, false)
+									pcall(function() A.CreateNoti({ Title = "Nexora Hub", Desc = "Player saiu do SEAT, pausando...", ShowTime = 3 }) end)
 									repeat
 										task.wait(0.5)
 										stillSeated = areSelectedPlayersSeatedInBoat(boat)
-										local c = t.Character
-										local h = c and c:FindFirstChildOfClass("Humanoid")
-										-- Se o player da lista saiu do SEAT, espera ele voltar
-										if not stillSeated then
-											pcall(function() A.CreateNoti({ Title = "Nexora Hub", Desc = "Player saiu do SEAT, esperando voltar...", ShowTime = 3 }) end)
+										local charCheck = t.Character
+										local humCheck = charCheck and charCheck:FindFirstChildOfClass("Humanoid")
+										if humCheck and humCheck.SeatPart ~= seat then
+											stillSeated = false
 										end
-									until stillSeated and h and h.SeatPart == seat and Settings["Auto Multi Sea Event"] and getgenv().MultiSeaEventRunId == runId
-									-- Voltou, continua andando
-									pcall(function() VIM:SendKeyEvent(true, Enum.KeyCode.W, false, game) end)
+									until (stillSeated and Settings["Auto Multi Sea Event"] and getgenv().MultiSeaEventRunId == runId) or not Settings["Auto Multi Sea Event"] or getgenv().MultiSeaEventRunId ~= runId or not seat.Parent
+									if not Settings["Auto Multi Sea Event"] or getgenv().MultiSeaEventRunId ~= runId or not seat.Parent then
+										movementValid = false
+										break
+									end
+									pcall(function() A.CreateNoti({ Title = "Nexora Hub", Desc = "Todos de volta no SEAT, continuando...", ShowTime = 3 }) end)
+									SetMultiSeaForward(seat, true)
+									startPosition = seat.Position
 								end
-								task.wait(0.1)
+								SetMultiSeaForward(seat, true) -- reaplica continuamente
+								task.wait()
 							end
-							pcall(function() VIM:SendKeyEvent(false, Enum.KeyCode.W, false, game) end)
+							SetMultiSeaForward(seat, false)
 							if movementValid and seat.Parent and (seat.Position - startPosition).Magnitude >= 650 and areSelectedPlayersSeatedInBoat(boat) and Settings["Auto Multi Sea Event"] and getgenv().MultiSeaEventRunId == runId then
 								movementCompleted = true
 								SaveSettings("Auto Sea Event", true)
@@ -24368,9 +24378,7 @@ FarmingMultiVulcanoSection.CreateToggle(
 			getgenv().MultiPrehistoricWaitingNotiTime = nil
 			getgenv().MultiPrehistoricMovingForward = false
 			getgenv().MultiPrehistoricSelectedSeatState = {}
-			pcall(function()
-				game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.W, false, game)
-			end)
+			pcall(function() local b=checkboat() local s=b and b:FindFirstChild("VehicleSeat", true) if s then s.ThrottleFloat=0 s.Throttle=0 end end)
 		end
 		SaveSettings("Auto Multi Find Prehistoric Island", value)
 	end
