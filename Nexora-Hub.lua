@@ -7649,6 +7649,68 @@ SettingFarmMainSection.CreateToggle(
 		end
 	end
 )
+
+-- FAST ATTACK OP - Deixa Melee, Fruit, Sword, Gun rapidão
+getgenv().FastAttackOP = Settings["Fast Attack OP"] or false
+local CombatFramework = require(game:GetService("Players").LocalPlayer.PlayerScripts:WaitForChild("CombatFramework"))
+local CombatFrameworkR = getupvalues(CombatFramework)[2]
+
+SettingFarmMainSection.CreateToggle(
+	{ Title = "Fast Attack OP", Desc = "Melee, Fruit, Sword, Gun fica OP rapidão", Default = Settings["Fast Attack OP"] or false },
+	function(state)
+		SaveSettings("Fast Attack OP", state)
+		getgenv().FastAttackOP = state
+		if state then
+			spawn(function()
+				while getgenv().FastAttackOP and task.wait(0.03) do
+					pcall(function()
+						if CombatFrameworkR and CombatFrameworkR.activeController then
+							CombatFrameworkR.activeController.timeToNextAttack = 0
+							CombatFrameworkR.activeController.timeToNextBlock = 0
+							CombatFrameworkR.activeController.hitboxMagnitude = 70
+							CombatFrameworkR.activeController.blocking = false
+							CombatFrameworkR.activeController.focusStart = 0
+							CombatFrameworkR.activeController.increment = 4
+							-- Para Sword, Gun, Melee e Fruit
+							CombatFrameworkR.activeController.humanoid.AutoRotate = true
+						end
+					end)
+				end
+			end)
+			-- Loop de click ultra rápido pra todas as armas
+			spawn(function()
+				while getgenv().FastAttackOP and task.wait(0.05) do
+					pcall(function()
+						local char = game:GetService("Players").LocalPlayer.Character
+						if not char then return end
+						local tool = char:FindFirstChildOfClass("Tool")
+						if tool then
+							-- Melee, Sword, Gun, Blox Fruit - tudo
+							if tool.ToolTip == "Melee" or tool.ToolTip == "Sword" or tool.ToolTip == "Gun" or tool.ToolTip == "Blox Fruit" then
+								-- Ataca sem delay
+								local targets = {}
+								for _, mob in pairs(workspace.Enemies:GetChildren()) do
+									if mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+										if (mob.HumanoidRootPart.Position - char.HumanoidRootPart.Position).Magnitude <= 80 then
+											table.insert(targets, mob)
+										end
+									end
+								end
+								for _, mob in pairs(targets) do
+									game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("Attack", mob)
+								end
+								-- Click rapidão
+								game:GetService("VirtualUser"):CaptureController()
+								game:GetService("VirtualUser"):ClickButton1(Vector2.new(0,0))
+							end
+						end
+					end)
+				end
+			end)
+		end
+	end
+)
+
 SettingFarmMainSection.CreateToggle(
 	{ Title = "Kill Aura With DragonStorm", Desc = nil, Default = Settings["Kill Aura With DragonStorm"] or false },
 	function(I)
