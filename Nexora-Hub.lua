@@ -14077,6 +14077,56 @@ SettingSeaEventSection.CreateToggle(
 	end
 )
 SettingSeaEventSection.CreateToggle(
+	{
+		Title = "Raise Boat Manual Drive",
+		Desc = "The boat rises above the sea and you keep driving it manually. Set the height below (keep it low so the sea danger level still counts).",
+		Default = Settings["Raise Boat Manual Drive"] or false,
+	},
+	function(l)
+		SaveSettings("Raise Boat Manual Drive", l)
+	end
+)
+SettingSeaEventSection.CreateSlider(
+	{ Title = "Boat Height", Min = 5, Max = 80, Default = Settings["Boat Height"] or 25, Precise = false },
+	function(l)
+		SaveSettings("Boat Height", l)
+	end
+)
+-- Sobe o barco (só no eixo Y) enquanto você está sentado nele. X/Z e a direção ficam livres,
+-- então a direção continua manual. Ao desligar a toggle o barco volta a descer sozinho.
+do
+	getgenv().__BoatRaiseGen = (getgenv().__BoatRaiseGen or 0) + 1
+	local gen = getgenv().__BoatRaiseGen
+	pcall(function() if getgenv().__BoatRaiseConn then getgenv().__BoatRaiseConn:Disconnect() end end)
+	getgenv().__BoatRaiseConn = game:GetService("RunService").Heartbeat:Connect(function()
+		if getgenv().__BoatRaiseGen ~= gen or not Settings["Raise Boat Manual Drive"] then return end
+		pcall(function()
+			local char = t.Character
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+			local seat = hum and hum.SeatPart
+			if not seat or not seat:IsA("VehicleSeat") then return end
+			local boat = seat:FindFirstAncestorOfClass("Model")
+			local boats = workspace:FindFirstChild("Boats")
+			if not boat or not boats or boat.Parent ~= boats then return end
+			-- Altura "normal" do barco na água, medida na primeira vez que o vemos.
+			local base = boat:GetAttribute("NexoraBaseY")
+			if not base then
+				base = (seat.Position.Y < 30) and seat.Position.Y or 8
+				boat:SetAttribute("NexoraBaseY", base)
+			end
+			local height = math.clamp(tonumber(Settings["Boat Height"]) or 25, 5, 80)
+			local targetY = base + height
+			local pivot = boat:GetPivot()
+			local dy = targetY - pivot.Position.Y
+			if math.abs(dy) > 0.4 then
+				boat:PivotTo(pivot + Vector3.new(0, dy * 0.25, 0))
+			end
+			local v = seat.AssemblyLinearVelocity
+			if v.Y ~= 0 then seat.AssemblyLinearVelocity = Vector3.new(v.X, 0, v.Z) end
+		end)
+	end)
+end
+SettingSeaEventSection.CreateToggle(
 	{ Title = "Auto Dodge Skill Terrorshark", Desc = nil, Default = Settings["Auto Dodge Skill Terrorshark"] or false },
 	function(l)
 		SaveSettings("Auto Dodge Skill Terrorshark", l)
