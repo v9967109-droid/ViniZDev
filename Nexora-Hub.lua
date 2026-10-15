@@ -4732,9 +4732,7 @@ function IsMobAlive(K)
 end
 -- Helpers do Elite Hunter (compartilhados).
 function EliteRequest()
-	if tick() - (getgenv().__EliteReq or 0) <= 5 then
-		return
-	end
+	-- Vai na hora, sem espera dos 3 tracinhos
 	getgenv().__EliteReq = tick()
 	pcall(function()
 		game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("EliteHunter")
@@ -4757,17 +4755,15 @@ function EliteQuestOK(name)
 			end
 		end
 	end
-	-- Sem missão de elite: pede uma (com intervalo; antes abandonava e pedia a cada frame).
-	if tick() - (getgenv().__EliteReq or 0) > 5 then
-		getgenv().__EliteReq = tick()
-		local R = game:GetService("ReplicatedStorage").Remotes.CommF_
-		pcall(function()
-			if visible then
-				R:InvokeServer("AbandonQuest")
-			end
-			R:InvokeServer("EliteHunter")
-		end)
-	end
+	-- Sem missão de elite: pede uma INSTANTANEO, sem esperar 5 segundos, já vai atrás
+	getgenv().__EliteReq = tick()
+	local R = game:GetService("ReplicatedStorage").Remotes.CommF_
+	pcall(function()
+		if visible then
+			R:InvokeServer("AbandonQuest")
+		end
+		R:InvokeServer("EliteHunter")
+	end)
 	return false
 end
 local K = { "Deandre", "Urban", "Diablo" }
@@ -5813,7 +5809,7 @@ do
                 if Character then
                     for _, Part in ipairs(Character:GetDescendants()) do
                         if Part:IsA("BasePart") then
-                            Part.CanCollide = true
+                            Part.CanCollide = false
                         end
                     end
                 end
@@ -6125,7 +6121,7 @@ cam = workspace.CurrentCamera
 function LoadIslandByFakePoint(V)
 	local N = Instance.new("Part")
 	N.Transparency = 1
-	N.CanCollide = true
+	N.CanCollide = false
 	N.Anchored = true
 	N.Size = Vector3.new(0, 0, 0)
 	N.CFrame = CFrame.new(V:GetPivot().Position)
@@ -7129,30 +7125,7 @@ local function m(E, l, Q)
 	return ok and result == true
 end
 getgenv().UseFruitM1 = function(g, E)
-	-- Garante que fruta está equipada e clica
-	pcall(function()
-		local char = t.Character
-		local tool = char and char:FindFirstChildOfClass("Tool")
-		if not tool or not tool:FindFirstChild("RemoteFunction") then
-			-- Tenta equipar fruta do inventário
-			for _, it in ipairs(t.Backpack:GetChildren()) do
-				if it:IsA("Tool") and it:FindFirstChild("RemoteFunction") then
-					char:FindFirstChildOfClass("Humanoid"):EquipTool(it)
-					break
-				end
-			end
-		end
-	end)
-	local ok = m(g, E, false)
-	-- Fallback: click virtual se não disparou
-	if not ok then
-		pcall(function()
-			game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,true,game,0)
-			task.wait(0.05)
-			game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,false,game,0)
-		end)
-	end
-	return ok
+	return m(g, E, false)
 end
 getgenv().UseFruitM1Boat = function(g, E)
 	return m(g, E, true)
@@ -7253,13 +7226,6 @@ function M1TurboStep()
 	if getgenv().M1Turbo == false then
 		return
 	end
-	-- Fix click geral: garante que Humanoid está em estado de ataque
-	pcall(function()
-		local hum = t.Character and t.Character:FindFirstChildOfClass("Humanoid")
-		if hum then
-			hum:ChangeState(Enum.HumanoidStateType.Freefall)
-		end
-	end)
 	local tgt = getgenv().M1Target
 	if not tgt or os.clock() - (getgenv().M1TargetTime or 0) > 0.35 then
 		return
@@ -7294,30 +7260,10 @@ end)
 local m = L:WaitForChild("Modules")
 getgenv().SpamGunDragonStorm = function(E)
 	local Q = t.Character
-	local d = Q and (Q:FindFirstChild("Dragonstorm") or Q:FindFirstChild("DragonStorm") or t.Backpack:FindFirstChild("Dragonstorm") or t.Backpack:FindFirstChild("DragonStorm"))
-	if not d then
-		pcall(function()
-			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("LoadItem", "Dragonstorm")
-		end)
+	local d = Q and (Q:FindFirstChild("Dragonstorm"))
+	if not d or not E or not E.Position then
 		return
 	end
-	if d.Parent == t.Backpack then
-		Q:FindFirstChildOfClass("Humanoid"):EquipTool(d)
-		task.wait(0.15)
-		Q = t.Character
-		d = Q and (Q:FindFirstChild("Dragonstorm") or Q:FindFirstChild("DragonStorm"))
-	end
-	if not d or not E then
-		return
-	end
-	local pos = E.Position or E
-	if typeof(pos) ~= "Vector3" then
-		if E:IsA("BasePart") then pos = E.Position
-		elseif E:IsA("Model") then pos = E:GetPivot().Position
-		end
-	end
-	if not pos then return end
-	E = {Position = pos}
 	local reloading = false
 	pcall(function()
 		reloading = require(m.CombatUtil):IsGunReloading(d)
@@ -7517,18 +7463,8 @@ function ShootM1(E)
 end
 getgenv().SpamGunSkullGuitar = function(E)
 	local combatUtil, character = require(m.CombatUtil), t.Character
-	local gun = character and (character:FindFirstChild("Skull Guitar") or t.Backpack:FindFirstChild("Skull Guitar"))
-	if not gun then
-		pcall(function()
-			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("LoadItem", "Skull Guitar")
-		end)
-		return false
-	end
-	if gun.Parent == t.Backpack then
-		character:FindFirstChildOfClass("Humanoid"):EquipTool(gun)
-		task.wait(0.15)
-	end
-	if not E or not character then
+	local gun = character and character:FindFirstChild("Skull Guitar")
+	if not gun or not E or not character then
 		return false
 	end
 	-- Tyrant's destructible Tree is a Model; aim at a real BasePart instead
@@ -7612,7 +7548,7 @@ function sizepart(E)
 		local l, Q, d = next, E:GetDescendants()
 		for E, E in l, Q, d do
 			if (E:IsA("Part") or (E:IsA("MeshPart"))) and E.CanCollide then
-				E.CanCollide = true
+				E.CanCollide = false
 			end
 		end
 	end
@@ -7773,7 +7709,7 @@ function BringMob(Q)
 			local hrp = mob.HumanoidRootPart
 			if (hrp.Position - anchor.Position).Magnitude <= radius then
 				hrp.CFrame = anchor * CFrame.new(math.random(-3, 3), 0, math.random(-3, 3))
-				hrp.CanCollide = true
+				hrp.CanCollide = false
 				pcall(function()
 					mob.Humanoid.WalkSpeed = 0
 					mob.Humanoid.JumpPower = 0
@@ -14874,7 +14810,7 @@ end
 function NoclipBoat(P)
 	for Y, Y in ipairs(P:GetDescendants()) do
 		if (Y:IsA("BasePart") or (Y:IsA("Part")) or (Y:IsA("MeshPart"))) and Y.CanCollide then
-			Y.CanCollide = true
+			Y.CanCollide = false
 		end
 	end
 end
@@ -16160,7 +16096,7 @@ function AutoFindLeviathan()
 					local F, q, c = next, t.Character:GetDescendants()
 					for D, D in F, q, c do
 						if (D:IsA("MeshPart") or (D:IsA("Part"))) and D.CanCollide then
-							D.CanCollide = true
+							D.CanCollide = false
 						end
 					end
 				end
@@ -24549,7 +24485,7 @@ MISCPVPSection.CreateToggle(
 						local root = character and character:FindFirstChild("HumanoidRootPart")
 						local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 						if not root or not humanoid or humanoid.Sit then
-							platform.CanCollide = true
+							platform.CanCollide = false
 							return
 						end
 						-- Keep the platform centered beneath the player, with valid finite dimensions.
@@ -25483,7 +25419,7 @@ do
 			if Character and (ToggleNoclip() or Settings.Noclip) then
 				for _, part in ipairs(Character:GetDescendants()) do
 					if part:IsA("BasePart") then
-						part.CanCollide = true
+						part.CanCollide = false
 					end
 				end
 			end
