@@ -5676,65 +5676,8 @@ function ResetAirState()
 end
 
 
--- FAILSAFE: Se desativar qualquer toggle e ficar preso no ar, volta ao normal INSTANTANEO
-function ForceResetAirState()
-	pcall(function()
-		getgenv().noclip = false
-		local char = game:GetService("Players").LocalPlayer.Character
-		if not char then return end
-		local root = char:FindFirstChild("HumanoidRootPart")
-		local hum = char:FindFirstChildOfClass("Humanoid")
-		if root then
-			root.AssemblyLinearVelocity = Vector3.new(0,0,0)
-			root.AssemblyAngularVelocity = Vector3.new(0,0,0)
-			for _, v in ipairs(root:GetChildren()) do
-				if v:IsA("BodyVelocity") or v:IsA("BodyGyro") or v:IsA("BodyPosition") or v.Name == "FloatForce" then
-					v:Destroy()
-				end
-			end
-			for _, v in ipairs(char:GetDescendants()) do
-				if v:IsA("BasePart") then
-					v.CanCollide = true
-				end
-			end
-		end
-		if hum then
-			hum.PlatformStand = false
-			hum:ChangeState(Enum.HumanoidStateType.GettingUp)
-		end
-	end)
-end
-
--- Hook em TODAS as toggles: quando desativa, reseta na hora
-pcall(function()
-	local oldSave = SaveSettings
-	if oldSave then
-		_G.SaveSettings = function(name, value, ...)
-			pcall(oldSave, name, value, ...)
-			if value == false then
-				task.spawn(function()
-					task.wait(0.1)
-					ForceResetAirState()
-				end)
-			end
-		end
-	end
-end)
-
-task.spawn(function()
-	while task.wait(0.5) do
-		pcall(function()
-			local char = game:GetService("Players").LocalPlayer.Character
-			if not char then return end
-			local root = char:FindFirstChild("HumanoidRootPart")
-			if not root then return end
-			local anyActive = Settings["Raise Boat Manual Drive"] or Settings["Fly Boat"] or Settings["Start Farm"] or Settings["Auto Find Leviathan"] or Settings["Auto Sea Event"] or Settings["Teleport To Fruit"] or Settings["Auto Farm Level"] or Settings["Tween Boat To Frozen Dimension"] or Settings["Multi Find Leviathan"] or Settings["Auto Farm Bone"] or Settings["Auto Farm Ectoplasm"] or Settings["Auto Elite Hunter"] or Settings["Auto Factory"] or Settings["Auto Raid"] or Settings["Tween Safe if have Items"] or Settings["Auto Present Event"] or Settings["Auto Celestial Soldier"] or Settings["Auto Attack Dungeon"] or Settings["Auto Fishing"] or Settings["Auto Get Ghoul"] or Settings["Auto Get Cyborg"] or Settings["Auto Trial"] or Settings["Auto Pull Lever"] or Settings["Drive Boat To Tiki"] or Settings["Drive Boat To Hydra"] or Settings["Auto Fire Shoot Heart Leviathan"]
-			if not anyActive and getgenv().noclip then
-				ForceResetAirState()
-			end
-		end)
-	end
-end)
+-- Função de ar removida a pedido - tava dando attempt to call nil value
+-- Usa apenas o noclip padrão do script sem hook
 
 
 function SetNoClip(l)
@@ -11168,12 +11111,7 @@ task.spawn(function()
 					StackFarmOther = false
 					local dist = (handle.Position - root.Position).Magnitude
 					if dist <= 15 then
-						getgenv().noclip = false
-						-- Pega a fruta sem lag
-						pcall(function()
-							root.CFrame = handle.CFrame
-						end)
-						task.wait(0.15)
+						-- Chegou na fruta - pega sem TP
 						pcall(function()
 							firetouchinterest(root, handle, 0)
 							task.wait(0.1)
@@ -11194,20 +11132,13 @@ task.spawn(function()
 						-- Limpa cache pra procurar próxima fruta
 						getgenv().__CachedFruit = nil
 						getgenv().__LastFruitScan = 0
-						-- NÃO dá return, continua procurando próxima fruta
 					else
-						-- Vai até a fruta mesmo se estiver longe - SEM LAG
-						-- Se muito longe, teleporta direto em etapas
-						if dist > 1500 then
-							-- Teleporta direto pra perto da fruta (sem tween lento)
-							pcall(function()
-								getgenv().noclip = true
-								root.CFrame = handle.CFrame * CFrame.new(0, 10, 0)
-							end)
-							task.wait(0.3)
-						else
-							toTarget(handle.CFrame * CFrame.new(0, 3, 0))
-						end
+						-- Vai até a fruta SEM TP - usando tween mesmo de longe
+						pcall(function()
+							getgenv().noclip = true
+						end)
+						-- Sempre vai andando/tween, nunca teleporta direto
+						toTarget(handle.CFrame * CFrame.new(0, 5, 0))
 					end
 				else
 					-- Nenhuma fruta encontrada, espera um pouco
