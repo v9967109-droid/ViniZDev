@@ -5813,7 +5813,7 @@ do
                 if Character then
                     for _, Part in ipairs(Character:GetDescendants()) do
                         if Part:IsA("BasePart") then
-                            Part.CanCollide = false
+                            Part.CanCollide = true
                         end
                     end
                 end
@@ -6125,7 +6125,7 @@ cam = workspace.CurrentCamera
 function LoadIslandByFakePoint(V)
 	local N = Instance.new("Part")
 	N.Transparency = 1
-	N.CanCollide = false
+	N.CanCollide = true
 	N.Anchored = true
 	N.Size = Vector3.new(0, 0, 0)
 	N.CFrame = CFrame.new(V:GetPivot().Position)
@@ -7612,7 +7612,7 @@ function sizepart(E)
 		local l, Q, d = next, E:GetDescendants()
 		for E, E in l, Q, d do
 			if (E:IsA("Part") or (E:IsA("MeshPart"))) and E.CanCollide then
-				E.CanCollide = false
+				E.CanCollide = true
 			end
 		end
 	end
@@ -7773,7 +7773,7 @@ function BringMob(Q)
 			local hrp = mob.HumanoidRootPart
 			if (hrp.Position - anchor.Position).Magnitude <= radius then
 				hrp.CFrame = anchor * CFrame.new(math.random(-3, 3), 0, math.random(-3, 3))
-				hrp.CanCollide = false
+				hrp.CanCollide = true
 				pcall(function()
 					mob.Humanoid.WalkSpeed = 0
 					mob.Humanoid.JumpPower = 0
@@ -14874,7 +14874,7 @@ end
 function NoclipBoat(P)
 	for Y, Y in ipairs(P:GetDescendants()) do
 		if (Y:IsA("BasePart") or (Y:IsA("Part")) or (Y:IsA("MeshPart"))) and Y.CanCollide then
-			Y.CanCollide = false
+			Y.CanCollide = true
 		end
 	end
 end
@@ -16160,7 +16160,7 @@ function AutoFindLeviathan()
 					local F, q, c = next, t.Character:GetDescendants()
 					for D, D in F, q, c do
 						if (D:IsA("MeshPart") or (D:IsA("Part"))) and D.CanCollide then
-							D.CanCollide = false
+							D.CanCollide = true
 						end
 					end
 				end
@@ -24549,7 +24549,7 @@ MISCPVPSection.CreateToggle(
 						local root = character and character:FindFirstChild("HumanoidRootPart")
 						local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 						if not root or not humanoid or humanoid.Sit then
-							platform.CanCollide = false
+							platform.CanCollide = true
 							return
 						end
 						-- Keep the platform centered beneath the player, with valid finite dimensions.
@@ -25483,7 +25483,7 @@ do
 			if Character and (ToggleNoclip() or Settings.Noclip) then
 				for _, part in ipairs(Character:GetDescendants()) do
 					if part:IsA("BasePart") then
-						part.CanCollide = false
+						part.CanCollide = true
 					end
 				end
 			end
