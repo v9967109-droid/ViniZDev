@@ -70,6 +70,41 @@ do
 	-- compatibilidade: o fim do script ainda chama isto, mas a tela já terminou.
 	getgenv().NexoraLoadingFinish = function() end
 end
+-- Registro de erros (diagnóstico): guarda erros que o pcall engole e erros do console,
+-- para descobrir por que uma toggle não faz nada. Botão "Copy Error Log" em Settings.
+do
+	local env = getgenv()
+	if not env.__NexoraPcallHooked then
+		env.__NexoraPcallHooked = true
+		env.NexoraErrors = {}
+		local seen, count = {}, 0
+		local rawPcall = pcall
+		local function log(prefix, err)
+			err = tostring(err)
+			if seen[err] or count >= 80 then return end
+			seen[err] = true
+			count = count + 1
+			table.insert(env.NexoraErrors, os.date("%H:%M:%S") .. " " .. prefix .. err)
+			rawPcall(function() if writefile then writefile("NexoraHub_errors.txt", table.concat(env.NexoraErrors, "\n")) end end)
+		end
+		local function pass(ok, ...)
+			if not ok then log("", (...)) end
+			return ok, ...
+		end
+		pcall = function(fn, ...) return pass(rawPcall(fn, ...)) end
+		rawPcall(function()
+			game:GetService("LogService").MessageOut:Connect(function(msg, kind)
+				if kind == Enum.MessageType.MessageError and string.find(msg, ":%d+:") then log("[console] ", msg) end
+			end)
+		end)
+		env.NexoraDumpErrors = function()
+			local txt = table.concat(env.NexoraErrors, "\n")
+			rawPcall(function() if setclipboard then setclipboard(txt) end end)
+			return txt
+		end
+	end
+end
+
 AutoFarmLevel = true
 
 function BuildSchema()
@@ -1951,12 +1986,16 @@ function Nexora.CreateMain(config)
         ColorSequenceKeypoint.new(1, Color3.fromRGB(17, 12, 5)),
     })}, shell)
     local scale = make("UIScale", {Scale = 1}, shell)
-    local function resize()
+    local function fitScale()
         local cam = workspace.CurrentCamera
         if cam then
             local v = cam.ViewportSize
-            scale.Scale = math.clamp(math.min((v.X-20)/math.max(1, shell.Size.X.Offset), (v.Y-20)/math.max(1, shell.Size.Y.Offset)), .38, 1)
+            return math.clamp(math.min((v.X-20)/math.max(1, shell.Size.X.Offset), (v.Y-20)/math.max(1, shell.Size.Y.Offset)), .38, 1)
         end
+        return 1
+    end
+    local function resize()
+        scale.Scale = fitScale()
     end
     resize()
     if workspace.CurrentCamera then workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(resize) end
@@ -2064,30 +2103,56 @@ function Nexora.CreateMain(config)
     local function hideWindow()
         if playClose then playClose() else shell.Visible = false end
     end
-    local closing = false
+    -- Abrir/fechar: sempre parte da escala "encaixada" (fitScale) e da posição de repouso,
+    -- e cancela a animação anterior, para a janela não ir encolhendo a cada abre/fecha.
+    local animToken, animating, isClosing, animTweens = 0, false, false, {}
+    local restPos = shell.Position
+    local function stopAnim()
+        for _, tw in ipairs(animTweens) do pcall(function() tw:Cancel() end) end
+        animTweens = {}
+    end
     local function playOpen()
-        closing = false
-        local cur = shell.Position
-        local base = scale.Scale
+        animToken = animToken + 1
+        local token = animToken
+        stopAnim()
+        isClosing = false
+        if not animating then restPos = shell.Position end
+        animating = true
+        local base = fitScale()
         shell.Visible = true
-        shell.Position = cur + UDim2.new(0,0,0,22)
+        shell.Position = restPos + UDim2.new(0,0,0,22)
         scale.Scale = base * 0.93
         sfxPlay("open")
-        TweenService:Create(shell, TweenInfo.new(.34, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position=cur}):Play()
-        TweenService:Create(scale, TweenInfo.new(.34, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale=base}):Play()
+        local t1 = TweenService:Create(shell, TweenInfo.new(.34, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position=restPos})
+        local t2 = TweenService:Create(scale, TweenInfo.new(.34, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale=base})
+        animTweens = { t1, t2 }
+        t1:Play(); t2:Play()
+        t1.Completed:Connect(function()
+            if token ~= animToken then return end
+            animating = false
+            shell.Position = restPos
+            scale.Scale = fitScale()
+        end)
     end
     playClose = function()
-        if closing or not shell.Visible then return end
-        closing = true
-        local cur = shell.Position
-        local base = scale.Scale
+        if not shell.Visible or isClosing then return end
+        animToken = animToken + 1
+        local token = animToken
+        stopAnim()
+        if not animating then restPos = shell.Position end
+        animating, isClosing = true, true
+        local base = fitScale()
         sfxPlay("close")
-        TweenService:Create(scale, TweenInfo.new(.2, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {Scale=base * 0.93}):Play()
-        local tw = TweenService:Create(shell, TweenInfo.new(.2, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {Position=cur + UDim2.new(0,0,0,18)})
-        tw:Play()
-        tw.Completed:Connect(function()
-            if closing then shell.Visible = false; shell.Position = cur; scale.Scale = base end
-            closing = false
+        local t1 = TweenService:Create(shell, TweenInfo.new(.2, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {Position=restPos + UDim2.new(0,0,0,18)})
+        local t2 = TweenService:Create(scale, TweenInfo.new(.2, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {Scale=base * 0.93})
+        animTweens = { t1, t2 }
+        t1:Play(); t2:Play()
+        t1.Completed:Connect(function()
+            if token ~= animToken then return end
+            shell.Visible = false
+            shell.Position = restPos
+            scale.Scale = fitScale()
+            animating, isClosing = false, false
         end)
     end
     -- O mesmo botão flutuante fica sempre visível e alterna abrir/fechar.
@@ -7122,7 +7187,7 @@ function EquipOnlyIfNeeded(toolName, interval)
 end
 function DragonstormPhysicalClick(force)
 	local now = os.clock()
-	if not force and now - (getgenv().__DSClickLast or 0) < 2 then
+	if not force and now - (getgenv().__DSClickLast or 0) < (getgenv().DSClickInterval or 0.5) then
 		return false
 	end
 	getgenv().__DSClickLast = now
@@ -7141,6 +7206,17 @@ function DragonstormPhysicalClick(force)
 			VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
 			task.wait(0.05)
 			VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
+			-- Celular: o clique de mouse não vale, então manda também um toque (fora da barra do topo) e Activate na tool.
+			pcall(function()
+				local tx, ty = x, math.max(64, math.floor(vp.Y * 0.12))
+				VIM:SendTouchEvent(1, 0, tx, ty)
+				task.wait(0.04)
+				VIM:SendTouchEvent(1, 2, tx, ty)
+			end)
+			pcall(function()
+				local tool = t.Character and t.Character:FindFirstChild("Dragonstorm")
+				if tool then tool:Activate() end
+			end)
 			pcall(function()
 				local VU = game:GetService("VirtualUser")
 				VU:CaptureController()
@@ -7199,9 +7275,8 @@ function ShootM1(E)
 
 
 	if gunName == "Skull Guitar" then
-		local remote = gun:FindFirstChild("RemoteEvent")
-		if remote then
-			remote:FireServer("TAP", targetPos)
+		if getgenv().SpamGunSkullGuitar then
+			getgenv().SpamGunSkullGuitar(targetPart or targetPos)
 		end
 		return true
 	end
@@ -7290,12 +7365,11 @@ getgenv().SpamGunSkullGuitar = function(E)
 	end)
 	-- Skull Guitar's TAP remote is retained as a fallback for game versions
 	-- that route its basic shot through the tool remote.
-	if not sent then
-		pcall(function()
-			local remote = gun:FindFirstChild("RemoteEvent")
-			if remote then remote:FireServer("TAP", targetPosition); sent = true end
-		end)
-	end
+	-- O TAP é o disparo próprio da Skull Guitar: sempre enviado, junto com o tiro normal.
+	pcall(function()
+		local remote = gun:FindFirstChild("RemoteEvent")
+		if remote then remote:FireServer("TAP", targetPosition); sent = true end
+	end)
 	return sent
 end
 local function m(E, l)
@@ -24541,6 +24615,10 @@ a.CreateToggle(
 )
 a.CreateToggle({ Title = "Auto Load Script", Desc = nil, Default = Settings["Auto Load Script"] or false }, function(T)
 	SaveSettings("Auto Load Script", T)
+end)
+a.CreateButton({ Title = "Copy Error Log" }, function()
+	local txt = getgenv().NexoraDumpErrors and getgenv().NexoraDumpErrors() or ""
+	pcall(function() A.CreateNoti({ Title = "Nexora Hub", Desc = (txt == "") and "Nenhum erro registrado ainda" or "Erros copiados para a área de transferência", ShowTime = 4 }) end)
 end)
 a.CreateToggle({ Title = "Boost Fps", Desc = nil, Default = Settings["Boost Fps"] or false }, function(T)
 	if T then
