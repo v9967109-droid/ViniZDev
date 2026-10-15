@@ -12564,44 +12564,81 @@ function AutoDragonHunterQuestLoop()
             return
         end
 
-        -- Se a missão completou, SEMPRE volta no NPC pra claimar e pegar outra (independente de ter 15)
-        -- Detecta notificação de missão completa ou quest sem progresso
+        -- V8 FIX: Sempre que completar, claim + já pede outra, até 15 Blaze Ember
         local shouldClaim = false
         pcall(function()
-            local check = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({Context="Check"})
+            local net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter")
+            local check = net:InvokeServer({Context="Check"})
             if check then
-                -- Se tem progresso completo ou Text vazio, precisa claimar
-                if check.Progress and check.Goal and check.Progress >= check.Goal then
-                    shouldClaim = true
+                if type(check)=="table" then
+                    if check.Progress and check.Goal and check.Progress >= check.Goal then shouldClaim=true end
+                    if check.Completed or check.ReadyToClaim or check.CanClaim or check.Finished then shouldClaim=true end
+                    -- Se Text vazio ou não tem quest mas tinha antes
+                    if not check.Text or check.Text=="" then shouldClaim=true end
                 end
-                if check.Completed or check.ReadyToClaim then
-                    shouldClaim = true
+            end
+            -- Também checa se o player não tem mais mob da quest vivo e QuestHunterDragon ainda setado
+            if getgenv().QuestHunterDragon and getgenv().QuestHunterDragon~="" then
+                -- Se não achou mob da quest perto, pode ser que já completou
+                local mobName = string.match(getgenv().QuestHunterDragon, "Defeat %d+ (.+)")
+                if mobName then
+                    local stillExists = false
+                    pcall(function()
+                        for _,v in pairs(game.Workspace.Enemies:GetChildren()) do
+                            if v.Name:find(mobName) then stillExists=true end
+                        end
+                    end)
+                    -- Se não existe e o Check falhou, ainda tenta claim
                 end
             end
         end)
 
-        if shouldClaim or CheckCountItem("Blaze Ember", 15) then
+        if shouldClaim then
             pcall(function()
-                if distToNPC > 15 then
+                if distToNPC > 20 then
                     toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0,4,4))
                 else
-                    -- Tenta todos os Claims possíveis
+                    for _, ctx in ipairs({"ClaimReward","Claim","Complete","CompleteQuest","ClaimQuest","Finish","Collect"}) do
+                        pcall(function()
+                            game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({Context=ctx})
+                        end)
+                    end
+                    task.wait(1.2)
+                    getgenv().QuestHunterDragon = nil
+                    -- Força pedir nova missão imediatamente
+                    pcall(function()
+                        local net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter")
+                        local req = net:InvokeServer({Context="RequestQuest"})
+                        if req then
+                            if type(req)=="table" and req.Text then
+                                getgenv().QuestHunterDragon = req.Text
+                            elseif type(req)=="string" then
+                                getgenv().QuestHunterDragon = req
+                            else
+                                getgenv().QuestHunterDragon = nil
+                            end
+                        else
+                            getgenv().QuestHunterDragon = nil
+                        end
+                    end)
+                    task.wait(0.5)
+                end
+            end)
+            return
+        end
+
+        -- Se já tem 15 Ember, claim final
+        if CheckCountItem("Blaze Ember", 15) then
+            pcall(function()
+                if distToNPC > 20 then
+                    toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0,4,4))
+                else
                     for _, ctx in ipairs({"ClaimReward","Claim","Complete","CompleteQuest","ClaimQuest","Finish"}) do
                         pcall(function()
                             game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({Context=ctx})
                         end)
                     end
-                    task.wait(1)
                     getgenv().QuestHunterDragon = nil
-                    -- Força pedir nova missão na próxima volta
-                    pcall(function()
-                        local req = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({Context="RequestQuest"})
-                        if req and req.Text then
-                            getgenv().QuestHunterDragon = req.Text
-                        else
-                            getgenv().QuestHunterDragon = nil
-                        end
-                    end)
                 end
             end)
             return
@@ -14939,6 +14976,11 @@ do
 		end
 		-- NÃO INTERFERIR NO AUTO FIND LEVIATHAN
 		if Settings["Auto Find Leviathan"] or Settings["Multi Find Leviathan"] or Settings["Auto Start Leviathan"] or Settings["Teleport Frozen Dimension"] or Settings["Tween Boat To Frozen Dimension"] or Settings["Auto Fire Shoot Heart Leviathan"] then return end
+		-- V8: Auto Sea Event e Auto Multi Sea Event funcionam independente do Raise Boat Manual Drive
+		if Settings["Auto Sea Event"] or Settings["Auto Multi Sea Event"] then
+			-- Não aplica raise quando está em Sea Event, deixa o Sea Event controlar
+			-- Mas não bloqueia o Sea Event
+		end
 		pcall(function()
 			local char = t.Character
 			local hum = char and char:FindFirstChildOfClass("Humanoid")
@@ -16332,7 +16374,24 @@ FarmingMultiSeaEvent.Section.CreateToggle(
 								local stillSeated = areSelectedPlayersSeatedInBoat(boat)
 								local charNow = t.Character
 								local humNow = charNow and charNow:FindFirstChildOfClass("Humanoid")
-								if not stillSeated or not humNow or humNow.SeatPart ~= seat then movementValid = false; break end
+								-- V8 FIX: Se player saiu do SEAT, espera ele sair e voltar, não quebra
+								if not stillSeated or not humNow or humNow.SeatPart ~= seat then
+									-- Pausa o barco
+									pcall(function() VIM:SendKeyEvent(false, Enum.KeyCode.W, false, game) end)
+									-- Espera o player sair totalmente do SEAT (SeatPart == nil) se ainda estiver no barco mas levantado
+									repeat
+										task.wait(0.5)
+										stillSeated = areSelectedPlayersSeatedInBoat(boat)
+										local c = t.Character
+										local h = c and c:FindFirstChildOfClass("Humanoid")
+										-- Se o player da lista saiu do SEAT, espera ele voltar
+										if not stillSeated then
+											pcall(function() A.CreateNoti({ Title = "Nexora Hub", Desc = "Player saiu do SEAT, esperando voltar...", ShowTime = 3 }) end)
+										end
+									until stillSeated and h and h.SeatPart == seat and Settings["Auto Multi Sea Event"] and getgenv().MultiSeaEventRunId == runId
+									-- Voltou, continua andando
+									pcall(function() VIM:SendKeyEvent(true, Enum.KeyCode.W, false, game) end)
+								end
 								task.wait(0.1)
 							end
 							pcall(function() VIM:SendKeyEvent(false, Enum.KeyCode.W, false, game) end)
