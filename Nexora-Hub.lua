@@ -1863,14 +1863,15 @@ local oldFloat = parentGui:FindFirstChild("NexoraFloat")
 if oldFloat then oldFloat:Destroy() end
 
 local C = {
-    bg = Color3.fromRGB(5, 5, 8),
-    panel = Color3.fromRGB(12, 12, 17),
-    panel2 = Color3.fromRGB(22, 21, 26),
-    line = Color3.fromRGB(52, 44, 32),
+    -- Estilo Maru Hub (claro) mas mantendo cores Nexora (dourado)
+    bg = Color3.fromRGB(235, 236, 240),
+    panel = Color3.fromRGB(255, 255, 255),
+    panel2 = Color3.fromRGB(240, 241, 245),
+    line = Color3.fromRGB(220, 222, 228),
     gold = Color3.fromRGB(255, 190, 55),
-    goldLight = Color3.fromRGB(255, 224, 125),
-    text = Color3.fromRGB(248, 246, 240),
-    muted = Color3.fromRGB(165, 160, 149),
+    goldLight = Color3.fromRGB(255, 200, 80),
+    text = Color3.fromRGB(35, 36, 42),
+    muted = Color3.fromRGB(120, 122, 130),
     green = Color3.fromRGB(78, 190, 124),
 }
 
@@ -1985,9 +1986,9 @@ function Nexora.CreateMain(config)
     local shell = make("Frame", {Name="Window", AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.new(0, persistedW, 0, persistedH), BackgroundColor3=C.bg, BorderSizePixel=0}, gui)
     corner(shell, 14); stroke(shell, Color3.fromRGB(255,255,255), 0.88)
     make("UIGradient", {Rotation = 135, Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(13, 12, 16)),
-        ColorSequenceKeypoint.new(0.52, Color3.fromRGB(5, 5, 8)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(17, 12, 5)),
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(0.52, Color3.fromRGB(248, 248, 250)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(240, 241, 245)),
     })}, shell)
     local scale = make("UIScale", {Scale = 1}, shell)
     local function fitScale()
@@ -2006,7 +2007,7 @@ function Nexora.CreateMain(config)
 
     local HEADER_H, SIDEBAR_W = 64, 190
     local GOLD, GOLD_L, GRAY = Color3.fromRGB(255,190,55), Color3.fromRGB(255,224,125), Color3.fromRGB(165,165,174)
-    local top = make("Frame", {Size=UDim2.new(1,0,0,HEADER_H), BackgroundColor3=Color3.fromRGB(10,10,14), BorderSizePixel=0}, shell)
+    local top = make("Frame", {Size=UDim2.new(1,0,0,HEADER_H), BackgroundColor3=Color3.fromRGB(255,255,255), BorderSizePixel=0}, shell)
     corner(top, 12)
     make("UIGradient", {Rotation=0, Color=ColorSequence.new({
         ColorSequenceKeypoint.new(0, Color3.fromRGB(26,20,10)),
@@ -2014,7 +2015,7 @@ function Nexora.CreateMain(config)
         ColorSequenceKeypoint.new(1, Color3.fromRGB(8,8,11)),
     })}, top)
     -- cobre os cantos de baixo do header e desenha a linha dourada
-    make("Frame", {Position=UDim2.new(0,0,1,-12), Size=UDim2.new(1,0,0,12), BackgroundColor3=Color3.fromRGB(10,10,14), BorderSizePixel=0}, top)
+    make("Frame", {Position=UDim2.new(0,0,1,-12), Size=UDim2.new(1,0,0,12), BackgroundColor3=Color3.fromRGB(255,255,255), BorderSizePixel=0}, top)
     do
         local hl = make("Frame", {Position=UDim2.new(0,0,1,-1), Size=UDim2.new(1,0,0,1), BackgroundColor3=GOLD, BackgroundTransparency=0, BorderSizePixel=0}, top)
         local hg = make("UIGradient", {Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,1),NumberSequenceKeypoint.new(0.5,0.1),NumberSequenceKeypoint.new(1,1)}), Offset=Vector2.new(-1,0)}, hl)
@@ -2419,10 +2420,10 @@ local fScale = make("UIScale", {Scale=1}, reopen)
                 b.Size=UDim2.new(0,44,0,24); b.Position=UDim2.new(1,-44,.5,-12)
                 local bc=b:FindFirstChildOfClass("UICorner"); if bc then bc.CornerRadius=UDim.new(0,12) end
                 local bs=make("UIStroke",{Color=C.line,Thickness=1,Transparency=0.2},b)
-                local knob=make("Frame",{Size=UDim2.new(0,18,0,18),Position=UDim2.new(0,3,.5,-9),BackgroundColor3=Color3.fromRGB(165,160,149),BorderSizePixel=0,ZIndex=2},b); corner(knob,9)
+                local knob=make("Frame",{Size=UDim2.new(0,18,0,18),Position=UDim2.new(0,3,.5,-9),BackgroundColor3=Color3.fromRGB(255,255,255),BorderSizePixel=0,ZIndex=2},b); corner(knob,9)
                 local function paint(animate)
-                    local goal={Position=val and UDim2.new(1,-21,.5,-9) or UDim2.new(0,3,.5,-9), BackgroundColor3=val and Color3.fromRGB(255,255,255) or Color3.fromRGB(165,160,149)}
-                    local trackColor=val and C.gold or Color3.fromRGB(22,21,26)
+                    local goal={Position=val and UDim2.new(1,-21,.5,-9) or UDim2.new(0,3,.5,-9), BackgroundColor3=val and Color3.fromRGB(255,255,255) or Color3.fromRGB(255,255,255)}
+                    local trackColor=val and C.gold or Color3.fromRGB(220,222,228)
                     bs.Color=val and C.goldLight or C.line
                     if animate then
                         TweenService:Create(knob,TweenInfo.new(.14),goal):Play()
