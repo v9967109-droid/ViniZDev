@@ -3179,6 +3179,54 @@ SettingSeaEventSection.CreateSlider(
 	function(l)
 		SaveSettings("Boat Height", l)
 	end
+)
+-- Sobe o barco (só no eixo Y) enquanto você está sentado nele. X/Z e a direção ficam livres,
+-- então a direção continua manual. Ao desligar a toggle o barco volta a descer sozinho.
+do
+	getgenv().__BoatRaiseGen = (getgenv().__BoatRaiseGen or 0) + 1
+	local gen = getgenv().__BoatRaiseGen
+	pcall(function() if getgenv().__BoatRaiseConn then getgenv().__BoatRaiseConn:Disconnect() end end)
+	getgenv().__BoatRaiseConn = game:GetService("RunService").Heartbeat:Connect(function()
+		if getgenv().__BoatRaiseGen ~= gen then return end
+		if not Settings["Raise Boat Manual Drive"] then
+			-- V13 FIX: Quando desativado, NÃO fica resetando todo frame (isso travava o player)
+			-- O reset já é feito uma vez no toggle callback. Aqui só retorna pra não interferir no sentar/and ar
+			return
+		end
+		-- V13: Raise Boat Manual Drive totalmente independente - não bloqueia nenhuma outra função de barco
+		-- Só trava o Y, mantendo X/Z livre, pode coexistir com Sea Event, Leviathan, Prehistoric, etc.
+		pcall(function()
+			local char = t.Character
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+			local seat = hum and hum.SeatPart
+			if not seat or not seat:IsA("VehicleSeat") then return end
+			local boat = seat:FindFirstAncestorOfClass("Model")
+			local boats = workspace:FindFirstChild("Boats")
+			if not boat or not boats or boat.Parent ~= boats then return end
+			-- Altura "normal" do barco na água, medida na primeira vez que o vemos.
+			local base = boat:GetAttribute("NexoraBaseY")
+			if not base then
+				base = (seat.Position.Y < 30) and seat.Position.Y or 8
+				boat:SetAttribute("NexoraBaseY", base)
+			end
+			local height = math.clamp(tonumber(Settings["Boat Height"]) or 175, 5, 175)
+			local targetY = base + height
+			local pivot = boat:GetPivot()
+			-- trava Y sem interferir na velocidade
+			if math.abs(pivot.Position.Y - targetY) > 0.05 then
+				local pos = pivot.Position
+				local rot = pivot - pos
+				boat:PivotTo(CFrame.new(pos.X, targetY, pos.Z) * rot)
+			end
+			-- só zera Y, mantém X/Z (velocidade do barco)
+			local v = seat.AssemblyLinearVelocity
+			if math.abs(v.Y) > 0.01 then
+				seat.AssemblyLinearVelocity = Vector3.new(v.X, 0, v.Z)
+			end
+		end)
+	end)
+end
+
 SectionServer.CreateToggle({ Title = "Spam Join", Desc = nil, Default = Settings["Spam Join"] or false }, function(f)
 	SaveSettings("Spam Join", f)
 end)
@@ -4576,52 +4624,6 @@ function DetectPrehistoricIsland()
 		end
 	end
 end
-do
-	getgenv().__BoatRaiseGen = (getgenv().__BoatRaiseGen or 0) + 1
-	local gen = getgenv().__BoatRaiseGen
-	pcall(function() if getgenv().__BoatRaiseConn then getgenv().__BoatRaiseConn:Disconnect() end end)
-	getgenv().__BoatRaiseConn = game:GetService("RunService").Heartbeat:Connect(function()
-		if getgenv().__BoatRaiseGen ~= gen then return end
-		if not Settings["Raise Boat Manual Drive"] then
-			-- V13 FIX: Quando desativado, NÃO fica resetando todo frame (isso travava o player)
-			-- O reset já é feito uma vez no toggle callback. Aqui só retorna pra não interferir no sentar/and ar
-			return
-		end
-		-- V13: Raise Boat Manual Drive totalmente independente - não bloqueia nenhuma outra função de barco
-		-- Só trava o Y, mantendo X/Z livre, pode coexistir com Sea Event, Leviathan, Prehistoric, etc.
-		pcall(function()
-			local char = t.Character
-			local hum = char and char:FindFirstChildOfClass("Humanoid")
-			local seat = hum and hum.SeatPart
-			if not seat or not seat:IsA("VehicleSeat") then return end
-			local boat = seat:FindFirstAncestorOfClass("Model")
-			local boats = workspace:FindFirstChild("Boats")
-			if not boat or not boats or boat.Parent ~= boats then return end
-			-- Altura "normal" do barco na água, medida na primeira vez que o vemos.
-			local base = boat:GetAttribute("NexoraBaseY")
-			if not base then
-				base = (seat.Position.Y < 30) and seat.Position.Y or 8
-				boat:SetAttribute("NexoraBaseY", base)
-			end
-			local height = math.clamp(tonumber(Settings["Boat Height"]) or 175, 5, 175)
-			local targetY = base + height
-			local pivot = boat:GetPivot()
-			-- trava Y sem interferir na velocidade
-			if math.abs(pivot.Position.Y - targetY) > 0.05 then
-				local pos = pivot.Position
-				local rot = pivot - pos
-				boat:PivotTo(CFrame.new(pos.X, targetY, pos.Z) * rot)
-			end
-			-- só zera Y, mantém X/Z (velocidade do barco)
-			local v = seat.AssemblyLinearVelocity
-			if math.abs(v.Y) > 0.01 then
-				seat.AssemblyLinearVelocity = Vector3.new(v.X, 0, v.Z)
-			end
-		end)
-	end)
-end
-
-
 function SetNoClip(l)
 	getgenv().noclip = l
 	local Q = t.Character
