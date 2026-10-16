@@ -5747,21 +5747,7 @@ function ForceResetAirState()
 	end)
 end
 
--- Hook em TODAS as toggles: quando desativa, reseta na hora
-pcall(function()
-	local oldSave = SaveSettings
-	if oldSave then
-		_G.SaveSettings = function(name, value, ...)
-			pcall(oldSave, name, value, ...)
-			if value == false then
-				task.spawn(function()
-					task.wait(0.1)
-					ForceResetAirState()
-				end)
-			end
-		end
-	end
-end)
+-- V17: Hook removido - tava causando travada no farm ao desligar Auto Quest
 
 task.spawn(function()
 	while task.wait(0.5) do
@@ -5770,7 +5756,8 @@ task.spawn(function()
 			if not char then return end
 			local root = char:FindFirstChild("HumanoidRootPart")
 			if not root then return end
-			local anyActive = Settings["Raise Boat Manual Drive"] or Settings["Fly Boat"] or Settings["Start Farm"] or Settings["Auto Find Leviathan"] or Settings["Auto Find Prehistoric Island"] or Settings["Auto Multi Find Prehistoric Island"] or Settings["Auto Event Prehistoric Island"] or Settings["Auto Sea Event"] or Settings["Teleport To Fruit"] or Settings["Auto Farm Level"] or Settings["Tween Boat To Frozen Dimension"] or Settings["Multi Find Leviathan"] or Settings["Auto Farm Bone"] or Settings["Auto Farm Ectoplasm"] or Settings["Auto Elite Hunter"] or Settings["Auto Factory"] or Settings["Auto Raid"] or Settings["Tween Safe if have Items"] or Settings["Auto Present Event"] or Settings["Auto Celestial Soldier"] or Settings["Auto Attack Dungeon"] or Settings["Auto Fishing"] or Settings["Auto Get Ghoul"] or Settings["Auto Get Cyborg"] or Settings["Auto Trial"] or Settings["Auto Pull Lever"] or Settings["Drive Boat To Tiki"] or Settings["Drive Boat To Hydra"] or Settings["Auto Fire Shoot Heart Leviathan"]
+			-- V17: Lista completa de farms pra não resetar quando farm ativo
+			local anyActive = Settings["Raise Boat Manual Drive"] or Settings["Fly Boat"] or Settings["Start Farm"] or Settings["Auto Find Leviathan"] or Settings["Auto Find Prehistoric Island"] or Settings["Auto Multi Find Prehistoric Island"] or Settings["Auto Event Prehistoric Island"] or Settings["Auto Sea Event"] or Settings["Auto Multi Sea Event"] or Settings["Teleport To Fruit"] or Settings["Auto Farm Level"] or Settings["Auto Farm Bones"] or Settings["Auto Farm Katakuri"] or Settings["Auto Farm Tyrant of the Skies"] or Settings["Aura Farm"] or Settings["Tween Boat To Frozen Dimension"] or Settings["Multi Find Leviathan"] or Settings["Auto Farm Bone"] or Settings["Auto Farm Ectoplasm"] or Settings["Auto Elite Hunter"] or Settings["Auto Factory"] or Settings["Auto Raid"] or Settings["Tween Safe if have Items"] or Settings["Auto Present Event"] or Settings["Auto Celestial Soldier"] or Settings["Auto Attack Dungeon"] or Settings["Auto Fishing"] or Settings["Auto Get Ghoul"] or Settings["Auto Get Cyborg"] or Settings["Auto Trial"] or Settings["Auto Pull Lever"] or Settings["Drive Boat To Tiki"] or Settings["Drive Boat To Hydra"] or Settings["Auto Fire Shoot Heart Leviathan"]
 			if not anyActive and getgenv().noclip then
 				ForceResetAirState()
 			end
