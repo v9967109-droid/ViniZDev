@@ -8330,19 +8330,34 @@ do
 				local isActive = false
 				pcall(function() isActive = AQIsQuestActive() end)
 
-				-- Se tem missão ativa, desliga Auto Quest pra não ficar travado no NPC
+				-- V19 FIX: Se tem missão ativa, desliga Auto Quest e espera completar DE FATO
+				-- Antes tava pegando nova missão depois de matar uns NPCs, sem esperar completar
 				if isActive then
 					if Settings["Auto Quest [Katakuri/Bone/Tyrant]"] then
 						SetAQ(false)
 					end
-					-- Espera missão acabar
+					-- Espera missão acabar de verdade (não só sumir da tela)
+					local questCompleted = false
 					while getgenv().__AQToggleCycleGeneration == cycleGen and Settings[sel] do
-						pcall(function() isActive = AQIsQuestActive() end)
-						if not isActive then break end
+						pcall(function() 
+							isActive = AQIsQuestActive()
+							-- Verifica se missão completou (tarefas zeradas)
+							if not isActive then
+								questCompleted = true
+							else
+								local remaining = nil
+								pcall(function() remaining = AQQuestRemaining() end)
+								if remaining == 0 then
+									questCompleted = true
+									isActive = false
+								end
+							end
+						end)
+						if not isActive and questCompleted then break end
 						task.wait(1)
 					end
-					-- Missão acabou, espera 1.5s e religa
-					task.wait(1.5)
+					-- Missão completou de fato, espera 3s antes de pegar próxima (evita spam)
+					task.wait(3)
 					if getgenv().__AQToggleCycleGeneration == cycleGen and Settings[sel] then
 						SetAQ(true)
 					end
@@ -9231,26 +9246,37 @@ function FarmMethod()
 		if not bossUp then return end
 	end
 
-	local f = ""
+	local f
 	local QuestVisible = AQIsQuestActive()
-	-- Se tem missão ativa, pega o mob da missão ativa (evita ir pra ilha errada)
+	-- V19 FIX: Farmar TODOS os mobs da ilha, não só um tipo
+	-- Bones = todos do castelo, Katakuri = todos do mar de guloseimas, Tyrant = todos do Tiki, Level = mob do level
 	if QuestVisible then
+		-- Com missão ativa: prioriza o mob da missão, mas se não achar, usa lista completa da ilha
 		local okActive, activeMob = pcall(GetActiveFarmQuestMob)
 		if okActive and type(activeMob) == "string" and activeMob ~= "" then
-			f = activeMob
+			-- Verifica se activeMob tá na lista da ilha, se não, usa lista completa
+			if type(mobList) == "table" and table.find(mobList, activeMob) then
+				f = activeMob
+			else
+				-- Se missão é de um mob específico, farma só ele pra completar rápido
+				f = activeMob
+			end
 		else
-			f = type(mobList) == "table" and mobList[1] or mobList
+			f = mobList -- usa lista completa da ilha
 		end
 	else
-		-- Sem missão: usa o mob do método selecionado (não vai pra Tiki se tá no Bones)
-		f = type(mobList) == "table" and mobList[1] or mobList
+		-- Sem missão: usa lista completa da ilha (Bones = castelo inteiro, etc)
+		f = mobList
 		if selectedMethod == "Level Farm" then
 			local okL, info = pcall(GetLevelQuestInfo, t.Data.Level.Value)
-			if okL and type(info) == "table" and info.Mob then f = info.Mob end
+			if okL and type(info) == "table" and info.Mob then 
+				f = info.Mob -- Level farm usa mob do level
+			else
+				f = mobList
+			end
 		end
 	end
-	-- Garante que f é string válida do farm selecionado
-	if f == "" and type(mobList) == "table" then f = mobList[1] end
+	if not f or (type(f) == "string" and f == "") then f = mobList end
 
 	do
 		-- Quando a missão já foi aceita, usa o alvo exato da quest antes da lista
@@ -9261,7 +9287,7 @@ function FarmMethod()
 		-- definido pela quest ativa. Assim todos os métodos (Level, Bones,
 		-- Katakuri, Tyrant e Aura) seguem a mesma regra e, ao concluir a
 		-- missão, o fluxo volta automaticamente para TakeQuestLevel().
-		if not Settings["Farm Material"] and selectedMethod == "Farm Tyrant of the Skies" then
+		if not Settings["Farm Material"] and SelectedFarmMethod == "Farm Tyrant of the Skies" then
 			if CheckNameBoss("Tyrant of the Skies") then
 				V = CheckNameBoss("Tyrant of the Skies")
 				repeat
@@ -9328,7 +9354,7 @@ function FarmMethod()
 		end
 		if
 			not Settings["Farm Material"]
-			and selectedMethod == "Farm Katakuri"
+			and SelectedFarmMethod == "Farm Katakuri"
 			and not Settings["Ignore Attack Katakuri"]
 		then
 			if CheckNameBoss("Cake Prince") then
@@ -9592,26 +9618,14 @@ do
         lastLevelCheck = 0, lastKnownLevel = initialLevel, levelQuestPending = false
     }
 
-    -- Auto Farm Level: verifica a cada 2 segundos se o jogador subiu de nível.
-    -- Só libera uma nova missão de Level quando detectar aumento de nível.
+    -- V19 FIX: Auto Farm Level pega missão sempre, não só quando sobe de level
+    -- Antes só liberava missão quando detectava level up, por isso no 2800 não pegava
     local function CheckLevelUpForQuest(selectedFarm)
         if selectedFarm ~= "Auto Farm Level" then
             return true
         end
-        local now = tick()
-        if now - State.lastLevelCheck >= 2 then
-            State.lastLevelCheck = now
-            local currentLevel
-            pcall(function() currentLevel = tonumber(t.Data.Level.Value) end)
-            if currentLevel then
-                if currentLevel > (State.lastKnownLevel or currentLevel) then
-                    State.levelQuestPending = true
-                    AQLog("subiu de level: " .. tostring(State.lastKnownLevel) .. " -> " .. tostring(currentLevel) .. "; missão liberada")
-                end
-                State.lastKnownLevel = currentLevel
-            end
-        end
-        return State.levelQuestPending
+        -- Sempre libera missão de level, mesmo no max level (farma mobs da última ilha)
+        return true
     end
 
     -- Retorna nome da missão, id e posição do NPC da missão do farm selecionado.
