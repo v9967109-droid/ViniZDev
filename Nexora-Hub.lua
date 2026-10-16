@@ -8260,17 +8260,24 @@ SettingAutoFarmSection.CreateToggle(
 		SaveSettings("Auto Quest [Katakuri/Bone/Tyrant]", V)
 	end
 )
--- V25 AUTO QUEST DO ZERO - Pesquisado e refeito baseado em scripts funcionando
--- Pega missão, espera completar 8/8, pega outra - Level/Bones/Katakuri/Tyrant
--- Baseado em padrão de scripts que funcionam: checa GuideModule QuestData Task
+-- V29 ULTRA SIMPLES - NUNCA volta pro NPC sem completar 8/8
+-- Baseado no vídeo: missão fica 0/8 porque volta pro NPC e reseta
 do
-	getgenv().__AQToggleCycleGeneration = (getgenv().__AQToggleCycleGeneration or 0) + 300
-	getgenv().__AQGen = (getgenv().__AQGen or 0) + 300
+	getgenv().__AQToggleCycleGeneration = (getgenv().__AQToggleCycleGeneration or 0) + 1000
+	getgenv().__AQGen = (getgenv().__AQGen or 0) + 1000
+
+	-- Função simples pra saber se tem missão
+	local function HasQuest()
+		local ok, has = pcall(function()
+			return game.Players.LocalPlayer.Data.QuestData ~= nil
+		end)
+		return ok and has
+	end
 
 	local function GetQuestTargetSimple(selected)
 		if not selected or selected == "Aura Farm" or Settings["Farm Material"] then return nil end
 		if selected == "Auto Farm Level" then
-			local ok, info = pcall(GetLevelQuestInfo, t.Data.Level.Value)
+			local ok, info = pcall(GetLevelQuestInfo, game.Players.LocalPlayer.Data.Level.Value)
 			if ok and type(info) == "table" and info.Pos and info.QuestName then
 				local pos = typeof(info.Pos) == "CFrame" and info.Pos.Position or info.Pos
 				return tostring(info.QuestName), info.Id, pos
@@ -8297,30 +8304,26 @@ do
 	end
 
 	task.spawn(function()
-		local lastQuestTime = 0
-		while task.wait(0.5) do
+		local lastHadQuest = 0
+		while task.wait(1) do
 			pcall(function()
 				if not Settings["Auto Quest [Katakuri/Bone/Tyrant]"] then return end
 				local selected = GetSelectedIndividualFarm and GetSelectedIndividualFarm()
 				if not selected or selected == "Aura Farm" then return end
 
-				-- Se tem missão ativa, não pega outra
-				if AQIsQuestActive() then
-					lastQuestTime = tick()
-					return
+				if HasQuest() then
+					lastHadQuest = tick()
+					return -- TEM MISSÃO, NÃO VAI NO NPC
 				end
 
-				-- Sem missão: se tinha missão há menos de 5s, espera (evita pegar no meio)
-				if tick() - lastQuestTime < 5 then return end
-
-				local remaining = nil
-				pcall(function() remaining = AQQuestRemaining() end)
-				if remaining ~= nil and remaining > 0 then return end
+				-- Sem missão: só pega nova se faz mais de 6s que tinha missão (evita piscada)
+				if tick() - lastHadQuest < 6 then return end
 
 				local questName, questId, npcPos = GetQuestTargetSimple(selected)
 				if not questName or not npcPos then return end
 
-				local root = t.Character and t.Character:FindFirstChild("HumanoidRootPart")
+				local plr = game.Players.LocalPlayer
+				local root = plr and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
 				if not root then return end
 
 				if (root.Position - npcPos).Magnitude > 300 then
@@ -8330,17 +8333,17 @@ do
 
 				if (root.Position - npcPos).Magnitude <= 10 then
 					pcall(function()
-						CommF:InvokeServer("StartQuest", questName, questId)
+						game.ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", questName, questId)
 					end)
-					local deadline = tick() + 4
+					local deadline = tick() + 5
 					while tick() < deadline do
-						if AQIsQuestActive() then break end
+						if HasQuest() then break end
 						task.wait(0.3)
 					end
-					if AQIsQuestActive() then
-						lastQuestTime = tick()
+					if HasQuest() then
+						lastHadQuest = tick()
 						pcall(function() TweenManager.CancelCurrent() end)
-						task.wait(1.5)
+						task.wait(1)
 					end
 				else
 					toTarget(CFrame.new(npcPos) * CFrame.new(0, 4, 2))
@@ -9449,7 +9452,7 @@ function AQQuestRemaining()
     return total
 end
 
-function AQIsQuestActive()
+function AQIsQuestActive_OLD()
     local has = false
     pcall(function()
         has = DontQuest() == true
@@ -9542,9 +9545,7 @@ getgenv().__AQGen = (getgenv().__AQGen or 0) + 1
 getgenv().__AQReady, getgenv().__AQGiveUp = 0, nil
 
 -- O farm só espera quando o Auto Quest está ligado, tem alvo e ainda não há missão ativa.
-function AQNeedsQuest()
-    return false
-end
+function AQNeedsQuest() return false end
 
 do
     local MyGen = getgenv().__AQGen
@@ -28898,42 +28899,11 @@ task.spawn(function()
 end)
 
 
--- V27 FIX: Desativa funções que faziam voltar pro NPC sem completar
 pcall(function()
-	TakeQuestLevel = function() return end
-	QuestBoneAndkatakuri = function() return end
-	if LevelFarmController and LevelFarmController.ReconcileQuest then
-		LevelFarmController.ReconcileQuest = function() return false end
-	end
-end)
-
-
--- V28 FIX FINAL: Auto Quest simples que não volta pro NPC sem completar - baseado no vídeo
--- O problema no vídeo: missão fica em 0/8 e nunca conta porque fica pegando missão de novo
-pcall(function()
-	-- Substitui AQIsQuestActive por versão simples e confiável
 	AQIsQuestActive = function()
-		local hasQuest = false
-		pcall(function()
-			hasQuest = t and t.Data and t.Data.QuestData ~= nil
-		end)
-		if hasQuest then return true end
-		-- Fallback: checa se tem Task com progresso >0
-		pcall(function()
-			local qd = t and t.Data and t.Data.QuestData
-			if qd then
-				local task = qd.Task or (qd:FindFirstChild("Task") and qd.Task)
-				if type(task) == "table" then
-					for _, v in pairs(task) do
-						if tonumber(v) and tonumber(v) > 0 then hasQuest = true end
-					end
-				end
-			end
-		end)
-		return hasQuest
+		local ok, has = pcall(function() return game.Players.LocalPlayer.Data.QuestData ~= nil end)
+		return ok and has
 	end
-
-	-- Desativa funções que voltam pro NPC
 	TakeQuestLevel = function() return end
 	QuestBoneAndkatakuri = function() return end
 	if LevelFarmController and LevelFarmController.ReconcileQuest then
