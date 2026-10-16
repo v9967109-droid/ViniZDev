@@ -1864,9 +1864,9 @@ if oldFloat then oldFloat:Destroy() end
 
 local C = {
     -- Fundo preto e azul igual você pediu
-    bg = Color3.fromRGB(10, 20, 60),
-    panel = Color3.fromRGB(15, 25, 60),
-    panel2 = Color3.fromRGB(20, 30, 70),
+    bg = Color3.fromRGB(0, 0, 0),
+    panel = Color3.fromRGB(10, 10, 15),
+    panel2 = Color3.fromRGB(18, 18, 28),
     line = Color3.fromRGB(0, 80, 180),
     gold = Color3.fromRGB(0, 140, 255),
     goldLight = Color3.fromRGB(80, 180, 255),
@@ -2007,7 +2007,7 @@ function Nexora.CreateMain(config)
 
     local HEADER_H, SIDEBAR_W = 64, 190
     local GOLD, GOLD_L, GRAY = Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255), Color3.fromRGB(165,165,174)
-    local top = make("Frame", {Size=UDim2.new(1,0,0,HEADER_H), BackgroundColor3=Color3.fromRGB(8, 18, 50), BackgroundTransparency=0.4, BorderSizePixel=0}, shell)
+    local top = make("Frame", {Size=UDim2.new(1,0,0,HEADER_H), BackgroundColor3=Color3.fromRGB(10,10,14), BorderSizePixel=0}, shell)
     corner(top, 12)
     make("UIGradient", {Rotation=0, Color=ColorSequence.new({
         ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 15, 40)),
@@ -2015,7 +2015,7 @@ function Nexora.CreateMain(config)
         ColorSequenceKeypoint.new(1, Color3.fromRGB(8,8,11)),
     })}, top)
     -- cobre os cantos de baixo do header e desenha a linha dourada
-    make("Frame", {Position=UDim2.new(0,0,1,-12), Size=UDim2.new(1,0,0,12), BackgroundColor3=Color3.fromRGB(8, 18, 50), BackgroundTransparency=0.4, BorderSizePixel=0}, top)
+    make("Frame", {Position=UDim2.new(0,0,1,-12), Size=UDim2.new(1,0,0,12), BackgroundColor3=Color3.fromRGB(10,10,14), BackgroundTransparency=0.3, BorderSizePixel=0}, top)
     do
         local hl = make("Frame", {Position=UDim2.new(0,0,1,-1), Size=UDim2.new(1,0,0,1), BackgroundColor3=GOLD, BackgroundTransparency=0, BorderSizePixel=0}, top)
         local hg = make("UIGradient", {Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,1),NumberSequenceKeypoint.new(0.5,0.1),NumberSequenceKeypoint.new(1,1)}), Offset=Vector2.new(-1,0)}, hl)
@@ -2045,51 +2045,6 @@ function Nexora.CreateMain(config)
         ZIndex=100
     }, floatGui)
     reopen:SetAttribute("NexoraKeepColor", true)
-
-    -- [CONTROL BG NO BOTÃO FLUTUANTE]
-    do
-        local bgFloat=Instance.new("Frame")
-        bgFloat.Name="ControlBGFloat"
-        bgFloat.Size=UDim2.new(1,0,1,0)
-        bgFloat.BackgroundColor3=Color3.fromRGB(12, 28, 75)
-        bgFloat.BorderSizePixel=0
-        bgFloat.ZIndex=0
-        bgFloat.Parent=reopen
-        bgFloat.ClipsDescendants=true
-        Instance.new("UICorner", {CornerRadius=UDim.new(0,10)}, bgFloat)
-        
-        local gradFloat=Instance.new("UIGradient")
-        gradFloat.Rotation=90
-        gradFloat.Color=ColorSequence.new{
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(15, 35, 90)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 50, 130))
-        }
-        gradFloat.Parent=bgFloat
-        
-        for i=1,3 do
-            local sq=Instance.new("Frame")
-            sq.Size=UDim2.new(0,math.random(5,8),0,math.random(5,8))
-            sq.Position=UDim2.new(math.random(),0,math.random(),0)
-            sq.BackgroundTransparency=1
-            sq.Rotation=math.random(-45,45)
-            sq.ZIndex=1
-            sq.Parent=bgFloat
-            local st=Instance.new("UIStroke")
-            st.Color=Color3.fromRGB(180, 220, 255)
-            st.Thickness=1
-            st.Transparency=0.4
-            st.Parent=sq
-            Instance.new("UICorner", {CornerRadius=UDim.new(0,1)}, sq)
-        end
-        
-        -- Deixa os textos do botão por cima
-        for _,v in pairs(reopen:GetChildren()) do
-            if v:IsA("TextLabel") or v:IsA("Frame") and v.Name~="ControlBGFloat" then
-                v.ZIndex=5
-            end
-        end
-    end
-    -- [FIM CONTROL BG FLOAT]
     make("UICorner", {CornerRadius=UDim.new(0, 18)}, reopen)
     make("UIStroke", {Color=Color3.fromRGB(60, 60, 65), Thickness=1, Transparency=0.3}, reopen)
     -- Ícone à esquerda (logo) - FIX N icon
@@ -2323,11 +2278,11 @@ local fScale = make("UIScale", {Scale=1}, reopen)
         nav.CanvasSize = UDim2.new(0, 0, 0, navLayout.AbsoluteContentSize.Y + 8)
     end)
     
-    local content = make("Frame", {Name="Content", Position=UDim2.new(0,SIDEBAR_W,0,HEADER_H), Size=UDim2.new(1,-SIDEBAR_W,1,-HEADER_H), BackgroundColor3=Color3.fromRGB(10, 20, 50), BackgroundTransparency=0.25, BorderSizePixel=0}, shell)
+    local content = make("Frame", {Name="Content", Position=UDim2.new(0,SIDEBAR_W,0,HEADER_H), Size=UDim2.new(1,-SIDEBAR_W,1,-HEADER_H), BackgroundColor3=Color3.fromRGB(10, 20, 50), BackgroundTransparency=0.15, BorderSizePixel=0}, shell)
     -- [CONTROL BACKGROUND DENTRO DA UI]
     do
         -- Fundo azul com hexágono
-        local bgControl = make("Frame", {Name="ControlBG", Size=UDim2.new(1,0,1,0), BackgroundColor3=Color3.fromRGB(12, 28, 75), BackgroundTransparency=0, ZIndex=0, ClipsDescendants=true}, content)
+        local bgControl = make("Frame", {Name="ControlBG", Size=UDim2.new(1,0,1,0), BackgroundColor3=Color3.fromRGB(12, 28, 75), BackgroundTransparency=0.1, ZIndex=0, ClipsDescendants=true}, content)
         local grad = make("UIGradient", {Rotation=90, Color=ColorSequence.new{
             ColorSequenceKeypoint.new(0, Color3.fromRGB(15, 35, 90)),
             ColorSequenceKeypoint.new(0.5, Color3.fromRGB(20, 50, 130)),
