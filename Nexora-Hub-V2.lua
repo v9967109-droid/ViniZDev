@@ -2485,7 +2485,34 @@ local fScale = make("UIScale", {Scale=1}, reopen)
         nb.LayoutOrder=#pages
         local Page={}
         function Page.CreateSection(sectionName)
-            local card=make("Frame", {Name=sectionName, Size=UDim2.new(1,0,0,40), AutomaticSize=Enum.AutomaticSize.Y, BackgroundColor3=C.panel, BackgroundTransparency=0.7, BorderSizePixel=0}, frame)
+            local card=make("Frame", {Name=sectionName, Size=UDim2.new(1,0,0,40), AutomaticSize=Enum.AutomaticSize.Y, BackgroundColor3=C.panel, BackgroundTransparency=0.55, BorderSizePixel=0}, frame)
+            -- Detalhe animado nas partes pretas
+            do
+                local detail = make("Frame", {Name="AnimatedDetail", Size=UDim2.new(1,0,0,1), Position=UDim2.new(0,0,0,0), BackgroundColor3=Color3.fromRGB(0, 140, 255), BackgroundTransparency=0.7, BorderSizePixel=0, ZIndex=2}, card)
+                make("UIGradient", {Rotation=0, Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,0.5), NumberSequenceKeypoint.new(0.5,0), NumberSequenceKeypoint.new(1,0.5)}), Color=ColorSequence.new(Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255))}, detail)
+                spawn(function()
+                    local TS=game:GetService("TweenService")
+                    while detail.Parent do
+                        local tw=TS:Create(detail, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, 0, true), {BackgroundTransparency=0.9})
+                        tw:Play()
+                        wait(2)
+                    end
+                end)
+                
+                -- Particulas brilhantes dentro da parte preta
+                for _=1,2 do
+                    local p=make("Frame", {Size=UDim2.new(0,2,0,2), Position=UDim2.new(math.random(),0,math.random(),0), BackgroundColor3=Color3.fromRGB(80, 180, 255), BackgroundTransparency=0.5, ZIndex=3}, card)
+                    make("UICorner", {CornerRadius=UDim.new(1,0)}, p)
+                    spawn(function()
+                        local TS=game:GetService("TweenService")
+                        while p.Parent do
+                            local tw=TS:Create(p, TweenInfo.new(math.random(2,4), Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, 0, true), {BackgroundTransparency=1, Position=UDim2.new(math.random(),0,math.random(),0)})
+                            tw:Play()
+                            wait(math.random(2,4))
+                        end
+                    end)
+                end
+            end
             corner(card,10); stroke(card,C.line,0.35)
             make("UIPadding", {PaddingTop=UDim.new(0,11),PaddingBottom=UDim.new(0,11),PaddingLeft=UDim.new(0,11),PaddingRight=UDim.new(0,11)}, card)
             local list=make("UIListLayout", {Padding=UDim.new(0,7),SortOrder=Enum.SortOrder.LayoutOrder}, card)
@@ -8451,7 +8478,7 @@ MasteryFarmSection = FarmMain.CreateSection("Mastery Farm")
 MasteryFarmSection.CreateDropdown(
 	{
 		Title = "Select Method Farm Mastery",
-		List = { "Blox Fruit", "Gun", "Sword" },
+		List = { "Melee", "Blox Fruit", "Gun", "Sword" },
 		Search = true,
 		Selected = false,
 		Default = Settings["Select Method Farm Mastery"] or nil,
@@ -8834,19 +8861,49 @@ local function H(C)
 	end
 end
 function UsedualFlock()
-	equiptool(NameWeapon(Settings["Select Weapon"] or "Melee"))
+	local meleeName = NameWeapon("Melee", true) or NameWeapon("Melee") or NameWeapon(Settings["Select Weapon"] or "Melee", true) or NameWeapon(Settings["Select Weapon"] or "Melee")
+	if meleeName then
+		equiptool(meleeName)
+		pcall(function()
+			if attackMelee then attackMelee() end
+			if getgenv().Attack then getgenv().Attack() end
+		end)
+	else
+		equiptool(NameWeapon(Settings["Select Weapon"] or "Melee"))
+	end
 end
 function FarmMastery(V)
 	if not V or not V:FindFirstChild("Humanoid") or not V:FindFirstChild("HumanoidRootPart") then
 		return
 	end
+	-- FIX MIRA: mira sempre no mob
 	getgenv().AimPos = V.HumanoidRootPart.CFrame
+	pcall(function()
+		if t and t.Character and t.Character:FindFirstChild("HumanoidRootPart") then
+			-- Faz o personagem olhar pro mob
+			local hrp = t.Character.HumanoidRootPart
+			local mobPos = V.HumanoidRootPart.Position
+			local lookAt = CFrame.new(hrp.Position, Vector3.new(mobPos.X, hrp.Position.Y, mobPos.Z))
+			hrp.CFrame = lookAt
+		end
+	end)
 	if not Settings["Farm Mastery"] then
 		UsedualFlock()
 		return
 	end
 	if V.Humanoid.Health / V.Humanoid.MaxHealth > (Settings["Health %"] or 100) / 100 then
-		UsedualFlock()
+		-- FIX MELEE: usa Melee pra causar dano até Health%
+		local meleeTool = NameWeapon("Melee", true) or NameWeapon("Melee")
+		if meleeTool then
+			equiptool(meleeTool)
+			getgenv().AimPos = V.HumanoidRootPart.CFrame
+			pcall(function()
+				if attackMelee then attackMelee() end
+				if getgenv().Attack then getgenv().Attack() end
+			end)
+		else
+			UsedualFlock()
+		end
 		return
 	end
 	local C = Settings["Select Method Farm Mastery"]
