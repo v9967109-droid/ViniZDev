@@ -2560,10 +2560,10 @@ local content = make("Frame", {Name="Content", Position=UDim2.new(0,SIDEBAR_W,0,
         nb.LayoutOrder=#pages
         local Page={}
         function Page.CreateSection(sectionName)
-            local card=make("Frame", {Name=sectionName, Size=UDim2.new(1,0,0,40), AutomaticSize=Enum.AutomaticSize.Y, BackgroundColor3=C.panel, BackgroundTransparency=0.7, BorderSizePixel=0}, frame)
+            local card=make("Frame", {Name=sectionName, Size=UDim2.new(1,0,0,40), AutomaticSize=Enum.AutomaticSize.Y, BackgroundColor3=C.panel, BackgroundTransparency=0.8, BorderSizePixel=0}, frame)
             -- Detalhe animado nas partes pretas
             do
-                local detail = make("Frame", {Name="AnimatedDetail", Size=UDim2.new(1,0,0,1), Position=UDim2.new(0,0,0,0), BackgroundColor3=Color3.fromRGB(0, 140, 255), BackgroundTransparency=0.7, BorderSizePixel=0, ZIndex=2}, card)
+                local detail = make("Frame", {Name="AnimatedDetail", Size=UDim2.new(1,0,0,1), Position=UDim2.new(0,0,0,0), BackgroundColor3=Color3.fromRGB(0, 140, 255), BackgroundTransparency=0.8, BorderSizePixel=0, ZIndex=2}, card)
                 make("UIGradient", {Rotation=0, Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,0.5), NumberSequenceKeypoint.new(0.5,0), NumberSequenceKeypoint.new(1,0.5)}), Color=ColorSequence.new(Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255))}, detail)
                 spawn(function()
                     local TS=game:GetService("TweenService")
@@ -2576,7 +2576,7 @@ local content = make("Frame", {Name="Content", Position=UDim2.new(0,SIDEBAR_W,0,
                 
                 -- Particulas brilhantes dentro da parte preta
                 for _=1,2 do
-                    local p=make("Frame", {Size=UDim2.new(0,2,0,2), Position=UDim2.new(math.random(),0,math.random(),0), BackgroundColor3=Color3.fromRGB(80, 180, 255), BackgroundTransparency=0.5, ZIndex=3}, card)
+                    local p=make("Frame", {Size=UDim2.new(0,2,0,2), Position=UDim2.new(math.random(),0,math.random(),0), BackgroundColor3=Color3.fromRGB(80, 180, 255), BackgroundTransparency=0.85, ZIndex=3}, card)
                     make("UICorner", {CornerRadius=UDim.new(1,0)}, p)
                     spawn(function()
                         local TS=game:GetService("TweenService")
@@ -7123,9 +7123,45 @@ spawn(function()
 	end
 end)
 function equiptool(g)
-	if g and (t:FindFirstChild("Backpack")) and (t.Backpack:FindFirstChild(g)) and not t.Character.Humanoid.Sit then
-		t.Character.Humanoid:EquipTool(t.Backpack:FindFirstChild(g))
-	end
+	if not g then return end
+	pcall(function()
+		local char = t and t.Character
+		if not char then return end
+		-- Se já está equipado, não precisa equipar de novo
+		if char:FindFirstChild(g) then return end
+		if t:FindFirstChild("Backpack") and t.Backpack:FindFirstChild(g) and not char.Humanoid.Sit then
+			char.Humanoid:EquipTool(t.Backpack:FindFirstChild(g))
+		end
+	end)
+end
+
+-- Função melhorada pra equipar qualquer Tool (Melee, Sword, Gun, Blox Fruit)
+function EquipToolByName(toolName)
+	if not toolName then return false end
+	pcall(function()
+		local char = t.Character
+		if not char then return end
+		-- Já equipado?
+		if char:FindFirstChild(toolName) then return true end
+		-- Na mochila?
+		if t.Backpack:FindFirstChild(toolName) then
+			char.Humanoid:EquipTool(t.Backpack:FindFirstChild(toolName))
+			return true
+		end
+		-- Tenta achar por ToolTip (pra Blox Fruits etc)
+		for _, tool in pairs(t.Backpack:GetChildren()) do
+			if tool:IsA("Tool") and (tool.ToolTip == toolName or tool.Name == toolName) then
+				char.Humanoid:EquipTool(tool)
+				return true
+			end
+		end
+		for _, tool in pairs(char:GetChildren()) do
+			if tool:IsA("Tool") and (tool.ToolTip == toolName or tool.Name == toolName) then
+				return true
+			end
+		end
+	end)
+	return false
 end
 function NameWeapon(g, G)
 	local function m(E)
@@ -8973,23 +9009,23 @@ function FarmMastery(V)
 		return
 	end
 	if V.Humanoid.Health / V.Humanoid.MaxHealth > (Settings["Health %"] or 100) / 100 then
-		-- USA MELEE PARA DAR DANO CONFIGURADO (até Health%)
-		local meleeName = NameWeapon("Melee", true) or NameWeapon("Melee")
+		-- USA MELEE PARA DAR DANO CONFIGURADO (até Health%) - FIX EQUIPAR MELEE
+		local meleeName = NameWeapon("Melee") -- Nome da Tool Melee
 		if meleeName then
+			-- Equipa Melee de verdade
+			EquipToolByName(meleeName)
 			equiptool(meleeName)
 			getgenv().AimPos = V.HumanoidRootPart.CFrame
-			-- Ataca com Melee
 			pcall(function()
-				if attackMelee then 
-					attackMelee()
-				end
-				-- Garante ataque
 				local char = t.Character
-				if char then
-					local tool = char:FindFirstChild(meleeName) or char:FindFirstChildOfClass("Tool")
-					if tool then
-						tool:Activate()
-					end
+				if char and char:FindFirstChild(meleeName) then
+					-- Olha pro mob
+					local hrp = char.HumanoidRootPart
+					local mobPos = V.HumanoidRootPart.Position
+					getgenv().AimPos = V.HumanoidRootPart.CFrame
+					-- Ataca
+					if attackMelee then attackMelee() end
+					char:FindFirstChild(meleeName):Activate()
 				end
 			end)
 		else
@@ -8999,13 +9035,33 @@ function FarmMastery(V)
 	end
 	local C = Settings["Select Method Farm Mastery"]
 	local J, F = NameWeapon(C), NameWeapon(C, true)
-	if not J or not F then
-		return
+	if not J then
+		-- Tenta achar a tool mesmo sem NameWeapon
+		J = C
 	end
-	if C == "Gun" and (t.Character:FindFirstChild(J)) then
+	if C == "Gun" and J and (t.Character:FindFirstChild(J) or t.Backpack:FindFirstChild(J)) then
+		EquipToolByName(J)
 		ShootM1(V)
 	end
-	equiptool(J)
+	-- FIX EQUIPAR TOOL SELECIONADA (Melee, Sword, Gun, Blox Fruit)
+	if J then
+		EquipToolByName(J)
+		equiptool(J)
+		-- Garante que equipou
+		task.wait(0.1)
+		if not t.Character:FindFirstChild(J) then
+			pcall(function()
+				for _, tool in pairs(t.Backpack:GetChildren()) do
+					if tool:IsA("Tool") and (tool.ToolTip == C or tool.Name == J) then
+						t.Character.Humanoid:EquipTool(tool)
+						J = tool.Name
+						break
+					end
+				end
+			end)
+		end
+		getgenv().AimPos = V.HumanoidRootPart.CFrame
+	end
 	if J == "Control-Control" then
 		C = workspace._WorldOrigin:FindFirstChild("Globe")
 		if not C or t:DistanceFromCharacter(C.Position) > C.AB.CurveSize0 / 1.75 then
