@@ -9179,9 +9179,9 @@ local SpecialQuestCycleState = {
 
 function FarmMethod()
 	local selectedToggle = GetSelectedIndividualFarm()
-	if not selectedToggle then
-		return
-	end
+	if not selectedToggle then return end
+
+	-- Aura Farm
 	if selectedToggle == "Aura Farm" then
 		local mobsNear = DetectMobsAuraNear()
 		if #mobsNear == 0 then task.wait(0.5) return end
@@ -9192,68 +9192,66 @@ function FarmMethod()
 		end
 		return
 	end
-	local f, V, H
-	local C, J = 9999, 2
-	if f == "Farm Katakuri" then
-		C, V, H = 2275, y, "CakeQuest2"
-	elseif f == "Farm Bones" then
-		C, V, H = 2050, e, "HauntedQuest2"
-	elseif f == "Farm Tyrant of the Skies" then
-		C, V, H = 2575, Y, "TikiQuest3"
-	else
-		V = if f == "Aura Farm" and (DetectMobAura()) then { DetectMobAura() } else V
-	end
-	if Settings["Farm Material"] then
-		V = NameMaterials[Settings["Select Material"]]
-		if not NameWorldMaterials[Settings["Select Material"]][game.PlaceId] then
-			f = NameWorldMaterials[Settings["Select Material"]][getgenv().CheckPlaceId2]
-				or NameWorldMaterials[Settings["Select Material"]][getgenv().CheckPlaceId3]
-				or NameWorldMaterials[Settings["Select Material"]][getgenv().CheckPlaceId]
-			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(f)
-			return
+
+	-- V18 FIX: Mapeamento correto de cada farm pra ilha e mobs certos
+	local mobList, questName, questId
+	local selectedMethod = ({["Auto Farm Level"]="Level Farm",["Auto Farm Bones"]="Farm Bones",["Auto Farm Katakuri"]="Farm Katakuri",["Auto Farm Tyrant of the Skies"]="Farm Tyrant of the Skies"})[selectedToggle] or "Level Farm"
+
+	if selectedMethod == "Farm Bones" then
+		mobList = {"Reborn Skeleton", "Living Zombie", "Demonic Soul", "Posessed Mummy", "Possessed Mummy", "Reborn Skeleton", "Living Zombie"}
+		questName = "HauntedQuest2"
+		questId = 2
+	elseif selectedMethod == "Farm Katakuri" then
+		mobList = {"Baking Staff", "Head Baker", "Cake Guard", "Cookie Crafter", "Cake Guard"}
+		questName = "CakeQuest2"
+		questId = 2
+	elseif selectedMethod == "Farm Tyrant of the Skies" then
+		mobList = {"Isle Champion", "Serpent Hunter", "Skull Slayer", "Sun-kissed Warrior", "Isle Champion"}
+		questName = "TikiQuest3"
+		questId = 2
+	else -- Level Farm
+		local ok, info = pcall(GetLevelQuestInfo, t.Data.Level.Value)
+		if ok and type(info) == "table" and info.Mob then
+			mobList = {info.Mob}
+			questName = info.QuestName
+			questId = info.Id
+		else
+			mobList = {GetNameDoubleQuest() or ""}
 		end
 	end
-	f = V or (GetNameDoubleQuest()) or ""
-	local QuestVisible = AQIsQuestActive()
-	local IsSpecialFarm = SelectedFarmMethod == "Farm Katakuri" or SelectedFarmMethod == "Farm Bones" or SelectedFarmMethod == "Farm Tyrant of the Skies"
 
-	-- Auto Quest é o único que pega missão: enquanto ele está indo ao NPC / aceitando, o farm espera
-	-- (antes os dois se moviam ao mesmo tempo: o farm saía para os mobs e o Auto Quest puxava de volta
-	-- ao NPC). Não espera se o boss do método já está no mapa nem se o Auto Quest não tem alvo.
-	if not Settings["Farm Material"] and SelectedFarmMethod ~= "Aura Farm" and AQNeedsQuest and AQNeedsQuest() then
+	-- Se precisa de missão e não tem, espera o Auto Quest pegar (não vai pra ilha errada)
+	if not Settings["Farm Material"] and selectedMethod ~= "Aura Farm" and AQNeedsQuest and AQNeedsQuest() then
 		local bossUp = false
 		pcall(function()
-			if SelectedFarmMethod == "Farm Tyrant of the Skies" then
-				bossUp = CheckNameBoss("Tyrant of the Skies") and true or false
-			elseif SelectedFarmMethod == "Farm Katakuri" then
-				bossUp = CheckNameBoss("Cake Prince") and true or false
+			if selectedMethod == "Farm Tyrant of the Skies" then bossUp = CheckNameBoss("Tyrant of the Skies") and true or false
+			elseif selectedMethod == "Farm Katakuri" then bossUp = CheckNameBoss("Cake Prince") and true or false
 			end
 		end)
-		if not bossUp then
-			return
-		end
+		if not bossUp then return end
 	end
 
-	-- Do not stop the farm loop just because Auto Quest is enabled.
-	-- Auto Quest itself already returns while a quest is active; the farm must
-	-- keep running so it can leave the quest giver and attack the quest mobs.
-	-- Without an active quest the farm still targets the method's mobs
-	-- (Level Farm: mob of the current level quest).
-	if SelectedFarmMethod == "Level Farm" and not Settings["Farm Material"] then
-		local okL, info = pcall(GetLevelQuestInfo, t.Data.Level.Value)
-		if okL and type(info) == "table" and info.Mob then
-			f = info.Mob
-		end
-	end
-	-- After accepting a quest, prioritize the mob named by the active quest data.
-	-- This prevents FarmMethod from continuing to target a stale/default mob and
-	-- leaving the character at the quest giver.
-	if not Settings["Farm Material"] and SelectedFarmMethod ~= "Aura Farm" and QuestVisible then
+	local f = ""
+	local QuestVisible = AQIsQuestActive()
+	-- Se tem missão ativa, pega o mob da missão ativa (evita ir pra ilha errada)
+	if QuestVisible then
 		local okActive, activeMob = pcall(GetActiveFarmQuestMob)
 		if okActive and type(activeMob) == "string" and activeMob ~= "" then
 			f = activeMob
+		else
+			f = type(mobList) == "table" and mobList[1] or mobList
+		end
+	else
+		-- Sem missão: usa o mob do método selecionado (não vai pra Tiki se tá no Bones)
+		f = type(mobList) == "table" and mobList[1] or mobList
+		if selectedMethod == "Level Farm" then
+			local okL, info = pcall(GetLevelQuestInfo, t.Data.Level.Value)
+			if okL and type(info) == "table" and info.Mob then f = info.Mob end
 		end
 	end
+	-- Garante que f é string válida do farm selecionado
+	if f == "" and type(mobList) == "table" then f = mobList[1] end
+
 	do
 		-- Quando a missão já foi aceita, usa o alvo exato da quest antes da lista
 		-- de mobs do método. Isso evita permanecer parado no NPC após aceitar.
@@ -9263,7 +9261,7 @@ function FarmMethod()
 		-- definido pela quest ativa. Assim todos os métodos (Level, Bones,
 		-- Katakuri, Tyrant e Aura) seguem a mesma regra e, ao concluir a
 		-- missão, o fluxo volta automaticamente para TakeQuestLevel().
-		if not Settings["Farm Material"] and SelectedFarmMethod == "Farm Tyrant of the Skies" then
+		if not Settings["Farm Material"] and selectedMethod == "Farm Tyrant of the Skies" then
 			if CheckNameBoss("Tyrant of the Skies") then
 				V = CheckNameBoss("Tyrant of the Skies")
 				repeat
@@ -9330,7 +9328,7 @@ function FarmMethod()
 		end
 		if
 			not Settings["Farm Material"]
-			and SelectedFarmMethod == "Farm Katakuri"
+			and selectedMethod == "Farm Katakuri"
 			and not Settings["Ignore Attack Katakuri"]
 		then
 			if CheckNameBoss("Cake Prince") then
