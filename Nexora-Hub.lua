@@ -28906,3 +28906,37 @@ pcall(function()
 		LevelFarmController.ReconcileQuest = function() return false end
 	end
 end)
+
+
+-- V28 FIX FINAL: Auto Quest simples que não volta pro NPC sem completar - baseado no vídeo
+-- O problema no vídeo: missão fica em 0/8 e nunca conta porque fica pegando missão de novo
+pcall(function()
+	-- Substitui AQIsQuestActive por versão simples e confiável
+	AQIsQuestActive = function()
+		local hasQuest = false
+		pcall(function()
+			hasQuest = t and t.Data and t.Data.QuestData ~= nil
+		end)
+		if hasQuest then return true end
+		-- Fallback: checa se tem Task com progresso >0
+		pcall(function()
+			local qd = t and t.Data and t.Data.QuestData
+			if qd then
+				local task = qd.Task or (qd:FindFirstChild("Task") and qd.Task)
+				if type(task) == "table" then
+					for _, v in pairs(task) do
+						if tonumber(v) and tonumber(v) > 0 then hasQuest = true end
+					end
+				end
+			end
+		end)
+		return hasQuest
+	end
+
+	-- Desativa funções que voltam pro NPC
+	TakeQuestLevel = function() return end
+	QuestBoneAndkatakuri = function() return end
+	if LevelFarmController and LevelFarmController.ReconcileQuest then
+		LevelFarmController.ReconcileQuest = function() return false end
+	end
+end)
