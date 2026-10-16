@@ -5770,7 +5770,7 @@ task.spawn(function()
 			if not char then return end
 			local root = char:FindFirstChild("HumanoidRootPart")
 			if not root then return end
-			local anyActive = Settings["Raise Boat Manual Drive"] or Settings["Fly Boat"] or Settings["Start Farm"] or Settings["Auto Find Leviathan"] or Settings["Auto Sea Event"] or Settings["Teleport To Fruit"] or Settings["Auto Farm Level"] or Settings["Tween Boat To Frozen Dimension"] or Settings["Multi Find Leviathan"] or Settings["Auto Farm Bone"] or Settings["Auto Farm Ectoplasm"] or Settings["Auto Elite Hunter"] or Settings["Auto Factory"] or Settings["Auto Raid"] or Settings["Tween Safe if have Items"] or Settings["Auto Present Event"] or Settings["Auto Celestial Soldier"] or Settings["Auto Attack Dungeon"] or Settings["Auto Fishing"] or Settings["Auto Get Ghoul"] or Settings["Auto Get Cyborg"] or Settings["Auto Trial"] or Settings["Auto Pull Lever"] or Settings["Drive Boat To Tiki"] or Settings["Drive Boat To Hydra"] or Settings["Auto Fire Shoot Heart Leviathan"]
+			local anyActive = Settings["Raise Boat Manual Drive"] or Settings["Fly Boat"] or Settings["Start Farm"] or Settings["Auto Find Leviathan"] or Settings["Auto Find Prehistoric Island"] or Settings["Auto Multi Find Prehistoric Island"] or Settings["Auto Event Prehistoric Island"] or Settings["Auto Sea Event"] or Settings["Teleport To Fruit"] or Settings["Auto Farm Level"] or Settings["Tween Boat To Frozen Dimension"] or Settings["Multi Find Leviathan"] or Settings["Auto Farm Bone"] or Settings["Auto Farm Ectoplasm"] or Settings["Auto Elite Hunter"] or Settings["Auto Factory"] or Settings["Auto Raid"] or Settings["Tween Safe if have Items"] or Settings["Auto Present Event"] or Settings["Auto Celestial Soldier"] or Settings["Auto Attack Dungeon"] or Settings["Auto Fishing"] or Settings["Auto Get Ghoul"] or Settings["Auto Get Cyborg"] or Settings["Auto Trial"] or Settings["Auto Pull Lever"] or Settings["Drive Boat To Tiki"] or Settings["Drive Boat To Hydra"] or Settings["Auto Fire Shoot Heart Leviathan"]
 			if not anyActive and getgenv().noclip then
 				ForceResetAirState()
 			end
@@ -14970,9 +14970,9 @@ do
 	getgenv().__BoatRaiseConn = game:GetService("RunService").Heartbeat:Connect(function()
 		if getgenv().__BoatRaiseGen ~= gen then return end
 		if not Settings["Raise Boat Manual Drive"] then
-			-- V11: Só reseta quando o próprio Raise Boat desliga e nenhuma outra opção de barco precisa manter o ar
-			-- Auto Sea Event e Multi funcionam sem Raise Boat, então não força reset se eles estiverem ativos
-			if Settings["Auto Sea Event"] or Settings["Auto Multi Sea Event"] or Settings["Auto Find Leviathan"] or Settings["Multi Find Leviathan"] or Settings["Auto Start Leviathan"] then
+			-- V12: Só reseta quando ninguém precisa de barco no ar
+			-- Auto Sea Event, Multi Sea, Prehistoric e Multi Prehistoric funcionam SEM Raise Boat, então não força reset
+			if Settings["Auto Sea Event"] or Settings["Auto Multi Sea Event"] or Settings["Auto Find Leviathan"] or Settings["Multi Find Leviathan"] or Settings["Auto Start Leviathan"] or Settings["Auto Find Prehistoric Island"] or Settings["Auto Multi Find Prehistoric Island"] or Settings["Auto Event Prehistoric Island"] or Settings["Auto Tween To Prehistoric Island"] then
 				return
 			end
 			pcall(function() ResetAirState() end)
