@@ -2277,7 +2277,81 @@ local fScale = make("UIScale", {Scale=1}, reopen)
     navLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         nav.CanvasSize = UDim2.new(0, 0, 0, navLayout.AbsoluteContentSize.Y + 8)
     end)
-    local content = make("Frame", {Name="Content", Position=UDim2.new(0,SIDEBAR_W,0,HEADER_H), Size=UDim2.new(1,-SIDEBAR_W,1,-HEADER_H), BackgroundTransparency=1}, shell)
+    
+    local content = make("Frame", {Name="Content", Position=UDim2.new(0,SIDEBAR_W,0,HEADER_H), Size=UDim2.new(1,-SIDEBAR_W,1,-HEADER_H), BackgroundColor3=Color3.fromRGB(10, 20, 50), BackgroundTransparency=0.15, BorderSizePixel=0}, shell)
+    -- [CONTROL BACKGROUND DENTRO DA UI]
+    do
+        -- Fundo azul com hexágono
+        local bgControl = make("Frame", {Name="ControlBG", Size=UDim2.new(1,0,1,0), BackgroundColor3=Color3.fromRGB(12, 28, 75), BackgroundTransparency=0.1, ZIndex=0, ClipsDescendants=true}, content)
+        local grad = make("UIGradient", {Rotation=90, Color=ColorSequence.new{
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(15, 35, 90)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(20, 50, 130)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 18, 60))
+        }}, bgControl)
+        
+        -- Hex pattern usando UIStroke fake com linhas
+        -- Container para quadrados flutuantes da Control
+        local squaresFolder = make("Frame", {Name="ControlSquares", Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, ZIndex=1}, bgControl)
+        
+        local TweenService = game:GetService("TweenService")
+        
+        -- Função para criar quadrado animado estilo Control
+        local function createControlSquare()
+            local size = math.random(10, 22)
+            local sq = make("Frame", {
+                Size=UDim2.new(0,size,0,size),
+                Position=UDim2.new(math.random(),0,math.random(),0),
+                BackgroundTransparency=1,
+                Rotation=math.random(-45,45),
+                ZIndex=2
+            }, squaresFolder)
+            
+            local stroke = make("UIStroke", {Color=Color3.fromRGB(180, 220, 255), Thickness=1.5, Transparency=0.2}, sq)
+            local corner = make("UICorner", {CornerRadius=UDim.new(0,2)}, sq)
+            
+            -- Animação infinita
+            spawn(function()
+                while sq.Parent do
+                    local newPos = UDim2.new(math.random(),0,math.random(),0)
+                    local newRot = math.random(-60,60)
+                    local tweenInfo = TweenInfo.new(math.random(5,9), Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+                    local t1 = TweenService:Create(sq, tweenInfo, {Position=newPos, Rotation=newRot})
+                    local t2 = TweenService:Create(stroke, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, 0, true), {Transparency=0.6})
+                    t1:Play()
+                    t2:Play()
+                    wait(math.random(4,7))
+                end
+            end)
+        end
+        
+        -- Cria 14 quadrados flutuantes
+        for i=1,14 do
+            createControlSquare()
+            wait(0.05)
+        end
+        
+        -- Hexágono sutil no fundo usando pontos
+        for i=1,20 do
+            local dot = make("Frame", {
+                Size=UDim2.new(0,math.random(3,8),0,math.random(3,8)),
+                Position=UDim2.new(math.random(),0,math.random(),0),
+                BackgroundColor3=Color3.fromRGB(60, 120, 255),
+                BackgroundTransparency=math.random(70,90)/100,
+                ZIndex=1
+            }, bgControl)
+            make("UICorner", {CornerRadius=UDim.new(1,0)}, dot)
+            
+            spawn(function()
+                while dot.Parent do
+                    local tween = TweenService:Create(dot, TweenInfo.new(math.random(3,6), Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, 0, true), {BackgroundTransparency=0.95})
+                    tween:Play()
+                    wait(math.random(3,6))
+                end
+            end)
+        end
+    end
+    -- [FIM CONTROL BACKGROUND]
+
     local sidebarOpen = true
     hamburger.MouseButton1Click:Connect(function()
         sidebarOpen = not sidebarOpen
@@ -7830,105 +7904,6 @@ function BringMob(Q)
 end
 task.wait(1)
 SettingFarmMain = Main.CreatePage({ Page_Name = "Setting Farm", Page_Title = "Setting Farm" })
-
--- [NEXORA CONTROL BACKGROUND - Fundo animado Control]
-spawn(function()
-    pcall(function()
-        local TweenService = game:GetService("TweenService")
-        -- Espera a UI principal carregar
-        wait(1)
-        local playerGui = game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui")
-        if not playerGui then return end
-        
-        -- Procura a UI do Nexora (pode variar o nome)
-        for _, gui in pairs(playerGui:GetChildren()) do
-            if gui:IsA("ScreenGui") then
-                for _, frame in pairs(gui:GetDescendants()) do
-                    if frame:IsA("Frame") and frame.Size.X.Scale > 0.5 then
-                        -- Achou um frame principal grande, adiciona fundo Control
-                        if not frame:FindFirstChild("NexoraControlBG") then
-                            -- Fundo base azul hex
-                            local bg = Instance.new("ImageLabel")
-                            bg.Name = "NexoraControlBG"
-                            bg.Size = UDim2.new(1,0,1,0)
-                            bg.Position = UDim2.new(0,0,0,0)
-                            bg.BackgroundTransparency = 1
-                            bg.Image = "rbxassetid://6073763717" -- placeholder, será substituído
-                            bg.ImageTransparency = 0.3
-                            bg.ZIndex = 0
-                            bg.Parent = frame
-                            
-                            -- Gradiente azul Control
-                            local gradient = Instance.new("UIGradient")
-                            gradient.Color = ColorSequence.new{
-                                ColorSequenceKeypoint.new(0, Color3.fromRGB(15, 30, 80)),
-                                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(25, 60, 150)),
-                                ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 20, 60))
-                            }
-                            gradient.Rotation = 90
-                            gradient.Parent = bg
-                            
-                            -- Container dos quadrados flutuantes
-                            local squareContainer = Instance.new("Frame")
-                            squareContainer.Name = "ControlSquares"
-                            squareContainer.Size = UDim2.new(1,0,1,0)
-                            squareContainer.BackgroundTransparency = 1
-                            squareContainer.ZIndex = 1
-                            squareContainer.Parent = bg
-                            squareContainer.ClipsDescendants = true
-                            
-                            -- Cria quadrados animados estilo Control
-                            for i = 1, 12 do
-                                local square = Instance.new("Frame")
-                                square.Name = "Square_"..i
-                                local size = math.random(8, 18)
-                                square.Size = UDim2.new(0,size,0,size)
-                                square.Position = UDim2.new(math.random(),0,math.random(),0)
-                                square.BackgroundTransparency = 1
-                                square.BorderSizePixel = 0
-                                
-                                -- Borda branca brilhante
-                                local stroke = Instance.new("UIStroke")
-                                stroke.Color = Color3.fromRGB(180, 220, 255)
-                                stroke.Thickness = 1.5
-                                stroke.Transparency = 0.3
-                                stroke.Parent = square
-                                
-                                local corner = Instance.new("UICorner")
-                                corner.CornerRadius = UDim.new(0,2)
-                                corner.Parent = square
-                                
-                                square.Parent = squareContainer
-                                
-                                -- Animação flutuante
-                                spawn(function()
-                                    while square.Parent do
-                                        local newPos = UDim2.new(math.random(),0,math.random(),0)
-                                        local newRot = math.random(-45,45)
-                                        local tweenInfo = TweenInfo.new(math.random(4,8), Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-                                        local tween = TweenService:Create(square, tweenInfo, {
-                                            Position = newPos,
-                                            Rotation = newRot
-                                        })
-                                        tween:Play()
-                                        -- Pisca
-                                        local strokeTween = TweenService:Create(stroke, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, 0, true, 0), {
-                                            Transparency = 0.7
-                                        })
-                                        strokeTween:Play()
-                                        wait(math.random(3,6))
-                                    end
-                                end)
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end)
-end)
--- [FIM CONTROL BACKGROUND]
-
 SettingFarmMainSection = SettingFarmMain.CreateSection("Setting Farm")
 local Q, d =
 	false,
