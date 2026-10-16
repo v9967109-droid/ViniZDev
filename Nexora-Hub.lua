@@ -8343,6 +8343,16 @@ do
 					if HasQuest() then
 						lastHadQuest = tick()
 						pcall(function() TweenManager.CancelCurrent() end)
+						-- Força sair do NPC e ir farmar imediatamente
+						task.wait(0.5)
+						pcall(function()
+							-- Vai pra cima do NPC pra sair do Interagir
+							local plr = game.Players.LocalPlayer
+							local root = plr and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+							if root then
+								toTarget(CFrame.new(root.Position + Vector3.new(0, 50, 0)))
+							end
+						end)
 						task.wait(1)
 					end
 				else
