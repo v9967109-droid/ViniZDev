@@ -14982,7 +14982,6 @@ do
 	getgenv().__BoatRaiseConn = game:GetService("RunService").Heartbeat:Connect(function()
 		if getgenv().__BoatRaiseGen ~= gen then return end
 		if not Settings["Raise Boat Manual Drive"] then
-			-- FIX: quando desativa Raise Boat, reseta CanCollide e noclip pra não bugar andar
 			pcall(function() 
 				ResetAirState()
 				ForceResetAirState()
