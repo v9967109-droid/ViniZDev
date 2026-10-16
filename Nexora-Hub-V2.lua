@@ -2563,7 +2563,7 @@ local content = make("Frame", {Name="Content", Position=UDim2.new(0,SIDEBAR_W,0,
             local card=make("Frame", {Name=sectionName, Size=UDim2.new(1,0,0,40), AutomaticSize=Enum.AutomaticSize.Y, BackgroundColor3=C.panel, BackgroundTransparency=0.9, BorderSizePixel=0}, frame)
             -- Detalhe animado nas partes pretas
             do
-                local detail = make("Frame", {Name="AnimatedDetail", Size=UDim2.new(1,0,0,1), Position=UDim2.new(0,0,0,0), BackgroundColor3=Color3.fromRGB(0, 140, 255), BackgroundTransparency=0.9, BorderSizePixel=0, ZIndex=2}, card)
+                local detail = make("Frame", {Name="AnimatedDetail", Size=UDim2.new(1,0,0,1), Position=UDim2.new(0,0,0,0), BackgroundColor3=Color3.fromRGB(0, 140, 255), BackgroundTransparency=0.85, BorderSizePixel=0, ZIndex=2}, card)
                 make("UIGradient", {Rotation=0, Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,0.5), NumberSequenceKeypoint.new(0.5,0), NumberSequenceKeypoint.new(1,0.5)}), Color=ColorSequence.new(Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255))}, detail)
                 spawn(function()
                     local TS=game:GetService("TweenService")
@@ -2576,7 +2576,7 @@ local content = make("Frame", {Name="Content", Position=UDim2.new(0,SIDEBAR_W,0,
                 
                 -- Particulas brilhantes dentro da parte preta
                 for _=1,2 do
-                    local p=make("Frame", {Size=UDim2.new(0,2,0,2), Position=UDim2.new(math.random(),0,math.random(),0), BackgroundColor3=Color3.fromRGB(80, 180, 255), BackgroundTransparency=0.95, ZIndex=3}, card)
+                    local p=make("Frame", {Size=UDim2.new(0,2,0,2), Position=UDim2.new(math.random(),0,math.random(),0), BackgroundColor3=Color3.fromRGB(80, 180, 255), BackgroundTransparency=0.85, ZIndex=3}, card)
                     make("UICorner", {CornerRadius=UDim.new(1,0)}, p)
                     spawn(function()
                         local TS=game:GetService("TweenService")
@@ -7123,45 +7123,9 @@ spawn(function()
 	end
 end)
 function equiptool(g)
-	if not g then return end
-	pcall(function()
-		local char = t and t.Character
-		if not char then return end
-		-- Se já está equipado, não precisa equipar de novo
-		if char:FindFirstChild(g) then return end
-		if t:FindFirstChild("Backpack") and t.Backpack:FindFirstChild(g) and not char.Humanoid.Sit then
-			char.Humanoid:EquipTool(t.Backpack:FindFirstChild(g))
-		end
-	end)
-end
-
--- Função melhorada pra equipar qualquer Tool (Melee, Sword, Gun, Blox Fruit)
-function EquipToolByName(toolName)
-	if not toolName then return false end
-	pcall(function()
-		local char = t.Character
-		if not char then return end
-		-- Já equipado?
-		if char:FindFirstChild(toolName) then return true end
-		-- Na mochila?
-		if t.Backpack:FindFirstChild(toolName) then
-			char.Humanoid:EquipTool(t.Backpack:FindFirstChild(toolName))
-			return true
-		end
-		-- Tenta achar por ToolTip (pra Blox Fruits etc)
-		for _, tool in pairs(t.Backpack:GetChildren()) do
-			if tool:IsA("Tool") and (tool.ToolTip == toolName or tool.Name == toolName) then
-				char.Humanoid:EquipTool(tool)
-				return true
-			end
-		end
-		for _, tool in pairs(char:GetChildren()) do
-			if tool:IsA("Tool") and (tool.ToolTip == toolName or tool.Name == toolName) then
-				return true
-			end
-		end
-	end)
-	return false
+	if g and (t:FindFirstChild("Backpack")) and (t.Backpack:FindFirstChild(g)) and not t.Character.Humanoid.Sit then
+		t.Character.Humanoid:EquipTool(t.Backpack:FindFirstChild(g))
+	end
 end
 function NameWeapon(g, G)
 	local function m(E)
@@ -7312,12 +7276,9 @@ AttackFunction = function(G)
 	if t.Character.Stun.Value ~= 0 then
 		return
 	end
-	-- CORRIGIDO: Attack No Animation sem animação
-	local noAnim = Settings["Attack No Animation "] or Settings["Attack No Animation"]
-	if not noAnim then
+	if not Settings["Attack No Animation "] then
 		attackMelee(G)
 	else
-		-- Sem animação - ataca direto via remote
 		local m = AttackAOE(G, false)
 		if not m then
 			return
@@ -8975,33 +8936,142 @@ local function H(C)
 	end
 end
 function UsedualFlock()
-	-- FIX SELECT WEAPON DETECTION no Setting Farm
-	local selectedWeaponType = Settings["Select Weapon"] or "Melee"
-	local meleeName = NameWeapon("Melee") or "Combat"
-	local selectedName = NameWeapon(selectedWeaponType) or meleeName
+	local meleeName = NameWeapon("Melee", true) or NameWeapon("Melee") or NameWeapon(Settings["Select Weapon"] or "Melee", true) or NameWeapon(Settings["Select Weapon"] or "Melee")
+	if meleeName then
+		equiptool(meleeName)
+		pcall(function()
+			if attackMelee then attackMelee() end
+			if getgenv().Attack then getgenv().Attack() end
+		end)
+	else
+		equiptool(NameWeapon(Settings["Select Weapon"] or "Melee"))
+	end
+end
+function FarmMastery(V)
+	if not V or not V:FindFirstChild("Humanoid") or not V:FindFirstChild("HumanoidRootPart") then
+		return
+	end
+	-- Mira no mob sempre
+	getgenv().AimPos = V.HumanoidRootPart.CFrame
+	getgenv().TargetMob = V
+	pcall(function()
+		if t and t.Character and t.Character:FindFirstChild("HumanoidRootPart") and V:FindFirstChild("HumanoidRootPart") then
+			local mobHrp = V.HumanoidRootPart
+			getgenv().AimPos = mobHrp.CFrame
+		end
+	end)
 	
-	-- Se Select Weapon for Melee, usa Melee
-	-- Se for Sword, Gun, Blox Fruit, usa o selecionado
-	local toolToUse = selectedName
-	if not toolToUse or toolToUse == "" then
-		toolToUse = meleeName
+	if not Settings["Farm Mastery"] then
+		UsedualFlock()
+		return
 	end
 	
-	if toolToUse then
-		EquipToolByName(toolToUse)
-		equiptool(toolToUse)
+	local healthPercent = (Settings["Health %"] or 40) / 100
+	local mobHealthPercent = V.Humanoid.Health / V.Humanoid.MaxHealth
+	
+	if mobHealthPercent > healthPercent then
+		-- FASE 1: Mob com vida alta (>40%) - USA MELEE PARA DAR DANO
+		local meleeName = NameWeapon("Melee")
+		if not meleeName then meleeName = "Combat" end
+		
+		-- Equipa Melee
 		pcall(function()
-			getgenv().AimPos = getgenv().AimPos or (t.Character and t.Character.HumanoidRootPart and t.Character.HumanoidRootPart.CFrame)
+			if t.Backpack:FindFirstChild(meleeName) then
+				t.Character.Humanoid:EquipTool(t.Backpack:FindFirstChild(meleeName))
+			elseif not t.Character:FindFirstChild(meleeName) then
+				-- Tenta achar qualquer Melee
+				for _, tool in pairs(t.Backpack:GetChildren()) do
+					if tool:IsA("Tool") and tool.ToolTip == "Melee" then
+						t.Character.Humanoid:EquipTool(tool)
+						meleeName = tool.Name
+						break
+					end
+				end
+			end
+		end)
+		
+		getgenv().AimPos = V.HumanoidRootPart.CFrame
+		-- Ataca com Melee (sem animação se configurado)
+		pcall(function()
 			local noAnim = Settings["Attack No Animation "] or Settings["Attack No Animation"]
 			if noAnim then
 				if AttackFunction then AttackFunction(60) end
 			else
-				if attackMelee then attackMelee() end
+				if attackMelee then attackMelee(60) end
 			end
-			if getgenv().Attack then getgenv().Attack() end
+			local tool = t.Character:FindFirstChild(meleeName) or t.Character:FindFirstChildOfClass("Tool")
+			if tool then tool:Activate() end
 		end)
+		return
+	else
+		-- FASE 2: Mob com vida baixa (<=40%) - TROCA PARA TOOL SELECIONADA NO SELECT METHOD FARM MASTERY
+		local method = Settings["Select Method Farm Mastery"] or "Blox Fruit"
+		local toolName = NameWeapon(method)
+		local toolObj = NameWeapon(method, true)
+		
+		if not toolName and toolObj then
+			toolName = toolObj.Name
+		end
+		if not toolName then
+			-- Tenta achar por ToolTip mesmo
+			for _, tool in pairs(t.Backpack:GetChildren()) do
+				if tool:IsA("Tool") and tool.ToolTip == method then
+					toolName = tool.Name
+					break
+				end
+			end
+			for _, tool in pairs(t.Character:GetChildren()) do
+				if tool:IsA("Tool") and tool.ToolTip == method then
+					toolName = tool.Name
+					break
+				end
+			end
+		end
+		
+		if not toolName then
+			return
+		end
+		
+		-- Equipa a Tool selecionada (Blox Fruit, Gun, Sword)
+		pcall(function()
+			if t.Backpack:FindFirstChild(toolName) then
+				t.Character.Humanoid:EquipTool(t.Backpack:FindFirstChild(toolName))
+			end
+		end)
+		
+		getgenv().AimPos = V.HumanoidRootPart.CFrame
+		
+		if method == "Gun" and t.Character:FindFirstChild(toolName) then
+			ShootM1(V)
+		end
+		
+		-- Usa a skill da Tool selecionada para farmar maestria
+		if toolName == "Control-Control" then
+			local globe = workspace._WorldOrigin:FindFirstChild("Globe")
+			if not globe or t:DistanceFromCharacter(globe.Position) > globe.AB.CurveSize0 / 1.75 then
+				B(toolObj)
+				return
+			end
+		end
+		
+		if toolObj then
+			local skillKey = H(toolObj)
+			if skillKey then
+				local holdTime = Settings["Skill " .. skillKey .. " " .. toolObj.ToolTip] or 0.5
+				local vim = game:GetService("VirtualInputManager")
+				vim:SendKeyEvent(true, skillKey, false, game)
+				if Settings["Use skill fast dont hold"] then
+					task.wait(0.05)
+				else
+					task.wait(holdTime)
+				end
+				vim:SendKeyEvent(false, skillKey, false, game)
+			end
+		end
 	end
 end
+
+
 getgenv().StackFarm = true
 getgenv().StackFarmOther = true
 StackFarm = getgenv().StackFarm
