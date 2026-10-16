@@ -2560,10 +2560,10 @@ local content = make("Frame", {Name="Content", Position=UDim2.new(0,SIDEBAR_W,0,
         nb.LayoutOrder=#pages
         local Page={}
         function Page.CreateSection(sectionName)
-            local card=make("Frame", {Name=sectionName, Size=UDim2.new(1,0,0,40), AutomaticSize=Enum.AutomaticSize.Y, BackgroundColor3=C.panel, BackgroundTransparency=0.8, BorderSizePixel=0}, frame)
+            local card=make("Frame", {Name=sectionName, Size=UDim2.new(1,0,0,40), AutomaticSize=Enum.AutomaticSize.Y, BackgroundColor3=C.panel, BackgroundTransparency=0.9, BorderSizePixel=0}, frame)
             -- Detalhe animado nas partes pretas
             do
-                local detail = make("Frame", {Name="AnimatedDetail", Size=UDim2.new(1,0,0,1), Position=UDim2.new(0,0,0,0), BackgroundColor3=Color3.fromRGB(0, 140, 255), BackgroundTransparency=0.8, BorderSizePixel=0, ZIndex=2}, card)
+                local detail = make("Frame", {Name="AnimatedDetail", Size=UDim2.new(1,0,0,1), Position=UDim2.new(0,0,0,0), BackgroundColor3=Color3.fromRGB(0, 140, 255), BackgroundTransparency=0.9, BorderSizePixel=0, ZIndex=2}, card)
                 make("UIGradient", {Rotation=0, Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,0.5), NumberSequenceKeypoint.new(0.5,0), NumberSequenceKeypoint.new(1,0.5)}), Color=ColorSequence.new(Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255))}, detail)
                 spawn(function()
                     local TS=game:GetService("TweenService")
@@ -2576,7 +2576,7 @@ local content = make("Frame", {Name="Content", Position=UDim2.new(0,SIDEBAR_W,0,
                 
                 -- Particulas brilhantes dentro da parte preta
                 for _=1,2 do
-                    local p=make("Frame", {Size=UDim2.new(0,2,0,2), Position=UDim2.new(math.random(),0,math.random(),0), BackgroundColor3=Color3.fromRGB(80, 180, 255), BackgroundTransparency=0.85, ZIndex=3}, card)
+                    local p=make("Frame", {Size=UDim2.new(0,2,0,2), Position=UDim2.new(math.random(),0,math.random(),0), BackgroundColor3=Color3.fromRGB(80, 180, 255), BackgroundTransparency=0.95, ZIndex=3}, card)
                     make("UICorner", {CornerRadius=UDim.new(1,0)}, p)
                     spawn(function()
                         local TS=game:GetService("TweenService")
@@ -7312,9 +7312,12 @@ AttackFunction = function(G)
 	if t.Character.Stun.Value ~= 0 then
 		return
 	end
-	if not Settings["Attack No Animation "] then
+	-- CORRIGIDO: Attack No Animation sem animação
+	local noAnim = Settings["Attack No Animation "] or Settings["Attack No Animation"]
+	if not noAnim then
 		attackMelee(G)
 	else
+		-- Sem animação - ataca direto via remote
 		local m = AttackAOE(G, false)
 		if not m then
 			return
@@ -8972,128 +8975,31 @@ local function H(C)
 	end
 end
 function UsedualFlock()
-	local meleeName = NameWeapon("Melee", true) or NameWeapon("Melee") or NameWeapon(Settings["Select Weapon"] or "Melee", true) or NameWeapon(Settings["Select Weapon"] or "Melee")
-	if meleeName then
-		equiptool(meleeName)
+	-- FIX SELECT WEAPON DETECTION no Setting Farm
+	local selectedWeaponType = Settings["Select Weapon"] or "Melee"
+	local meleeName = NameWeapon("Melee") or "Combat"
+	local selectedName = NameWeapon(selectedWeaponType) or meleeName
+	
+	-- Se Select Weapon for Melee, usa Melee
+	-- Se for Sword, Gun, Blox Fruit, usa o selecionado
+	local toolToUse = selectedName
+	if not toolToUse or toolToUse == "" then
+		toolToUse = meleeName
+	end
+	
+	if toolToUse then
+		EquipToolByName(toolToUse)
+		equiptool(toolToUse)
 		pcall(function()
-			if attackMelee then attackMelee() end
+			getgenv().AimPos = getgenv().AimPos or (t.Character and t.Character.HumanoidRootPart and t.Character.HumanoidRootPart.CFrame)
+			local noAnim = Settings["Attack No Animation "] or Settings["Attack No Animation"]
+			if noAnim then
+				if AttackFunction then AttackFunction(60) end
+			else
+				if attackMelee then attackMelee() end
+			end
 			if getgenv().Attack then getgenv().Attack() end
 		end)
-	else
-		equiptool(NameWeapon(Settings["Select Weapon"] or "Melee"))
-	end
-end
-function FarmMastery(V)
-	if not V or not V:FindFirstChild("Humanoid") or not V:FindFirstChild("HumanoidRootPart") then
-		return
-	end
-	-- CORRIGIR MIRA: mira no mob sempre
-	getgenv().AimPos = V.HumanoidRootPart.CFrame
-	getgenv().TargetMob = V
-	pcall(function()
-		if t and t.Character and t.Character:FindFirstChild("HumanoidRootPart") and V:FindFirstChild("HumanoidRootPart") then
-			local hrp = t.Character.HumanoidRootPart
-			local mobHrp = V.HumanoidRootPart
-			-- Faz mirar no mob
-			getgenv().AimPos = mobHrp.CFrame
-			-- Faz olhar pro mob (sem travar)
-			local mobPos = mobHrp.Position
-			if (hrp.Position - mobPos).Magnitude < 100 then
-				local lookAt = CFrame.new(hrp.Position, Vector3.new(mobPos.X, hrp.Position.Y, mobPos.Z))
-				hrp.CFrame = hrp.CFrame:Lerp(lookAt, 0.3)
-			end
-		end
-	end)
-	if not Settings["Farm Mastery"] then
-		UsedualFlock()
-		return
-	end
-	if V.Humanoid.Health / V.Humanoid.MaxHealth > (Settings["Health %"] or 100) / 100 then
-		-- USA MELEE PARA DAR DANO CONFIGURADO (até Health%) - FIX EQUIPAR MELEE
-		local meleeName = NameWeapon("Melee") -- Nome da Tool Melee
-		if meleeName then
-			-- Equipa Melee de verdade
-			EquipToolByName(meleeName)
-			equiptool(meleeName)
-			getgenv().AimPos = V.HumanoidRootPart.CFrame
-			pcall(function()
-				local char = t.Character
-				if char and char:FindFirstChild(meleeName) then
-					-- Olha pro mob
-					local hrp = char.HumanoidRootPart
-					local mobPos = V.HumanoidRootPart.Position
-					getgenv().AimPos = V.HumanoidRootPart.CFrame
-					-- Ataca
-					if attackMelee then attackMelee() end
-					char:FindFirstChild(meleeName):Activate()
-				end
-			end)
-		else
-			UsedualFlock()
-		end
-		return
-	end
-	local C = Settings["Select Method Farm Mastery"]
-	local J, F = NameWeapon(C), NameWeapon(C, true)
-	if not J then
-		-- Tenta achar a tool mesmo sem NameWeapon
-		J = C
-	end
-	if C == "Gun" and J and (t.Character:FindFirstChild(J) or t.Backpack:FindFirstChild(J)) then
-		EquipToolByName(J)
-		ShootM1(V)
-	end
-	-- FIX EQUIPAR TOOL SELECIONADA (Melee, Sword, Gun, Blox Fruit)
-	if J then
-		EquipToolByName(J)
-		equiptool(J)
-		-- Garante que equipou
-		task.wait(0.1)
-		if not t.Character:FindFirstChild(J) then
-			pcall(function()
-				for _, tool in pairs(t.Backpack:GetChildren()) do
-					if tool:IsA("Tool") and (tool.ToolTip == C or tool.Name == J) then
-						t.Character.Humanoid:EquipTool(tool)
-						J = tool.Name
-						break
-					end
-				end
-			end)
-		end
-		getgenv().AimPos = V.HumanoidRootPart.CFrame
-	end
-	if J == "Control-Control" then
-		C = workspace._WorldOrigin:FindFirstChild("Globe")
-		if not C or t:DistanceFromCharacter(C.Position) > C.AB.CurveSize0 / 1.75 then
-			B(J)
-			return
-		end
-	elseif J == "Buddha-Buddha" then
-		if not t.Character.HumanoidRootPart:FindFirstChild("Buddha") then
-			B(J)
-			return
-		end
-	elseif J == "Diamond-Diamond" then
-		if not t.Character:FindFirstChild("DiamondBody") then
-			B(J)
-			return
-		end
-	elseif J == "Falcon-Falcon" then
-		if not t.Character:FindFirstChild("FalconWings") then
-			B(J)
-			return
-		end
-	end
-	C = H(F)
-	if C then
-		V, J = Settings["Skill " .. C .. " " .. F.ToolTip] or 0.5, game:GetService("VirtualInputManager")
-		J:SendKeyEvent(true, C, false, game)
-		if Settings["Use skill fast dont hold"] then
-			task.wait(0.05)
-		else
-			task.wait(V)
-		end
-		J:SendKeyEvent(false, C, false, game)
 	end
 end
 getgenv().StackFarm = true
