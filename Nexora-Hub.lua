@@ -8330,34 +8330,45 @@ do
 				local isActive = false
 				pcall(function() isActive = AQIsQuestActive() end)
 
-				-- V19 FIX: Se tem missão ativa, desliga Auto Quest e espera completar DE FATO
-				-- Antes tava pegando nova missão depois de matar uns NPCs, sem esperar completar
+				-- V20 FIX: Espera completar missão de verdade, não pega antes
+				-- Antes pegava missão antes de completar 8/8
 				if isActive then
 					if Settings["Auto Quest [Katakuri/Bone/Tyrant]"] then
 						SetAQ(false)
 					end
-					-- Espera missão acabar de verdade (não só sumir da tela)
+					-- Espera até a missão completar de fato (todas as tarefas zeradas)
 					local questCompleted = false
+					local stuckCheck = 0
 					while getgenv().__AQToggleCycleGeneration == cycleGen and Settings[sel] do
 						pcall(function() 
 							isActive = AQIsQuestActive()
-							-- Verifica se missão completou (tarefas zeradas)
-							if not isActive then
+							local completed = false
+							pcall(function() completed = IsActiveFarmQuestComplete() end)
+							local remaining = nil
+							pcall(function() remaining = AQQuestRemaining() end)
+							-- Só considera completo se IsActiveFarmQuestComplete true OU remaining == 0
+							if completed or (remaining ~= nil and remaining == 0) then
 								questCompleted = true
-							else
-								local remaining = nil
-								pcall(function() remaining = AQQuestRemaining() end)
-								if remaining == 0 then
-									questCompleted = true
-									isActive = false
+								isActive = false
+							elseif not isActive then
+								-- Missão sumiu mas não completou? Pode ser morte ou bug, espera mais
+								if remaining ~= nil and remaining > 0 and remaining <= 2 then
+									-- Faltava pouco, provavelmente completou mas UI piscou
+									stuckCheck = stuckCheck + 1
+									if stuckCheck >= 3 then
+										questCompleted = true
+									end
+								else
+									-- Ainda faltava muito, não completou
+									isActive = true
 								end
 							end
 						end)
-						if not isActive and questCompleted then break end
+						if questCompleted then break end
 						task.wait(1)
 					end
-					-- Missão completou de fato, espera 3s antes de pegar próxima (evita spam)
-					task.wait(3)
+					-- Missão completou de fato (8/8), espera 5s antes de pegar próxima
+					task.wait(5)
 					if getgenv().__AQToggleCycleGeneration == cycleGen and Settings[sel] then
 						SetAQ(true)
 					end
