@@ -2015,7 +2015,7 @@ function Nexora.CreateMain(config)
         ColorSequenceKeypoint.new(1, Color3.fromRGB(8,8,11)),
     })}, top)
     -- cobre os cantos de baixo do header e desenha a linha dourada
-    make("Frame", {Position=UDim2.new(0,0,1,-12), Size=UDim2.new(1,0,0,12), BackgroundColor3=Color3.fromRGB(10,10,14), BackgroundTransparency=0.3, BorderSizePixel=0}, top)
+    make("Frame", {Position=UDim2.new(0,0,1,-12), Size=UDim2.new(1,0,0,12), BackgroundColor3=Color3.fromRGB(10,10,14), BorderSizePixel=0}, top)
     do
         local hl = make("Frame", {Position=UDim2.new(0,0,1,-1), Size=UDim2.new(1,0,0,1), BackgroundColor3=GOLD, BackgroundTransparency=0, BorderSizePixel=0}, top)
         local hg = make("UIGradient", {Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,1),NumberSequenceKeypoint.new(0.5,0.1),NumberSequenceKeypoint.new(1,1)}), Offset=Vector2.new(-1,0)}, hl)
@@ -2282,7 +2282,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
     -- [CONTROL BACKGROUND DENTRO DA UI]
     do
         -- Fundo azul com hexágono
-        local bgControl = make("Frame", {Name="ControlBG", Size=UDim2.new(1,0,1,0), BackgroundColor3=Color3.fromRGB(12, 28, 75), BackgroundTransparency=0.1, ZIndex=0, ClipsDescendants=true}, content)
+        local bgControl = make("Frame", {Name="ControlBG", Size=UDim2.new(1,0,1,0), BackgroundColor3=Color3.fromRGB(12, 28, 75), BackgroundTransparency=0, ZIndex=0, ClipsDescendants=true}, content)
         local grad = make("UIGradient", {Rotation=90, Color=ColorSequence.new{
             ColorSequenceKeypoint.new(0, Color3.fromRGB(15, 35, 90)),
             ColorSequenceKeypoint.new(0.5, Color3.fromRGB(20, 50, 130)),
@@ -2485,7 +2485,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
         nb.LayoutOrder=#pages
         local Page={}
         function Page.CreateSection(sectionName)
-            local card=make("Frame", {Name=sectionName, Size=UDim2.new(1,0,0,40), AutomaticSize=Enum.AutomaticSize.Y, BackgroundColor3=C.panel, BackgroundTransparency=0.75, BorderSizePixel=0}, frame)
+            local card=make("Frame", {Name=sectionName, Size=UDim2.new(1,0,0,40), AutomaticSize=Enum.AutomaticSize.Y, BackgroundColor3=C.panel, BackgroundTransparency=0.7, BorderSizePixel=0}, frame)
             corner(card,10); stroke(card,C.line,0.35)
             make("UIPadding", {PaddingTop=UDim.new(0,11),PaddingBottom=UDim.new(0,11),PaddingLeft=UDim.new(0,11),PaddingRight=UDim.new(0,11)}, card)
             local list=make("UIListLayout", {Padding=UDim.new(0,7),SortOrder=Enum.SortOrder.LayoutOrder}, card)
