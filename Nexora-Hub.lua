@@ -14974,13 +14974,9 @@ do
 			pcall(function() ResetAirState() end)
 			return
 		end
-		-- NÃO INTERFERIR NO AUTO FIND LEVIATHAN
-		if Settings["Auto Find Leviathan"] or Settings["Multi Find Leviathan"] or Settings["Auto Start Leviathan"] or Settings["Teleport Frozen Dimension"] or Settings["Tween Boat To Frozen Dimension"] or Settings["Auto Fire Shoot Heart Leviathan"] then return end
-		-- V8: Auto Sea Event e Auto Multi Sea Event funcionam independente do Raise Boat Manual Drive
-		if Settings["Auto Sea Event"] or Settings["Auto Multi Sea Event"] then
-			-- Não aplica raise quando está em Sea Event, deixa o Sea Event controlar
-			-- Mas não bloqueia o Sea Event
-		end
+		-- V36 FIX: Raise Boat Manual Drive TOTALMENTE independente
+		-- Não depende de Sea Event, Multi Sea Event, Find Prehistoric Island, Leviathan, nada
+		-- Funciona sozinho quando ligado
 		pcall(function()
 			local char = t.Character
 			local hum = char and char:FindFirstChildOfClass("Humanoid")
