@@ -8260,158 +8260,97 @@ SettingAutoFarmSection.CreateToggle(
 		SaveSettings("Auto Quest [Katakuri/Bone/Tyrant]", V)
 	end
 )
--- V15 FIX: Ciclo inteligente Auto Quest - não fica travado no NPC e não vai pra lugar aleatório
--- Lógica: Quando tem missão ativa, Auto Quest fica DESLIGADO pra farm ir matar
--- Quando não tem missão e tá na ilha, liga Auto Quest por até 5s pra pegar missão
--- Sem o ciclo bruto de 10s/75s que quebrava o farm
+-- V25 AUTO QUEST DO ZERO - Pesquisado e refeito baseado em scripts funcionando
+-- Pega missão, espera completar 8/8, pega outra - Level/Bones/Katakuri/Tyrant
+-- Baseado em padrão de scripts que funcionam: checa GuideModule QuestData Task
 do
-	getgenv().__AQToggleCycleGeneration = (getgenv().__AQToggleCycleGeneration or 0) + 1
-	local cycleGen = getgenv().__AQToggleCycleGeneration
-	getgenv().__AQUserWants = true
-	local function SetAQ(value)
-		if getgenv().__AQUserWants == false and value == true then return end
-		getgenv().__AQCycleSync = true
-		pcall(function() SaveSettings("Auto Quest [Katakuri/Bone/Tyrant]", value) end)
-		pcall(function()
-			local opt = Options and Options["Auto Quest"]
-			local ctrl = opt and opt.FunctionCreate
-			if ctrl and ctrl.SetValue then ctrl:SetValue(value) end
-		end)
-		task.delay(0.3, function() getgenv().__AQCycleSync = false end)
-	end
+	getgenv().__AQToggleCycleGeneration = (getgenv().__AQToggleCycleGeneration or 0) + 300
+	getgenv().__AQGen = (getgenv().__AQGen or 0) + 300
 
-	local function GetQuestPos()
-		local sel = GetSelectedIndividualFarm and GetSelectedIndividualFarm()
-		if not sel or sel == "Aura Farm" or Settings["Farm Material"] then return nil end
-		local targetPos
-		if sel == "Auto Farm Level" then
-			pcall(function()
-				local info = GetLevelQuestInfo(t.Data.Level.Value)
-				if info and info.Pos then
-					targetPos = typeof(info.Pos) == "CFrame" and info.Pos.Position or info.Pos
-				end
-			end)
-		else
-			local info = AutoQuestInfo and AutoQuestInfo[sel]
-			local pts = getgenv().questpoint
-			if not pts or not next(pts) then
-				pcall(function() CFrameQuest() end)
-				task.wait(0.5)
-				pts = getgenv().questpoint
+	local function GetQuestTargetSimple(selected)
+		if not selected or selected == "Aura Farm" or Settings["Farm Material"] then return nil end
+		if selected == "Auto Farm Level" then
+			local ok, info = pcall(GetLevelQuestInfo, t.Data.Level.Value)
+			if ok and type(info) == "table" and info.Pos and info.QuestName then
+				local pos = typeof(info.Pos) == "CFrame" and info.Pos.Position or info.Pos
+				return tostring(info.QuestName), info.Id, pos
 			end
-			local cf = info and pts and pts[info[2]]
-			if not cf then
-				pcall(function() CFrameQuest() end)
-				task.wait(0.5)
-				pts = getgenv().questpoint
-				cf = info and pts and pts[info[2]]
-			end
-			if cf then targetPos = cf.Position end
+			return nil
 		end
-		return targetPos
+		local q = AutoQuestInfo[selected]
+		if not q then return nil end
+		local pts = getgenv().questpoint
+		if not pts or not next(pts) then
+			pcall(function() CFrameQuest() end)
+			task.wait(0.5)
+			pts = getgenv().questpoint
+		end
+		local cf = q and pts and pts[q[2]]
+		if not cf then
+			pcall(function() CFrameQuest() end)
+			task.wait(0.5)
+			pts = getgenv().questpoint
+			cf = q and pts and pts[q[2]]
+		end
+		if not cf then return nil end
+		return q[2], q[3], cf.Position
 	end
 
 	task.spawn(function()
-		SetAQ(true)
-		while getgenv().__AQToggleCycleGeneration == cycleGen do
+		local lastQuestTime = 0
+		while task.wait(0.5) do
 			pcall(function()
-				local sel = GetSelectedIndividualFarm and GetSelectedIndividualFarm()
-				if not sel or sel == "Aura Farm" then
-					task.wait(1)
-					return
-				end
-				local root = t.Character and t.Character:FindFirstChild("HumanoidRootPart")
-				local questPos = GetQuestPos()
-				if not root or not questPos then
-					task.wait(1)
-					return
-				end
-				local distToNPC = (root.Position - questPos).Magnitude
-				local isActive = false
-				pcall(function() isActive = AQIsQuestActive() end)
+				if not Settings["Auto Quest [Katakuri/Bone/Tyrant]"] then return end
+				local selected = GetSelectedIndividualFarm and GetSelectedIndividualFarm()
+				if not selected or selected == "Aura Farm" then return end
 
-				-- V20 FIX: Espera completar missão de verdade, não pega antes
-				-- Antes pegava missão antes de completar 8/8
-				if isActive then
-					if Settings["Auto Quest [Katakuri/Bone/Tyrant]"] then
-						SetAQ(false)
+				-- Se tem missão ativa, não pega outra
+				if AQIsQuestActive() then
+					lastQuestTime = tick()
+					return
+				end
+
+				-- Sem missão: se tinha missão há menos de 5s, espera (evita pegar no meio)
+				if tick() - lastQuestTime < 5 then return end
+
+				local remaining = nil
+				pcall(function() remaining = AQQuestRemaining() end)
+				if remaining ~= nil and remaining > 0 then return end
+
+				local questName, questId, npcPos = GetQuestTargetSimple(selected)
+				if not questName or not npcPos then return end
+
+				local root = t.Character and t.Character:FindFirstChild("HumanoidRootPart")
+				if not root then return end
+
+				if (root.Position - npcPos).Magnitude > 300 then
+					toTarget(CFrame.new(npcPos) * CFrame.new(0, 4, 2))
+					return
+				end
+
+				if (root.Position - npcPos).Magnitude <= 10 then
+					pcall(function()
+						CommF:InvokeServer("StartQuest", questName, questId)
+					end)
+					local deadline = tick() + 4
+					while tick() < deadline do
+						if AQIsQuestActive() then break end
+						task.wait(0.3)
 					end
-					-- Espera até a missão completar de fato (todas as tarefas zeradas)
-					local questCompleted = false
-					local stuckCheck = 0
-					while getgenv().__AQToggleCycleGeneration == cycleGen and Settings[sel] do
-						pcall(function() 
-							isActive = AQIsQuestActive()
-							local completed = false
-							pcall(function() completed = IsActiveFarmQuestComplete() end)
-							local remaining = nil
-							pcall(function() remaining = AQQuestRemaining() end)
-							-- Só considera completo se IsActiveFarmQuestComplete true OU remaining == 0
-							if completed or (remaining ~= nil and remaining == 0) then
-								questCompleted = true
-								isActive = false
-							elseif not isActive then
-								-- Missão sumiu mas não completou? Pode ser morte ou bug, espera mais
-								if remaining ~= nil and remaining > 0 and remaining <= 2 then
-									-- Faltava pouco, provavelmente completou mas UI piscou
-									stuckCheck = stuckCheck + 1
-									if stuckCheck >= 3 then
-										questCompleted = true
-									end
-								else
-									-- Ainda faltava muito, não completou
-									isActive = true
-								end
-							end
-						end)
-						if questCompleted then break end
-						task.wait(1)
-					end
-					-- Missão completou de fato (8/8), espera 5s antes de pegar próxima
-					task.wait(5)
-					if getgenv().__AQToggleCycleGeneration == cycleGen and Settings[sel] then
-						SetAQ(true)
+					if AQIsQuestActive() then
+						lastQuestTime = tick()
+						pcall(function() TweenManager.CancelCurrent() end)
+						task.wait(1.5)
 					end
 				else
-					-- Sem missão: se tá longe do NPC (>2500), não mexe
-					if distToNPC > 2500 then
-						if not Settings["Auto Quest [Katakuri/Bone/Tyrant]"] then
-							SetAQ(true)
-						end
-						task.wait(1)
-					else
-						-- Na ilha sem missão: garante Auto Quest ligado pra pegar
-						if not Settings["Auto Quest [Katakuri/Bone/Tyrant]"] then
-							SetAQ(true)
-						end
-						-- Se tá perto do NPC (<120), espera até 6s pra pegar missão, depois desliga 12s pra ir farmar
-						if distToNPC <= 120 then
-							local deadline = tick() + 6
-							while tick() < deadline and getgenv().__AQToggleCycleGeneration == cycleGen do
-								pcall(function() isActive = AQIsQuestActive() end)
-								if isActive then break end
-								task.wait(0.3)
-							end
-							-- Pegou ou não, desliga por 12s pra sair do NPC e ir farmar
-							if getgenv().__AQToggleCycleGeneration == cycleGen and Settings[sel] then
-								SetAQ(false)
-								task.wait(12)
-								if getgenv().__AQToggleCycleGeneration == cycleGen and Settings[sel] then
-									SetAQ(true)
-								end
-							end
-						else
-							task.wait(1)
-						end
-					end
+					toTarget(CFrame.new(npcPos) * CFrame.new(0, 4, 2))
 				end
 			end)
-			task.wait(0.5)
 		end
 	end)
 end
 
--- Mantém os toggles "Farm Mastery"-- Mantém os toggles "Farm Mastery" e "Start Farm" visualmente iguais ao estado real.
+-- Mantém os toggles "Farm Mastery"-- Mantém os toggles "Farm Mastery"-- Mantém os toggles "Farm Mastery" e "Start Farm" visualmente iguais ao estado real.
 function SyncMasteryToggle(title, v)
 	if getgenv().__MasterySyncing then
 		return
@@ -9604,19 +9543,7 @@ getgenv().__AQReady, getgenv().__AQGiveUp = 0, nil
 
 -- O farm só espera quando o Auto Quest está ligado, tem alvo e ainda não há missão ativa.
 function AQNeedsQuest()
-    if not Settings["Auto Quest [Katakuri/Bone/Tyrant]"] then
-        return false
-    end
-    if Settings["Farm Mastery"] and Settings["Start Farm"] then
-        return false
-    end
-    if getgenv().__AQGiveUp and tick() < getgenv().__AQGiveUp then
-        return false
-    end
-    if tick() - (getgenv().__AQReady or 0) > 2 then
-        return false -- o Auto Quest não está em condições de agir: o farm segue normal
-    end
-    return not AQIsQuestActive()
+    return false
 end
 
 do
