@@ -2278,86 +2278,11 @@ local fScale = make("UIScale", {Scale=1}, reopen)
         nav.CanvasSize = UDim2.new(0, 0, 0, navLayout.AbsoluteContentSize.Y + 8)
     end)
     
-    
-    -- [DETALHES ANIMADOS NAS PARTES PRETAS DA BIBLIOTECA - SIDEBAR E HEADER]
-    do
-        local TS=game:GetService("TweenService")
-        
-        -- Detalhes no header (onde tem NEXORA HUB)
-        if top then
-            -- Linha azul brilhante animada no topo
-            local lineTop = make("Frame", {Name="AnimatedLineTop", Size=UDim2.new(1,0,0,1), Position=UDim2.new(0,0,1,-1), BackgroundColor3=Color3.fromRGB(0, 140, 255), BorderSizePixel=0, ZIndex=10}, top)
-            local gradTop = make("UIGradient", {Rotation=0, Color=ColorSequence.new{
-                ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 80, 180)),
-                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(80, 180, 255)),
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 80, 180))
-            }, Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,0.3), NumberSequenceKeypoint.new(0.5,0), NumberSequenceKeypoint.new(1,0.3)})}, lineTop)
-            
-            spawn(function()
-                while lineTop.Parent do
-                    local tw=TS:Create(gradTop, TweenInfo.new(2, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1), {Offset=Vector2.new(1,0)})
-                    tw:Play()
-                    wait(2)
-                end
-            end)
-            
-            -- Quadradinhos flutuantes no header
-            for i=1,8 do
-                local sq=make("Frame", {Size=UDim2.new(0,4,0,4), Position=UDim2.new(math.random(),0,math.random(),0), BackgroundTransparency=1, Rotation=45, ZIndex=5}, top)
-                local st=make("UIStroke", {Color=Color3.fromRGB(80, 180, 255), Thickness=1, Transparency=0.6}, sq)
-                make("UICorner", {CornerRadius=UDim.new(0,1)}, sq)
-                spawn(function()
-                    while sq.Parent do
-                        local tw=TS:Create(sq, TweenInfo.new(math.random(3,5), Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Position=UDim2.new(math.random(),0,math.random(),0), Rotation=math.random(-45,45)})
-                        tw:Play()
-                        wait(math.random(3,5))
-                    end
-                end)
-            end
-        end
-        
-        -- Detalhes na sidebar (lateral esquerda)
-        if sidebar then
-            -- Container de detalhes
-            local detailContainer = make("Frame", {Name="SidebarDetails", Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, ZIndex=1, ClipsDescendants=true}, sidebar)
-            
-            -- Quadrados estilo Control na sidebar
-            for i=1,12 do
-                local sq=make("Frame", {Size=UDim2.new(0,math.random(5,9),0,math.random(5,9)), Position=UDim2.new(math.random(),0,math.random(),0), BackgroundTransparency=1, Rotation=math.random(-30,30), ZIndex=2}, detailContainer)
-                local st=make("UIStroke", {Color=Color3.fromRGB(0, 140, 255), Thickness=1, Transparency=0.7}, sq)
-                make("UICorner", {CornerRadius=UDim.new(0,1)}, sq)
-                spawn(function()
-                    while sq.Parent do
-                        local tw=TS:Create(sq, TweenInfo.new(math.random(4,7), Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Position=UDim2.new(math.random(),0,math.random(),0), Rotation=math.random(-60,60)})
-                        local tw2=TS:Create(st, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, 0, true), {Transparency=0.9})
-                        tw:Play()
-                        tw2:Play()
-                        wait(math.random(4,7))
-                    end
-                end)
-            end
-            
-            -- Pontos brilhantes piscando
-            for i=1,15 do
-                local dot=make("Frame", {Size=UDim2.new(0,2,0,2), Position=UDim2.new(math.random(),0,math.random(),0), BackgroundColor3=Color3.fromRGB(80, 180, 255), BackgroundTransparency=0.3, ZIndex=2}, detailContainer)
-                make("UICorner", {CornerRadius=UDim.new(1,0)}, dot)
-                spawn(function()
-                    while dot.Parent do
-                        local tw=TS:Create(dot, TweenInfo.new(math.random(1,3), Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, 0, true), {BackgroundTransparency=1})
-                        tw:Play()
-                        wait(math.random(2,4))
-                    end
-                end)
-            end
-        end
-    end
-    -- [FIM DETALHES ANIMADOS]
-
-local content = make("Frame", {Name="Content", Position=UDim2.new(0,SIDEBAR_W,0,HEADER_H), Size=UDim2.new(1,-SIDEBAR_W,1,-HEADER_H), BackgroundColor3=Color3.fromRGB(10, 20, 50), BackgroundTransparency=0.15, BorderSizePixel=0}, shell)
+    local content = make("Frame", {Name="Content", Position=UDim2.new(0,SIDEBAR_W,0,HEADER_H), Size=UDim2.new(1,-SIDEBAR_W,1,-HEADER_H), BackgroundColor3=Color3.fromRGB(10, 20, 50), BackgroundTransparency=0.15, BorderSizePixel=0}, shell)
     -- [CONTROL BACKGROUND DENTRO DA UI]
     do
         -- Fundo azul com hexágono
-        local bgControl = make("Frame", {Name="ControlBG", Size=UDim2.new(1,0,1,0), BackgroundColor3=Color3.fromRGB(12, 28, 75), BackgroundTransparency=0.1, ZIndex=0, ClipsDescendants=true}, content)
+        local bgControl = make("Frame", {Name="ControlBG", Size=UDim2.new(1,0,1,0), BackgroundColor3=Color3.fromRGB(12, 28, 75), BackgroundTransparency=0, ZIndex=0, ClipsDescendants=true}, content)
         local grad = make("UIGradient", {Rotation=90, Color=ColorSequence.new{
             ColorSequenceKeypoint.new(0, Color3.fromRGB(15, 35, 90)),
             ColorSequenceKeypoint.new(0.5, Color3.fromRGB(20, 50, 130)),
@@ -2400,13 +2325,13 @@ local content = make("Frame", {Name="Content", Position=UDim2.new(0,SIDEBAR_W,0,
         end
         
         -- Cria 14 quadrados flutuantes
-        for i=1,25 do
+        for i=1,14 do
             createControlSquare()
             wait(0.05)
         end
         
         -- Hexágono sutil no fundo usando pontos
-        for i=1,25 do
+        for i=1,20 do
             local dot = make("Frame", {
                 Size=UDim2.new(0,math.random(3,8),0,math.random(3,8)),
                 Position=UDim2.new(math.random(),0,math.random(),0),
@@ -2560,34 +2485,7 @@ local content = make("Frame", {Name="Content", Position=UDim2.new(0,SIDEBAR_W,0,
         nb.LayoutOrder=#pages
         local Page={}
         function Page.CreateSection(sectionName)
-            local card=make("Frame", {Name=sectionName, Size=UDim2.new(1,0,0,40), AutomaticSize=Enum.AutomaticSize.Y, BackgroundColor3=C.panel, BackgroundTransparency=0.9, BorderSizePixel=0}, frame)
-            -- Detalhe animado nas partes pretas
-            do
-                local detail = make("Frame", {Name="AnimatedDetail", Size=UDim2.new(1,0,0,1), Position=UDim2.new(0,0,0,0), BackgroundColor3=Color3.fromRGB(0, 140, 255), BackgroundTransparency=0.85, BorderSizePixel=0, ZIndex=2}, card)
-                make("UIGradient", {Rotation=0, Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,0.5), NumberSequenceKeypoint.new(0.5,0), NumberSequenceKeypoint.new(1,0.5)}), Color=ColorSequence.new(Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255))}, detail)
-                spawn(function()
-                    local TS=game:GetService("TweenService")
-                    while detail.Parent do
-                        local tw=TS:Create(detail, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, 0, true), {BackgroundTransparency=0.9})
-                        tw:Play()
-                        wait(2)
-                    end
-                end)
-                
-                -- Particulas brilhantes dentro da parte preta
-                for _=1,2 do
-                    local p=make("Frame", {Size=UDim2.new(0,2,0,2), Position=UDim2.new(math.random(),0,math.random(),0), BackgroundColor3=Color3.fromRGB(80, 180, 255), BackgroundTransparency=0.85, ZIndex=3}, card)
-                    make("UICorner", {CornerRadius=UDim.new(1,0)}, p)
-                    spawn(function()
-                        local TS=game:GetService("TweenService")
-                        while p.Parent do
-                            local tw=TS:Create(p, TweenInfo.new(math.random(2,4), Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, 0, true), {BackgroundTransparency=1, Position=UDim2.new(math.random(),0,math.random(),0)})
-                            tw:Play()
-                            wait(math.random(2,4))
-                        end
-                    end)
-                end
-            end
+            local card=make("Frame", {Name=sectionName, Size=UDim2.new(1,0,0,40), AutomaticSize=Enum.AutomaticSize.Y, BackgroundColor3=C.panel, BackgroundTransparency=0.8, BorderSizePixel=0}, frame)
             corner(card,10); stroke(card,C.line,0.35)
             make("UIPadding", {PaddingTop=UDim.new(0,11),PaddingBottom=UDim.new(0,11),PaddingLeft=UDim.new(0,11),PaddingRight=UDim.new(0,11)}, card)
             local list=make("UIListLayout", {Padding=UDim.new(0,7),SortOrder=Enum.SortOrder.LayoutOrder}, card)
@@ -8936,139 +8834,7 @@ local function H(C)
 	end
 end
 function UsedualFlock()
-	local meleeName = NameWeapon("Melee", true) or NameWeapon("Melee") or NameWeapon(Settings["Select Weapon"] or "Melee", true) or NameWeapon(Settings["Select Weapon"] or "Melee")
-	if meleeName then
-		equiptool(meleeName)
-		pcall(function()
-			if attackMelee then attackMelee() end
-			if getgenv().Attack then getgenv().Attack() end
-		end)
-	else
-		equiptool(NameWeapon(Settings["Select Weapon"] or "Melee"))
-	end
-end
-function FarmMastery(V)
-	if not V or not V:FindFirstChild("Humanoid") or not V:FindFirstChild("HumanoidRootPart") then
-		return
-	end
-	-- Mira no mob sempre
-	getgenv().AimPos = V.HumanoidRootPart.CFrame
-	getgenv().TargetMob = V
-	pcall(function()
-		if t and t.Character and t.Character:FindFirstChild("HumanoidRootPart") and V:FindFirstChild("HumanoidRootPart") then
-			local mobHrp = V.HumanoidRootPart
-			getgenv().AimPos = mobHrp.CFrame
-		end
-	end)
-	
-	if not Settings["Farm Mastery"] then
-		UsedualFlock()
-		return
-	end
-	
-	local healthPercent = (Settings["Health %"] or 40) / 100
-	local mobHealthPercent = V.Humanoid.Health / V.Humanoid.MaxHealth
-	
-	if mobHealthPercent > healthPercent then
-		-- FASE 1: Mob com vida alta (>40%) - USA MELEE PARA DAR DANO
-		local meleeName = NameWeapon("Melee")
-		if not meleeName then meleeName = "Combat" end
-		
-		-- Equipa Melee
-		pcall(function()
-			if t.Backpack:FindFirstChild(meleeName) then
-				t.Character.Humanoid:EquipTool(t.Backpack:FindFirstChild(meleeName))
-			elseif not t.Character:FindFirstChild(meleeName) then
-				-- Tenta achar qualquer Melee
-				for _, tool in pairs(t.Backpack:GetChildren()) do
-					if tool:IsA("Tool") and tool.ToolTip == "Melee" then
-						t.Character.Humanoid:EquipTool(tool)
-						meleeName = tool.Name
-						break
-					end
-				end
-			end
-		end)
-		
-		getgenv().AimPos = V.HumanoidRootPart.CFrame
-		-- Ataca com Melee (sem animação se configurado)
-		pcall(function()
-			local noAnim = Settings["Attack No Animation "] or Settings["Attack No Animation"]
-			if noAnim then
-				if AttackFunction then AttackFunction(60) end
-			else
-				if attackMelee then attackMelee(60) end
-			end
-			local tool = t.Character:FindFirstChild(meleeName) or t.Character:FindFirstChildOfClass("Tool")
-			if tool then tool:Activate() end
-		end)
-		return
-	else
-		-- FASE 2: Mob com vida baixa (<=40%) - TROCA PARA TOOL SELECIONADA NO SELECT METHOD FARM MASTERY
-		local method = Settings["Select Method Farm Mastery"] or "Blox Fruit"
-		local toolName = NameWeapon(method)
-		local toolObj = NameWeapon(method, true)
-		
-		if not toolName and toolObj then
-			toolName = toolObj.Name
-		end
-		if not toolName then
-			-- Tenta achar por ToolTip mesmo
-			for _, tool in pairs(t.Backpack:GetChildren()) do
-				if tool:IsA("Tool") and tool.ToolTip == method then
-					toolName = tool.Name
-					break
-				end
-			end
-			for _, tool in pairs(t.Character:GetChildren()) do
-				if tool:IsA("Tool") and tool.ToolTip == method then
-					toolName = tool.Name
-					break
-				end
-			end
-		end
-		
-		if not toolName then
-			return
-		end
-		
-		-- Equipa a Tool selecionada (Blox Fruit, Gun, Sword)
-		pcall(function()
-			if t.Backpack:FindFirstChild(toolName) then
-				t.Character.Humanoid:EquipTool(t.Backpack:FindFirstChild(toolName))
-			end
-		end)
-		
-		getgenv().AimPos = V.HumanoidRootPart.CFrame
-		
-		if method == "Gun" and t.Character:FindFirstChild(toolName) then
-			ShootM1(V)
-		end
-		
-		-- Usa a skill da Tool selecionada para farmar maestria
-		if toolName == "Control-Control" then
-			local globe = workspace._WorldOrigin:FindFirstChild("Globe")
-			if not globe or t:DistanceFromCharacter(globe.Position) > globe.AB.CurveSize0 / 1.75 then
-				B(toolObj)
-				return
-			end
-		end
-		
-		if toolObj then
-			local skillKey = H(toolObj)
-			if skillKey then
-				local holdTime = Settings["Skill " .. skillKey .. " " .. toolObj.ToolTip] or 0.5
-				local vim = game:GetService("VirtualInputManager")
-				vim:SendKeyEvent(true, skillKey, false, game)
-				if Settings["Use skill fast dont hold"] then
-					task.wait(0.05)
-				else
-					task.wait(holdTime)
-				end
-				vim:SendKeyEvent(false, skillKey, false, game)
-			end
-		end
-	end
+	equiptool(NameWeapon(Settings["Select Weapon"] or "Melee"))
 end
 
 
