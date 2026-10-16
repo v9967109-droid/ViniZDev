@@ -14970,17 +14970,12 @@ do
 	getgenv().__BoatRaiseConn = game:GetService("RunService").Heartbeat:Connect(function()
 		if getgenv().__BoatRaiseGen ~= gen then return end
 		if not Settings["Raise Boat Manual Drive"] then
-			-- V12: Só reseta quando ninguém precisa de barco no ar
-			-- Auto Sea Event, Multi Sea, Prehistoric e Multi Prehistoric funcionam SEM Raise Boat, então não força reset
-			if Settings["Auto Sea Event"] or Settings["Auto Multi Sea Event"] or Settings["Auto Find Leviathan"] or Settings["Multi Find Leviathan"] or Settings["Auto Start Leviathan"] or Settings["Auto Find Prehistoric Island"] or Settings["Auto Multi Find Prehistoric Island"] or Settings["Auto Event Prehistoric Island"] or Settings["Auto Tween To Prehistoric Island"] then
-				return
-			end
-			pcall(function() ResetAirState() end)
+			-- V13 FIX: Quando desativado, NÃO fica resetando todo frame (isso travava o player)
+			-- O reset já é feito uma vez no toggle callback. Aqui só retorna pra não interferir no sentar/and ar
 			return
 		end
-		-- V11: Raise Boat Manual Drive totalmente independente - NÃO bloqueia nenhuma outra função de barco
-		-- Ele só trava o Y, mantendo X/Z livre, então pode coexistir com Sea Event, Leviathan, Prehistoric, etc.
-		-- Sem returns que impeçam outras funções
+		-- V13: Raise Boat Manual Drive totalmente independente - não bloqueia nenhuma outra função de barco
+		-- Só trava o Y, mantendo X/Z livre, pode coexistir com Sea Event, Leviathan, Prehistoric, etc.
 		pcall(function()
 			local char = t.Character
 			local hum = char and char:FindFirstChildOfClass("Humanoid")
