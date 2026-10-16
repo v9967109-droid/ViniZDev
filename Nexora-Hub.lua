@@ -8260,13 +8260,11 @@ SettingAutoFarmSection.CreateToggle(
 		SaveSettings("Auto Quest [Katakuri/Bone/Tyrant]", V)
 	end
 )
--- V29 ULTRA SIMPLES - NUNCA volta pro NPC sem completar 8/8
--- Baseado no vídeo: missão fica 0/8 porque volta pro NPC e reseta
+-- V31 AUTO FARM VOLTOU A FUNCIONAR + AUTO QUEST QUE NÃO VOLTA NO NPC SEM COMPLETAR
 do
-	getgenv().__AQToggleCycleGeneration = (getgenv().__AQToggleCycleGeneration or 0) + 1000
-	getgenv().__AQGen = (getgenv().__AQGen or 0) + 1000
+	getgenv().__AQToggleCycleGeneration = (getgenv().__AQToggleCycleGeneration or 0) + 2000
+	getgenv().__AQGen = (getgenv().__AQGen or 0) + 2000
 
-	-- Função simples pra saber se tem missão
 	local function HasQuest()
 		local ok, has = pcall(function()
 			return game.Players.LocalPlayer.Data.QuestData ~= nil
@@ -8313,10 +8311,9 @@ do
 
 				if HasQuest() then
 					lastHadQuest = tick()
-					return -- TEM MISSÃO, NÃO VAI NO NPC
+					return
 				end
 
-				-- Sem missão: só pega nova se faz mais de 6s que tinha missão (evita piscada)
 				if tick() - lastHadQuest < 6 then return end
 
 				local questName, questId, npcPos = GetQuestTargetSimple(selected)
@@ -8343,17 +8340,7 @@ do
 					if HasQuest() then
 						lastHadQuest = tick()
 						pcall(function() TweenManager.CancelCurrent() end)
-						-- Força sair do NPC e ir farmar imediatamente
 						task.wait(0.5)
-						pcall(function()
-							-- Vai pra cima do NPC pra sair do Interagir
-							local plr = game.Players.LocalPlayer
-							local root = plr and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-							if root then
-								toTarget(CFrame.new(root.Position + Vector3.new(0, 50, 0)))
-							end
-						end)
-						task.wait(1)
 					end
 				else
 					toTarget(CFrame.new(npcPos) * CFrame.new(0, 4, 2))
@@ -9462,7 +9449,7 @@ function AQQuestRemaining()
     return total
 end
 
-function AQIsQuestActive_OLD()
+function AQIsQuestActive()
     local has = false
     pcall(function()
         has = DontQuest() == true
@@ -28913,10 +28900,5 @@ pcall(function()
 	AQIsQuestActive = function()
 		local ok, has = pcall(function() return game.Players.LocalPlayer.Data.QuestData ~= nil end)
 		return ok and has
-	end
-	TakeQuestLevel = function() return end
-	QuestBoneAndkatakuri = function() return end
-	if LevelFarmController and LevelFarmController.ReconcileQuest then
-		LevelFarmController.ReconcileQuest = function() return false end
 	end
 end)
