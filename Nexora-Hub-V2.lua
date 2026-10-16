@@ -2278,129 +2278,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
         nav.CanvasSize = UDim2.new(0, 0, 0, navLayout.AbsoluteContentSize.Y + 8)
     end)
     
-    
--- Detalhes animados com pcall pra não quebrar execução
-pcall(function()
-    local TS=game:GetService("TweenService")
-    if top then
-        local ok, _ = pcall(function()
-            local lineTop = Instance.new("Frame")
-            lineTop.Name="AnimatedLineTop"
-            lineTop.Size=UDim2.new(1,0,0,1)
-            lineTop.Position=UDim2.new(0,0,1,-1)
-            lineTop.BackgroundColor3=Color3.fromRGB(0, 140, 255)
-            lineTop.BorderSizePixel=0
-            lineTop.ZIndex=10
-            lineTop.Parent=top
-            local grad=Instance.new("UIGradient")
-            grad.Rotation=0
-            grad.Color=ColorSequence.new{
-                ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 80, 180)),
-                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(80, 180, 255)),
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 80, 180))
-            }
-            grad.Parent=lineTop
-            spawn(function()
-                while lineTop.Parent do
-                    pcall(function()
-                        local tw=TS:Create(grad, TweenInfo.new(2, Enum.EasingStyle.Linear), {Offset=Vector2.new(1,0)})
-                        tw:Play()
-                    end)
-                    wait(2)
-                end
-            end)
-            for i=1,6 do
-                pcall(function()
-                    local sq=Instance.new("Frame")
-                    sq.Size=UDim2.new(0,4,0,4)
-                    sq.Position=UDim2.new(math.random(),0,math.random(),0)
-                    sq.BackgroundTransparency=1
-                    sq.Rotation=45
-                    sq.ZIndex=5
-                    sq.Parent=top
-                    local st=Instance.new("UIStroke")
-                    st.Color=Color3.fromRGB(80, 180, 255)
-                    st.Thickness=1
-                    st.Transparency=0.6
-                    st.Parent=sq
-                    local cr=Instance.new("UICorner")
-                    cr.CornerRadius=UDim.new(0,1)
-                    cr.Parent=sq
-                    spawn(function()
-                        while sq.Parent do
-                            pcall(function()
-                                local tw=TS:Create(sq, TweenInfo.new(math.random(3,5), Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Position=UDim2.new(math.random(),0,math.random(),0), Rotation=math.random(-45,45)})
-                                tw:Play()
-                            end)
-                            wait(math.random(3,5))
-                        end
-                    end)
-                end)
-            end
-        end)
-    end
-    if sidebar then
-        pcall(function()
-            local detailContainer = Instance.new("Frame")
-            detailContainer.Name="SidebarDetails"
-            detailContainer.Size=UDim2.new(1,0,1,0)
-            detailContainer.BackgroundTransparency=1
-            detailContainer.ZIndex=1
-            detailContainer.ClipsDescendants=true
-            detailContainer.Parent=sidebar
-            for i=1,10 do
-                local sq=Instance.new("Frame")
-                sq.Size=UDim2.new(0,math.random(5,9),0,math.random(5,9))
-                sq.Position=UDim2.new(math.random(),0,math.random(),0)
-                sq.BackgroundTransparency=1
-                sq.Rotation=math.random(-30,30)
-                sq.ZIndex=2
-                sq.Parent=detailContainer
-                local st=Instance.new("UIStroke")
-                st.Color=Color3.fromRGB(0, 140, 255)
-                st.Thickness=1
-                st.Transparency=0.7
-                st.Parent=sq
-                local cr=Instance.new("UICorner")
-                cr.CornerRadius=UDim.new(0,1)
-                cr.Parent=sq
-                spawn(function()
-                    while sq.Parent do
-                        pcall(function()
-                            local tw=TS:Create(sq, TweenInfo.new(math.random(4,7), Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Position=UDim2.new(math.random(),0,math.random(),0), Rotation=math.random(-60,60)})
-                            tw:Play()
-                        end)
-                        wait(math.random(4,7))
-                    end
-                end)
-            end
-            for i=1,12 do
-                local dot=Instance.new("Frame")
-                dot.Size=UDim2.new(0,2,0,2)
-                dot.Position=UDim2.new(math.random(),0,math.random(),0)
-                dot.BackgroundColor3=Color3.fromRGB(80, 180, 255)
-                dot.BackgroundTransparency=0.3
-                dot.ZIndex=2
-                dot.Parent=detailContainer
-                local cr=Instance.new("UICorner")
-                cr.CornerRadius=UDim.new(1,0)
-                cr.Parent=dot
-                spawn(function()
-                    while dot.Parent do
-                        pcall(function()
-                            local tw=TS:Create(dot, TweenInfo.new(math.random(1,3), Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, 0, true), {BackgroundTransparency=1})
-                            tw:Play()
-                        end)
-                        wait(math.random(2,4))
-                    end
-                end)
-            end
-        end)
-    end
-end)
-
-
-local content = make("Frame", {Name="Content", Position=UDim2.new(0,SIDEBAR_W,0,HEADER_H), Size=UDim2.new(1,-SIDEBAR_W,1,-HEADER_H), BackgroundColor3=Color3.fromRGB(10, 20, 50), BackgroundTransparency=0.15, BorderSizePixel=0}, shell)
+    local content = make("Frame", {Name="Content", Position=UDim2.new(0,SIDEBAR_W,0,HEADER_H), Size=UDim2.new(1,-SIDEBAR_W,1,-HEADER_H), BackgroundColor3=Color3.fromRGB(10, 20, 50), BackgroundTransparency=0.15, BorderSizePixel=0}, shell)
     -- [CONTROL BACKGROUND DENTRO DA UI]
     do
         -- Fundo azul com hexágono
@@ -11398,11 +11276,13 @@ task.spawn(function()
 						getgenv().__LastFruitScan = 0
 						-- NÃO dá return, continua procurando próxima fruta
 					else
-						-- Vai andando até a fruta (sem TP direto)
+						-- Vai até a fruta - TP DIRETO (sem andar até ela)
 						pcall(function()
 							getgenv().noclip = true
+							-- TP direto na fruta, sem toTarget lento
+							root.CFrame = handle.CFrame * CFrame.new(0, 5, 0)
 						end)
-						toTarget(handle.CFrame * CFrame.new(0, 5, 0))
+						task.wait(0.2)
 					end
 				else
 					-- Nenhuma fruta encontrada, espera um pouco
