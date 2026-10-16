@@ -2302,7 +2302,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
             end)
             
             -- Quadradinhos flutuantes no header
-            for i=1,4 do
+            for i=1,8 do
                 local sq=make("Frame", {Size=UDim2.new(0,4,0,4), Position=UDim2.new(math.random(),0,math.random(),0), BackgroundTransparency=1, Rotation=45, ZIndex=5}, top)
                 local st=make("UIStroke", {Color=Color3.fromRGB(80, 180, 255), Thickness=1, Transparency=0.6}, sq)
                 make("UICorner", {CornerRadius=UDim.new(0,1)}, sq)
@@ -2322,7 +2322,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
             local detailContainer = make("Frame", {Name="SidebarDetails", Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, ZIndex=1, ClipsDescendants=true}, sidebar)
             
             -- Quadrados estilo Control na sidebar
-            for i=1,6 do
+            for i=1,12 do
                 local sq=make("Frame", {Size=UDim2.new(0,math.random(5,9),0,math.random(5,9)), Position=UDim2.new(math.random(),0,math.random(),0), BackgroundTransparency=1, Rotation=math.random(-30,30), ZIndex=2}, detailContainer)
                 local st=make("UIStroke", {Color=Color3.fromRGB(0, 140, 255), Thickness=1, Transparency=0.7}, sq)
                 make("UICorner", {CornerRadius=UDim.new(0,1)}, sq)
@@ -2338,7 +2338,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
             end
             
             -- Pontos brilhantes piscando
-            for i=1,8 do
+            for i=1,15 do
                 local dot=make("Frame", {Size=UDim2.new(0,2,0,2), Position=UDim2.new(math.random(),0,math.random(),0), BackgroundColor3=Color3.fromRGB(80, 180, 255), BackgroundTransparency=0.3, ZIndex=2}, detailContainer)
                 make("UICorner", {CornerRadius=UDim.new(1,0)}, dot)
                 spawn(function()
@@ -2357,7 +2357,7 @@ local content = make("Frame", {Name="Content", Position=UDim2.new(0,SIDEBAR_W,0,
     -- [CONTROL BACKGROUND DENTRO DA UI]
     do
         -- Fundo azul com hexágono
-        local bgControl = make("Frame", {Name="ControlBG", Size=UDim2.new(1,0,1,0), BackgroundColor3=Color3.fromRGB(12, 28, 75), BackgroundTransparency=0, ZIndex=0, ClipsDescendants=true}, content)
+        local bgControl = make("Frame", {Name="ControlBG", Size=UDim2.new(1,0,1,0), BackgroundColor3=Color3.fromRGB(12, 28, 75), BackgroundTransparency=0.1, ZIndex=0, ClipsDescendants=true}, content)
         local grad = make("UIGradient", {Rotation=90, Color=ColorSequence.new{
             ColorSequenceKeypoint.new(0, Color3.fromRGB(15, 35, 90)),
             ColorSequenceKeypoint.new(0.5, Color3.fromRGB(20, 50, 130)),
@@ -2400,13 +2400,13 @@ local content = make("Frame", {Name="Content", Position=UDim2.new(0,SIDEBAR_W,0,
         end
         
         -- Cria 14 quadrados flutuantes
-        for i=1,14 do
+        for i=1,25 do
             createControlSquare()
             wait(0.05)
         end
         
         -- Hexágono sutil no fundo usando pontos
-        for i=1,20 do
+        for i=1,25 do
             local dot = make("Frame", {
                 Size=UDim2.new(0,math.random(3,8),0,math.random(3,8)),
                 Position=UDim2.new(math.random(),0,math.random(),0),
@@ -2560,7 +2560,7 @@ local content = make("Frame", {Name="Content", Position=UDim2.new(0,SIDEBAR_W,0,
         nb.LayoutOrder=#pages
         local Page={}
         function Page.CreateSection(sectionName)
-            local card=make("Frame", {Name=sectionName, Size=UDim2.new(1,0,0,40), AutomaticSize=Enum.AutomaticSize.Y, BackgroundColor3=C.panel, BackgroundTransparency=0.55, BorderSizePixel=0}, frame)
+            local card=make("Frame", {Name=sectionName, Size=UDim2.new(1,0,0,40), AutomaticSize=Enum.AutomaticSize.Y, BackgroundColor3=C.panel, BackgroundTransparency=0.7, BorderSizePixel=0}, frame)
             -- Detalhe animado nas partes pretas
             do
                 local detail = make("Frame", {Name="AnimatedDetail", Size=UDim2.new(1,0,0,1), Position=UDim2.new(0,0,0,0), BackgroundColor3=Color3.fromRGB(0, 140, 255), BackgroundTransparency=0.7, BorderSizePixel=0, ZIndex=2}, card)
