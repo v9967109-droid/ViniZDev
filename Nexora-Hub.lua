@@ -5747,7 +5747,21 @@ function ForceResetAirState()
 	end)
 end
 
--- V17: Hook removido - tava causando travada no farm ao desligar Auto Quest
+-- Hook em TODAS as toggles: quando desativa, reseta na hora
+pcall(function()
+	local oldSave = SaveSettings
+	if oldSave then
+		_G.SaveSettings = function(name, value, ...)
+			pcall(oldSave, name, value, ...)
+			if value == false then
+				task.spawn(function()
+					task.wait(0.1)
+					ForceResetAirState()
+				end)
+			end
+		end
+	end
+end)
 
 task.spawn(function()
 	while task.wait(0.5) do
@@ -5756,8 +5770,7 @@ task.spawn(function()
 			if not char then return end
 			local root = char:FindFirstChild("HumanoidRootPart")
 			if not root then return end
-			-- V17: Lista completa de farms pra não resetar quando farm ativo
-			local anyActive = Settings["Raise Boat Manual Drive"] or Settings["Fly Boat"] or Settings["Start Farm"] or Settings["Auto Find Leviathan"] or Settings["Auto Find Prehistoric Island"] or Settings["Auto Multi Find Prehistoric Island"] or Settings["Auto Event Prehistoric Island"] or Settings["Auto Sea Event"] or Settings["Auto Multi Sea Event"] or Settings["Teleport To Fruit"] or Settings["Auto Farm Level"] or Settings["Auto Farm Bones"] or Settings["Auto Farm Katakuri"] or Settings["Auto Farm Tyrant of the Skies"] or Settings["Aura Farm"] or Settings["Tween Boat To Frozen Dimension"] or Settings["Multi Find Leviathan"] or Settings["Auto Farm Bone"] or Settings["Auto Farm Ectoplasm"] or Settings["Auto Elite Hunter"] or Settings["Auto Factory"] or Settings["Auto Raid"] or Settings["Tween Safe if have Items"] or Settings["Auto Present Event"] or Settings["Auto Celestial Soldier"] or Settings["Auto Attack Dungeon"] or Settings["Auto Fishing"] or Settings["Auto Get Ghoul"] or Settings["Auto Get Cyborg"] or Settings["Auto Trial"] or Settings["Auto Pull Lever"] or Settings["Drive Boat To Tiki"] or Settings["Drive Boat To Hydra"] or Settings["Auto Fire Shoot Heart Leviathan"]
+			local anyActive = Settings["Raise Boat Manual Drive"] or Settings["Fly Boat"] or Settings["Start Farm"] or Settings["Auto Find Leviathan"] or Settings["Auto Sea Event"] or Settings["Teleport To Fruit"] or Settings["Auto Farm Level"] or Settings["Tween Boat To Frozen Dimension"] or Settings["Multi Find Leviathan"] or Settings["Auto Farm Bone"] or Settings["Auto Farm Ectoplasm"] or Settings["Auto Elite Hunter"] or Settings["Auto Factory"] or Settings["Auto Raid"] or Settings["Tween Safe if have Items"] or Settings["Auto Present Event"] or Settings["Auto Celestial Soldier"] or Settings["Auto Attack Dungeon"] or Settings["Auto Fishing"] or Settings["Auto Get Ghoul"] or Settings["Auto Get Cyborg"] or Settings["Auto Trial"] or Settings["Auto Pull Lever"] or Settings["Drive Boat To Tiki"] or Settings["Drive Boat To Hydra"] or Settings["Auto Fire Shoot Heart Leviathan"]
 			if not anyActive and getgenv().noclip then
 				ForceResetAirState()
 			end
@@ -8260,97 +8273,91 @@ SettingAutoFarmSection.CreateToggle(
 		SaveSettings("Auto Quest [Katakuri/Bone/Tyrant]", V)
 	end
 )
--- V31 AUTO FARM VOLTOU A FUNCIONAR + AUTO QUEST QUE NÃO VOLTA NO NPC SEM COMPLETAR
+-- Ciclo Auto Quest: 10s ligado e 75s desligado, somente na ilha do farm selecionado.
+-- Fora da ilha correspondente, o ciclo fica pausado e não altera o toggle.
 do
-	getgenv().__AQToggleCycleGeneration = (getgenv().__AQToggleCycleGeneration or 0) + 2000
-	getgenv().__AQGen = (getgenv().__AQGen or 0) + 2000
-
-	local function HasQuest()
-		local ok, has = pcall(function()
-			return game.Players.LocalPlayer.Data.QuestData ~= nil
+	getgenv().__AQToggleCycleGeneration = (getgenv().__AQToggleCycleGeneration or 0) + 1
+	local cycleGeneration = getgenv().__AQToggleCycleGeneration
+	local toggleKey = "Auto Quest [Katakuri/Bone/Tyrant]"
+	local function SetAutoQuestToggle(value)
+		if value and getgenv().__AQUserWants == false then return end
+		getgenv().__AQCycleSync = true
+		pcall(function() SaveSettings(toggleKey, value) end)
+		pcall(function()
+			local option = Options and Options["Auto Quest"]
+			local control = option and option.FunctionCreate
+			if control and control.SetValue then control:SetValue(value) end
 		end)
-		return ok and has
-	end
-
-	local function GetQuestTargetSimple(selected)
-		if not selected or selected == "Aura Farm" or Settings["Farm Material"] then return nil end
-		if selected == "Auto Farm Level" then
-			local ok, info = pcall(GetLevelQuestInfo, game.Players.LocalPlayer.Data.Level.Value)
-			if ok and type(info) == "table" and info.Pos and info.QuestName then
-				local pos = typeof(info.Pos) == "CFrame" and info.Pos.Position or info.Pos
-				return tostring(info.QuestName), info.Id, pos
+		task.delay(0.25, function()
+			if getgenv().__AQToggleCycleGeneration == cycleGeneration then
+				getgenv().__AQCycleSync = false
 			end
-			return nil
-		end
-		local q = AutoQuestInfo[selected]
-		if not q then return nil end
-		local pts = getgenv().questpoint
-		if not pts or not next(pts) then
-			pcall(function() CFrameQuest() end)
-			task.wait(0.5)
-			pts = getgenv().questpoint
-		end
-		local cf = q and pts and pts[q[2]]
-		if not cf then
-			pcall(function() CFrameQuest() end)
-			task.wait(0.5)
-			pts = getgenv().questpoint
-			cf = q and pts and pts[q[2]]
-		end
-		if not cf then return nil end
-		return q[2], q[3], cf.Position
+		end)
 	end
-
-	task.spawn(function()
-		local lastHadQuest = 0
-		while task.wait(1) do
+	local function GetSelectedQuestNPCPosition()
+		local selected = GetSelectedIndividualFarm and GetSelectedIndividualFarm()
+		if not selected or selected == "Aura Farm" or Settings["Farm Material"] then return nil end
+		local targetPosition
+		if selected == "Auto Farm Level" then
 			pcall(function()
-				if not Settings["Auto Quest [Katakuri/Bone/Tyrant]"] then return end
-				local selected = GetSelectedIndividualFarm and GetSelectedIndividualFarm()
-				if not selected or selected == "Aura Farm" then return end
-
-				if HasQuest() then
-					lastHadQuest = tick()
-					return
-				end
-
-				if tick() - lastHadQuest < 6 then return end
-
-				local questName, questId, npcPos = GetQuestTargetSimple(selected)
-				if not questName or not npcPos then return end
-
-				local plr = game.Players.LocalPlayer
-				local root = plr and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-				if not root then return end
-
-				if (root.Position - npcPos).Magnitude > 300 then
-					toTarget(CFrame.new(npcPos) * CFrame.new(0, 4, 2))
-					return
-				end
-
-				if (root.Position - npcPos).Magnitude <= 10 then
-					pcall(function()
-						game.ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", questName, questId)
-					end)
-					local deadline = tick() + 5
-					while tick() < deadline do
-						if HasQuest() then break end
-						task.wait(0.3)
-					end
-					if HasQuest() then
-						lastHadQuest = tick()
-						pcall(function() TweenManager.CancelCurrent() end)
-						task.wait(0.5)
-					end
-				else
-					toTarget(CFrame.new(npcPos) * CFrame.new(0, 4, 2))
+				local info = GetLevelQuestInfo(t.Data.Level.Value)
+				if info and info.Pos then
+					targetPosition = typeof(info.Pos) == "CFrame" and info.Pos.Position or info.Pos
 				end
 			end)
+		else
+			local info = AutoQuestInfo and AutoQuestInfo[selected]
+			local points = getgenv().questpoint
+			local cf = info and points and points[info[2]]
+			if cf then targetPosition = cf.Position end
+		end
+		return targetPosition
+	end
+	local function IsOnSelectedFarmIsland()
+		local targetPosition = GetSelectedQuestNPCPosition()
+		local root = t.Character and t.Character:FindFirstChild("HumanoidRootPart")
+		if not root or not targetPosition then return false end
+		-- Distância ampla para reconhecer que chegou à ilha correspondente.
+		return (root.Position - targetPosition).Magnitude <= 2500
+	end
+	local function IsNearSelectedQuestNPC()
+		local targetPosition = GetSelectedQuestNPCPosition()
+		local root = t.Character and t.Character:FindFirstChild("HumanoidRootPart")
+		if not root or not targetPosition then return false end
+		-- O ciclo só começa quando o personagem chega perto do NPC da missão.
+		return (root.Position - targetPosition).Magnitude <= 100
+	end
+	task.spawn(function()
+		local isEnabled = true
+		local startedAtNPC = false
+		SetAutoQuestToggle(true)
+		while getgenv().__AQToggleCycleGeneration == cycleGeneration do
+			if IsOnSelectedFarmIsland() and (startedAtNPC or IsNearSelectedQuestNPC()) then
+				startedAtNPC = true
+				local duration = isEnabled and 10 or 75
+				local deadline = tick() + duration
+				while getgenv().__AQToggleCycleGeneration == cycleGeneration and IsOnSelectedFarmIsland() and tick() < deadline do
+					task.wait(0.25)
+				end
+				if getgenv().__AQToggleCycleGeneration ~= cycleGeneration then break end
+				if IsOnSelectedFarmIsland() then
+					isEnabled = not isEnabled
+					SetAutoQuestToggle(isEnabled)
+				end
+			else
+				-- Na ilha, aguarda chegar perto do NPC; fora dela, também aguarda sem alterar o toggle.
+				-- Farm desligado (ou ainda fora da ilha): o Auto Quest fica/volta ligado; só desliga se o usuário desligar.
+				if (not GetSelectedIndividualFarm() or not IsOnSelectedFarmIsland()) and not Settings[toggleKey] and getgenv().__AQUserWants ~= false then
+					SetAutoQuestToggle(true)
+					isEnabled = true
+					startedAtNPC = false
+				end
+				task.wait(1)
+			end
 		end
 	end)
 end
-
--- Mantém os toggles "Farm Mastery"-- Mantém os toggles "Farm Mastery"-- Mantém os toggles "Farm Mastery" e "Start Farm" visualmente iguais ao estado real.
+-- Mantém os toggles "Farm Mastery" e "Start Farm" visualmente iguais ao estado real.
 function SyncMasteryToggle(title, v)
 	if getgenv().__MasterySyncing then
 		return
@@ -9144,9 +9151,9 @@ local SpecialQuestCycleState = {
 
 function FarmMethod()
 	local selectedToggle = GetSelectedIndividualFarm()
-	if not selectedToggle then return end
-
-	-- Aura Farm
+	if not selectedToggle then
+		return
+	end
 	if selectedToggle == "Aura Farm" then
 		local mobsNear = DetectMobsAuraNear()
 		if #mobsNear == 0 then task.wait(0.5) return end
@@ -9157,77 +9164,68 @@ function FarmMethod()
 		end
 		return
 	end
-
-	-- V18 FIX: Mapeamento correto de cada farm pra ilha e mobs certos
-	local mobList, questName, questId
-	local selectedMethod = ({["Auto Farm Level"]="Level Farm",["Auto Farm Bones"]="Farm Bones",["Auto Farm Katakuri"]="Farm Katakuri",["Auto Farm Tyrant of the Skies"]="Farm Tyrant of the Skies"})[selectedToggle] or "Level Farm"
-
-	if selectedMethod == "Farm Bones" then
-		mobList = {"Reborn Skeleton", "Living Zombie", "Demonic Soul", "Posessed Mummy", "Possessed Mummy", "Reborn Skeleton", "Living Zombie"}
-		questName = "HauntedQuest2"
-		questId = 2
-	elseif selectedMethod == "Farm Katakuri" then
-		mobList = {"Baking Staff", "Head Baker", "Cake Guard", "Cookie Crafter", "Cake Guard"}
-		questName = "CakeQuest2"
-		questId = 2
-	elseif selectedMethod == "Farm Tyrant of the Skies" then
-		mobList = {"Isle Champion", "Serpent Hunter", "Skull Slayer", "Sun-kissed Warrior", "Isle Champion"}
-		questName = "TikiQuest3"
-		questId = 2
-	else -- Level Farm
-		local ok, info = pcall(GetLevelQuestInfo, t.Data.Level.Value)
-		if ok and type(info) == "table" and info.Mob then
-			mobList = {info.Mob}
-			questName = info.QuestName
-			questId = info.Id
-		else
-			mobList = {GetNameDoubleQuest() or ""}
+	local f, V, H
+	local C, J = 9999, 2
+	if f == "Farm Katakuri" then
+		C, V, H = 2275, y, "CakeQuest2"
+	elseif f == "Farm Bones" then
+		C, V, H = 2050, e, "HauntedQuest2"
+	elseif f == "Farm Tyrant of the Skies" then
+		C, V, H = 2575, Y, "TikiQuest3"
+	else
+		V = if f == "Aura Farm" and (DetectMobAura()) then { DetectMobAura() } else V
+	end
+	if Settings["Farm Material"] then
+		V = NameMaterials[Settings["Select Material"]]
+		if not NameWorldMaterials[Settings["Select Material"]][game.PlaceId] then
+			f = NameWorldMaterials[Settings["Select Material"]][getgenv().CheckPlaceId2]
+				or NameWorldMaterials[Settings["Select Material"]][getgenv().CheckPlaceId3]
+				or NameWorldMaterials[Settings["Select Material"]][getgenv().CheckPlaceId]
+			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer(f)
+			return
 		end
 	end
+	f = V or (GetNameDoubleQuest()) or ""
+	local QuestVisible = AQIsQuestActive()
+	local IsSpecialFarm = SelectedFarmMethod == "Farm Katakuri" or SelectedFarmMethod == "Farm Bones" or SelectedFarmMethod == "Farm Tyrant of the Skies"
 
-	-- Se precisa de missão e não tem, espera o Auto Quest pegar (não vai pra ilha errada)
-	if not Settings["Farm Material"] and selectedMethod ~= "Aura Farm" and AQNeedsQuest and AQNeedsQuest() then
+	-- Auto Quest é o único que pega missão: enquanto ele está indo ao NPC / aceitando, o farm espera
+	-- (antes os dois se moviam ao mesmo tempo: o farm saía para os mobs e o Auto Quest puxava de volta
+	-- ao NPC). Não espera se o boss do método já está no mapa nem se o Auto Quest não tem alvo.
+	if not Settings["Farm Material"] and SelectedFarmMethod ~= "Aura Farm" and AQNeedsQuest and AQNeedsQuest() then
 		local bossUp = false
 		pcall(function()
-			if selectedMethod == "Farm Tyrant of the Skies" then bossUp = CheckNameBoss("Tyrant of the Skies") and true or false
-			elseif selectedMethod == "Farm Katakuri" then bossUp = CheckNameBoss("Cake Prince") and true or false
+			if SelectedFarmMethod == "Farm Tyrant of the Skies" then
+				bossUp = CheckNameBoss("Tyrant of the Skies") and true or false
+			elseif SelectedFarmMethod == "Farm Katakuri" then
+				bossUp = CheckNameBoss("Cake Prince") and true or false
 			end
 		end)
-		if not bossUp then return end
+		if not bossUp then
+			return
+		end
 	end
 
-	local f
-	local QuestVisible = AQIsQuestActive()
-	-- V19 FIX: Farmar TODOS os mobs da ilha, não só um tipo
-	-- Bones = todos do castelo, Katakuri = todos do mar de guloseimas, Tyrant = todos do Tiki, Level = mob do level
-	if QuestVisible then
-		-- Com missão ativa: prioriza o mob da missão, mas se não achar, usa lista completa da ilha
+	-- Do not stop the farm loop just because Auto Quest is enabled.
+	-- Auto Quest itself already returns while a quest is active; the farm must
+	-- keep running so it can leave the quest giver and attack the quest mobs.
+	-- Without an active quest the farm still targets the method's mobs
+	-- (Level Farm: mob of the current level quest).
+	if SelectedFarmMethod == "Level Farm" and not Settings["Farm Material"] then
+		local okL, info = pcall(GetLevelQuestInfo, t.Data.Level.Value)
+		if okL and type(info) == "table" and info.Mob then
+			f = info.Mob
+		end
+	end
+	-- After accepting a quest, prioritize the mob named by the active quest data.
+	-- This prevents FarmMethod from continuing to target a stale/default mob and
+	-- leaving the character at the quest giver.
+	if not Settings["Farm Material"] and SelectedFarmMethod ~= "Aura Farm" and QuestVisible then
 		local okActive, activeMob = pcall(GetActiveFarmQuestMob)
 		if okActive and type(activeMob) == "string" and activeMob ~= "" then
-			-- Verifica se activeMob tá na lista da ilha, se não, usa lista completa
-			if type(mobList) == "table" and table.find(mobList, activeMob) then
-				f = activeMob
-			else
-				-- Se missão é de um mob específico, farma só ele pra completar rápido
-				f = activeMob
-			end
-		else
-			f = mobList -- usa lista completa da ilha
-		end
-	else
-		-- Sem missão: usa lista completa da ilha (Bones = castelo inteiro, etc)
-		f = mobList
-		if selectedMethod == "Level Farm" then
-			local okL, info = pcall(GetLevelQuestInfo, t.Data.Level.Value)
-			if okL and type(info) == "table" and info.Mob then 
-				f = info.Mob -- Level farm usa mob do level
-			else
-				f = mobList
-			end
+			f = activeMob
 		end
 	end
-	if not f or (type(f) == "string" and f == "") then f = mobList end
-
 	do
 		-- Quando a missão já foi aceita, usa o alvo exato da quest antes da lista
 		-- de mobs do método. Isso evita permanecer parado no NPC após aceitar.
@@ -9542,7 +9540,21 @@ getgenv().__AQGen = (getgenv().__AQGen or 0) + 1
 getgenv().__AQReady, getgenv().__AQGiveUp = 0, nil
 
 -- O farm só espera quando o Auto Quest está ligado, tem alvo e ainda não há missão ativa.
-function AQNeedsQuest() return false end
+function AQNeedsQuest()
+    if not Settings["Auto Quest [Katakuri/Bone/Tyrant]"] then
+        return false
+    end
+    if Settings["Farm Mastery"] and Settings["Start Farm"] then
+        return false
+    end
+    if getgenv().__AQGiveUp and tick() < getgenv().__AQGiveUp then
+        return false
+    end
+    if tick() - (getgenv().__AQReady or 0) > 2 then
+        return false -- o Auto Quest não está em condições de agir: o farm segue normal
+    end
+    return not AQIsQuestActive()
+end
 
 do
     local MyGen = getgenv().__AQGen
@@ -9554,14 +9566,26 @@ do
         lastLevelCheck = 0, lastKnownLevel = initialLevel, levelQuestPending = false
     }
 
-    -- V19 FIX: Auto Farm Level pega missão sempre, não só quando sobe de level
-    -- Antes só liberava missão quando detectava level up, por isso no 2800 não pegava
+    -- Auto Farm Level: verifica a cada 2 segundos se o jogador subiu de nível.
+    -- Só libera uma nova missão de Level quando detectar aumento de nível.
     local function CheckLevelUpForQuest(selectedFarm)
         if selectedFarm ~= "Auto Farm Level" then
             return true
         end
-        -- Sempre libera missão de level, mesmo no max level (farma mobs da última ilha)
-        return true
+        local now = tick()
+        if now - State.lastLevelCheck >= 2 then
+            State.lastLevelCheck = now
+            local currentLevel
+            pcall(function() currentLevel = tonumber(t.Data.Level.Value) end)
+            if currentLevel then
+                if currentLevel > (State.lastKnownLevel or currentLevel) then
+                    State.levelQuestPending = true
+                    AQLog("subiu de level: " .. tostring(State.lastKnownLevel) .. " -> " .. tostring(currentLevel) .. "; missão liberada")
+                end
+                State.lastKnownLevel = currentLevel
+            end
+        end
+        return State.levelQuestPending
     end
 
     -- Retorna nome da missão, id e posição do NPC da missão do farm selecionado.
@@ -14946,12 +14970,17 @@ do
 	getgenv().__BoatRaiseConn = game:GetService("RunService").Heartbeat:Connect(function()
 		if getgenv().__BoatRaiseGen ~= gen then return end
 		if not Settings["Raise Boat Manual Drive"] then
-			-- V13 FIX: Quando desativado, NÃO fica resetando todo frame (isso travava o player)
-			-- O reset já é feito uma vez no toggle callback. Aqui só retorna pra não interferir no sentar/and ar
+			-- Quando desativa, volta ao normal pra não ficar preso no ar
+			pcall(function() ResetAirState() end)
 			return
 		end
-		-- V13: Raise Boat Manual Drive totalmente independente - não bloqueia nenhuma outra função de barco
-		-- Só trava o Y, mantendo X/Z livre, pode coexistir com Sea Event, Leviathan, Prehistoric, etc.
+		-- NÃO INTERFERIR NO AUTO FIND LEVIATHAN
+		if Settings["Auto Find Leviathan"] or Settings["Multi Find Leviathan"] or Settings["Auto Start Leviathan"] or Settings["Teleport Frozen Dimension"] or Settings["Tween Boat To Frozen Dimension"] or Settings["Auto Fire Shoot Heart Leviathan"] then return end
+		-- V8: Auto Sea Event e Auto Multi Sea Event funcionam independente do Raise Boat Manual Drive
+		if Settings["Auto Sea Event"] or Settings["Auto Multi Sea Event"] then
+			-- Não aplica raise quando está em Sea Event, deixa o Sea Event controlar
+			-- Mas não bloqueia o Sea Event
+		end
 		pcall(function()
 			local char = t.Character
 			local hum = char and char:FindFirstChildOfClass("Humanoid")
@@ -16234,7 +16263,9 @@ FarmingMultiSeaEvent.Section.CreateToggle(
 		local runId = getgenv().MultiSeaEventRunId
 
 		if not enabled then
-			pcall(function() local b=checkboat() local s=b and b:FindFirstChild("VehicleSeat", true) if s then s.ThrottleFloat=0 s.Throttle=0 end end)
+			pcall(function()
+				game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.W, false, game)
+			end)
 			return
 		end
 
@@ -16338,42 +16369,32 @@ FarmingMultiSeaEvent.Section.CreateToggle(
 						if currentHumanoid and currentHumanoid.SeatPart == seat then
 							local startPosition = seat.Position
 							local movementValid = true
-							-- V10: Usa lógica nativa do Roblox igual ao Multi Find Prehistoric Island (ThrottleFloat) - funciona mobile e PC sem W
-							local function SetMultiSeaForward(vSeat, enabled)
-								if not vSeat or not vSeat.Parent then return end
-								pcall(function() vSeat.ThrottleFloat = enabled and 1 or 0 end)
-								pcall(function() vSeat.Throttle = enabled and 1 or 0 end)
-							end
-							SetMultiSeaForward(seat, true)
+							pcall(function() VIM:SendKeyEvent(true, Enum.KeyCode.W, false, game) end)
 							while Settings["Auto Multi Sea Event"] and getgenv().MultiSeaEventRunId == runId and seat.Parent and (seat.Position - startPosition).Magnitude < 650 do
 								local stillSeated = areSelectedPlayersSeatedInBoat(boat)
 								local charNow = t.Character
 								local humNow = charNow and charNow:FindFirstChildOfClass("Humanoid")
-								-- V10: Espera robusta nativa
+								-- V8 FIX: Se player saiu do SEAT, espera ele sair e voltar, não quebra
 								if not stillSeated or not humNow or humNow.SeatPart ~= seat then
-									SetMultiSeaForward(seat, false)
-									pcall(function() A.CreateNoti({ Title = "Nexora Hub", Desc = "Player saiu do SEAT, pausando...", ShowTime = 3 }) end)
+									-- Pausa o barco
+									pcall(function() VIM:SendKeyEvent(false, Enum.KeyCode.W, false, game) end)
+									-- Espera o player sair totalmente do SEAT (SeatPart == nil) se ainda estiver no barco mas levantado
 									repeat
 										task.wait(0.5)
 										stillSeated = areSelectedPlayersSeatedInBoat(boat)
-										local charCheck = t.Character
-										local humCheck = charCheck and charCheck:FindFirstChildOfClass("Humanoid")
-										if humCheck and humCheck.SeatPart ~= seat then
-											stillSeated = false
+										local c = t.Character
+										local h = c and c:FindFirstChildOfClass("Humanoid")
+										-- Se o player da lista saiu do SEAT, espera ele voltar
+										if not stillSeated then
+											pcall(function() A.CreateNoti({ Title = "Nexora Hub", Desc = "Player saiu do SEAT, esperando voltar...", ShowTime = 3 }) end)
 										end
-									until (stillSeated and Settings["Auto Multi Sea Event"] and getgenv().MultiSeaEventRunId == runId) or not Settings["Auto Multi Sea Event"] or getgenv().MultiSeaEventRunId ~= runId or not seat.Parent
-									if not Settings["Auto Multi Sea Event"] or getgenv().MultiSeaEventRunId ~= runId or not seat.Parent then
-										movementValid = false
-										break
-									end
-									pcall(function() A.CreateNoti({ Title = "Nexora Hub", Desc = "Todos de volta no SEAT, continuando...", ShowTime = 3 }) end)
-									SetMultiSeaForward(seat, true)
-									startPosition = seat.Position
+									until stillSeated and h and h.SeatPart == seat and Settings["Auto Multi Sea Event"] and getgenv().MultiSeaEventRunId == runId
+									-- Voltou, continua andando
+									pcall(function() VIM:SendKeyEvent(true, Enum.KeyCode.W, false, game) end)
 								end
-								SetMultiSeaForward(seat, true) -- reaplica continuamente
-								task.wait()
+								task.wait(0.1)
 							end
-							SetMultiSeaForward(seat, false)
+							pcall(function() VIM:SendKeyEvent(false, Enum.KeyCode.W, false, game) end)
 							if movementValid and seat.Parent and (seat.Position - startPosition).Magnitude >= 650 and areSelectedPlayersSeatedInBoat(boat) and Settings["Auto Multi Sea Event"] and getgenv().MultiSeaEventRunId == runId then
 								movementCompleted = true
 								SaveSettings("Auto Sea Event", true)
@@ -24347,7 +24368,9 @@ FarmingMultiVulcanoSection.CreateToggle(
 			getgenv().MultiPrehistoricWaitingNotiTime = nil
 			getgenv().MultiPrehistoricMovingForward = false
 			getgenv().MultiPrehistoricSelectedSeatState = {}
-			pcall(function() local b=checkboat() local s=b and b:FindFirstChild("VehicleSeat", true) if s then s.ThrottleFloat=0 s.Throttle=0 end end)
+			pcall(function()
+				game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.W, false, game)
+			end)
 		end
 		SaveSettings("Auto Multi Find Prehistoric Island", value)
 	end
@@ -28896,9 +28919,108 @@ task.spawn(function()
 end)
 
 
-pcall(function()
-	AQIsQuestActive = function()
-		local ok, has = pcall(function() return game.Players.LocalPlayer.Data.QuestData ~= nil end)
+-- V33: FARMS ORIGINAIS + AUTO QUEST FIX QUE NÃO VOLTA PRO NPC SEM COMPLETAR 8/8
+do
+	getgenv().__AQToggleCycleGeneration = (getgenv().__AQToggleCycleGeneration or 0) + 3000
+	getgenv().__AQGen = (getgenv().__AQGen or 0) + 3000
+
+	local function HasQuest()
+		local ok, has = pcall(function()
+			if game.Players.LocalPlayer.Data.QuestData ~= nil then return true end
+			local main = game.Players.LocalPlayer.PlayerGui:FindFirstChild("Main")
+			local q = main and main:FindFirstChild("Quest")
+			return q ~= nil and q.Visible == true
+		end)
 		return ok and has
 	end
+
+	local function GetQuestTargetSimple(selected)
+		if not selected or selected == "Aura Farm" or Settings["Farm Material"] then return nil end
+		if selected == "Auto Farm Level" then
+			local ok, info = pcall(GetLevelQuestInfo, game.Players.LocalPlayer.Data.Level.Value)
+			if ok and type(info) == "table" and info.Pos and info.QuestName then
+				local pos = typeof(info.Pos) == "CFrame" and info.Pos.Position or info.Pos
+				return tostring(info.QuestName), info.Id, pos
+			end
+			return nil
+		end
+		local q = AutoQuestInfo[selected]
+		if not q then return nil end
+		local pts = getgenv().questpoint
+		if not pts or not next(pts) then
+			pcall(function() CFrameQuest() end)
+			task.wait(0.5)
+			pts = getgenv().questpoint
+		end
+		local cf = q and pts and pts[q[2]]
+		if not cf then
+			pcall(function() CFrameQuest() end)
+			task.wait(0.5)
+			pts = getgenv().questpoint
+			cf = q and pts and pts[q[2]]
+		end
+		if not cf then return nil end
+		return q[2], q[3], cf.Position
+	end
+
+	task.spawn(function()
+		local lastHadQuest = 0
+		while task.wait(1) do
+			pcall(function()
+				if not Settings["Auto Quest [Katakuri/Bone/Tyrant]"] then return end
+				local selected = GetSelectedIndividualFarm and GetSelectedIndividualFarm()
+				if not selected or selected == "Aura Farm" then return end
+
+				if HasQuest() then
+					lastHadQuest = tick()
+					return
+				end
+
+				if tick() - lastHadQuest < 6 then return end
+
+				local questName, questId, npcPos = GetQuestTargetSimple(selected)
+				if not questName or not npcPos then return end
+
+				local plr = game.Players.LocalPlayer
+				local root = plr and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+				if not root then return end
+
+				if (root.Position - npcPos).Magnitude > 300 then
+					toTarget(CFrame.new(npcPos) * CFrame.new(0, 4, 2))
+					return
+				end
+
+				if (root.Position - npcPos).Magnitude <= 10 then
+					pcall(function()
+						game.ReplicatedStorage.Remotes.CommF_:InvokeServer("StartQuest", questName, questId)
+					end)
+					local deadline = tick() + 5
+					while tick() < deadline do
+						if HasQuest() then break end
+						task.wait(0.3)
+					end
+					if HasQuest() then
+						lastHadQuest = tick()
+						pcall(function() TweenManager.CancelCurrent() end)
+						task.wait(0.5)
+					end
+				else
+					toTarget(CFrame.new(npcPos) * CFrame.new(0, 4, 2))
+				end
+			end)
+		end
+	end)
+end
+
+pcall(function()
+	AQIsQuestActive = function()
+		local ok, has = pcall(function()
+			if game.Players.LocalPlayer.Data.QuestData ~= nil then return true end
+			local main = game.Players.LocalPlayer.PlayerGui:FindFirstChild("Main")
+			local q = main and main:FindFirstChild("Quest")
+			return q ~= nil and q.Visible == true
+		end)
+		return ok and has
+	end
+	AQNeedsQuest = function() return false end
 end)
