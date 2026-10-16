@@ -2485,7 +2485,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
         nb.LayoutOrder=#pages
         local Page={}
         function Page.CreateSection(sectionName)
-            local card=make("Frame", {Name=sectionName, Size=UDim2.new(1,0,0,40), AutomaticSize=Enum.AutomaticSize.Y, BackgroundColor3=C.panel, BorderSizePixel=0}, frame)
+            local card=make("Frame", {Name=sectionName, Size=UDim2.new(1,0,0,40), AutomaticSize=Enum.AutomaticSize.Y, BackgroundColor3=C.panel, BackgroundTransparency=0.55, BorderSizePixel=0}, frame)
             corner(card,10); stroke(card,C.line,0.35)
             make("UIPadding", {PaddingTop=UDim.new(0,11),PaddingBottom=UDim.new(0,11),PaddingLeft=UDim.new(0,11),PaddingRight=UDim.new(0,11)}, card)
             local list=make("UIListLayout", {Padding=UDim.new(0,7),SortOrder=Enum.SortOrder.LayoutOrder}, card)
