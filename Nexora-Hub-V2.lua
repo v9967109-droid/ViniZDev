@@ -11276,18 +11276,11 @@ task.spawn(function()
 						getgenv().__LastFruitScan = 0
 						-- NÃO dá return, continua procurando próxima fruta
 					else
-						-- Vai até a fruta mesmo se estiver longe - SEM LAG
-						-- Se muito longe, teleporta direto em etapas
-						if dist > 1500 then
-							-- Teleporta direto pra perto da fruta (sem tween lento)
-							pcall(function()
-								getgenv().noclip = true
-								root.CFrame = handle.CFrame * CFrame.new(0, 10, 0)
-							end)
-							task.wait(0.3)
-						else
-							toTarget(handle.CFrame * CFrame.new(0, 3, 0))
-						end
+						-- Vai andando até a fruta (sem TP direto)
+						pcall(function()
+							getgenv().noclip = true
+						end)
+						toTarget(handle.CFrame * CFrame.new(0, 5, 0))
 					end
 				else
 					-- Nenhuma fruta encontrada, espera um pouco
@@ -14285,11 +14278,19 @@ function StoreFruit(container)
 	end
 
 	for _, tool in ipairs(container:GetChildren()) do
-		if IsFruitTool(tool) then
+		-- FIX AUTO STORE FRUIT - detecta fruta mesmo sem OriginalName
+		local isFruit = false
+		pcall(function()
+			if tool:IsA("Tool") then
+				if string.find(tool.Name, "Fruit") then isFruit = true end
+				local orig = tool:GetAttribute("OriginalName")
+				if typeof(orig) == "string" and orig ~= "" then isFruit = true end
+			end
+		end)
+		if isFruit and IsFruitTool(tool) or isFruit then
 			local failedAt = tool:GetAttribute("__StoreFail")
 			if not (typeof(failedAt) == "number" and tick() - failedAt < 30) then
-				local fruitName = GetFruitOriginalName(tool)
-				if fruitName then
+				local fruitName = GetFruitOriginalName(tool) or tool:GetAttribute("OriginalName") or string.gsub(tool.Name, " Fruit", "") .. "-" .. string.gsub(tool.Name, " Fruit", "")
 					-- 1) tira da mão
 					if tool.Parent == LocalPlayer.Character then
 						local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
@@ -25911,10 +25912,23 @@ do
 		end
 	end)
 	task.spawn(function()
-		while task.wait(1) and getgenv().__FruitGen == FruitGen do
+		while task.wait(0.5) and getgenv().__FruitGen == FruitGen do
 			if Settings["Auto Store Fruit"] then
 				pcall(StoreFruit, t.Backpack)
 				pcall(StoreFruit, t.Character)
+				-- Tenta também com método direto pra garantir
+				pcall(function()
+					for _, tool in pairs(t.Backpack:GetChildren()) do
+						if tool:IsA("Tool") and string.find(tool.Name, "Fruit") then
+							local fruitName = tool:GetAttribute("OriginalName") or string.gsub(tool.Name, " Fruit", "") .. "-" .. string.gsub(tool.Name, " Fruit", "")
+							if fruitName then
+								game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StoreFruit", fruitName, tool)
+								task.wait(0.2)
+								game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StoreFruit", fruitName)
+							end
+						end
+					end
+				end)
 			end
 		end
 	end)
