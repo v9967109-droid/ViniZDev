@@ -8307,7 +8307,18 @@ do
 		else
 			local info = AutoQuestInfo and AutoQuestInfo[sel]
 			local pts = getgenv().questpoint
+			if not pts or not next(pts) then
+				pcall(function() CFrameQuest() end)
+				task.wait(0.5)
+				pts = getgenv().questpoint
+			end
 			local cf = info and pts and pts[info[2]]
+			if not cf then
+				pcall(function() CFrameQuest() end)
+				task.wait(0.5)
+				pts = getgenv().questpoint
+				cf = info and pts and pts[info[2]]
+			end
 			if cf then targetPos = cf.Position end
 		end
 		return targetPos
