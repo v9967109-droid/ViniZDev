@@ -28911,183 +28911,28 @@ end)()
 
 
 
--- PATCH FINAL: Farm Mastery pega Melee primeiro pra dar dano até % e depois pega Tool do Select Method
+-- PATCH: Farm Mastery Melee primeiro
 do
-    task.wait(2)
+    task.wait(1)
     pcall(function()
-        print("[NEXORA] Aplicando patch final Farm Mastery Melee...")
-        
-        -- Override HauntedCastleMasteryFarm completamente
+        if not Settings then return end
         local function FixedHauntedCastleMasteryFarm()
-            if not Settings or not Settings["Farm Mastery"] or not Settings["Start Farm"] then return end
+            if not Settings["Farm Mastery"] or not Settings["Start Farm"] then return end
             local player = game:GetService("Players").LocalPlayer
             local character = player and player.Character
             local root = character and character:FindFirstChild("HumanoidRootPart")
             if not root then return end
-            
             local masteryMobs = {"Reborn Skeleton", "Demonic Soul", "Living Zombie", "Possessed Mummy", "Posessed Mummy"}
             local humanoid = character:FindFirstChildOfClass("Humanoid")
             if not humanoid or humanoid.Health <= 0 then return end
-            
             local mob = nil
-            if DetectMob then
-                mob = DetectMob(masteryMobs)
-            else
-                -- fallback procura manual
-                for _, m in pairs(game.Workspace.Enemies:GetChildren()) do
-                    if m:FindFirstChild("Humanoid") and m.Humanoid.Health > 0 then
-                        for _, name in pairs(masteryMobs) do
-                            if m.Name == name then
-                                mob = m
-                                break
-                            end
-                        end
-                    end
-                    if mob then break end
-                end
-            end
-            
+            if DetectMob then mob = DetectMob(masteryMobs) end
             if mob and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") then
                 if sizepart then sizepart(mob) end
                 pcall(function() if BringMob then BringMob(mob) end end)
-                
                 local healthPercent = (Settings["Health %"] or 40) / 100
                 local mobHealth = mob.Humanoid.Health / mob.Humanoid.MaxHealth
                 local backpack = player:FindFirstChild("Backpack")
-                
-                if mobHealth > healthPercent then
-                    -- FASE 1: Vida > % -> PEGA MELEE PRA DAR DANO
-                    local meleeName = nil
-                    if NameWeapon then meleeName = NameWeapon("Melee") end
-                    if not meleeName and backpack then
-                        for _, tool in pairs(backpack:GetChildren()) do
-                            if tool:IsA("Tool") and tool.ToolTip == "Melee" then
-                                meleeName = tool.Name
-                                break
-                            end
-                        end
-                    end
-                    if not meleeName and character then
-                        for _, tool in pairs(character:GetChildren()) do
-                            if tool:IsA("Tool") and tool.ToolTip == "Melee" then
-                                meleeName = tool.Name
-                                break
-                            end
-                        end
-                    end
-                    
-                    if meleeName then
-                        -- Equipa Melee
-                        if backpack and backpack:FindFirstChild(meleeName) then
-                            character.Humanoid:EquipTool(backpack:FindFirstChild(meleeName))
-                        end
-                        -- Vai até o mob
-                        if toTarget then
-                            toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0))
-                        end
-                        getgenv().AimPos = mob.HumanoidRootPart.CFrame
-                        -- Ataca
-                        pcall(function()
-                            local noAnim = Settings["Attack No Animation "] or Settings["Attack No Animation"]
-                            if noAnim then
-                                if AttackFunction then AttackFunction(60) end
-                            else
-                                if attackMelee then attackMelee(60) end
-                            end
-                            local t = character:FindFirstChild(meleeName) or character:FindFirstChildOfClass("Tool")
-                            if t then t:Activate() end
-                            if ClickM1 then ClickM1(mob) end
-                        end)
-                    end
-                else
-                    -- FASE 2: Vida <= % -> PEGA TOOL DO SELECT METHOD PRA FARMAR MAESTRIA
-                    local method = Settings["Select Method Farm Mastery"]
-                    if not method or method == "" then method = "Blox Fruit" end
-                    
-                    local toolName = nil
-                    if NameWeapon then toolName = NameWeapon(method) end
-                    if not toolName and backpack then
-                        for _, tool in pairs(backpack:GetChildren()) do
-                            if tool:IsA("Tool") and (tool.ToolTip == method or tool.Name == method or string.find(tool.ToolTip or "", method, 1, true)) then
-                                toolName = tool.Name
-                                break
-                            end
-                        end
-                    end
-                    
-                    if toolName then
-                        if backpack:FindFirstChild(toolName) then
-                            character.Humanoid:EquipTool(backpack:FindFirstChild(toolName))
-                        end
-                        if toTarget then
-                            if method == "Blox Fruit" then
-                                toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(-7, getgenv().YPosFruit or 20, 0))
-                            else
-                                toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(7, 20, 0))
-                            end
-                        end
-                        getgenv().AimPos = mob.HumanoidRootPart.CFrame
-                        -- Usa skill
-                        pcall(function()
-                            local toolObj = nil
-                            if NameWeapon then toolObj = NameWeapon(method, true) end
-                            if not toolObj then toolObj = backpack:FindFirstChild(toolName) or character:FindFirstChild(toolName) end
-                            if method == "Gun" and character:FindFirstChild(toolName) then
-                                if ShootM1 then ShootM1(mob) end
-                            end
-                            if toolObj and H then
-                                local skillKey = H(toolObj)
-                                if skillKey then
-                                    local holdTime = Settings["Skill " .. skillKey .. " " .. toolObj.ToolTip] or 0.5
-                                    local vim = game:GetService("VirtualInputManager")
-                                    vim:SendKeyEvent(true, skillKey, false, game)
-                                    if Settings["Use skill fast dont hold"] then
-                                        task.wait(0.05)
-                                    else
-                                        task.wait(holdTime)
-                                    end
-                                    vim:SendKeyEvent(false, skillKey, false, game)
-                                end
-                            end
-                            if ClickM1 then ClickM1(mob) end
-                        end)
-                    end
-                end
-                return
-            end
-            
-            -- Se não achou mob, vai pro spawn
-            local spawnPart = nil
-            if DetectPartSpawnMob and DetectNameTablePart then
-                spawnPart = DetectPartSpawnMob(DetectNameTablePart(masteryMobs))
-            end
-            if spawnPart then
-                if toTarget then toTarget(spawnPart.CFrame * CFrame.new(0, 60, 0)) end
-            else
-                if toTarget then toTarget(CFrame.new(-9509.34961, 142.130661, 5535.16309)) end
-            end
-        end
-        
-        -- Sobrescreve HauntedCastleMasteryFarm
-        getgenv().HauntedCastleMasteryFarm = FixedHauntedCastleMasteryFarm
-        _G.HauntedCastleMasteryFarm = FixedHauntedCastleMasteryFarm
-        HauntedCastleMasteryFarm = FixedHauntedCastleMasteryFarm
-        pcall(function() rawset(_G, "HauntedCastleMasteryFarm", FixedHauntedCastleMasteryFarm) end)
-        
-        -- Também sobrescreve FarmMastery pra garantir
-        local function FixedFarmMastery(V)
-            if not V then return end
-            getgenv().AimPos = V.HumanoidRootPart.CFrame
-            getgenv().TargetMob = V
-            -- Chama o Haunted fixado que já tem a lógica de Melee -> Method
-            -- Mas se for chamado direto, faz a mesma lógica
-            local healthPercent = (Settings["Health %"] or 40) / 100
-            if V:FindFirstChild("Humanoid") then
-                local mobHealth = V.Humanoid.Health / V.Humanoid.MaxHealth
-                local player = game:GetService("Players").LocalPlayer
-                local backpack = player and player:FindFirstChild("Backpack")
-                local char = player and player.Character
-                
                 if mobHealth > healthPercent then
                     local meleeName = NameWeapon and NameWeapon("Melee")
                     if not meleeName and backpack then
@@ -29095,8 +28940,16 @@ do
                             if tool:IsA("Tool") and tool.ToolTip == "Melee" then meleeName = tool.Name break end
                         end
                     end
-                    if meleeName and backpack and backpack:FindFirstChild(meleeName) and char then
-                        char.Humanoid:EquipTool(backpack:FindFirstChild(meleeName))
+                    if meleeName then
+                        if backpack and backpack:FindFirstChild(meleeName) then character.Humanoid:EquipTool(backpack:FindFirstChild(meleeName)) end
+                        if toTarget then toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0)) end
+                        getgenv().AimPos = mob.HumanoidRootPart.CFrame
+                        pcall(function()
+                            local noAnim = Settings["Attack No Animation "] or Settings["Attack No Animation"]
+                            if noAnim then if AttackFunction then AttackFunction(60) end else if attackMelee then attackMelee(60) end end
+                            local t = character:FindFirstChild(meleeName) or character:FindFirstChildOfClass("Tool")
+                            if t then t:Activate() end
+                        end)
                     end
                 else
                     local method = Settings["Select Method Farm Mastery"] or "Blox Fruit"
@@ -29106,18 +28959,165 @@ do
                             if tool:IsA("Tool") and (tool.ToolTip == method or tool.Name == method) then toolName = tool.Name break end
                         end
                     end
-                    if toolName and backpack and backpack:FindFirstChild(toolName) and char then
-                        char.Humanoid:EquipTool(backpack:FindFirstChild(toolName))
+                    if toolName then
+                        if backpack:FindFirstChild(toolName) then character.Humanoid:EquipTool(backpack:FindFirstChild(toolName)) end
+                        if toTarget then
+                            if method == "Blox Fruit" then toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(-7, getgenv().YPosFruit or 20, 0)) else toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(7, 20, 0)) end
+                        end
+                        getgenv().AimPos = mob.HumanoidRootPart.CFrame
                     end
+                end
+                return
+            end
+            local spawnPart = DetectPartSpawnMob and DetectNameTablePart and DetectPartSpawnMob(DetectNameTablePart(masteryMobs))
+            if spawnPart then if toTarget then toTarget(spawnPart.CFrame * CFrame.new(0, 60, 0)) end else if toTarget then toTarget(CFrame.new(-9509.34961, 142.130661, 5535.16309)) end end
+        end
+        getgenv().HauntedCastleMasteryFarm = FixedHauntedCastleMasteryFarm
+        _G.HauntedCastleMasteryFarm = FixedHauntedCastleMasteryFarm
+        HauntedCastleMasteryFarm = FixedHauntedCastleMasteryFarm
+    end)
+end
+
+
+
+-- NOVO FUNDO NA UI - substitui o preto por um fundo estilizado
+pcall(function()
+    task.wait(0.5)
+    local function applyNewBackground()
+        local player = game:GetService("Players").LocalPlayer
+        local gui = nil
+        -- Tenta achar a UI do Nexora Hub
+        local host = (gethui and gethui()) or game:GetService("CoreGui")
+        for _, g in pairs(host:GetChildren()) do
+            if g.Name:find("Nexora") and g:FindFirstChild("Shell") then
+                gui = g
+                break
+            end
+        end
+        if not gui then
+            for _, g in pairs(player.PlayerGui:GetChildren()) do
+                if g.Name:find("Nexora") and g:FindFirstChild("Shell") then
+                    gui = g
+                    break
                 end
             end
         end
+        if not gui then return end
         
-        getgenv().FarmMastery = FixedFarmMastery
-        _G.FarmMastery = FixedFarmMastery
-        FarmMastery = FixedFarmMastery
+        local shell = gui:FindFirstChild("Shell")
+        if not shell then return end
         
-        print("[NEXORA] Patch final aplicado: Melee primeiro até % e depois Select Method")
+        -- Muda o fundo da shell de preto pra um azul escuro estilizado
+        shell.BackgroundColor3 = Color3.fromRGB(12, 16, 28)
+        shell.BackgroundTransparency = 0.15
+        
+        -- Adiciona um gradiente de fundo
+        local bgGradient = Instance.new("UIGradient")
+        bgGradient.Color = ColorSequence.new{
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(15, 20, 35)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(10, 15, 25)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 12, 20))
+        }
+        bgGradient.Rotation = 90
+        bgGradient.Parent = shell
+        
+        -- Adiciona uma imagem de fundo sutil (pattern)
+        local bgImage = Instance.new("ImageLabel")
+        bgImage.Name = "NewBackgroundImage"
+        bgImage.Size = UDim2.new(1, 0, 1, 0)
+        bgImage.Position = UDim2.new(0, 0, 0, 0)
+        bgImage.BackgroundTransparency = 1
+        bgImage.Image = "rbxassetid://6073628839" -- Pattern sutil
+        bgImage.ImageTransparency = 0.92
+        bgImage.ImageColor3 = Color3.fromRGB(0, 140, 255)
+        bgImage.ScaleType = Enum.ScaleType.Tile
+        bgImage.TileSize = UDim2.new(0, 200, 0, 200)
+        bgImage.ZIndex = 0
+        bgImage.Parent = shell
+        
+        -- Adiciona borda neon azul
+        local stroke = shell:FindFirstChildOfClass("UIStroke")
+        if not stroke then
+            stroke = Instance.new("UIStroke")
+            stroke.Parent = shell
+        end
+        stroke.Color = Color3.fromRGB(0, 140, 255)
+        stroke.Thickness = 1.5
+        stroke.Transparency = 0.3
+        
+        -- Adiciona glow azul nos cantos
+        local glow = Instance.new("ImageLabel")
+        glow.Name = "BlueGlow"
+        glow.Size = UDim2.new(1, 0, 1, 0)
+        glow.Position = UDim2.new(0, 0, 0, 0)
+        glow.BackgroundTransparency = 1
+        glow.Image = "rbxassetid://5028857084"
+        glow.ImageColor3 = Color3.fromRGB(0, 140, 255)
+        glow.ImageTransparency = 0.85
+        glow.ScaleType = Enum.ScaleType.Slice
+        glow.SliceCenter = Rect.new(100, 100, 100, 100)
+        glow.ZIndex = 0
+        glow.Parent = shell
+        
+        -- Muda o fundo das tabs também (não fica tudo preto)
+        for _, child in pairs(shell:GetDescendants()) do
+            if child:IsA("Frame") and child.Name == "Content" then
+                child.BackgroundColor3 = Color3.fromRGB(14, 18, 30)
+                child.BackgroundTransparency = 0.2
+                local grad = Instance.new("UIGradient")
+                grad.Color = ColorSequence.new{
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(16, 20, 32)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 14, 24))
+                }
+                grad.Rotation = 90
+                grad.Parent = child
+            end
+            if child:IsA("Frame") and child.Name:find("Sidebar") then
+                child.BackgroundColor3 = Color3.fromRGB(10, 14, 24)
+                child.BackgroundTransparency = 0.1
+            end
+        end
+        
+        print("[NEXORA] Novo fundo da UI aplicado!")
+    end
+    
+    -- Aplica agora e tenta novamente após 2 segundos (caso UI ainda não tenha carregado)
+    applyNewBackground()
+    task.delay(2, applyNewBackground)
+    task.delay(4, applyNewBackground)
+end)
+
+-- Também injeta na criação da UI library pra novos UIs
+do
+    local oldMake = nil
+    -- Tenta interceptar a função make da biblioteca
+    pcall(function()
+        if getgenv().NexoraUI then
+            local ui = getgenv().NexoraUI
+            if ui.CreateWindow then
+                local oldCreate = ui.CreateWindow
+                ui.CreateWindow = function(...)
+                    local window = oldCreate(...)
+                    task.spawn(function()
+                        task.wait(0.3)
+                        pcall(function()
+                            if window and window.Shell then
+                                window.Shell.BackgroundColor3 = Color3.fromRGB(12, 16, 28)
+                                window.Shell.BackgroundTransparency = 0.15
+                                local grad = Instance.new("UIGradient")
+                                grad.Color = ColorSequence.new{
+                                    ColorSequenceKeypoint.new(0, Color3.fromRGB(15, 20, 35)),
+                                    ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 12, 20))
+                                }
+                                grad.Rotation = 90
+                                grad.Parent = window.Shell
+                            end
+                        end)
+                    end)
+                    return window
+                end
+            end
+        end
     end)
 end
 
