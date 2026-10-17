@@ -2278,7 +2278,32 @@ local fScale = make("UIScale", {Scale=1}, reopen)
         nav.CanvasSize = UDim2.new(0, 0, 0, navLayout.AbsoluteContentSize.Y + 8)
     end)
     
-    local content = make("Frame", {Name="Content", Position=UDim2.new(0,SIDEBAR_W,0,HEADER_H), Size=UDim2.new(1,-SIDEBAR_W,1,-HEADER_H), BackgroundColor3=Color3.fromRGB(10, 20, 50), BackgroundTransparency=0.15, BorderSizePixel=0}, shell)
+    
+-- Detalhes animados seguros
+pcall(function()
+    local TS=game:GetService("TweenService")
+    if top then
+        pcall(function()
+            local lineTop = Instance.new("Frame")
+            lineTop.Name="AnimatedLineTop"
+            lineTop.Size=UDim2.new(1,0,0,1)
+            lineTop.Position=UDim2.new(0,0,1,-1)
+            lineTop.BackgroundColor3=Color3.fromRGB(0, 140, 255)
+            lineTop.BorderSizePixel=0
+            lineTop.ZIndex=10
+            lineTop.Parent=top
+            local grad=Instance.new("UIGradient")
+            grad.Color=ColorSequence.new{
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 80, 180)),
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(80, 180, 255)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 80, 180))
+            }
+            grad.Parent=lineTop
+        end)
+    end
+end)
+
+local content = make("Frame", {Name="Content", Position=UDim2.new(0,SIDEBAR_W,0,HEADER_H), Size=UDim2.new(1,-SIDEBAR_W,1,-HEADER_H), BackgroundColor3=Color3.fromRGB(10, 20, 50), BackgroundTransparency=0.15, BorderSizePixel=0}, shell)
     -- [CONTROL BACKGROUND DENTRO DA UI]
     do
         -- Fundo azul com hexágono
@@ -2485,7 +2510,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
         nb.LayoutOrder=#pages
         local Page={}
         function Page.CreateSection(sectionName)
-            local card=make("Frame", {Name=sectionName, Size=UDim2.new(1,0,0,40), AutomaticSize=Enum.AutomaticSize.Y, BackgroundColor3=C.panel, BackgroundTransparency=0.8, BorderSizePixel=0}, frame)
+            local card=make("Frame", {Name=sectionName, Size=UDim2.new(1,0,0,40), AutomaticSize=Enum.AutomaticSize.Y, BackgroundColor3=C.panel, BackgroundTransparency=0.85, BorderSizePixel=0}, frame)
             corner(card,10); stroke(card,C.line,0.35)
             make("UIPadding", {PaddingTop=UDim.new(0,11),PaddingBottom=UDim.new(0,11),PaddingLeft=UDim.new(0,11),PaddingRight=UDim.new(0,11)}, card)
             local list=make("UIListLayout", {Padding=UDim.new(0,7),SortOrder=Enum.SortOrder.LayoutOrder}, card)
@@ -7025,1816 +7050,178 @@ function equiptool(g)
 		t.Character.Humanoid:EquipTool(t.Backpack:FindFirstChild(g))
 	end
 end
+
 function NameWeapon(g, G)
 	local function m(E)
 		local l, Q, d = next, E:GetChildren()
 		for E, E in l, Q, d do
-			if E:IsA("Tool") and E.ToolTip == g then
-				return G and E or E.Name
+			if E:IsA("Tool") then
+				-- Tenta por ToolTip exato
+				if E.ToolTip == g then
+					return G and E or E.Name
+				end
+				-- Tenta por ToolTip contendo (ex: "Blox Fruit" pode estar como "Blox Fruit")
+				if string.find(E.ToolTip or "", g, 1, true) then
+					return G and E or E.Name
+				end
+				-- Tenta por nome contendo
+				if string.find(E.Name or "", g, 1, true) and g ~= "Melee" then
+					return G and E or E.Name
+				end
 			end
 		end
 	end
-	return m(t.Backpack) or (m(t.Character))
-end
-local g, G, m, E =
-	require(game:GetService("ReplicatedStorage").Mouse),
-	require(game:GetService("ReplicatedStorage").Modules.CombatUtil),
-	require(game:GetService("ReplicatedStorage").Modules.Net),
-	game:GetService("ReplicatedStorage").Modules.Net:WaitForChild("RE/RegisterAttack")
-local l = m:RemoteEvent("RegisterHit", true)
-local function m(Q, d, I)
-	local _ = {}
-	for o, o in pairs(Q:GetChildren()) do
-		if o:IsA("BasePart") and (o.Position - d).Magnitude <= I then
-			table.insert(_, o)
-		end
-	end
-	return _
-end
-local function Q(d)
-	local I = {}
-	for _, _ in pairs(game:GetService("Workspace"):WaitForChild("Enemies"):GetChildren()) do
-		table.insert(I, _)
-	end
-	if d then
-		for d, d in pairs(game:GetService("Workspace"):WaitForChild("Characters"):GetChildren()) do
-			table.insert(I, d)
-		end
-	end
-	return I
-end
-getgenv().getBladeHits = function(d, I, _, o)
-	local V = {}
-	for N, y in pairs(Q(o)) do
-		if y:IsDescendantOf(Workspace) and y ~= d and (y:FindFirstChild("HumanoidRootPart")) then
-			local Q, d = y.HumanoidRootPart, S:GetPlayerFromCharacter(y) and _ / 1.5 or _
-			N = { Q.Position }
-			if Q.Size.Y > 5 then
-				table.insert(N, (Q.CFrame * CFrame.new(0, -Q.Size.Y * 1.5 + 3, 0)).Position)
+	-- Procura na mochila primeiro, depois no character
+	local found = m(t.Backpack)
+	if found then return found end
+	found = m(t.Character)
+	if found then return found end
+	-- Fallback: procura qualquer Melee se g for Melee
+	if g == "Melee" then
+		for _, tool in pairs(t.Backpack:GetChildren()) do
+			if tool:IsA("Tool") and tool.ToolTip == "Melee" then
+				return G and tool or tool.Name
 			end
-			for _, _ in pairs(N) do
-				if (_ - I[1].Position).Magnitude < 10 + d + Q.Size.X / 2 then
-					for _, _ in pairs(m(y, I[1].Position, d + Q.Size.X / 2)) do
-						table.insert(V, _)
-					end
+		end
+		for _, tool in pairs(t.Character:GetChildren()) do
+			if tool:IsA("Tool") and tool.ToolTip == "Melee" then
+				return G and tool or tool.Name
+			end
+		end
+	end
+	return nil
+end
+
+function equiptool(g)
+	if not g or g == "" then return end
+	pcall(function()
+		-- Já está equipado?
+		if t.Character:FindFirstChild(g) then return end
+		-- Tenta na mochila
+		local tool = t.Backpack:FindFirstChild(g)
+		if tool then
+			t.Character.Humanoid:EquipTool(tool)
+			return
+		end
+		-- Tenta achar por nome parcial ou ToolTip
+		for _, tool in pairs(t.Backpack:GetChildren()) do
+			if tool:IsA("Tool") then
+				if tool.Name == g or tool.ToolTip == g or string.find(tool.ToolTip or "", g, 1, true) or string.find(tool.Name or "", g, 1, true) then
+					t.Character.Humanoid:EquipTool(tool)
+					return
+				end
+			end
+		end
+		-- Tenta no character (já equipado com outro nome)
+		for _, tool in pairs(t.Character:GetChildren()) do
+			if tool:IsA("Tool") and (tool.ToolTip == g or tool.Name == g) then
+				return
+			end
+		end
+	end)
+end
+
+function UsedualFlock()
+	-- FIX SELECT WEAPON - equipa corretamente o que foi selecionado no Setting Farm
+	local weaponType = Settings["Select Weapon"] or "Melee"
+	pcall(function()
+		local toolName = NameWeapon(weaponType)
+		if toolName then
+			equiptool(toolName)
+		else
+			-- Fallback: tenta equipar qualquer tool do tipo selecionado
+			for _, tool in pairs(t.Backpack:GetChildren()) do
+				if tool:IsA("Tool") and tool.ToolTip == weaponType then
+					t.Character.Humanoid:EquipTool(tool)
 					break
 				end
 			end
 		end
-	end
-	return V
+	end)
 end
-local m = {
-	RightUpperArm = true,
-	RightLowerArm = true,
-	RightHand = true,
-	RightUpperLeg = true,
-	RightLowerLeg = true,
-	RightFoot = true,
-	LeftUpperArm = true,
-	LeftLowerArm = true,
-	LeftHand = true,
-	LeftUpperLeg = true,
-	LeftLowerLeg = true,
-	LeftFoot = true,
-	UpperTorso = true,
-	LowerTorso = true,
-	Head = true,
-}
-function AttackAOE(Q, d)
-	local I, _, o, V, N = {}, {}, getgenv().getBladeHits, t.Character, { t.Character.HumanoidRootPart }
-	for y, P in o(V, N, Q or 80, d) do
-		y = G:GetRigOfHitPart(P)
-		if y and not _[y] and m[P.Name] and (G:IsVulnerable(y)) then
-			local m, Q = y:FindFirstChild("Summoner"), t.Character:FindFirstChild("Summoner")
-			if
-				y ~= t.Character
-				and (not Q or y ~= Q.Value.Character)
-				and (
-					not S:GetPlayerFromCharacter(t.Character)
-					or not m
-					or m.Value ~= S:GetPlayerFromCharacter(t.Character)
-				)
-			then
-				table.insert(I, { y, P })
-				_[y] = true
-			end
-		end
-	end
-	return #I > 0 and I or nil
-end
-v_u_27 = 0
-v_u_28 = false
-v_u_33 = false
-v_u_31 = nil
-v_u_32 = 0
-v_u_21 = 0
-v_u_16 = 1
-CameraShakerMain = require(game:GetService("ReplicatedStorage").Util.CameraShaker.Main)
-CameraShaker = require(game:GetService("ReplicatedStorage").Util.CameraShaker)
-function attackMelee(m)
-	local Q = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Tool")
-	if not Q then
-		return
-	end
-	local d = AttackAOE(m, false)
-	if not d then
-		return
-	end
-	m = game.Players.LocalPlayer.Character.Humanoid
-	local I = m and m.RootPart
-	I = I and I.Parent
-	local _ = G:GetMovesetAnimCache(m)
-	if _ then
-		m = G:GetWeaponName(Q)
-		local Q = G:GetWeaponData(m)
-		local o, V = Q.WeaponType, Q.Moveset
-		if G:CanAttack(I, o) then
-			v_u_33 = true
-			v_u_32 = 5
-			v_u_21 = os.clock()
-			v_u_27 += 1
-			if v_u_27 > #V.Basic then
-				v_u_27 = 1
-			end
-			Q = _[G:GetPureWeaponName(m) .. "-basic" .. v_u_27]
-			E:FireServer(Q.Length / (Q:GetAttribute("SpeedMult") or 1))
-			l:FireServer(table.remove(d, 1)[2], d)
-			Q:Play(0.100000001, 1, 1 * (Q:GetAttribute("SpeedMult") or 1))
-			v_u_28 = true
-			task.delay(Q.Length / (Q:GetAttribute("SpeedMult") or 1) * v_u_16, function()
-				v_u_28 = false
-			end)
-			v_u_31 = Q
-			table.clear(d)
-		end
-	end
-end
-AttackFunction = function(G)
-	if t.Character.Stun.Value ~= 0 then
-		return
-	end
-	if not Settings["Attack No Animation "] then
-		attackMelee(G)
-	else
-		local m = AttackAOE(G, false)
-		if not m then
-			return
-		end
-		E:FireServer(0)
-		l:FireServer(table.remove(m, 1)[2], m)
-		table.clear(m)
-	end
-end
-getgenv().AttackFunctionnhungSuperTrial = function()
-	if t.Character.Stun.Value ~= 0 then
-		return
-	end
-	local G = AttackAOE(80, true)
-	if not G then
-		return
-	end
-	E:FireServer(0)
-	l:FireServer(table.remove(G, 1)[2], G)
-	table.clear(G)
-end
-getgenv().AttackFunctionnhungSuper = getgenv().AttackFunctionnhungSuperTrial
-local G = require(game:GetService("ReplicatedStorage").Mouse)
-v_u_50 = nil
-v_u_51 = 1
-v_u_52 = time
-v_u_53 = v_u_52()
-FruitM1State = { Tool = nil, Combo = 0, LastFire = 0, LastCombo = 0, Busy = false, BusyAt = 0 }
-local function m(E, l, Q)
-	local d = t.Character
-	local I = d and (d.PrimaryPart or d:FindFirstChild("HumanoidRootPart"))
-	if not I or not E then
-		return false
-	end
-	-- Target position: accepts Vector3, CFrame, Part or Model.
-	local function GetPos(T)
-		local ty = typeof(T)
-		if ty == "Vector3" then
-			return T
-		elseif ty == "CFrame" then
-			return T.Position
-		elseif ty == "Instance" then
-			if T:IsA("BasePart") then
-				return T.Position
-			elseif T:IsA("Model") then
-				local r = T:FindFirstChild("HumanoidRootPart") or T.PrimaryPart
-				return r and r.Position or T:GetPivot().Position
-			end
-		end
-	end
-	local TargetPos = GetPos(E)
-	if not TargetPos then
-		return false
-	end
-	local ok, result = pcall(function()
-		local toolName = NameWeapon("Blox Fruit")
-		if not toolName then
-			return false
-		end
-		local tool = d:FindFirstChild(toolName)
-		if not tool then
-			-- Fruit still in the backpack: equip it and fire on the next cycle.
-			local bp = t.Backpack:FindFirstChild(toolName)
-			local hum = d:FindFirstChildOfClass("Humanoid")
-			if bp and hum then
-				hum:EquipTool(bp)
-			end
-			return false
-		end
-		-- Same guard as the melee attack: no clicks while stunned.
-		local stun = d:FindFirstChild("Stun")
-		if stun and stun.Value ~= 0 then
-			return true
-		end
-		-- One shared pace for the farm loop and the turbo loop. A small floor keeps the
-		-- remote queue from flooding (flooding is what made the clicks stop after a while).
-		-- Adjust with getgenv().FruitM1Delay (seconds).
-		local now = os.clock()
-		local minDelay = getgenv().FruitM1Delay or 0.00001 -- 0.01 ms requested (actual speed is limited by frame/server timing)
-		if now - FruitM1State.LastFire < minDelay then
-			return true
-		end
-		-- Combo counter restarts after a pause or when the fruit changes (like a real click).
-		if FruitM1State.Tool ~= tool or now - FruitM1State.LastFire > 1.2 then
-			FruitM1State.Combo = 0
-		end
-		FruitM1State.Tool = tool
-		FruitM1State.LastFire = now
 
-		-- Lead the aim using the target velocity, from the real firing point.
-		local origin = I.Position + Vector3.new(0, 1.5, 0)
-		local aimPoint = TargetPos
-		if typeof(E) == "Instance" then
-			local tr = E:IsA("Model") and (E:FindFirstChild("HumanoidRootPart") or E.PrimaryPart) or E
-			if tr and tr:IsA("BasePart") then
-				local okV, vel = pcall(function()
-					return tr.AssemblyLinearVelocity
-				end)
-				if okV and vel and vel.Magnitude < 120 then
-					aimPoint = TargetPos + vel * math.clamp((aimPoint - origin).Magnitude / 300, 0, 0.25)
+function FarmMastery(V)
+	if not V or not V:FindFirstChild("Humanoid") or not V:FindFirstChild("HumanoidRootPart") then
+		return
+	end
+	getgenv().AimPos = V.HumanoidRootPart.CFrame
+	getgenv().TargetMob = V
+	
+	if not Settings["Farm Mastery"] then
+		UsedualFlock()
+		return
+	end
+	
+	local healthPercent = (Settings["Health %"] or 40) / 100
+	local mobHealth = V.Humanoid.Health / V.Humanoid.MaxHealth
+	
+	if mobHealth > healthPercent then
+		-- FASE 1: Vida alta (>40%) - USA ESTILO DE LUTA PARA DAR DANO ATÉ 40%
+		pcall(function()
+			local meleeName = NameWeapon("Melee")
+			if not meleeName then
+				for _, tool in pairs(t.Backpack:GetChildren()) do
+					if tool:IsA("Tool") and tool.ToolTip == "Melee" then
+						meleeName = tool.Name
+						break
+					end
 				end
 			end
-		end
-		local ToTarget = aimPoint - origin
-		local Aim = ToTarget.Magnitude < 0.001 and Vector3.new(0, 0, -1) or ToTarget.Unit
-		local Flat = Vector3.new(Aim.X, 0, Aim.Z)
-		Flat = Flat.Magnitude < 0.001 and Vector3.new(0, 0, -1) or Flat.Unit
-
-		-- Lets the aim hooks used by the hub's skills point at the same target.
-		getgenv().AimPos = CFrame.new(aimPoint)
-
-		-- Direct remotes (no real click, no cooldown).
-		local ClickRemote = tool:FindFirstChild("LeftClickRemote")
-		local RemoteFn = tool:FindFirstChild("RemoteFunction")
-		local RemoteEv = tool:FindFirstChild("RemoteEvent")
-		if not ClickRemote and RemoteFn then
-			if RemoteEv then
-				RemoteEv:FireServer(aimPoint)
-			end
-			-- Only one invoke in flight (unbounded threads exhaust the queue); a hung
-			-- invoke is released after 0.5s so the clicks never stay blocked.
-			if not FruitM1State.Busy or now - FruitM1State.BusyAt > 0.5 then
-				FruitM1State.Busy = true
-				FruitM1State.BusyAt = now
-				task.spawn(function()
-					pcall(function()
-						RemoteFn:InvokeServer("TAP")
-					end)
-					FruitM1State.Busy = false
-				end)
-			end
-			return true
-		end
-		if ClickRemote and toolName == "Mammoth-Mammoth" then
-			ClickRemote:FireServer(aimPoint)
-			return true
-		end
-		if ClickRemote then
-			FruitM1State.Combo = FruitM1State.Combo % 5 + 1
-			ClickRemote:FireServer(Aim, FruitM1State.Combo)
-			if l then
-				ClickRemote:FireServer(Flat, FruitM1State.Combo)
-			end
-			return true
-		end
-		return true
-	end)
-	return ok and result == true
-end
-getgenv().UseFruitM1 = function(g, E)
-	return m(g, E, false)
-end
-getgenv().UseFruitM1Boat = function(g, E)
-	return m(g, E, true)
-end
-getgenv().PathClickM1 = {}
-local function g(m)
-	m.ChildAdded:Connect(function(m)
-		if m:IsA("Tool") then
-			task.wait(0.5)
-			local E = m:FindFirstChild("RemoteFunction")
-			if E then
-				getgenv().PathClickM1[m.Name] = E
-			end
-		end
-	end)
-end
-if t.Character then
-	g(t.Character)
-end
-t.CharacterAdded:Connect(g)
-local function m(E, Range)
-	local Character = t.Character
-	local CharacterRoot = Character and Character:FindFirstChild("HumanoidRootPart")
-	if not CharacterRoot or not E then
-		return false
-	end
-
-	local TargetRoot = E:FindFirstChild("HumanoidRootPart") or E.PrimaryPart
-	local TargetPosition
-
-	if TargetRoot then
-		TargetPosition = TargetRoot.Position
-	elseif E:IsA("Model") then
-		TargetPosition = E:GetPivot().Position
-	end
-
-	if not TargetPosition then
-		return false
-	end
-
-	local Humanoid = E:FindFirstChildOfClass("Humanoid")
-	if Humanoid and Humanoid.Health <= 0 then
-		return false
-	end
-
-	return (CharacterRoot.Position - TargetPosition).Magnitude < (Range or 70)
-end
--- Fruit/Gun clicks use a long range so they do not stop when the mob is a bit far.
-function M1Dispatch(E, l, Weapon)
-	if Weapon ~= "Blox Fruit" and Weapon ~= "Gun" then
-		return false
-	end
-	if not m(E, 300) then
-		return true -- invalid/dead target: nothing to click, do not fall back to melee
-	end
-	-- Remembered so the turbo loop keeps clicking between farm iterations.
-	getgenv().M1Target = E
-	getgenv().M1TargetL = l
-	getgenv().M1TargetWeapon = Weapon
-	getgenv().M1TargetTime = os.clock()
-	if Weapon == "Blox Fruit" then
-		getgenv().UseFruitM1(E, l)
-	else
-		ShootM1(E)
-	end
-	return true
-end
-getgenv().ClickM1 = function(E, l)
-	if M1Dispatch(E, l, Settings["Select Weapon"]) then
-		return
-	end
-	if not m(E) then
-		return
-	end
-	AttackFunction(l and 80 or 30)
-end
-getgenv().ClickM1Dungeon = function(E, l)
-	if M1Dispatch(E, l, Settings["Select Weapon Dungeon"]) then
-		return
-	end
-	if not m(E) then
-		return
-	end
-	AttackFunction(l and 80 or 30)
-end
-getgenv().ClickM1Volcano = function(E, l)
-	if M1Dispatch(E, l, Settings["Select Weapon Kill Golem"]) then
-		return
-	end
-	if not m(E) then
-		return
-	end
-	AttackFunction(l and 80 or 30)
-end
--- Turbo: clicks every Heartbeat at the last farm target while the farm is active,
--- so the clicks never stop during teleports/waits of the farm loops.
-function M1TurboStep()
-	if getgenv().M1Turbo == false then
-		return
-	end
-	local tgt = getgenv().M1Target
-	if not tgt or os.clock() - (getgenv().M1TargetTime or 0) > 0.35 then
-		return
-	end
-	if typeof(tgt) ~= "Instance" or not tgt.Parent then
-		return
-	end
-	local hum = tgt:FindFirstChildOfClass("Humanoid")
-	if hum and hum.Health <= 0 then
-		return
-	end
-	-- Watchdog: if the fruit has not fired for 1s although there is a live target,
-	-- release any stuck state so the clicks come back by themselves.
-	if os.clock() - FruitM1State.LastFire > 1 then
-		FruitM1State.Busy = false
-		FruitM1State.Combo = 0
-	end
-	if getgenv().M1TargetWeapon == "Blox Fruit" then
-		getgenv().UseFruitM1(tgt, getgenv().M1TargetL)
-	elseif getgenv().M1TargetWeapon == "Gun" then
-		ShootM1(tgt)
-	end
-end
-if getgenv().M1TurboConn then
-	pcall(function()
-		getgenv().M1TurboConn:Disconnect()
-	end)
-end
-getgenv().M1TurboConn = game:GetService("RunService").Heartbeat:Connect(function()
-	pcall(M1TurboStep)
-end)
-local m = L:WaitForChild("Modules")
-getgenv().SpamGunDragonStorm = function(E)
-	local Q = t.Character
-	local d = Q and (Q:FindFirstChild("Dragonstorm"))
-	if not d or not E or not E.Position then
-		return
-	end
-	local reloading = false
-	pcall(function()
-		reloading = require(m.CombatUtil):IsGunReloading(d)
-	end)
-	if reloading then
-		return
-	end
-	-- Validação do jogo: depende de índices de upvalue que mudam a cada update.
-	-- Antes um erro aqui impedia o tiro; agora é tentativa protegida e o tiro sai de qualquer forma.
-	pcall(function()
-		local l = getupvalues(require(L.Controllers.CombatController).Attack)[9]
-		local I, _, o, V, N, y, P =
-			debug.getupvalue(l, 15),
-			debug.getupvalue(l, 13),
-			debug.getupvalue(l, 16),
-			debug.getupvalue(l, 17),
-			debug.getupvalue(l, 14),
-			debug.getupvalue(l, 12),
-			debug.getupvalue(l, 18)
-		local Q2 = y * _
-		local d2 = ((N * _ + y * I) % o * o + Q2) % V
-		N = math.floor(d2 / o)
-		y = d2 - N * o
-		P += 1
-		debug.setupvalue(l, 15, I)
-		debug.setupvalue(l, 13, _)
-		debug.setupvalue(l, 16, o)
-		debug.setupvalue(l, 17, V)
-		debug.setupvalue(l, 14, N)
-		debug.setupvalue(l, 12, y)
-		debug.setupvalue(l, 18, P)
-		L.Remotes.Validator2:FireServer(math.floor(d2 / V * 16777215), P)
-	end)
-	pcall(function()
-		m.Net:FindFirstChild("RE/ShootGunEvent"):FireServer(E.Position, { E })
-	end)
-end
-GunM1State = { Last = 0 }
--- Equipa uma tool só quando preciso: se já está na mão não faz nada, e as tentativas
--- têm intervalo (antes o turbo chamava EquipTool a cada frame e brigava com o farm).
-function EquipOnlyIfNeeded(toolName, interval)
-	local char = t.Character
-	local hum = char and char:FindFirstChildOfClass("Humanoid")
-	if not char or not hum or hum.Health <= 0 or hum.Sit or not toolName then
-		return false
-	end
-	if char:FindFirstChild(toolName) then
-		return true -- já equipada
-	end
-	local last = getgenv().__EquipLast or {}
-	getgenv().__EquipLast = last
-	if os.clock() - (last[toolName] or 0) < (interval or 1.5) then
-		return false
-	end
-	local bp = t.Backpack:FindFirstChild(toolName)
-	if not bp then
-		return false
-	end
-	last[toolName] = os.clock()
-	hum:EquipTool(bp)
-	return false -- vai atirar no próximo ciclo
-end
-function DragonstormPhysicalClick(force)
-	local now = os.clock()
-	if not force and now - (getgenv().__DSClickLast or 0) < (getgenv().DSClickInterval or 0.5) then
-		return false
-	end
-	getgenv().__DSClickLast = now
-	task.spawn(function()
-		pcall(function()
-			local Camera = workspace.CurrentCamera
-			if not Camera then
-				return
-			end
-			local vp = Camera.ViewportSize
-			-- Mouse reto para o TOPO da tela (centro horizontal) antes de clicar.
-			local x, y = math.floor(vp.X / 2), 2
-			local VIM = game:GetService("VirtualInputManager")
-			VIM:SendMouseMoveEvent(x, y, game)
-			task.wait(0.03)
-			VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
-			task.wait(0.05)
-			VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
-			-- Celular: o clique de mouse não vale, então manda também um toque (fora da barra do topo) e Activate na tool.
-			pcall(function()
-				local tx, ty = x, math.max(64, math.floor(vp.Y * 0.12))
-				VIM:SendTouchEvent(1, 0, tx, ty)
-				task.wait(0.04)
-				VIM:SendTouchEvent(1, 2, tx, ty)
-			end)
-			pcall(function()
-				local tool = t.Character and t.Character:FindFirstChild("Dragonstorm")
+			if meleeName then
+				equiptool(meleeName)
+				getgenv().AimPos = V.HumanoidRootPart.CFrame
+				-- Ataca
+				local noAnim = Settings["Attack No Animation "] or Settings["Attack No Animation"]
+				if noAnim then
+					if AttackFunction then AttackFunction(60) end
+				else
+						pcall(function() attackMelee(60) end)
+				end
+				local tool = t.Character:FindFirstChild(meleeName) or t.Character:FindFirstChildOfClass("Tool")
 				if tool then tool:Activate() end
-			end)
-			pcall(function()
-				local VU = game:GetService("VirtualUser")
-				VU:CaptureController()
-				VU:ClickButton1(Vector2.new(x, y))
-			end)
+			end
 		end)
-	end)
-	return true
-end
-function ShootM1(E)
-	local char = t.Character
-	if not char or not E then
-		return false
-	end
-	local gunName = NameWeapon("Gun")
-	local gun = gunName and char:FindFirstChild(gunName)
-	if not gun then
-		-- Gun fora da mão: equipa só quando preciso e atira no próximo ciclo.
-		EquipOnlyIfNeeded(gunName, 1.5)
-		return false
-	end
-	if gunName == "Dragonstorm" then
-		DragonstormPhysicalClick()
-	end
-	-- Target part / position (accepts Model, BasePart, Vector3 or CFrame).
-	local targetPart, targetPos
-	if typeof(E) == "Instance" then
-		if E:IsA("BasePart") then
-			targetPart, targetPos = E, E.Position
-		elseif E:IsA("Model") then
-			targetPart = E:FindFirstChild("HumanoidRootPart") or E.PrimaryPart
-			targetPos = targetPart and targetPart.Position or E:GetPivot().Position
-		end
-	elseif typeof(E) == "Vector3" then
-		targetPos = E
-	elseif typeof(E) == "CFrame" then
-		targetPos = E.Position
-	end
-	if not targetPos then
-		return false
-	end
-	-- Same guard as the melee attack: no shots while stunned.
-	local stun = char:FindFirstChild("Stun")
-	if stun and stun.Value ~= 0 then
-		return true
-	end
-	-- No cooldown / no reload check, only a small floor so the remotes do not flood.
-	-- Adjust with getgenv().GunM1Delay (seconds).
-	local now = os.clock()
-	local delay = getgenv().GunM1Delay or 0.05
-	if now - GunM1State.Last < delay then
-		return true
-	end
-	GunM1State.Last = now
-	getgenv().AimPos = CFrame.new(targetPos)
-
-
-	if gunName == "Skull Guitar" then
-		if getgenv().SpamGunSkullGuitar then
-			getgenv().SpamGunSkullGuitar(targetPart or targetPos)
-		end
-		return true
-	end
-	-- Remote shot.
-	-- The validator uses upvalue indexes that change on game updates, so it is protected.
-	pcall(function()
-		local rs = game:GetService("ReplicatedStorage")
-		local l = getupvalues(require(rs.Controllers.CombatController).Attack)[9]
-		local Q, d, I, _, o, V, N =
-			debug.getupvalue(l, 15),
-			debug.getupvalue(l, 13),
-			debug.getupvalue(l, 16),
-			debug.getupvalue(l, 17),
-			debug.getupvalue(l, 14),
-			debug.getupvalue(l, 12),
-			debug.getupvalue(l, 18)
-		local y = V * d
-		local P = ((o * d + V * Q) % I * I + y) % _
-		o = math.floor(P / I)
-		V = P - o * I
-		N += 1
-		debug.setupvalue(l, 15, Q)
-		debug.setupvalue(l, 13, d)
-		debug.setupvalue(l, 16, I)
-		debug.setupvalue(l, 17, _)
-		debug.setupvalue(l, 14, o)
-		debug.setupvalue(l, 12, V)
-		debug.setupvalue(l, 18, N)
-		rs.Remotes.Validator2:FireServer(math.floor(P / _ * 16777215), N)
-	end)
-	pcall(function()
-		local shoot = game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RE/ShootGunEvent")
-		if not shoot then
-			return
-		end
-		if gunName == "Cannon" then
-			shoot:FireServer(targetPos)
-		else
-			shoot:FireServer(targetPos, targetPart and { targetPart } or {})
-		end
-	end)
-	return true
-end
-getgenv().SpamGunSkullGuitar = function(E)
-	local combatUtil, character = require(m.CombatUtil), t.Character
-	local gun = character and character:FindFirstChild("Skull Guitar")
-	if not gun or not E or not character then
-		return false
-	end
-	-- Tyrant's destructible Tree is a Model; aim at a real BasePart instead
-	-- of the model pivot, which can be outside the hitbox.
-	local targetPart, targetPosition
-	if typeof(E) == "Instance" then
-		if E:IsA("BasePart") then
-			targetPart = E
-		elseif E:IsA("Model") then
-			targetPart = E:FindFirstChild("HumanoidRootPart", true)
-				or E:FindFirstChild("Handle", true)
-				or E:FindFirstChildWhichIsA("BasePart", true)
-		end
-		if targetPart then targetPosition = targetPart.Position end
-	elseif typeof(E) == "CFrame" then
-		targetPosition = E.Position
-	elseif typeof(E) == "Vector3" then
-		targetPosition = E
-	end
-	if not targetPosition then return false end
-	-- Do not stop firing just because the reload helper briefly reports busy;
-	-- the M1 loop retries on its next iteration. Keep calls throttled.
-	local now = os.clock()
-	if now - (getgenv().__SkullGuitarM1Last or 0) < 0.12 then return true end
-	getgenv().__SkullGuitarM1Last = now
-	getgenv().AimPos = CFrame.new(targetPosition)
-	local stun = character:FindFirstChild("Stun")
-	if stun and stun.Value ~= 0 then return true end
-	-- Send the regular M1 shot first, with the destructible part as hit target.
-	local sent = false
-	pcall(function()
-		local rs = game:GetService("ReplicatedStorage")
-		local net = rs:FindFirstChild("Modules") and rs.Modules:FindFirstChild("Net")
-		local shoot = net and net:FindFirstChild("RE/ShootGunEvent")
-		if shoot and targetPart then
-			shoot:FireServer(targetPosition, { targetPart })
-			sent = true
-		end
-	end)
-	-- Skull Guitar's TAP remote is retained as a fallback for game versions
-	-- that route its basic shot through the tool remote.
-	-- O TAP é o disparo próprio da Skull Guitar: sempre enviado, junto com o tiro normal.
-	pcall(function()
-		local remote = gun:FindFirstChild("RemoteEvent")
-		if remote then remote:FireServer("TAP", targetPosition); sent = true end
-	end)
-	return sent
-end
-local function m(E, l)
-	local Q, d, I, _, o, V, N =
-		require(game:GetService("ReplicatedStorage").Modules.CombatUtil),
-		getgenv().getBladeHits,
-		E.Character,
-		{ E.Character.HumanoidRootPart },
-		1 / 0
-	for y, P in d(I, _, l, true) do
-		y = Q:GetRigOfHitPart(P)
-		if y and (Q:IsVulnerable(y)) then
-			local l = (E.Character.HumanoidRootPart.Position - P.Position).Magnitude
-			if l < o then
-				o, V, N = l, y, P
-			end
-		end
-	end
-	if V and N then
-		return { V, N }
-	end
-	return nil
-end
-function DetectItemPlr(E)
-	if t.Character:FindFirstChild(E) or (t.Backpack:FindFirstChild(E)) then
-		return true
-	end
-end
-function sizepart(E)
-	AttackingMob = E
-	if not E or not E.Parent or not E:FindFirstChild("HumanoidRootPart") then
 		return
-	end
-	if t:DistanceFromCharacter(E.HumanoidRootPart.Position) <= 50 then
-		local l, Q, d = next, E:GetDescendants()
-		for E, E in l, Q, d do
-			if (E:IsA("Part") or (E:IsA("MeshPart"))) and E.CanCollide then
-				E.CanCollide = false
-			end
-		end
-	end
-end
-local E, l
-function DeleteIgnoredMob()
-	for Q, Q in pairs(game:GetService("Workspace").Enemies:GetChildren()) do
-		if Q:IsA("Model") and (Q:FindFirstChild("Ignored")) then
-			Q.Ignored:Destroy()
-		end
-	end
-end
-function DetectMob(Q)
-	local d, I = 1 / 0
-	for _, o in pairs(game.Workspace.Enemies:GetChildren()) do
-		if (typeof(Q) == "table" and (table.find(Q, o.Name)) or o.Name == Q) and (IsMobAlive(o)) then
-			_ = (
-				o.HumanoidRootPart.Position - game:GetService("Players").LocalPlayer.Character.HumanoidRootPart.Position
-			).magnitude
-			if _ < d then
-				d, I = _, o
-			end
-		end
-	end
-	return I
-end
-function CheckNameBoss(Q)
-	local d, I, _ = next, game.ReplicatedStorage:GetChildren()
-	for o, o in d, I, _ do
-		if (typeof(Q) == "table" and (table.find(Q, o.Name)) or o.Name == Q) and (IsMobAlive(o)) then
-			return o
-		end
-	end
-	d, _, I = next, game.Workspace.Enemies:GetChildren()
-	for o, o in d, _, I do
-		if (typeof(Q) == "table" and (table.find(Q, o.Name)) or o.Name == Q) and (IsMobAlive(o)) then
-			return o
-		end
-	end
-end
-getgenv().TableMobSpawn = {}
-spawn(function()
-	for Q, Q in pairs(getnilinstances()) do
-		if
-			if Q:GetAttribute("DisplayName") and (string.find(Q:GetAttribute("DisplayName"), "Lv."))
-				then (Q:GetAttribute("DisplayName"):gsub(" %pLv. %d+%p", ""))
-				else nil
-		then
-			table.insert(TableMobSpawn, Q)
-		end
-	end
-	for Q, Q in pairs(game:GetService("Workspace")._WorldOrigin.EnemySpawns:GetChildren()) do
-		if
-			if Q:GetAttribute("DisplayName") and (string.find(Q:GetAttribute("DisplayName"), "Lv."))
-				then (Q:GetAttribute("DisplayName"):gsub(" %pLv. %d+%p", ""))
-				else nil
-		then
-			table.insert(TableMobSpawn, Q)
-		end
-	end
-end)
-function getcenter(Q)
-	if string.find(Q, "Lv.") then
-		name1 = Q:gsub(" %pLv. %d+%p", "")
-	end
-	local d
-	local I = 0
-	for _, o in pairs(TableMobSpawn) do
-		_ = if string.find(o.Name, "Lv.") then (o.Name:gsub(" %pLv. %d+%p", "")) else nil
-		if o:IsA("Part") and (_ and _ == Q or Q == o.Name or name1 and o.Name == name1) then
-			if d == nil then
-				d, I = o.Position, I + 1
-			else
-				d, I = d + o.Position, I + 1
-			end
-		end
-	end
-	d /= I
-	return CFrame.new(d)
-end
-function DetectPartMobBring(Q, d, I, _)
-	local o, V = {}, if string.find(Q, "Lv.") then (Q:gsub(" %pLv. %d+%p", "")) else nil
-	for N, y in pairs(TableMobSpawn) do
-		N = if string.find(y.Name, "Lv.") then (y.Name:gsub(" %pLv. %d+%p", "")) else nil
-		if y:IsA("Part") and (N and N == Q or Q == y.Name or V and y.Name == V) then
-			table.insert(o, y)
-		end
-	end
-	if I then
-		Q, V = 1 / 0
-		for I, N in next, o, nil do
-			I = (d.HumanoidRootPart.Position - N.Position).Magnitude
-			if Q > I then
-				Q, V = I, N
-			end
-		end
-		return V
 	else
-		local Q = {}
-		for d, d in next, o, nil do
-			if (_.Position - d.Position).Magnitude <= 200 then
-				table.insert(Q, d)
+		-- FASE 2: Vida baixa (<=40%) - EQUIPA TOOL DO SELECT WEAPON / SELECT METHOD PARA FARMAR MAESTRIA
+		local method = Settings["Select Method Farm Mastery"] or Settings["Select Weapon"] or "Blox Fruit"
+		pcall(function()
+			local toolName = NameWeapon(method)
+			if not toolName then
+				for _, tool in pairs(t.Backpack:GetChildren()) do
+					if tool:IsA("Tool") and (tool.ToolTip == method or string.find(tool.ToolTip or "", method, 1, true) or string.find(tool.Name or "", method, 1, true)) then
+						toolName = tool.Name
+						break
+					end
+				end
 			end
-		end
-		if #Q < #o then
-			return true
-		end
-	end
-end
-function isnetworkowner2(Q)
-	local d, I, _ = next, game.Workspace.Characters:GetChildren()
-	for o, o in d, I, _ do
-		if
-			o.Name ~= t.Name
-			and (o:FindFirstChild("HumanoidRootPart"))
-			and (o.HumanoidRootPart.Position - Q.Position).Magnitude <= 300
-		then
-			return false
-		end
-	end
-	return true
-end
-function BringMob(Q)
-	if not Settings["Bring Mob"] then return end
-	if not Q or not Q.Parent or not Q:FindFirstChild("HumanoidRootPart") then return end
-	local Character = t.Character
-	local Root = Character and Character:FindFirstChild("HumanoidRootPart")
-	if not Root then return end
-	if tick() - (getgenv().__BringLast or 0) < 0.25 then return end
-	getgenv().__BringLast = tick()
-	local anchor = Q.HumanoidRootPart.CFrame
-	if (Root.Position - anchor.Position).Magnitude > 120 then return end
-	pcall(function() sethiddenproperty(t, "SimulationRadius", math.huge) sethiddenproperty(t, "MaxSimulationRadius", math.huge) end)
-	local count = math.clamp(tonumber(Settings["Bring Mob Count"]) or 2, 2, 6)
-	local radius = count > 2 and 350 or 250
-	local gathered = 1
-	for _, mob in ipairs(workspace.Enemies:GetChildren()) do
-		if gathered >= count then break end
-		if mob ~= Q and mob.Name == Q.Name and not mob:FindFirstChild("Ignored") and IsMobAlive(mob) then
-			local hrp = mob.HumanoidRootPart
-			if (hrp.Position - anchor.Position).Magnitude <= radius then
-				hrp.CFrame = anchor * CFrame.new(math.random(-3, 3), 0, math.random(-3, 3))
-				hrp.CanCollide = false
-				pcall(function() mob.Humanoid.WalkSpeed = 0 mob.Humanoid.JumpPower = 0 end)
-				sizepart(mob)
-				gathered += 1
-				task.wait(0.15)
-			end
-		end
-	end
-end
-task.wait(1)
-SettingFarmMain = Main.CreatePage({ Page_Name = "Setting Farm", Page_Title = "Setting Farm" })
-SettingFarmMainSection = SettingFarmMain.CreateSection("Setting Farm")
-local Q, d =
-	false,
-	SettingFarmMainSection.CreateDropdown(
-		{
-			Title = "Select Weapon",
-			List = { "Melee", "Sword", "Gun", "Blox Fruit" },
-			Search = true,
-			Selected = false,
-			Default = Settings["Select Weapon"] or nil,
-		},
-		function(I)
-			SaveSettings("Select Weapon", I)
-		end
-	)
-SettingFarmMainSection.CreateToggle(
-	{ Title = "Attack No Animation ", Desc = nil, Default = Settings["Attack No Animation "] or true },
-	function(I)
-		SaveSettings("Attack No Animation ", I)
-	end
-)
-SettingFarmMainSection.CreateToggle(
-	{
-		Title = "Kill Aura Only Raid And Volcano",
-		Desc = nil,
-		Default = Settings["Kill Aura Only Raid And Volcano"] or false,
-	},
-	function(I)
-		SaveSettings("Kill Aura Only Raid And Volcano", I)
-	end
-)
-SettingFarmMainSection.CreateSlider(
-	{ Title = "Time Delay Kill", Min = 0, Max = 5, Default = Settings["Time Delay Kill"] or 5, Precise = true },
-	function(I)
-		SaveSettings("Time Delay Kill", I)
-	end
-)
-SettingFarmMainSection.CreateToggle(
-	{ Title = "Auto Click", Desc = nil, Default = Settings["Auto Click"] or false },
-	function(I)
-		SaveSettings("Auto Click", I)
-		if I then
-			spawn(function()
-				while Settings["Auto Click"] and (task.wait()) do
-					local _, _ = pcall(function()
-						local o = NameWeapon("Blox Fruit")
-						if o and (t.Character:FindFirstChild(o)) then
-							local o = AttackAOE(80, true)
-							if not o then
-								return
-							end
-							getgenv().UseFruitM1(o[1][1])
+			if toolName then
+				equiptool(toolName)
+				getgenv().AimPos = V.HumanoidRootPart.CFrame
+				local toolObj = NameWeapon(method, true)
+				if not toolObj then
+					toolObj = t.Backpack:FindFirstChild(toolName) or t.Character:FindFirstChild(toolName)
+				end
+				if method == "Gun" and t.Character:FindFirstChild(toolName) then
+					pcall(function() ShootM1(V) end)
+				end
+				if toolObj then
+					local skillKey = H(toolObj)
+					if skillKey then
+						local holdTime = Settings["Skill " .. skillKey .. " " .. toolObj.ToolTip] or 0.5
+						local vim = game:GetService("VirtualInputManager")
+						vim:SendKeyEvent(true, skillKey, false, game)
+						if Settings["Use skill fast dont hold"] then
+							task.wait(0.05)
 						else
-							getgenv().AttackFunctionnhungSuperTrial()
+							task.wait(holdTime)
 						end
-					end)
+						vim:SendKeyEvent(false, skillKey, false, game)
+					end
 				end
-			end)
-		end
-	end
-)
-SettingFarmMainSection.CreateToggle(
-	{ Title = "Kill Aura With DragonStorm", Desc = nil, Default = Settings["Kill Aura With DragonStorm"] or false },
-	function(I)
-		if I then
-			spawn(function()
-				while Settings["Kill Aura With DragonStorm"] and (wait()) do
-					pcall(function()
-						if t.Character:FindFirstChild("Dragonstorm") and getgenv().SpamGunDragonStorm then
-							local _ = m(game.Players.LocalPlayer, 150)
-							if _ then
-								local m, o = _[1], _[2]
-								SpamGunDragonStorm(m.PrimaryPart)
-							end
-						end
-					end)
-				end
-			end)
-		end
-		SaveSettings("Kill Aura With DragonStorm", I)
-	end
-)
-function FFCMatch(m, I)
-	for _, _ in pairs(m:GetChildren()) do
-		if string.match(_.Name, I) then
-			return _
-		end
-	end
-	return nil
-end
-SettingFarmMainSection.CreateToggle(
-	{ Title = "Auto Turn On Buso", Desc = nil, Default = Settings["Auto Turn On Buso"] ~= false },
-	function(m)
-		SaveSettings("Auto Turn On Buso", m)
-		if m then
-			spawn(function()
-				while Settings["Auto Turn On Buso"] and (wait(1)) do
-					pcall(function()
-						if not FFCMatch(t.Character, "_BusoLayer1") and not t.Character:FindFirstChild("HasBuso") then
-							CommF:InvokeServer("Buso")
-							task.wait(2)
-						end
-					end)
-				end
-			end)
-		end
-	end
-)
-SettingFarmMainSection.CreateToggle(
-	{ Title = "Auto Turn On Observation", Desc = nil, Default = Settings["Auto Turn On Observation"] or false },
-	function(m)
-		SaveSettings("Auto Turn On Observation", m)
-		if m then
-			spawn(function()
-				while Settings["Auto Turn On Observation"] and task.wait(0.5) do
-					pcall(function()
-						local blur = game:GetService("Lighting"):FindFirstChild("Blur")
-						if not blur or not blur.Enabled then
-							-- Clica no botão de ativar Haki da observação (tecla E)
-							pcall(function()
-								game:GetService("VirtualInputManager"):SendKeyEvent(true, "E", false, game)
-								task.wait(0.1)
-								game:GetService("VirtualInputManager"):SendKeyEvent(false, "E", false, game)
-							end)
-							task.wait(0.3)
-							pcall(function()
-								game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.E, false, game)
-								task.wait(0.1)
-								game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.E, false, game)
-							end)
-							pcall(function()
-								game:GetService("ReplicatedStorage").Remotes.CommE:FireServer("Ken", true)
-							end)
-						end
-					end)
-				end
-			end)
-		end
-	end
-)
-function TurnOnV4()
-	local m = t.Character
-	local I, _ = m and (m:FindFirstChild("RaceEnergy")), m and (m:FindFirstChild("RaceTransformed"))
-	if not I or I.Value < 1 or not _ or _.Value then
-		return
-	end
-	_ = t.Backpack:FindFirstChild("Awakening") or (m:FindFirstChild("Awakening"))
-	if _ then
-		_.RemoteFunction:InvokeServer(true)
-	end
-end
-local m = SettingFarmMainSection.CreateToggle(
-	{ Title = "Auto Turn On V4", Desc = nil, Default = Settings["Auto Turn On V4"] or false },
-	function(I)
-		SaveSettings("Auto Turn On V4", I)
-		if I then
-			spawn(function()
-				while Settings["Auto Turn On V4"] and (task.wait(1)) do
-					pcall(TurnOnV4)
-				end
-			end)
-		end
-	end
-)
-SettingFarmMainSection.CreateToggle(
-	{ Title = "Auto Turn On V3", Desc = nil, Default = Settings["Auto Turn On V3"] or false },
-	function(I)
-		SaveSettings("Auto Turn On V3", I)
-		if I then
-			spawn(function()
-				while Settings["Auto Turn On V3"] and (task.wait(1)) do
-					game:GetService("ReplicatedStorage").Remotes.CommE:FireServer("ActivateAbility")
-					wait(2)
-				end
-			end)
-		end
-	end
-)
-SettingFarmMainSection.CreateToggle(
-	{ Title = "Auto Dodge Skill Mobs", Desc = nil, Default = Settings["Auto Dodge Skill Mobs"] or false },
-	function(I)
-		SaveSettings("Auto Dodge Skill Mobs", I)
-	end
-)
-local I
-game:GetService("Workspace").Enemies.DescendantAdded:Connect(function(_)
-	if
-		Settings["Auto Dodge Skill Mobs"]
-		and I
-		and I.Parent
-		and not Doding
-		and (_.Name == "BodyGyro" or _.Name == "BodyPosition" or _.Name == "KiBlastFireShort")
-		and _.Parent.Parent.Name == I.Name
-	then
-		getgenv().Doding = true
-		getgenv().ReadyToDodge = true
-		local I = tick()
-		repeat
-			wait()
-		until not _ or not _.Parent or tick() - I > 14
-		if tick() - I < 2 then
-			wait(0.5)
-		end
-		getgenv().Doding = false
-		getgenv().ReadyToDodge = false
-	end
-end)
-
-
--- Auto Dodge Skill Mobs - FIX DEFINITIVO: não sobe, só desvia quando mob realmente usa skill perto
-getgenv().Doding = false
-getgenv().ReadyToDodge = false
-if getgenv().DodgeConnection then getgenv().DodgeConnection:Disconnect() end
-getgenv().DodgeConnection = game:GetService("Workspace").Enemies.DescendantAdded:Connect(function(skill)
-	pcall(function()
-		if not Settings["Auto Dodge Skill Mobs"] then return end
-		if getgenv().Doding then return end
-		if skill.Name ~= "BodyGyro" and skill.Name ~= "BodyPosition" and skill.Name ~= "BodyVelocity" then return end
-		local parent = skill.Parent
-		if not parent or parent.Name ~= "HumanoidRootPart" then return end
-		local mob = parent.Parent
-		if not mob or not mob:FindFirstChild("Humanoid") or not mob:FindFirstChild("HumanoidRootPart") then return end
-		-- Só se for o mob que tá atacando você
-		local attacking = getgenv().AttackingMob
-		if attacking and mob.Name ~= attacking.Name then return end
-		local char = game:GetService("Players").LocalPlayer.Character
-		local root = char and char:FindFirstChild("HumanoidRootPart")
-		if not root then return end
-		local dist = (root.Position - mob.HumanoidRootPart.Position).Magnitude
-		if dist > 55 then return end
-		-- Skill com P alto = skill real de ataque
-		if skill:IsA("BodyGyro") and skill.P and skill.P < 500 then return end
-		getgenv().Doding = true
-		getgenv().ReadyToDodge = true
-		local oldPos = root.Position
-		local away = (root.Position - mob.HumanoidRootPart.Position)
-		away = Vector3.new(away.X, 0, away.Z)
-		if away.Magnitude < 1 then away = Vector3.new(math.random(-1,1), 0, math.random(-1,1)) end
-		away = away.Unit * 20
-		local targetPos = Vector3.new(oldPos.X + away.X, oldPos.Y, oldPos.Z + away.Z)
-		pcall(function()
-			root.CFrame = CFrame.new(targetPos.X, oldPos.Y, targetPos.Z)
-			root.AssemblyLinearVelocity = Vector3.new(0,0,0)
-		end)
-		local start = tick()
-		repeat task.wait(0.1) until not skill.Parent or tick()-start > 1.8
-		task.wait(0.2)
-		getgenv().Doding = false
-		getgenv().ReadyToDodge = false
-	end)
-end)
-
-SettingFarmMainSection.CreateToggle(
-	{ Title = "Teleport Y if low health", Desc = nil, Default = Settings["Teleport Y"] or false },
-	function(I)
-		SaveSettings("Teleport Y", I)
-	end
-)
-SettingFarmMainSection.CreateSlider(
-	{ Title = "% Health Player", Min = 0, Max = 100, Default = Settings["% Health Player"] or 40, Precise = true },
-	function(I)
-		SaveSettings("% Health Player", I)
-	end
-)
-SettingFarmMainSection.CreateSlider(
-	{
-		Title = "Distance Teleport Y",
-		Min = 0,
-		Max = 10000,
-		Default = Settings["Distance Teleport Y"] or 800,
-		Precise = true,
-	},
-	function(I)
-		SaveSettings("Distance Teleport Y", I)
-	end
-)
-SettingFarmMainSection.CreateToggle(
-	{ Title = "Tween Safe if have Items", Desc = nil, Default = Settings["Tween Safe if have Items"] or false },
-	function(I)
-		if I then
-			spawn(function()
-				while Settings["Tween Safe if have Items"] and (wait(0.25)) do
-					pcall(function()
-						if CheckNameBoss("Darkbeard") and Settings["Attack Darkbeard"] then
-							return
-						end
-						if DetectItemPlr("Fist of Darkness") and Settings["Summon Darkbeard"] then
-							return
-						end
-						if
-							(DetectItemPlr("Fist of Darkness") or (DetectItemPlr("God's Chalice")))
-							and Settings["Tween Safe if have Items"]
-						then
-							if game.PlaceId == getgenv().CheckPlaceId2 then
-								toTarget(CFrame.new(-385.250916, 73.0458984, 297.388397))
-							else
-								toTarget(CFrame.new(-12463, 374, -7523))
-							end
-						end
-					end)
-				end
-			end)
-		end
-		SaveSettings("Tween Safe if have Items", I)
-	end
-)
-SettingFarmMainSection.CreateSlider(
-	{ Title = "Time Hop Server", Min = 0, Max = 60, Default = Settings["Time Hop Server"] or 10, Precise = true },
-	function(I)
-		SaveSettings("Time Hop Server", I)
-	end
-)
-SettingFarmMainSection.CreateSlider(
-	{ Title = "Bring Mob Count", Min = 2, Max = 6, Default = Settings["Bring Mob Count"] or 2, Precise = true },
-	function(I)
-		SaveSettings("Bring Mob Count", I)
-	end
-)
-SettingFarmMainSection.CreateToggle(
-	{ Title = "Bring Mob", Desc = nil, Default = Settings["Bring Mob"] or true },
-	function(I)
-		SaveSettings("Bring Mob", I)
-	end
-)
-SaveSettings("Speed Tween ", 220)
-SettingFarmMainSection.CreateLabel({
-	Title = "Speed Tween: 220",
-})
-SettingSkillMain =
-	Main.CreatePage({ Page_Name = "Hold and Select Skill", Page_Title = "Setting Hold and Select Skill" })
-SelectSkillsSection = SettingSkillMain.CreateSection("Select Skills")
-local function I(_, o)
-	local V, N = "Select Skills " .. _, {}
-	for y, y in ipairs(o) do
-		N[y] = false
-	end
-	EnsureAllTrueDefaults(V, o)
-	_ = PrepareMultiSelectList(N, Settings[V], true)
-	SelectSkillsSection.CreateDropdown(
-		{ Title = V, List = _, Search = true, Selected = true, Default = Settings[V] or nil },
-		function(_, o)
-			SaveSettings(V, _, o)
-		end
-	)
-end
-I("Melee", { "Z", "X", "C" })
-I("Sword", { "Z", "X" })
-I("Gun", { "Z", "X" })
-I("Blox Fruit", { "Z", "X", "C", "V", "F" })
-HoldSkillsSection = SettingSkillMain.CreateSection("Hold Skills")
-local function _(o, V)
-	local N = {}
-	for y, y in ipairs(V) do
-		N[y] = {
-			Title = y,
-			KeyName = y,
-			Min = 0,
-			Max = 5,
-			Default = Settings["Skill " .. y .. " " .. o] or 0.5,
-			Precise = true,
-		}
-	end
-	HoldSkillsSection.CreateDropdown({ Title = "Set Delay " .. o, List = N, Slider = true }, function(V, V)
-		if V and V.KeyName then
-			SaveSettings("Skill " .. V.KeyName .. " " .. o, V.Default)
-		end
-	end)
-end
-HoldSkillsSection.CreateToggle(
-	{ Title = "Use skill fast dont hold", Desc = nil, Default = Settings["Use skill fast dont hold"] or false },
-	function(o)
-		SaveSettings("Use skill fast dont hold", o)
-	end
-)
-_("Melee", { "Z", "X", "C" })
-_("Sword", { "Z", "X" })
-_("Gun", { "Z", "X" })
-_("Blox Fruit", { "Z", "X", "C", "V", "F" })
-FarmMain = Main.CreatePage({ Page_Name = "Farming", Page_Title = "Farming" })
-SettingAutoFarmSection = FarmMain.CreateSection("Farming")
--- Individual farm toggles. Each method keeps its own state; no Select Method Farm dropdown.
-local FarmToggleNames = {
-	"Auto Farm Level",
-	"Auto Farm Bones",
-	"Auto Farm Katakuri",
-	"Auto Farm Tyrant of the Skies",
-	"Aura Farm",
-}
-
-local function GetSelectedIndividualFarm()
-	for _, name in ipairs(FarmToggleNames) do
-		if Settings[name] then
-			return name
-		end
-	end
-	return nil
-end
-
-local function SetIndividualFarm(name, enabled)
-	-- Each farm toggle owns only its own setting; do not silently switch off the others.
-	SaveSettings(name, enabled)
-	SaveSettings("Auto Farm Active", GetSelectedIndividualFarm() ~= nil)
-	-- Auto Quest handles quest NPC interaction; farm toggles handle target selection and combat.
-end
-
-SettingAutoFarmSection.CreateSlider(
-	{
-		Title = "Distance Farm Aura",
-		Min = 0,
-		Max = 1000,
-		Default = Settings["Distance Farm Aura"] or 300,
-		Precise = true,
-	},
-	function(o)
-		SaveSettings("Distance Farm Aura", o)
-	end
-)
-SettingAutoFarmSection.CreateToggle({ Title = "Auto Farm Level", Desc = nil, Default = Settings["Auto Farm Level"] or false }, function(v) SetIndividualFarm("Auto Farm Level", v) end)
-SettingAutoFarmSection.CreateToggle({ Title = "Auto Farm Bones", Desc = nil, Default = Settings["Auto Farm Bones"] or false }, function(v) SetIndividualFarm("Auto Farm Bones", v) end)
-SettingAutoFarmSection.CreateToggle({ Title = "Auto Farm Katakuri", Desc = nil, Default = Settings["Auto Farm Katakuri"] or false }, function(v) SetIndividualFarm("Auto Farm Katakuri", v) end)
-SettingAutoFarmSection.CreateToggle({ Title = "Auto Farm Tyrant of the Skies", Desc = nil, Default = Settings["Auto Farm Tyrant of the Skies"] or false }, function(v) SetIndividualFarm("Auto Farm Tyrant of the Skies", v) end)
-SettingAutoFarmSection.CreateToggle({ Title = "Aura Farm", Desc = nil, Default = Settings["Aura Farm"] or false }, function(v) SetIndividualFarm("Aura Farm", v) end)
-SettingAutoFarmSection = FarmMain.CreateSection("Setting")
-SettingAutoFarmSection.CreateToggle(
-	{ Title = "Ignore Attack Katakuri", Desc = nil, Default = Settings["Ignore Attack Katakuri"] or false },
-	function(o)
-		SaveSettings("Ignore Attack Katakuri", o)
-	end
-)
-SettingAutoFarmSection.CreateToggle(
-	{ Title = "Hop Find Katakuri", Desc = nil, Default = Settings["Hop Find Katakuri"] or false },
-	function(o)
-		SaveSettings("Hop Find Katakuri", o)
-	end
-)
-SettingAutoFarmSection.CreateToggle(
-	{ Title = "Auto Quest", Desc = "Only accepts the quest of the selected farm (Level/Bones/Katakuri/Tyrant).", Default = true },
-	function(V)
-		if getgenv().__AQCycleSync then return end
-		getgenv().__AQUserWants = V
-		SaveSettings("Auto Quest [Katakuri/Bone/Tyrant]", V)
-	end
-)
--- Ciclo Auto Quest: 10s ligado e 75s desligado, somente na ilha do farm selecionado.
--- Fora da ilha correspondente, o ciclo fica pausado e não altera o toggle.
-do
-	getgenv().__AQToggleCycleGeneration = (getgenv().__AQToggleCycleGeneration or 0) + 1
-	local cycleGeneration = getgenv().__AQToggleCycleGeneration
-	local toggleKey = "Auto Quest [Katakuri/Bone/Tyrant]"
-	local function SetAutoQuestToggle(value)
-		if value and getgenv().__AQUserWants == false then return end
-		getgenv().__AQCycleSync = true
-		pcall(function() SaveSettings(toggleKey, value) end)
-		pcall(function()
-			local option = Options and Options["Auto Quest"]
-			local control = option and option.FunctionCreate
-			if control and control.SetValue then control:SetValue(value) end
-		end)
-		task.delay(0.25, function()
-			if getgenv().__AQToggleCycleGeneration == cycleGeneration then
-				getgenv().__AQCycleSync = false
 			end
 		end)
 	end
-	local function GetSelectedQuestNPCPosition()
-		local selected = GetSelectedIndividualFarm and GetSelectedIndividualFarm()
-		if not selected or selected == "Aura Farm" or Settings["Farm Material"] then return nil end
-		local targetPosition
-		if selected == "Auto Farm Level" then
-			pcall(function()
-				local info = GetLevelQuestInfo(t.Data.Level.Value)
-				if info and info.Pos then
-					targetPosition = typeof(info.Pos) == "CFrame" and info.Pos.Position or info.Pos
-				end
-			end)
-		else
-			local info = AutoQuestInfo and AutoQuestInfo[selected]
-			local points = getgenv().questpoint
-			local cf = info and points and points[info[2]]
-			if cf then targetPosition = cf.Position end
-		end
-		return targetPosition
-	end
-	local function IsOnSelectedFarmIsland()
-		local targetPosition = GetSelectedQuestNPCPosition()
-		local root = t.Character and t.Character:FindFirstChild("HumanoidRootPart")
-		if not root or not targetPosition then return false end
-		-- Distância ampla para reconhecer que chegou à ilha correspondente.
-		return (root.Position - targetPosition).Magnitude <= 2500
-	end
-	local function IsNearSelectedQuestNPC()
-		local targetPosition = GetSelectedQuestNPCPosition()
-		local root = t.Character and t.Character:FindFirstChild("HumanoidRootPart")
-		if not root or not targetPosition then return false end
-		-- O ciclo só começa quando o personagem chega perto do NPC da missão.
-		return (root.Position - targetPosition).Magnitude <= 100
-	end
-	task.spawn(function()
-		local isEnabled = true
-		local startedAtNPC = false
-		SetAutoQuestToggle(true)
-		while getgenv().__AQToggleCycleGeneration == cycleGeneration do
-			if IsOnSelectedFarmIsland() and (startedAtNPC or IsNearSelectedQuestNPC()) then
-				startedAtNPC = true
-				local duration = isEnabled and 10 or 75
-				local deadline = tick() + duration
-				while getgenv().__AQToggleCycleGeneration == cycleGeneration and IsOnSelectedFarmIsland() and tick() < deadline do
-					task.wait(0.25)
-				end
-				if getgenv().__AQToggleCycleGeneration ~= cycleGeneration then break end
-				if IsOnSelectedFarmIsland() then
-					isEnabled = not isEnabled
-					SetAutoQuestToggle(isEnabled)
-				end
-			else
-				-- Na ilha, aguarda chegar perto do NPC; fora dela, também aguarda sem alterar o toggle.
-				-- Farm desligado (ou ainda fora da ilha): o Auto Quest fica/volta ligado; só desliga se o usuário desligar.
-				if (not GetSelectedIndividualFarm() or not IsOnSelectedFarmIsland()) and not Settings[toggleKey] and getgenv().__AQUserWants ~= false then
-					SetAutoQuestToggle(true)
-					isEnabled = true
-					startedAtNPC = false
-				end
-				task.wait(1)
-			end
-		end
-	end)
-end
--- Mantém os toggles "Farm Mastery" e "Start Farm" visualmente iguais ao estado real.
-function SyncMasteryToggle(title, v)
-	if getgenv().__MasterySyncing then
-		return
-	end
-	getgenv().__MasterySyncing = true
-	pcall(function()
-		local opt = Options and Options[title]
-		if opt and opt.FunctionCreate and opt.FunctionCreate.SetValue then
-			opt.FunctionCreate:SetValue(v)
-		end
-	end)
-	task.delay(0.3, function()
-		getgenv().__MasterySyncing = false
-	end)
-end
-MasteryFarmSection = FarmMain.CreateSection("Mastery Farm")
-MasteryFarmSection.CreateDropdown(
-	{
-		Title = "Select Method Farm Mastery",
-		List = { "Blox Fruit", "Gun", "Sword" },
-		Search = true,
-		Selected = false,
-		Default = Settings["Select Method Farm Mastery"] or nil,
-	},
-	function(V)
-		SaveSettings("Select Method Farm Mastery", V)
-	end
-)
-MasteryFarmSection.CreateSlider(
-	{ Title = "Health %", Min = 0, Max = 100, Default = Settings["Health %"] or 40, Precise = true },
-	function(V)
-		SaveSettings("Health %", V)
-	end
-)
-MasteryFarmSection.CreateToggle(
-	{ Title = "Farm Mastery", Desc = "Enable mastery farming logic.", Default = Settings["Farm Mastery"] or false },
-	function(V)
-		SaveSettings("Farm Mastery", V)
-		if not V then
-			SaveSettings("Start Farm", false)
-			-- Devolve o controle ao farm normal (antes ficava parado).
-			SaveSettings("Auto Farm Active", GetSelectedIndividualFarm() ~= nil)
-			SyncMasteryToggle("Start Farm", false)
-		end
-	end
-)
-MasteryFarmSection.CreateToggle(
-	{ Title = "Start Farm", Desc = "Start Farm Mastery in Haunted Castle only.", Default = Settings["Start Farm"] or false },
-	function(V)
-		-- Start Farm is the only switch that activates Farm Mastery.
-		SaveSettings("Farm Mastery", V)
-		SaveSettings("Start Farm", V)
-		-- Stops the running farm loops so they release control to Mastery.
-		SaveSettings("Auto Farm Active", (not V) and GetSelectedIndividualFarm() ~= nil)
-		SyncMasteryToggle("Farm Mastery", V)
-	end
-)
-FarmingMaterialSection = FarmMain.CreateSection("Farming Material")
-FarmingMaterialSection.CreateDropdown(
-	{
-		Title = "Select Material",
-		List = TableMaterials,
-		Search = true,
-		Selected = false,
-		Default = Settings["Select Material"] or nil,
-	},
-	function(V)
-		SaveSettings("Select Material", V)
-	end
-)
-FarmingMaterialSection.CreateToggle(
-	{ Title = "Farm Material", Desc = nil, Default = Settings["Farm Material"] or false },
-	function(V)
-		SaveSettings("Farm Material", V)
-		if V and not Settings["Start Farm"] then
-			A.CreateNoti({ Title = "Nexora Hub", Desc = "Turn On Start Farm Plz", ShowTime = 5 })
-		end
-	end
-)
-local V, N, y, P, e, Y =
-	{ "BartiloQuest", "Trainees", "MarineQuest", "CitizenQuest" },
-	{},
-	{ "Baking Staff", "Head Baker", "Cake Guard", "Cookie Crafter" },
-	{ "Cocoa Warrior", "Chocolate Bar Battler", "Candy Rebel", "Sweet Thief" },
-	{ "Reborn Skeleton", "Demonic Soul", "Living Zombie", "Posessed Mummy" },
-	{ "Isle Champion", "Serpent Hunter", "Skull Slayer", "Sun-kissed Warrior" }
-getgenv().NameMobQuest = ""
-getgenv().NameQuest = ""
-getgenv().IDQuest = 0
-getgenv().questpoint = {}
-local H = require(game.ReplicatedStorage.Quests)
-local function B()
-	local Z, C = t.Data.Level.Value, 0
-	if Z >= 1450 and game.PlaceId == getgenv().CheckPlaceId2 then
-		getgenv().NameMobQuest = "Water Fighter"
-		getgenv().NameQuest = "ForgottenQuest"
-		getgenv().IDQuest = 2
-	elseif Z >= 700 and game.PlaceId == getgenv().CheckPlaceId3 then
-		getgenv().NameMobQuest = "Galley Captain"
-		getgenv().NameQuest = "FountainQuest"
-		getgenv().IDQuest = 2
-	else
-		for J, F in pairs(H) do
-			for q, c in pairs(F) do
-				if not table.find(V, J) then
-					local F = c.LevelReq
-					for D, r in pairs(c.Task) do
-						if Z >= F and F >= C and r > 1 then
-							getgenv().NameMobQuest = D
-							getgenv().NameQuest = J
-							getgenv().IDQuest = q
-							C = F
-						end
-					end
-				end
-			end
-		end
-	end
-end
-function CountQuest()
-	local Z = {}
-	for C, C in pairs(H) do
-		for J, J in pairs(C) do
-			for F, q in pairs(J.Task) do
-				if F == getgenv().mobv then
-					for J, J in pairs(C) do
-						if J.LevelReq <= t.Data.Level.Value and J.Name ~= "Town Raid" then
-							for C, F in pairs(J.Task) do
-								if F > 1 then
-									table.insert(Z, C)
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-	end
-	return Z
-end
-local Z = require(game.ReplicatedStorage:WaitForChild("GuideModule"))
-function DontQuest()
-	return Z.Data and Z.Data.QuestData ~= nil
-end
-function GetNameDoubleQuest()
-	if DontQuest() then
-		for C, J in next, Z.Data.QuestData.Task, nil do
-			return C
-		end
-	end
-end
-function DoubleQuest()
-	wait(0.5)
-	B()
-	local B = {}
-	if DontQuest() and GetNameDoubleQuest() == getgenv().NameMobQuest and #CountQuest() >= 2 then
-		for C, J in pairs(H) do
-			for F, F in pairs(J) do
-				for q in pairs(F.Task) do
-					if tostring(q) == getgenv().mobv then
-						for F, q in pairs(J) do
-							for J, c in pairs(q.Task) do
-								if J ~= getgenv().mobv and c > 1 then
-									B.Name = J
-									B.NameQuest = C
-									B.ID = F
-									return B
-								end
-							end
-						end
-					end
-				end
-			end
-		end
-	else
-		B.Name = getgenv().NameMobQuest
-		B.NameQuest = getgenv().NameQuest
-		B.ID = getgenv().IDQuest
-	end
-	return B
-end
-function CFrameQuest()
-	local B = {}
-	for C, J in next, H, nil do
-		if C ~= "MarineQuest" then
-			for F, F in next, J, nil do
-				B[F.LevelReq] = C
-			end
-		end
-	end
-	getgenv().questpoint = {}
-	for C, J in next, Z.Data.NPCList, nil do
-		for F, q in next, J.Levels, nil do
-			F = B[q]
-			if C.Parent.Name ~= "Marine Leader" and F and not getgenv().questpoint[F] then
-				getgenv().questpoint[F] = CFrame.new(J.Position)
-			end
-		end
-	end
-	getgenv().questpoint.SkyExp1Quest = CFrame.new(-7857.28516, 5544.34033, -382.321503)
-end
-local function B(C)
-	local J = Z.Data.QuestData
-	local F, q, c = J and (next(J.Task)), 0, {}
-	for D, r in pairs(Z.Data.NPCList) do
-		if not table.find(V, r.InternalQuestName) then
-			for V, n in pairs(r.Levels) do
-				D = H[r.InternalQuestName][V]
-				if D then
-					local u, W = next(D.Task)
-					if W and W > 1 and n <= C and n >= q then
-						c = {
-							Level = n,
-							Name = r.NPCName,
-							QuestName = r.InternalQuestName,
-							Pos = r.Position,
-							Id = V,
-							Mob = u,
-						}
-						if F == u and V > 1 then
-							J = H[r.InternalQuestName][V - 1]
-							if J and J.Task then
-								for H, C in pairs(J.Task) do
-									if H ~= F and C > 1 then
-										c.Mob = H
-										c.Id = V - 1
-										break
-									end
-								end
-							end
-						end
-						q = n
-					end
-				end
-			end
-		end
-	end
-	return c
-end
-
-GetLevelQuestInfo = B
-TakeQuestLevel = function()
-	local V = B(t.Data.Level.Value)
-	if not V or not V.Pos then
-		return
-	end
-	local H, B, C =
-		typeof(V.Pos) == "CFrame" and V.Pos.Position or V.Pos,
-		t.Character and (t.Character:FindFirstChild("HumanoidRootPart")),
-		t.Character and (t.Character:FindFirstChild("Humanoid"))
-	if not B or not C then
-		return
-	end
-	if (H - B.Position).Magnitude <= 8 and C.Health > 0 then
-		wait(2)
-		CommF:InvokeServer("StartQuest", tostring(V.QuestName), V.Id)
-		local timeout = tick() + 3
-		repeat task.wait(0.1) until t.PlayerGui.Main:FindFirstChild("Quest") and t.PlayerGui.Main.Quest.Visible or tick() > timeout
-	else
-		toTarget(CFrame.new(H) * CFrame.new(0, 4, 2), true)
-	end
-end
-
-function DetectPartSpawnMob(V, H)
-	local function B(C)
-		return C:gsub(" %p?Lv%.? %d+%p?", "")
-	end
-	local C = string.find(V, "Lv.") and (B(V)) or V
-	for J, F in pairs(TableMobSpawn) do
-		if F:IsA("Part") then
-			J = string.find(F.Name, "Lv.") and (B(F.Name)) or F.Name
-			if (J == V or J == C) and (not H or not F:FindFirstChild("Ignored")) then
-				return F
-			end
-		end
-	end
-	for J, F in pairs(workspace._WorldOrigin.EnemySpawns:GetChildren()) do
-		if F:IsA("Part") then
-			J = string.find(F.Name, "Lv.") and (B(F.Name)) or F.Name
-			if (J == V or J == C) and (not H or not F:FindFirstChild("Ignored")) then
-				table.insert(TableMobSpawn, F)
-				return F
-			end
-		end
-	end
-	for J, F in pairs(getnilinstances()) do
-		if F:IsA("Part") then
-			J = string.find(F.Name, "Lv.") and (B(F.Name)) or F.Name
-			if (J == V or J == C) and (not H or not F:FindFirstChild("Ignored")) then
-				table.insert(TableMobSpawn, F)
-				return F
-			end
-		end
-	end
-	return nil
-end
-function DeleteIgnoredMobSpawn()
-	for V, V in pairs(TableMobSpawn) do
-		if V:FindFirstChild("Ignored") then
-			V.Ignored:Destroy()
-		end
-	end
-end
-function DetectNameTablePart(V)
-	for H, H in next, V, nil do
-		if not table.find(N, H) then
-			return H
-		end
-	end
-end
-function TeleportSpawnMob(V)
-	if typeof(V) == "table" then
-		if #N >= #V then
-			N = {}
-			return
-		end
-		local H = DetectPartSpawnMob(DetectNameTablePart(V))
-		if H then
-			toTarget(H.CFrame * CFrame.new(0, 60, 0))
-			wait(0.5)
-		end
-	else
-		wait(0.5)
-		local H = DetectPartSpawnMob(V, true)
-		if H then
-			if (H.Position - t.Character.HumanoidRootPart.Position).Magnitude <= 100 or (DetectMob(V)) then
-				Instance.new("IntValue", H).Name = "Ignored"
-			end
-			toTarget(H.CFrame * CFrame.new(0, 60, 0))
-		else
-			DeleteIgnoredMobSpawn()
-		end
-	end
-end
-function QuestBoneAndkatakuri(V, H)
-	local B = getgenv().questpoint[V]
-	if not B then
-		CFrameQuest()
-		task.wait(1.5)
-		B = getgenv().questpoint[V]
-		if not B then
-			return
-		end
-	end
-	local C, J =
-		t.Character and (t.Character:FindFirstChild("HumanoidRootPart")),
-		t.Character and (t.Character:FindFirstChildOfClass("Humanoid"))
-	if not C or not J then
-		return
-	end
-	if (B.Position - C.Position).Magnitude <= 8 then
-		if J.Health > 0 then
-			local ok = pcall(function()
-				CommF:InvokeServer("StartQuest", V, H)
-			end)
-			task.wait(0.5)
-			if ok and AQIsQuestActive() then
-				return true
-			end
-		end
-	else
-		toTarget(B * CFrame.new(0, 4, 2), true)
-	end
-end
-local V = { "Control-Control", "Buddha-Buddha", "Diamond-Diamond", "Falcon-Falcon" }
-local function H(B, C)
-	local J = t.PlayerGui.Main.Skills[B]:FindFirstChild(C)
-	if not J then
-		return false
-	end
-	return J:IsA("Frame") and J.Title.TextColor3 == Color3.new(1, 1, 1) and J.Cooldown.Size == UDim2.new(0, 0, 1, -1)
-		or J.Cooldown.Size == UDim2.new(1, 0, 1, -1)
-end
-local function B(C)
-	if H(C, "Z") then
-		local H = game:GetService("VirtualInputManager")
-		H:SendKeyEvent(true, "Z", false, game)
-		H:SendKeyEvent(false, "Z", false, game)
-	end
-end
-local function H(C)
-	local J = t.PlayerGui.Main.Skills[C.Name]
-	if not J then
-		return nil
-	end
-	for F, F in ipairs(J:GetChildren()) do
-		if
-			F:IsA("Frame")
-			and F.Name ~= "Template"
-			and (F.Name ~= "Z" or F.Name == "Z" and not table.find(V, C.Name))
-			and Settings["Select Skills " .. C.ToolTip]
-			and Settings["Select Skills " .. C.ToolTip][F.Name]
-			and (
-				F.Title.TextColor3 == Color3.new(1, 1, 1) and F.Cooldown.Size == UDim2.new(0, 0, 1, -1)
-				or F.Cooldown.Size == UDim2.new(1, 0, 1, -1)
-			)
-		then
-			return F.Name
-		end
-	end
-end
-function UsedualFlock()
-	equiptool(NameWeapon(Settings["Select Weapon"] or "Melee"))
 end
 
 
@@ -11276,18 +9663,11 @@ task.spawn(function()
 						getgenv().__LastFruitScan = 0
 						-- NÃO dá return, continua procurando próxima fruta
 					else
-						-- Vai até a fruta mesmo se estiver longe - SEM LAG
-						-- Se muito longe, teleporta direto em etapas
-						if dist > 1500 then
-							-- Teleporta direto pra perto da fruta (sem tween lento)
-							pcall(function()
-								getgenv().noclip = true
-								root.CFrame = handle.CFrame * CFrame.new(0, 10, 0)
-							end)
-							task.wait(0.3)
-						else
-							toTarget(handle.CFrame * CFrame.new(0, 3, 0))
-						end
+						-- Vai andando até a fruta (sem TP direto)
+						pcall(function()
+							getgenv().noclip = true
+						end)
+						toTarget(handle.CFrame * CFrame.new(0, 5, 0))
 					end
 				else
 					-- Nenhuma fruta encontrada, espera um pouco
@@ -14285,11 +12665,19 @@ function StoreFruit(container)
 	end
 
 	for _, tool in ipairs(container:GetChildren()) do
-		if IsFruitTool(tool) then
+		-- FIX AUTO STORE FRUIT - detecta fruta mesmo sem OriginalName
+		local isFruit = false
+		pcall(function()
+			if tool:IsA("Tool") then
+				if string.find(tool.Name, "Fruit") then isFruit = true end
+				local orig = tool:GetAttribute("OriginalName")
+				if typeof(orig) == "string" and orig ~= "" then isFruit = true end
+			end
+		end)
+		if isFruit and IsFruitTool(tool) or isFruit then
 			local failedAt = tool:GetAttribute("__StoreFail")
 			if not (typeof(failedAt) == "number" and tick() - failedAt < 30) then
-				local fruitName = GetFruitOriginalName(tool)
-				if fruitName then
+				local fruitName = GetFruitOriginalName(tool) or tool:GetAttribute("OriginalName") or string.gsub(tool.Name, " Fruit", "") .. "-" .. string.gsub(tool.Name, " Fruit", "")
 					-- 1) tira da mão
 					if tool.Parent == LocalPlayer.Character then
 						local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
@@ -25911,10 +24299,23 @@ do
 		end
 	end)
 	task.spawn(function()
-		while task.wait(1) and getgenv().__FruitGen == FruitGen do
+		while task.wait(0.5) and getgenv().__FruitGen == FruitGen do
 			if Settings["Auto Store Fruit"] then
 				pcall(StoreFruit, t.Backpack)
 				pcall(StoreFruit, t.Character)
+				-- Tenta também com método direto pra garantir
+				pcall(function()
+					for _, tool in pairs(t.Backpack:GetChildren()) do
+						if tool:IsA("Tool") and string.find(tool.Name, "Fruit") then
+							local fruitName = tool:GetAttribute("OriginalName") or string.gsub(tool.Name, " Fruit", "") .. "-" .. string.gsub(tool.Name, " Fruit", "")
+							if fruitName then
+								game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StoreFruit", fruitName, tool)
+								task.wait(0.2)
+								game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("StoreFruit", fruitName)
+							end
+						end
+					end
+				end)
 			end
 		end
 	end)
