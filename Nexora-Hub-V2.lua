@@ -24527,8 +24527,7 @@ do
         applyToHumanoid(humanoid)
     end
 
-    -- [REMOVED DUPLICATE ApplyMovementSettings]
---[[ removedfunction ApplyMovementSettings()
+    function ApplyMovementSettings()
         local character = player.Character
         local humanoid = character and character:FindFirstChildOfClass("Humanoid")
         if humanoid then hookHumanoid(humanoid); applyToHumanoid(humanoid) end
@@ -24543,7 +24542,6 @@ do
             end
         end)
     end)
-]]--
 
     ApplyMovementSettings()
 end
