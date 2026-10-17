@@ -2114,6 +2114,14 @@ function Nexora.CreateMain(config)
         end)
     end)
 
+
+    -- PRÉ-CRIA TODAS AS ABAS PRA NÃO FICAR VAZIO
+    local allTabs = {"Shop","Status And Server","Status Boss Server","LocalPlayer","Setting Farm","Hold and Select Skill","Farming","Stack Farming","Farming Other","Fishing","Fruits and Raid,Dunge","Sea Event","Kitsune Event","Upgrade Race","Race Draco","Race V4","Get and Upgrade Items","Volcano Event","ESP","PVP","Tab Webhook","Setting"}
+    for _, tn in ipairs(allTabs) do
+        pcall(function() getOrCreateTab(tn) end)
+    end
+    task.wait(0.1)
+
     local Window = {}
     function Window:MakeTab(cfg)
         local name = type(cfg)=="table" and (cfg[1] or cfg.Name or cfg.Title or "Tab") or tostring(cfg)
@@ -2537,7 +2545,20 @@ end
 getgenv().tablefruitausea3 = {}
 whitelistedfruit = {}
 TableDevilFruit = {}
-local a, s, X = next, game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("GetFruits", false)
+
+local a, s, X
+do
+    local ok, res = pcall(function() return (function() local ok,res=pcall(function() return game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("GetFruits", false) end) if ok then return res else return {} end end)() end)
+    if ok and type(res)=="table" then
+        a, s, X = next, res, nil
+        -- res is already the table, need to handle original pattern: for g,g in a,s,X
+        -- Original: a=next, s=table, X=nil -> for k,v in next, table
+        -- So set s=res
+    else
+        a, s, X = next, {}, nil
+    end
+end
+
 for g, g in a, s, X do
 	if g.Price >= 1000000 then
 		table.insert(whitelistedfruit, string.split(g.Name, "-")[1] .. " Fruit")
@@ -2547,9 +2568,12 @@ for g, g in a, s, X do
 end
 getgenv().tablefruitausea3["Dragon (East)-Dragon (East)"] = 15000000
 getgenv().tablefruitausea3["Dragon (West)-Dragon (West)"] = 15000000
-ItemId = require(game.ReplicatedStorage.Economy.ItemId)
+
+local okId, idRes = pcall(function() return require(game.ReplicatedStorage.Economy.ItemId) end)
+ItemId = okId and idRes or {}
+
 function CheckFruitReal(g)
-	local G, f, K = next, game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("GetFruits", false)
+	local G, f, K = next, (function() local ok,res=pcall(function() return game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("GetFruits", false) end) if ok then return res else return {} end end)()
 	for R, R in G, f, K do
 		if R.Name == g then
 			return R
@@ -14074,7 +14098,7 @@ function StoreFruit(container)
 end
 
 function DetectFruitShop()
-	local b, E, l = next, game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("GetFruits", false)
+	local b, E, l = next, (function() local ok,res=pcall(function() return game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("GetFruits", false) end) if ok then return res else return {} end end)()
 	for y, y in b, E, l do
 		if Settings["Blox Fruit Sniper Shop"][y.Name] then
 			if y.OnSale then
