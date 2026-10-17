@@ -1872,39 +1872,77 @@ function Nexora.CreateMain(config)
     local win = redzlib:MakeWindow({Title=config.Title or "NEXORA HUB", SubTitle=config.Desc or "BLOX FRUITS • ViniZDev", SaveFolder="Nexora Hub"})
     Nexora._window = win
 
-    -- Botão flutuante arrastável: alterna a visibilidade da janela Redz.
-    pcall(function()
-        local mini = win:AddMinimizeButton({
-            Corner = {CornerRadius = UDim.new(1, 0)},
-            Stroke = {Color = Color3.fromRGB(0, 0, 0), Thickness = 2},
-            Button = {
-                Size = UDim2.fromOffset(46, 46),
-                Position = UDim2.new(0, 24, 0.5, -23),
-                BackgroundTransparency = 0,
-                BackgroundColor3 = Color3.fromRGB(255, 255, 255),
-                Image = "", AutoButtonColor = false, Name = "NexoraFloatingButton"
-            }
-        })
-        local btn = mini and mini.Button
-        if btn then
-            btn.Image = ""
-            btn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            btn.BackgroundTransparency = 0
-            btn.AutoButtonColor = false
-            local stroke = btn:FindFirstChildOfClass("UIStroke") or Instance.new("UIStroke")
-            stroke.Color = Color3.fromRGB(0, 0, 0); stroke.Thickness = 2; stroke.Parent = btn
-            local corner = btn:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
-            corner.CornerRadius = UDim.new(1, 0); corner.Parent = btn
-            local mark = Instance.new("TextLabel")
-            mark.Name = "NexoraMark"; mark.BackgroundTransparency = 1
-            mark.Size = UDim2.fromScale(1, 1); mark.Position = UDim2.fromScale(0, 0)
-            mark.Font = Enum.Font.GothamBlack; mark.Text = "N"
-            mark.TextColor3 = Color3.fromRGB(20, 16, 8)
-            mark.TextStrokeTransparency = 1
-            mark.TextSize = 25; mark.ZIndex = btn.ZIndex + 2; mark.Active = false; mark.Selectable = false; mark.Parent = btn
-            -- The Redz library already connects this button to Window:Minimize().
-            -- Keep the mark non-interactive so it cannot intercept taps.
+    -- Botão flutuante próprio: não depende do AddMinimizeButton da biblioteca,
+    -- que em algumas versões cria apenas um círculo transparente sem alternar a janela.
+    task.spawn(function()
+        local Players = game:GetService("Players")
+        local player = Players.LocalPlayer
+        local host
+        pcall(function() host = (gethui and gethui()) or game:GetService("CoreGui") end)
+        if not host then host = player:WaitForChild("PlayerGui") end
+        local old = host:FindFirstChild("NexoraFloatingToggle")
+        if old then old:Destroy() end
+        local gui = Instance.new("ScreenGui")
+        gui.Name = "NexoraFloatingToggle"
+        gui.ResetOnSpawn = false
+        gui.IgnoreGuiInset = true
+        gui.DisplayOrder = 100000
+        gui.Parent = host
+        local btn = Instance.new("TextButton")
+        btn.Name = "ToggleButton"
+        btn.Size = UDim2.fromOffset(46,46)
+        btn.Position = UDim2.new(0,24,0.5,-23)
+        btn.BackgroundColor3 = Color3.fromRGB(20,20,24)
+        btn.BackgroundTransparency = 0
+        btn.Text = "N"
+        btn.TextColor3 = Color3.fromRGB(255,255,255)
+        btn.TextSize = 23
+        btn.Font = Enum.Font.GothamBlack
+        btn.AutoButtonColor = true
+        btn.Active = true
+        btn.Draggable = true
+        btn.Parent = gui
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(1,0)
+        corner.Parent = btn
+        local stroke = Instance.new("UIStroke")
+        stroke.Color = Color3.fromRGB(50,130,255)
+        stroke.Thickness = 2
+        stroke.Parent = btn
+
+        local function findWindowGui()
+            local roots = {host}
+            pcall(function() table.insert(roots, player:WaitForChild("PlayerGui")) end)
+            for _, root in ipairs(roots) do
+                for _, obj in ipairs(root:GetDescendants()) do
+                    if obj:IsA("ScreenGui") and obj ~= gui and obj.Name ~= "NexoraLoading" then
+                        local found = false
+                        for _, child in ipairs(obj:GetDescendants()) do
+                            if child:IsA("TextLabel") and string.find(string.upper(child.Text or ""), "NEXORA HUB", 1, true) then
+                                found = true; break
+                            end
+                        end
+                        if found then return obj end
+                    end
+                end
+            end
+            return nil
         end
+        local target
+        btn.Activated:Connect(function()
+            target = target and target.Parent and target or findWindowGui()
+            if target then
+                target.Enabled = not target.Enabled
+            else
+                -- Retry briefly in case Redz is still building its ScreenGui.
+                for _=1,20 do
+                    task.wait(0.25)
+                    target = findWindowGui()
+                    if target then target.Enabled = not target.Enabled; return end
+                end
+                warn("[Nexora] Não encontrei a ScreenGui da Redz para abrir/fechar.")
+            end
+        end)
     end)
 
     local Main = {}
