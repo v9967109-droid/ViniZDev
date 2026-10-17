@@ -1839,7 +1839,9 @@ function Nexora.BuildWindow(config)
         end
         function tab.AddToggle(_, cfg)
             cfg=cfg or {}
-            return createNative(currentSection(), "CreateToggle", {Name=cfg.Title or cfg.Name or "Toggle", CurrentValue=cfg.Default==true, Callback=cfg.Callback})
+            local current = cfg.CurrentValue
+            if current == nil then current = cfg.Default end
+            return createNative(currentSection(), "CreateToggle", {Name=cfg.Title or cfg.Name or "Toggle", CurrentValue=current==true, Callback=cfg.Callback})
         end
         function tab.AddButton(_, cfg)
             cfg=cfg or {}
@@ -1847,12 +1849,19 @@ function Nexora.BuildWindow(config)
         end
         function tab.AddSlider(_, cfg)
             cfg=cfg or {}
-            return createNative(currentSection(), "CreateSlider", {Name=cfg.Title or cfg.Name or "Slider", Range={cfg.Min or 0, cfg.Max or 100}, CurrentValue=cfg.Default or 0, Increment=cfg.Increment or 1, Callback=cfg.Callback})
+            local range = cfg.Range
+            local minValue = (type(range)=="table" and tonumber(range[1])) or tonumber(cfg.Min) or tonumber(cfg.MinValue) or 0
+            local maxValue = (type(range)=="table" and tonumber(range[2])) or tonumber(cfg.Max) or tonumber(cfg.MaxValue) or 100
+            local current = cfg.CurrentValue
+            if current == nil then current = cfg.Default end
+            current = math.clamp(tonumber(current) or minValue, minValue, maxValue)
+            return createNative(currentSection(), "CreateSlider", {Name=cfg.Title or cfg.Name or "Slider", Range={minValue, maxValue}, CurrentValue=current, Increment=cfg.Increment or cfg.Step or 1, Callback=cfg.Callback})
         end
         function tab.AddDropdown(_, cfg)
             cfg=cfg or {}
             local options = cfg.Options or {}
-            local default = cfg.Default
+            local default = cfg.CurrentOption
+            if default == nil then default = cfg.Default end
             -- LucidUI expects a single default item; multi-select compatibility is handled by the original callbacks.
             if type(default)=="table" then
                 local first
@@ -1863,7 +1872,9 @@ function Nexora.BuildWindow(config)
         end
         function tab.AddTextBox(_, cfg)
             cfg=cfg or {}
-            return createNative(currentSection(), "CreateInput", {Name=cfg.Title or cfg.Name or "Input", Placeholder=cfg.Placeholder or "", CurrentValue=cfg.Default or "", Callback=cfg.Callback})
+            local current = cfg.CurrentValue
+            if current == nil then current = cfg.Default end
+            return createNative(currentSection(), "CreateInput", {Name=cfg.Title or cfg.Name or "Input", Placeholder=cfg.Placeholder or "", CurrentValue=current or "", Callback=cfg.Callback})
         end
         function tab.AddParagraph(_, cfg, desc)
             local title, body
@@ -24229,62 +24240,7 @@ MISCPVPSection.AddToggle(
 		end)
 	end
 )
--- WalkSpeed/JumpPower: enquanto a toggle estiver ligada o valor é imposto a cada frame
--- e também na hora em que o jogo tenta mudar; ao desligar volta ao normal (feito no callback da toggle).
-do
-	getgenv().__MoveGen = (getgenv().__MoveGen or 0) + 1
-	local gen = getgenv().__MoveGen
-	for _, c in ipairs(getgenv().__MoveConns or {}) do pcall(function() c:Disconnect() end) end
-	local conns = {}
-	getgenv().__MoveConns = conns
-	local RunService = game:GetService("RunService")
-	local hooked = setmetatable({}, { __mode = "k" })
-	local function enforce(hum)
-		if getgenv().__MoveGen ~= gen or not hum or not hum.Parent then return end
-		if Settings["Change WalkSpeed"] then
-			local sp = math.clamp(tonumber(Settings["Input WalkSpeed"]) or 16, 0, 220)
-			if hum.WalkSpeed ~= sp then hum.WalkSpeed = sp end
-		end
-		if Settings["Change JumpPower"] then
-			if not hum.UseJumpPower then hum.UseJumpPower = true end
-			local jp = math.clamp(tonumber(Settings["Input JumpPower"]) or 50, 0, 220)
-			if hum.JumpPower ~= jp then hum.JumpPower = jp end
-		end
-	end
-	local function hook(hum)
-		if not hum or hooked[hum] then return end
-		hooked[hum] = true
-		for _, prop in ipairs({ "WalkSpeed", "JumpPower", "UseJumpPower" }) do
-			table.insert(conns, hum:GetPropertyChangedSignal(prop):Connect(function() enforce(hum) end))
-		end
-		enforce(hum)
-	end
-	local function currentHumanoid()
-		local ch = t.Character
-		return ch and ch:FindFirstChildOfClass("Humanoid")
-	end
-	function ApplyMovementSettings()
-		local h = currentHumanoid()
-		if h then hook(h); enforce(h) end
-	end
-	local function onStep()
-		local h = currentHumanoid()
-		if h then hook(h); enforce(h) end
-	end
-	-- Fallback limitado a 5 verificações/s em vez de executar a cada frame.
-	task.spawn(function()
-		while getgenv().__MoveGen == gen do
-			task.wait(0.2)
-			if getgenv().__MoveGen == gen then onStep() end
-		end
-	end)
-	table.insert(conns, t.CharacterAdded:Connect(function(ch)
-		local h = ch:WaitForChild("Humanoid", 10)
-		if h then hook(h) end
-		task.delay(0.5, ApplyMovementSettings)
-		task.delay(2, ApplyMovementSettings)
-	end))
-end
+-- Controlador único de movimento definido mais abaixo, sem loops duplicados.
 MISCPVPSection.AddToggle(
 	{ Title = "Walk On Water", Desc = nil, Default = Settings["Walk On Water "] or true },
 	function(b)
@@ -25066,79 +25022,75 @@ do
 	end)
 end
 
--- Movimento: movido para fora do RenderStepped (antes criava um loop novo a cada frame).
-getgenv().__MoveGen = (getgenv().__MoveGen or 0) + 1
-local MoveGen = getgenv().__MoveGen
-function ApplyMovementSettings()
-	local Character = t.Character
-	local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
-	if not Humanoid then return end
-	pcall(function()
-		if Settings["Change WalkSpeed"] then
-			Humanoid.WalkSpeed = math.clamp(tonumber(Settings["Input WalkSpeed"]) or 16, 0, 220)
-		end
-		if Settings["Change JumpPower"] then
-			Humanoid.UseJumpPower = true
-			Humanoid.JumpPower = math.clamp(tonumber(Settings["Input JumpPower"]) or 50, 0, 220)
-		end
-	end)
-end
-
-ApplyMovementSettings()
--- Reaplicação após carregamento dos settings e respawn, sem depender apenas do estado visual do toggle.
-task.spawn(function()
-    for _ = 1, 20 do
-        if Settings["Change WalkSpeed"] or Settings["Change JumpPower"] then
-            ApplyMovementSettings()
+-- Controlador único de movimento, orientado a eventos.
+-- Remove loops de polling e escrita por frame que causavam microtravadas e disputavam o WalkSpeed.
+do
+    local Players = game:GetService("Players")
+    local player = Players.LocalPlayer
+    local function disconnectGlobal(key)
+        local old = getgenv()[key]
+        if old then
+            pcall(function() old:Disconnect() end)
+            getgenv()[key] = nil
         end
-        task.wait(0.25)
     end
-end)
--- Aplica a velocidade do slider a cada passo de física (depois do RenderStepped do jogo,
--- que reescrevia o WalkSpeed). Só a execução mais recente fica ativa.
-pcall(function()
-	if getgenv().__MoveStepConn then
-		getgenv().__MoveStepConn:Disconnect()
-	end
-end)
-getgenv().__MoveStepConn = game:GetService("RunService").Stepped:Connect(function()
-	if getgenv().__MoveGen ~= MoveGen then return end
-	local Character = t.Character
-	local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
-	if not Humanoid then return end
-	if Settings["Change WalkSpeed"] then
-		local sp = math.clamp(tonumber(Settings["Input WalkSpeed"]) or 16, 0, 220)
-		if math.abs(Humanoid.WalkSpeed - sp) > 0.01 then Humanoid.WalkSpeed = sp end
-	end
-	if Settings["Change JumpPower"] then
-		Humanoid.UseJumpPower = true
-		local jp = math.clamp(tonumber(Settings["Input JumpPower"]) or 50, 0, 220)
-		if math.abs(Humanoid.JumpPower - jp) > 0.01 then Humanoid.JumpPower = jp end
-	end
-end)
-pcall(function()
-	if getgenv().__MoveCharConn then
-		getgenv().__MoveCharConn:Disconnect()
-	end
-end)
-if t.CharacterAdded then
-	getgenv().__MoveCharConn = t.CharacterAdded:Connect(function(character)
-		task.spawn(function()
-			for _ = 1, 30 do
-				if getgenv().__MoveGen ~= MoveGen then return end
-				local hum = character and character:FindFirstChildOfClass("Humanoid")
-				if hum then ApplyMovementSettings(); return end
-				task.wait(0.1)
-			end
-		end)
-	end)
-end
+    disconnectGlobal("__MoveStepConn")
+    disconnectGlobal("__MoveCharConn")
+    for _, conn in ipairs(getgenv().__MoveConns or {}) do
+        pcall(function() conn:Disconnect() end)
+    end
+    getgenv().__MoveConns = {}
+    getgenv().__MoveGen = (getgenv().__MoveGen or 0) + 1
+    local generation = getgenv().__MoveGen
+    local connections = getgenv().__MoveConns
+    local hooked = setmetatable({}, {__mode = "k"})
 
-task.spawn(function()
-	while task.wait(0.15) and getgenv().__MoveGen == MoveGen do
-		ApplyMovementSettings()
-	end
-end)
+    local function applyToHumanoid(humanoid)
+        if getgenv().__MoveGen ~= generation or not humanoid or not humanoid.Parent then return end
+        if Settings["Change WalkSpeed"] then
+            local speed = math.clamp(tonumber(Settings["Input WalkSpeed"]) or 16, 0, 220)
+            if math.abs(humanoid.WalkSpeed - speed) > 0.01 then
+                humanoid.WalkSpeed = speed
+            end
+        end
+        if Settings["Change JumpPower"] then
+            local jumpPower = math.clamp(tonumber(Settings["Input JumpPower"]) or 50, 0, 220)
+            if not humanoid.UseJumpPower then humanoid.UseJumpPower = true end
+            if math.abs(humanoid.JumpPower - jumpPower) > 0.01 then
+                humanoid.JumpPower = jumpPower
+            end
+        end
+    end
+
+    local function hookHumanoid(humanoid)
+        if not humanoid or hooked[humanoid] then return end
+        hooked[humanoid] = true
+        for _, property in ipairs({"WalkSpeed", "JumpPower", "UseJumpPower"}) do
+            table.insert(connections, humanoid:GetPropertyChangedSignal(property):Connect(function()
+                applyToHumanoid(humanoid)
+            end))
+        end
+        applyToHumanoid(humanoid)
+    end
+
+    function ApplyMovementSettings()
+        local character = player.Character
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+        if humanoid then hookHumanoid(humanoid); applyToHumanoid(humanoid) end
+    end
+
+    getgenv().__MoveCharConn = player.CharacterAdded:Connect(function(character)
+        task.spawn(function()
+            local humanoid = character:WaitForChild("Humanoid", 10)
+            if humanoid and getgenv().__MoveGen == generation then
+                hookHumanoid(humanoid)
+                task.delay(0.5, ApplyMovementSettings)
+            end
+        end)
+    end)
+
+    ApplyMovementSettings()
+end
 
 -- Loops dedicados de Random Fruit e Store Fruit: independentes um do outro e do resto
 -- (antes dividiam o mesmo pcall; qualquer erro em outra função impedia as duas de rodar).
