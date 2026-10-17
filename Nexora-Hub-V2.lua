@@ -1,3 +1,4 @@
+-- Nexora Hub • LucidUI glass interface migration (existing callbacks preserved)
 -- Tela de carregamento (Nexora Hub): pequena e rápida. O resto do script só roda depois dela terminar.
 do
 	pcall(function()
@@ -8,7 +9,7 @@ do
 		local gui = Instance.new("ScreenGui")
 		gui.Name = "NexoraLoading"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true; gui.DisplayOrder = 10000
 		gui.Parent = host
-		local GOLD, GOLD_L, GRAY = Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255), Color3.fromRGB(165,165,174)
+		local RED, RED_L, GRAY = Color3.fromRGB(255, 35, 55), Color3.fromRGB(255, 95, 110), Color3.fromRGB(235,235,242)
 		local function mk(class, props, parent)
 			local o = Instance.new(class)
 			for k, v in pairs(props) do o[k] = v end
@@ -24,22 +25,22 @@ do
 				game:GetService("Debris"):AddItem(snd, 4)
 			end)
 		end
-		local card = mk("CanvasGroup", {AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.fromOffset(230,128), BackgroundColor3=Color3.fromRGB(8,8,11), BorderSizePixel=0, GroupTransparency=1}, gui)
+		local card = mk("CanvasGroup", {AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.fromOffset(230,128), BackgroundColor3=Color3.fromRGB(18, 7, 10), BorderSizePixel=0, GroupTransparency=1}, gui)
 		mk("UICorner", {CornerRadius=UDim.new(0,16)}, card)
-		mk("UIStroke", {Color=GOLD, Thickness=1, Transparency=0.55}, card)
+		mk("UIStroke", {Color=RED, Thickness=1, Transparency=0.55}, card)
 		local sc = mk("UIScale", {Scale=0.9}, card)
-		local logo = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,12), Size=UDim2.fromOffset(46,46), BackgroundColor3=Color3.fromRGB(8,8,10), BorderSizePixel=0}, card)
+		local logo = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,12), Size=UDim2.fromOffset(46,46), BackgroundColor3=Color3.fromRGB(18, 7, 10), BorderSizePixel=0}, card)
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, logo)
-		mk("UIStroke", {Color=GOLD, Thickness=2}, logo)
-		mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,2), Size=UDim2.new(1,0,0,13), Text="♛", TextColor3=Color3.fromRGB(80, 180, 255), Font=Enum.Font.GothamBold, TextSize=12}, logo)
-		local n = mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,10), Size=UDim2.new(1,0,1,-12), Text="N", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.GothamBlack, TextSize=26}, logo)
-		mk("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 140, 255))}, n)
-		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,64), Size=UDim2.fromOffset(220,20), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.GothamBlack, TextSize=16}, card)
-		local track = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,92), Size=UDim2.fromOffset(150,3), BackgroundColor3=Color3.fromRGB(30,28,24), BorderSizePixel=0}, card)
+		mk("UIStroke", {Color=RED, Thickness=2}, logo)
+		mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,2), Size=UDim2.new(1,0,0,13), Text="♛", TextColor3=Color3.fromRGB(255, 95, 110), Font=Enum.Font.GothamBold, TextSize=12}, logo)
+		local n = mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,10), Size=UDim2.new(1,0,1,-12), Text="N", TextColor3=Color3.fromRGB(255, 35, 55), Font=Enum.Font.GothamBlack, TextSize=26}, logo)
+		mk("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(255, 95, 110), Color3.fromRGB(255, 35, 55))}, n)
+		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,64), Size=UDim2.fromOffset(220,20), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=Color3.fromRGB(255, 35, 55), Font=Enum.Font.GothamBlack, TextSize=16}, card)
+		local track = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,92), Size=UDim2.fromOffset(150,3), BackgroundColor3=Color3.fromRGB(24, 10, 13), BorderSizePixel=0}, card)
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, track)
-		local fill = mk("Frame", {Size=UDim2.new(0,0,1,0), BackgroundColor3=GOLD, BorderSizePixel=0}, track)
+		local fill = mk("Frame", {Size=UDim2.new(0,0,1,0), BackgroundColor3=RED, BorderSizePixel=0}, track)
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, fill)
-		mk("UIGradient", {Color=ColorSequence.new(Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255))}, fill)
+		mk("UIGradient", {Color=ColorSequence.new(Color3.fromRGB(255, 35, 55), Color3.fromRGB(255, 95, 110))}, fill)
 		local status = mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,102), Size=UDim2.fromOffset(220,14), BackgroundTransparency=1, Text="Carregando...", TextColor3=GRAY, Font=Enum.Font.Gotham, TextSize=10}, card)
 		-- entrada rápida + som de abertura
 		TS:Create(card, TweenInfo.new(.18, Enum.EasingStyle.Quad), {GroupTransparency=0}):Play()
@@ -1839,474 +1840,334 @@ game:GetService("Players").LocalPlayer.Idled:connect(function()
 	wait(1)
 	vu:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 end)
--- ============================================================================
--- NEXORA FLUENT LIB (nova) — a UI antiga foi removida; toda a source abaixo usa esta biblioteca
--- (mesma API: Main.CreatePage / CreateSection / CreateToggle / ... / A.CreateNoti)
--- ============================================================================
 local A = (function()
--- ============================================================================
--- NexoraFluentLib | Biblioteca de UI do Nexora Hub feita sobre a UI Fluent (dawid-scripts)
---
--- API (a mesma que a source do Nexora Hub já usa):
---   local Main = Lib.CreateMain({ Title = "NEXORA HUB", Desc = "BLOX FRUITS" })
---   local Page = Main.CreatePage({ Page_Name = "Shop", Page_Title = "Shop" })
---   local Sec  = Page.CreateSection("Misc Shop")
---   Sec.CreateToggle({Title=, Desc=, Default=}, cb)      Sec.CreateButton({Title=}, cb)
---   Sec.CreateLabel({Title=})  -> handle.SetText(txt)    Sec.CreateBox({Title=, Default=}, cb)
---   Sec.CreateSlider({Title=, Min=, Max=, Default=}, cb)
---   Sec.CreateDropdown({Title=, List=, Default=, Selected=true(multi)}, cb)
---   Lib.CreateNoti({Title=, Desc=, ShowTime=}) | Lib.Options | Lib.RestoreSavedToggles()
--- Para trocar a origem do Fluent: getgenv().NexoraFluentURL = "https://..." antes de executar.
--- ============================================================================
-local Nexora = {}
-Nexora.Options = {}
-Nexora.OptionOrder = {}
-
+-- Adaptador de compatibilidade Nexora -> LucidUI. Mantém os callbacks e a estrutura da source original.
+local LucidUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Kyotaah/lucidui/main/dist/lucidui.lua"))()
+local Nexora = {Options = {}, OptionOrder = {}, _tabs = {}, _window = nil}
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
-local parentGui = (gethui and gethui()) or game:GetService("CoreGui")
-
--- ---------------------------------------------------------------- carrega o Fluent
-local Fluent
-do
-    local urls = {
-        getgenv().NexoraFluentURL,
-        "https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua",
-        "https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Dist/main.lua",
-    }
-    for _, url in ipairs(urls) do
-        if type(url) == "string" and url ~= "" then
-            local ok, res = pcall(function() return loadstring(game:HttpGet(url))() end)
-            if ok and type(res) == "table" then Fluent = res break end
-        end
-    end
-    if not Fluent then error("[NexoraFluentLib] nao foi possivel carregar o Fluent (HttpGet bloqueado ou sem internet)") end
+local function safe(fn, ...)
+    if type(fn) ~= "function" then return nil end
+    local args = table.pack(...)
+    local ok, result = pcall(function() return fn(table.unpack(args, 1, args.n)) end)
+    if ok then return result end
+    return nil
 end
--- fecha uma janela Fluent/Nexora anterior (reexecucao)
-pcall(function() if getgenv().__NexoraFluent and getgenv().__NexoraFluent ~= Fluent then getgenv().__NexoraFluent:Destroy() end end)
-getgenv().__NexoraFluent = Fluent
-pcall(function() local o = parentGui:FindFirstChild("NexoraFluentFloat") if o then o:Destroy() end end)
-
--- ---------------------------------------------------------------- utilidades
-local uidCounter = 0
-local function uid(prefix) uidCounter = uidCounter + 1 return "NX_" .. prefix .. "_" .. uidCounter end
-
--- Registra a opcao com o mesmo formato da biblioteca anterior (A.Options[titulo]).
-local function addOption(title, typ, value, page, section, callback)
-    local opt = {Title = title, name = title, type = typ, value = value, Page_Name = page, Section_Name = section, Callback = callback}
-    local control = {}
-    control.GetText = function() return tostring(opt.value or "") end
-    control.SetValue = function(a, b)
-        local v = b
-        if b == nil then v = a end
-        if v == control then return end
+local function register(title, kind, value, callback, control, pageName, sectionName)
+    local opt = {title=title, type=kind, value=value, Callback=callback, FunctionCreate=control, page=pageName, section=sectionName}
+    opt._setValue = function(v, fire)
         opt.value = v
-        if opt._setValue then opt._setValue(v) end
-        if callback then task.spawn(function() pcall(callback, v) end) end
+        if control then
+            if type(control.Set) == "function" then safe(control.Set, control, v)
+            elseif type(control.SetStage) == "function" then safe(control.SetStage, control, v) end
+        end
+        if fire and type(callback) == "function" then task.spawn(function() safe(callback, v) end) end
     end
-    control.SetStage = control.SetValue
-    control.SetSubValue = function(a, b, c)
-        local key, v
-        if c ~= nil then key, v = b, c else key, v = a, b end
-        opt.value = opt.value or {}
-        opt.value[key] = v
-        if opt._setSubValue then opt._setSubValue(key, v) end
-        if callback then task.spawn(function() pcall(callback, opt.value) end) end
-    end
-    opt.FunctionCreate = control
     Nexora.Options[title] = opt
     table.insert(Nexora.OptionOrder, opt)
     return opt
 end
-
-local ICONS = {
-    {"status", "activity"}, {"server", "server"}, {"shop", "shopping-cart"}, {"local", "user"}, {"player", "user"},
-    {"setting", "settings"}, {"farm", "swords"}, {"stack", "layers"}, {"fish", "fish"}, {"fruit", "apple"},
-    {"raid", "flame"}, {"dunge", "castle"}, {"kitsune", "moon"}, {"sea", "waves"}, {"event", "calendar"},
-    {"race", "dna"}, {"item", "package"}, {"craft", "hammer"}, {"quest", "scroll"}, {"boss", "skull"},
-    {"teleport", "map-pin"}, {"misc", "more-horizontal"}, {"webhook", "send"}, {"aim", "crosshair"},
-}
-local function pickIcon(name)
-    local n = string.lower(tostring(name))
-    for _, p in ipairs(ICONS) do if string.find(n, p[1], 1, true) then return p[2] end end
-    return ""
-end
-
-local function buildList(src)
-    local list = {}
-    if type(src) ~= "table" then return list end
-    if #src > 0 then
-        for _, v in ipairs(src) do table.insert(list, v) end
-    else
-        for k in pairs(src) do table.insert(list, k) end
-        table.sort(list, function(a, b) return tostring(a) < tostring(b) end)
-    end
-    return list
-end
-
--- ---------------------------------------------------------------- Main
-local MainObj
 function Nexora.CreateMain(config)
     config = config or {}
-    local Window = Fluent:CreateWindow({
-        Title = tostring(config.Title or "NEXORA HUB"),
-        SubTitle = tostring(config.Desc or ""),
-        TabWidth = 160,
-        Size = UDim2.fromOffset(580, 460),
-        Acrylic = false,
-        Theme = "Dark",
-        MinimizeKey = Enum.KeyCode.RightControl,
-    })
-    -- a source procura um ScreenGui chamado "NexoraUI" no bind "Toggle GUI"
-    pcall(function() if Fluent.GUI then Fluent.GUI.Name = "NexoraUI" end end)
+    local win = LucidUI:CreateWindow({Name=config.Title or "NEXORA HUB", Theme="Nebula", PillKeybind=Enum.KeyCode.RightControl, Width=620, Height=460, IntroEnabled=false})
+    pcall(function() win:BuildSettingsPanel() end)
+    Nexora._window = win
+
+    -- LucidUI inclui minimização e uma pill flutuante tocável para restaurar a janela.
 
     local Main = {}
-    MainObj = Main
-    local tabs, firstTab = {}, nil
-
-    -- botao flutuante para abrir/fechar (celular)
-    task.spawn(function()
-        pcall(function()
-            local fg = Instance.new("ScreenGui")
-            fg.Name = "NexoraFluentFloat"; fg.ResetOnSpawn = false; fg.IgnoreGuiInset = true; fg.DisplayOrder = 100000
-            fg.Parent = parentGui
-            local b = Instance.new("TextButton")
-            b.Size = UDim2.fromOffset(44, 44); b.Position = UDim2.new(0, 14, 0.5, -22)
-            b.BackgroundColor3 = Color3.fromRGB(24, 24, 28); b.BorderSizePixel = 0
-            b.Text = "N"; b.TextColor3 = Color3.fromRGB(255, 255, 255)
-            b.Font = Enum.Font.GothamBlack; b.TextSize = 20; b.Active = true; b.Draggable = true; b.Parent = fg
-            local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 12); c.Parent = b
-            local s = Instance.new("UIStroke"); s.Color = Color3.fromRGB(255, 255, 255); s.Transparency = 0.7; s.Parent = b
-            b.MouseButton1Click:Connect(function() pcall(function() Window:Minimize() end) end)
-        end)
-    end)
-
-    function Main.CreatePage(cfg)
-        local name = type(cfg) == "table" and (cfg.Page_Name or cfg.Page_Title or cfg.Title or cfg.Name) or tostring(cfg)
-        local title = type(cfg) == "table" and (cfg.Page_Title or cfg.Page_Name or cfg.Title or cfg.Name) or tostring(cfg)
-        if tabs[name] then return tabs[name] end
-        local tab
-        local ok = pcall(function() tab = Window:AddTab({Title = tostring(title), Icon = pickIcon(title)}) end)
-        if not ok or not tab then tab = Window:AddTab({Title = tostring(title), Icon = ""}) end
-        if not firstTab then firstTab = tab; pcall(function() Window:SelectTab(1) end) end
-
+    function Main.CreatePage(pageConfig)
+        pageConfig = pageConfig or {}
+        local name = pageConfig.Page_Title or pageConfig.Page_Name or "Page"
+        local lucidTab = win:CreateTab({Name=name, Icon="home"})
+        local tab = {_currentSection=nil, _lucidTab=lucidTab}
+        local function currentSection()
+            if not tab._currentSection then
+                tab._currentSection = lucidTab:CreateSection({Name="General"})
+            end
+            return tab._currentSection
+        end
+        function tab.AddSection(_, arg)
+            local sectionName = type(arg)=="table" and (arg[1] or arg.Name or arg.Title) or arg
+            tab._currentSection = lucidTab:CreateSection({Name=tostring(sectionName or "General")})
+            return tab._currentSection
+        end
+        function tab.AddToggle(_, cfg)
+            cfg=cfg or {}
+            return currentSection():CreateToggle({Name=cfg.Title or cfg.Name or "Toggle", Default=cfg.Default==true, Callback=cfg.Callback})
+        end
+        function tab.AddButton(_, cfg)
+            cfg=cfg or {}
+            return currentSection():CreateButton({Name=cfg.Title or cfg.Name or "Button", Callback=cfg.Callback})
+        end
+        function tab.AddSlider(_, cfg)
+            cfg=cfg or {}
+            return currentSection():CreateSlider({Name=cfg.Title or cfg.Name or "Slider", Min=cfg.Min or 0, Max=cfg.Max or 100, Default=cfg.Default or 0, Increment=cfg.Increment or 1, Callback=cfg.Callback})
+        end
+        function tab.AddDropdown(_, cfg)
+            cfg=cfg or {}
+            local options = cfg.Options or {}
+            local default = cfg.Default
+            -- LucidUI expects a single default item; multi-select compatibility is handled by the original callbacks.
+            if type(default)=="table" then
+                local first
+                for _, item in ipairs(options) do if default[item] == true then first=item; break end end
+                default = first or options[1]
+            end
+            return currentSection():CreateDropdown({Name=cfg.Title or cfg.Name or "Dropdown", Options=options, Default=default, Callback=cfg.Callback})
+        end
+        function tab.AddTextBox(_, cfg)
+            cfg=cfg or {}
+            return currentSection():CreateInput({Name=cfg.Title or cfg.Name or "Input", Placeholder=cfg.Placeholder or "", Default=cfg.Default or "", Callback=cfg.Callback})
+        end
+        function tab.AddParagraph(_, cfg, desc)
+            local title, body
+            if type(cfg)=="table" then title=cfg.Title or cfg.Name or cfg[1] or "Info"; body=cfg.Content or cfg.Desc or cfg[2] or ""
+            else title=tostring(cfg or "Info"); body=tostring(desc or "") end
+            local obj=currentSection():CreateTextDisplay({Name=tostring(title), Text=tostring(body)})
+            return obj, obj
+        end
+        function tab.AddLabel(_, title)
+            local obj=currentSection():CreateTextDisplay({Name=tostring(title or "Info"), Text=""})
+            return obj
+        end
+        Nexora._tabs[name] = tab
         local Page = {}
         function Page.CreateSection(sectionName)
-            sectionName = type(sectionName) == "table" and (sectionName[1] or sectionName.Title or sectionName.Name) or tostring(sectionName)
-            local container
-            pcall(function() container = tab:AddSection(sectionName) end)
-            if not container then container = tab end
-            local pageName = name
+            local section = safe(tab.AddSection, tab, {sectionName}) or safe(tab.AddSection, tab, sectionName) or tab
             local Section = {}
-
-            function Section.CreateToggle(cfg2, callback)
-                cfg2 = cfg2 or {}
-                local t = cfg2.Title or "Toggle"
+            function Section.CreateToggle(cfg, callback)
+                cfg = cfg or {}; local title = cfg.Title or "Toggle"
                 Settings = Settings or {}
-                local val
-                if type(Settings[t]) == "boolean" then val = Settings[t] else val = (cfg2.Default == true) end
-                local silent, ready = false, false
-                local ft = container:AddToggle(uid("T"), {Title = t, Description = cfg2.Desc, Default = val})
-                local opt = addOption(t, "toggle", val, pageName, sectionName, callback)
-                local function apply(v, fromUI)
-                    val = not not v
-                    opt.value = val
-                    if not fromUI then
-                        silent = true
-                        pcall(function() ft:SetValue(val) end)
-                        silent = false
-                    end
-                    Settings[t] = val
-                    pcall(function() SaveSettings(t, val) end)
-                    if fromUI and callback then task.spawn(function() pcall(callback, val) end) end
-                end
-                opt._setValue = function(v) apply(v, false) end
-                ft:OnChanged(function(v)
-                    if not ready or silent then return end
-                    apply(v, true)
-                end)
-                ready = true
+                local default; if type(Settings[title]) == "boolean" then default = Settings[title] else default = (cfg.Default == true) end
+                local control = safe(tab.AddToggle, tab, {Title=title, Name=title, Desc=cfg.Desc or "", Default=default, Callback=function(v)
+                    Settings[title] = not not v
+                    pcall(function() SaveSettings(title, not not v) end)
+                    if callback then task.spawn(function() safe(callback, not not v) end) end
+                end})
+                local opt = register(title,"toggle",default,callback,control,name,sectionName)
+                opt.FunctionCreate = {SetStage=function(_,v) opt.value=not not v; if control and type(control.Set)=="function" then safe(control.Set,control,not not v) end; Settings[title]=not not v; pcall(function() SaveSettings(title,not not v) end); if type(callback)=="function" then task.spawn(function() safe(callback,not not v) end) end end}
                 return opt
             end
-
-            function Section.CreateButton(cfg2, callback)
-                cfg2 = cfg2 or {}
-                local t = cfg2.Title or "Button"
-                addOption(t, "button", false, pageName, sectionName, callback)
-                container:AddButton({
-                    Title = t,
-                    Description = cfg2.Desc,
-                    Callback = function() if callback then task.spawn(callback) end end,
-                })
-                return Nexora.Options[t]
-            end
-
-            function Section.CreateLabel(cfg2)
-                local t = type(cfg2) == "table" and (cfg2.Title or cfg2.Text or "") or tostring(cfg2 or "")
-                local para = container:AddParagraph({Title = t, Content = ""})
-                local handle = {Object = para}
-                local current = t
-                handle.SetText = function(a, b)
-                    local v = a
-                    if a == handle then v = b end
-                    v = tostring(v == nil and "" or v)
-                    if v == current then return end
-                    current = v
-                    local ok = pcall(function() para:SetTitle(v) end)
-                    if not ok then pcall(function() para:SetDesc(v) end) end
+            function Section.CreateButton(cfg, callback)
+                cfg=cfg or {}; local title=cfg.Title or "Button"
+                local fired = false
+                local function onPressed()
+                    if fired then return end
+                    fired = true
+                    task.defer(function() fired = false end)
+                    if type(callback) == "function" then
+                        task.spawn(function()
+                            local ok, err = pcall(callback)
+                            if not ok then warn("[Nexora] Button '" .. tostring(title) .. "' callback error: " .. tostring(err)) end
+                        end)
+                    end
                 end
-                handle.GetText = function() return current end
+                local button = safe(tab.AddButton, tab, {Title=title, Name=title, Desc=cfg.Desc or "", Description=cfg.Desc or "", Callback=onPressed})
+                if not button then
+                    button = safe(tab.AddButton, tab, {Title=title, Callback=onPressed})
+                end
+                return button
+            end
+            function Section.CreateLabel(cfg)
+                local title = type(cfg)=="table" and (cfg.Title or cfg.Text or "") or tostring(cfg or "")
+                title = tostring(title)
+
+                -- A LucidUI text display is wrapped to preserve the existing label API. Try both
+                -- common formats first; passing two plain strings can make
+                -- builds show a generic placeholder instead.
+                local frame, paragraphLabel
+                local ok = pcall(function()
+                    frame, paragraphLabel = tab:AddParagraph({title, ""})
+                end)
+                if not ok or not frame then
+                    ok = pcall(function()
+                        frame, paragraphLabel = tab:AddParagraph({Title=title, Content=""})
+                    end)
+                end
+                if not ok or not frame then
+                    ok = pcall(function()
+                        frame, paragraphLabel = tab:AddParagraph(title, "")
+                    end)
+                end
+                -- O objeto retornado pode expor métodos próprios de atualização do texto.
+                local paragraphObject
+                if type(frame) == "table" then
+                    paragraphObject = frame
+                    paragraphLabel = paragraphLabel or frame
+                    frame = frame.Frame or frame.Object or frame.Instance
+                elseif type(paragraphLabel) == "table" then
+                    paragraphObject = paragraphLabel
+                end
+                if not ok or (not frame and not paragraphObject) then
+                    frame = safe(tab.AddLabel, tab, title)
+                end
+
+                local handle = {Object=frame, Label=paragraphLabel, Paragraph=paragraphObject, _text=title}
+                -- Existing source calls this as Label.SetText("text"), while
+                -- other callers may use Label:SetText("text"). Support both.
+                handle.SetText = function(first, second)
+                    local v = second ~= nil and second or first
+                    v = tostring(v or "")
+                    handle._text = v
+                    local updated = false
+                    local paragraph = handle.Paragraph or (type(paragraphLabel) == "table" and paragraphLabel) or nil
+                    if paragraph then
+                        if type(paragraph.SetTitle) == "function" then
+                            updated = pcall(paragraph.SetTitle, paragraph, v)
+                        end
+                        if type(paragraph.SetDesc) == "function" then
+                            pcall(paragraph.SetDesc, paragraph, "")
+                        end
+                        if type(paragraph.SetText) == "function" and not updated then
+                            updated = pcall(paragraph.SetText, paragraph, v)
+                        end
+                    end
+                    if not updated and paragraphLabel and type(paragraphLabel) ~= "table" then
+                        pcall(function() if paragraphLabel:IsA("TextLabel") then paragraphLabel.Text = v; updated = true end end)
+                    end
+                    if not updated and frame then
+                        pcall(function()
+                            if frame:IsA("TextLabel") then
+                                frame.Text = v
+                                updated = true
+                            else
+                                local firstTextLabel
+                                for _, obj in ipairs(frame:GetDescendants()) do
+                                    if obj:IsA("TextLabel") then
+                                        if not firstTextLabel then firstTextLabel = obj end
+                                    end
+                                end
+                                if firstTextLabel then
+                                    firstTextLabel.Text = v
+                                    updated = true
+                                end
+                            end
+                        end)
+                    end
+                end
+                handle.GetText = function() return handle._text end
                 return handle
             end
-
-            function Section.CreateSlider(cfg2, callback)
-                cfg2 = cfg2 or {}
-                local t = cfg2.Title or "Slider"
-                local min = cfg2.Min or cfg2.MinValue or 0
-                local max = cfg2.Max or cfg2.MaxValue or 100
-                local val = math.clamp(cfg2.Default or cfg2.Value or min, min, max)
-                local silent, ready = false, false
-                local fs = container:AddSlider(uid("S"), {Title = t, Description = cfg2.Desc, Default = val, Min = min, Max = max, Rounding = 0})
-                local opt = addOption(t, "slider", val, pageName, sectionName, callback)
-                opt._setValue = function(v)
-                    val = math.clamp(tonumber(v) or min, min, max)
-                    silent = true
-                    pcall(function() fs:SetValue(val) end)
-                    silent = false
-                end
-                fs:OnChanged(function(v)
-                    if not ready or silent then return end
-                    val = v; opt.value = v
-                    if callback then task.spawn(function() pcall(callback, v) end) end
-                end)
-                ready = true
-                return opt
+            function Section.CreateSlider(cfg, callback)
+                cfg=cfg or {}; local title=cfg.Title or "Slider"; local min=cfg.Min or cfg.MinValue or 0; local max=cfg.Max or cfg.MaxValue or 100; local default=math.clamp(tonumber(cfg.Default or cfg.Value) or min,min,max)
+                local control=safe(tab.AddSlider,tab,{Title=title,Name=title,Min=min,Max=max,Default=default,Increment=cfg.Increment or 1,Callback=function(v) if callback then task.spawn(function() safe(callback,v) end) end end})
+                return register(title,"slider",default,callback,control,name,sectionName)
             end
-
-            function Section.CreateBox(cfg2, callback)
-                cfg2 = cfg2 or {}
-                local t = cfg2.Title or "Text input"
-                local silent, ready = false, false
-                local fi = container:AddInput(uid("I"), {
-                    Title = t, Description = cfg2.Desc, Default = tostring(cfg2.Default or ""),
-                    Placeholder = cfg2.Placeholder or "Digite aqui...", Numeric = false, Finished = true,
-                })
-                local opt = addOption(t, "box", tostring(cfg2.Default or ""), pageName, sectionName, callback)
-                opt._setValue = function(v)
-                    silent = true
-                    pcall(function() fi:SetValue(tostring(v == nil and "" or v)) end)
-                    silent = false
-                end
-                opt.FunctionCreate.GetText = function() return tostring(fi.Value or opt.value or "") end
-                fi:OnChanged(function(v)
-                    if not ready or silent then return end
-                    opt.value = tostring(v or "")
-                    if callback then task.spawn(function() pcall(callback, opt.value) end) end
-                end)
-                ready = true
-                return opt
-            end
-
-            function Section.CreateDropdown(cfg2, callback)
-                cfg2 = cfg2 or {}
-                local t = cfg2.Title or "Dropdown"
-                local rawList = cfg2.List or cfg2.Values or cfg2.Options or {}
-
-                -- Modo "Slider": cada item da lista vira um slider (ex.: Set Delay Z/X/C)
-                if cfg2.Slider == true then
-                    local opt = addOption(t, "dropdown", rawList, pageName, sectionName, callback)
-                    for _, key in ipairs(buildList(rawList)) do
-                        local entry = rawList[key]
-                        if type(entry) == "table" then
-                            local min, max = entry.Min or 0, entry.Max or 5
-                            local ready = false
-                            local fs = container:AddSlider(uid("D"), {
-                                Title = tostring(entry.Title or entry.KeyName or key) .. "  |  " .. t,
-                                Default = math.clamp(tonumber(entry.Default) or min, min, max),
-                                Min = min, Max = max, Rounding = entry.Precise and 2 or 0,
-                            })
-                            fs:OnChanged(function(v)
-                                if not ready then return end
-                                entry.Default = v
-                                if callback then task.spawn(function() pcall(callback, entry, entry) end) end
-                            end)
-                            ready = true
-                        end
-                    end
-                    opt.GetNewList = function() end
-                    opt.SetList = opt.GetNewList
-                    return opt
-                end
-
-                local multi = cfg2.Selected == true
-                local listValues = buildList(rawList)
-                local selected = cfg2.Default
+            function Section.CreateDropdown(cfg, callback)
+                cfg=cfg or {}; local title=cfg.Title or "Dropdown"; local raw=cfg.List or cfg.Values or cfg.Options or {}; local values={}
+                if type(raw)=="table" then if #raw>0 then for _,v in ipairs(raw) do table.insert(values,tostring(v)) end else for k in pairs(raw) do table.insert(values,tostring(k)) end; table.sort(values) end end
+                local multi=cfg.Selected==true; local default=cfg.Default
                 if multi then
-                    selected = type(selected) == "table" and table.clone(selected) or {}
-                    for _, v in ipairs(listValues) do
-                        if selected[v] == nil then selected[v] = type(rawList) == "table" and rawList[v] == true or false end
+                    local selected={}; if type(default)=="table" then for k,v in pairs(default) do if type(k)=="number" then selected[tostring(v)]=true elseif v==true then selected[tostring(k)]=true end end end
+                    for _,v in ipairs(values) do if selected[v]==nil then selected[v]=raw[v]==true end end
+                    default=selected
+                elseif default==nil then default=values[1] end
+                local control
+                if multi and (title == "Select Sea Events" or title == "Select Weapons Fix Lava") then
+                    -- Estas listas permanecem expandidas em toggles individuais para preservar a seleção múltipla.
+                    control = {Items = {}, Selected = default}
+                    for _, item in ipairs(values) do
+                        local optionName = item
+                        local itemName = title .. " | " .. optionName
+                        local itemControl = safe(tab.AddToggle, tab, {
+                            Title=itemName, Name=itemName,
+                            Desc="Seleção múltipla • " .. title,
+                            Default=default[optionName] == true,
+                            Callback=function(v)
+                                default[optionName] = not not v
+                                control.Selected[optionName] = not not v
+                                if callback then task.spawn(function() safe(callback, optionName, not not v) end) end
+                            end
+                        })
+                        control.Items[optionName] = itemControl
                     end
+                elseif multi then
+                    -- LucidUI usa seleção simples no dropdown; a compatibilidade preserva o comportamento de alternância da source.
+                    -- Usamos um dropdown nativo como lista: selecionar um item alterna
+                    -- apenas esse item, preservando os outros selecionados e o callback antigo.
+                    local firstSelected
+                    for _, item in ipairs(values) do
+                        if default[item] == true then firstSelected = item; break end
+                    end
+                    local previousSelection = firstSelected or values[1]
+                    control = safe(tab.AddDropdown, tab, {
+                        Title=title, Name=title, Options=values,
+                        Default=previousSelection,
+                        Callback=function(v)
+                            local item = tostring(v or "")
+                            if item == "" or default[item] == nil then return end
+                            local enabled = not (default[item] == true)
+                            default[item] = enabled
+                            if callback then task.spawn(function() safe(callback, item, enabled) end) end
+                            previousSelection = item
+                        end
+                    })
+                    control = control or {}
+                    control.Selected = default
                 else
-                    selected = selected or "Select..."
+                    control=safe(tab.AddDropdown,tab,{Title=title,Name=title,Options=values,Default=default,Callback=function(v)
+                        if callback then task.spawn(function() safe(callback,v) end) end
+                    end})
                 end
-
-                local silent, ready = false, false
-                local fd = container:AddDropdown(uid("D"), {Title = t, Description = cfg2.Desc, Values = listValues, Multi = multi})
-                local opt = addOption(t, "dropdown", selected, pageName, sectionName, callback)
-                local prev = multi and table.clone(selected) or nil
-
-                local function pushToUI()
-                    silent = true
-                    if multi then
-                        pcall(function() fd:SetValue(selected) end)
-                    elseif table.find(listValues, selected) then
-                        pcall(function() fd:SetValue(selected) end)
-                    end
-                    silent = false
-                end
-                pushToUI()
-
-                opt._setValue = function(v)
-                    if multi then selected = type(v) == "table" and table.clone(v) or {} else selected = v end
-                    if multi then prev = table.clone(selected) end
-                    opt.value = selected
-                    pushToUI()
-                end
-                opt._setSubValue = function(key, v)
-                    if multi and type(selected) == "table" then
-                        selected[key] = v
-                        if prev then prev[key] = v end
-                        pushToUI()
-                    end
-                end
-                opt.GetNewList = function(_, newList)
-                    listValues = buildList(newList or {})
-                    if multi then
-                        for _, v in ipairs(listValues) do if selected[v] == nil then selected[v] = false end end
-                    elseif not table.find(listValues, selected) then
-                        selected = "Select..."
-                    end
-                    opt.value = selected
-                    pcall(function() fd:SetValues(listValues) end)
-                    pushToUI()
-                end
-                opt.SetList = opt.GetNewList
-
-                fd:OnChanged(function(v)
-                    if not ready or silent then return end
-                    if multi then
-                        local now = type(v) == "table" and v or {}
-                        for _, key in ipairs(listValues) do
-                            local new, old = now[key] == true, (prev and prev[key]) == true
-                            if new ~= old then
-                                selected[key] = new
-                                prev[key] = new
-                                opt.value = selected
-                                if callback then task.spawn(function() pcall(callback, key, new) end) end
+                local opt=register(title,"dropdown",default,callback,control,name,sectionName)
+                opt.GetNewList=function(_,newList)
+                    if multi and type(newList)=="table" then
+                        for _, item in ipairs(values) do
+                            local enabled = newList[item] == true
+                            default[item] = enabled
+                            if control.Items then
+                                local itemControl = control.Items[item]
+                                if itemControl and type(itemControl.Set) == "function" then safe(itemControl.Set,itemControl,enabled) end
                             end
                         end
-                    else
-                        selected = v
-                        opt.value = v
-                        if callback then task.spawn(function() pcall(callback, v) end) end
-                    end
-                end)
-                ready = true
+                        if control.Selected then control.Selected = default end
+                        if control and type(control.Set) == "function" then
+                            local selectedList = {}
+                            for _, item in ipairs(values) do if default[item] then table.insert(selectedList,item) end end
+                            safe(control.Set,control,selectedList)
+                        end
+                    elseif control and type(control.Set) == "function" then safe(control.Set,control,newList) end
+                end
+                opt.SetList=opt.GetNewList
                 return opt
             end
-
-            function Section.CreateNoti(text, duration) return Main.CreateNoti(text, duration) end
-            function Section.CreateBind(c, cb) return Main.CreateBind(c, cb) end
-            Section.AddToggle = Section.CreateToggle
-            Section.AddButton = Section.CreateButton
-            Section.AddDropdown = Section.CreateDropdown
-            Section.AddSlider = Section.CreateSlider
-            Section.AddLabel = Section.CreateLabel
-            Section.AddBox = Section.CreateBox
+            function Section.CreateBox(cfg, callback)
+                cfg=cfg or {}; local title=cfg.Title or "Text input"
+                local control=safe(tab.AddTextBox,tab,{Title=title,Name=title,Default=cfg.Default or "",Placeholder=cfg.Placeholder or "",Callback=function(v) if callback then task.spawn(function() safe(callback,v) end) end end})
+                local opt=register(title,"box",cfg.Default or "",callback,control,name,sectionName)
+                opt.FunctionCreate.GetText=function() return tostring(opt.value or "") end
+                return opt
+            end
+            function Section.CreateNoti(text,duration) return Main.CreateNoti(text,duration) end
             return Section
         end
-        Page.AddSection = Page.CreateSection
-        tabs[name] = Page
         return Page
     end
-
-    function Main.CreateSection(name)
-        local firstName = next(tabs)
-        local page = firstName and tabs[firstName] or Main.CreatePage({Page_Name = "Main", Page_Title = "Main"})
-        return page.CreateSection(name)
+    function Main.CreateBind(config, callback)
+        config=config or {}; local key=config.Key or Enum.KeyCode.LeftControl
+        local conn=UIS.InputBegan:Connect(function(input,processed) if not processed and input.KeyCode==key then if callback then task.spawn(callback) end end end)
+        return {Disconnect=function() conn:Disconnect() end,SetKey=function(v) key=v end}
     end
-
-    function Main.CreateBind(config2, callback)
-        config2 = config2 or {}
-        local key = config2.Key or Enum.KeyCode.LeftControl
-        local MainBind = {}
-        local conn = UIS.InputBegan:Connect(function(input, processed)
-            if processed then return end
-            if input.KeyCode == key then
-                if callback then task.spawn(function() pcall(callback) end)
-                else pcall(function() Window:Minimize() end) end
-            end
-        end)
-        MainBind.Disconnect = function() if conn then conn:Disconnect() end end
-        MainBind.SetKey = function(v) key = v end
-        return MainBind
+    function Main.CreateNoti(payload,duration)
+        if type(payload)=="table" then payload={Title=payload.Title or "NEXORA HUB",Text=payload.Desc or payload.Text or "",Duration=payload.ShowTime or duration or 4} else payload={Title="NEXORA HUB",Text=tostring(payload),Duration=duration or 4} end
+        safe(function() LucidUI:Notify({Title=payload.Title or "NEXORA HUB", Message=payload.Text or "", Duration=payload.Duration or 4}) end)
     end
-
-    local lastNoti, lastNotiAt = nil, 0
-    function Main.CreateNoti(text, duration)
-        local title, desc
-        if type(text) == "table" then
-            duration = text.ShowTime or duration or 4
-            title = tostring(text.Title or "NEXORA HUB")
-            desc = tostring(text.Desc or text.Text or text.Content or "")
-        else
-            duration = duration or 4
-            title = "NEXORA HUB"
-            desc = tostring(text)
-        end
-        -- evita empilhar a mesma notificacao repetida
-        local key = title .. "|" .. desc
-        if key == lastNoti and tick() - lastNotiAt < 1.5 then return end
-        lastNoti, lastNotiAt = key, tick()
-        pcall(function()
-            Fluent:Notify({Title = title, Content = desc, Duration = tonumber(duration) or 4})
-        end)
-    end
-    Main.CreateNotification = function(payload, duration) return Main.CreateNoti(payload, duration) end
-
-    Main.Window = Window
-    Main.Fluent = Fluent
+    Main.CreateNotification=Main.CreateNoti
     return Main
 end
-
-function Nexora.CreateNoti(config, duration)
-    if MainObj then return MainObj.CreateNoti(config, duration) end
-end
-Nexora.CreateNotification = Nexora.CreateNoti
-
+function Nexora.CreateNoti(payload,duration) if Nexora._main then return Nexora._main.CreateNoti(payload,duration) end end
 function Nexora.RestoreSavedToggles()
-    if getgenv().__NexoraRestoreDone then return end
-    getgenv().__NexoraRestoreDone = true
-    for _, opt in ipairs(Nexora.OptionOrder) do
-        if opt and opt.type == "toggle" and opt.value == true then
-            local control = opt.FunctionCreate
-            if control and type(control.SetStage) == "function" then
-                pcall(function() control:SetStage(true) end)
-            elseif type(opt.Callback) == "function" then
-                pcall(opt.Callback, true)
-            end
-            task.wait()
-        end
+    for _,opt in ipairs(Nexora.OptionOrder) do
+        if opt and opt.type=="toggle" and opt.value==true and opt.FunctionCreate and opt.FunctionCreate.SetStage then pcall(opt.FunctionCreate.SetStage,opt.FunctionCreate,true); task.wait() end
     end
-    pcall(function() if MainObj and MainObj.Window then MainObj.Window:SelectTab(1) end end)
 end
-getgenv().__NexoraRestoreDone = false
--- fallback: se o script principal der erro antes do fim, restaura mesmo assim
-task.delay(10, function() Nexora.RestoreSavedToggles() end)
-
+getgenv().__NexoraRestoreDone=false
+task.delay(10,function() Nexora.RestoreSavedToggles() end)
 return Nexora
 end)()
 Main = A.CreateMain({ Title = "NEXORA HUB", Desc = "BLOX FRUITS • ViniZDev" })
+A._main = Main
 
 PageShop = Main.CreatePage({ Page_Name = "Shop", Page_Title = "Shop" })
 getgenv().Options = A.Options
@@ -2904,7 +2765,7 @@ do
 			if not container then
 				return
 			end
-			for _, model in ipairs(container:GetChildren()) do
+			for _, model in ipairs(container:GetDescendants()) do
 				if model:IsA("Model") and not model.Name:find("%[Raid Boss%]") then
 					local e = Known[CleanName(model.Name)]
 					if e then
@@ -2978,12 +2839,12 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 			ROW_HOVER = Color3.fromRGB(20, 22, 35),
 			ROW_TOP = Color3.fromRGB(10, 22, 34),
 			BORDER = Color3.fromRGB(28, 31, 48),
-			BORDER_HOV = Color3.fromRGB(0, 80, 120),
+			BORDER_HOV = Color3.fromRGB(130, 12, 28),
 			CYAN = Color3.fromRGB(0, 212, 255),
-			CYAN_DIM = Color3.fromRGB(0, 80, 120),
+			CYAN_DIM = Color3.fromRGB(130, 12, 28),
 			GREEN = Color3.fromRGB(0, 204, 102),
 			GREEN_GLOW = Color3.fromRGB(0, 255, 136),
-			AMBER = Color3.fromRGB(255, 170, 0),
+			AMBER = Color3.fromRGB(255, 45, 65),
 			RED = Color3.fromRGB(255, 68, 85),
 			TEXT_PRI = Color3.fromRGB(232, 234, 240),
 			TEXT_SEC = Color3.fromRGB(80, 90, 120),
@@ -3113,7 +2974,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 		{
 			Size = UDim2.new(1, 0, 0, 42),
 			Position = UDim2.new(0, 0, 0, 52),
-			BackgroundColor3 = Color3.fromRGB(11, 12, 17),
+			BackgroundColor3 = Color3.fromRGB(5, 14, 35),
 			BorderSizePixel = 0,
 		},
 		V
@@ -3149,7 +3010,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 			{
 				Size = UDim2.new(0, 82, 0, 26),
 				Position = UDim2.new(1, -270, 0.5, -13),
-				BackgroundColor3 = Color3.fromRGB(14, 22, 40),
+				BackgroundColor3 = Color3.fromRGB(7, 24, 60),
 				BorderSizePixel = 0,
 				Text = "REFRESH",
 				TextColor3 = Color3.fromRGB(100, 140, 200),
@@ -3159,7 +3020,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 			f
 		)
 	L(3, y)
-	K(y, Color3.fromRGB(14, 22, 40), Color3.fromRGB(10, 30, 55))
+	K(y, Color3.fromRGB(7, 24, 60), Color3.fromRGB(10, 30, 55))
 	local x = S(
 		"TextButton",
 		{
@@ -3197,7 +3058,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 		{
 			Size = UDim2.new(1, 0, 0, 24),
 			Position = UDim2.new(0, 0, 0, 94),
-			BackgroundColor3 = Color3.fromRGB(11, 12, 17),
+			BackgroundColor3 = Color3.fromRGB(5, 14, 35),
 			BorderSizePixel = 0,
 		},
 		V
@@ -4447,99 +4308,101 @@ function GetOldestLocation()
 	end
 	return m
 end
-spawn(function()
-	while wait(0.25) do
-		local R, R = pcall(function()
-			local m = game.workspace.DistributedGameTime
-			local E, l, Q = m % 60, math.floor(m / 60 % 60), math.floor(m / 3600)
-			TimerLabel.SetText(string.format("Timer: %.0fh %.0fm %.0fs", Q, l, E))
-			l = GetOldestLocation()
-			if l then
-				Q = l:GetAttribute("TimeIn")
-				E, m = tick() - 25200 - Q, 14400
-				math.floor(E / m)
-				local S = m - E % m
-				local m, L, d, I, _, o =
-					math.floor(S / 3600),
-					math.floor(S % 3600 / 60),
-					math.floor(S % 60),
-					math.floor(E / 3600),
-					math.floor(E % 3600 / 60),
-					math.floor(E % 60)
-				TimerServerLabel.SetText(string.format("Server Timer: %.0fh %.0fm %.0fs", I, _, o))
-				NextTimerServerLabel.SetText(
-					string.format("Next Time Spawn Fist of Darkness or God's Chalice: %.0fh %.0fm %.0fs", m, L, d)
-				)
-				if tonumber(m) == 0 and tonumber(L) == 0 and tonumber(d) <= 5 then
-					getgenv().GoCollectChest = true
-				end
-			end
-			if DetectEliteHunter() then
-				StatusEliteHunter.SetText("Elite Hunter: \226\156\133")
-			else
-				StatusEliteHunter.SetText("Elite Hunter: \226\157\140")
-			end
-			if game.PlaceId == getgenv().CheckPlaceId then
-				K = 0
-				Q = workspace.Map:FindFirstChild("TikiOutpost") and workspace.Map.TikiOutpost.IslandModel
-				if Q then
-					l = {}
-					for m = 1, 4, 1 do
-						E = Q:FindFirstChild("Eye" .. m, true)
-						if E then
-							table.insert(l, E)
-						end
-					end
-					for m, Q in ipairs(l) do
-						m = Q.Transparency == 1 and K < 4
-						if m then
-							K += 1
-						end
-					end
-				end
-			end
-			StatusTyrant.SetText("Tyrant Eyes: " .. tostring(K) .. " Eyes")
-			E = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("CakePrinceSpawner", true) or ""
-			if E and (E:find("open the portal now")) then
-				game.ReplicatedStorage.Remotes.CommF_:InvokeServer("CakePrinceSpawner")
-			end
-			StatusKatakuri.SetText("Cake Prince: " .. string.gsub(E, "%D", "") .. " Mobs")
-			Statusspy.SetText("Leviathan: " .. StatusCheckLeviathan())
-			if workspace.Map:FindFirstChild("MysticIsland") then
-				StatusMirage.SetText("Mirage Island: \226\156\133")
-			else
-				StatusMirage.SetText("Mirage Island: \226\157\140")
-			end
-			do
-				local kitsuneOn = false
-				pcall(function()
-					kitsuneOn = workspace.Map:FindFirstChild("KitsuneIsland") ~= nil
-						or workspace._WorldOrigin.Locations:FindFirstChild("Kitsune Island") ~= nil
-				end)
-				if kitsuneOn then
-					StatusKitsuneIsland.SetText("Kitsune Island: \240\159\159\162")
-				else
-					StatusKitsuneIsland.SetText("Kitsune Island: \226\157\140")
-				end
-			end
-			if not workspace.Map:FindFirstChild("PrehistoricIsland") then
-				StatusPrehistoricIsland.SetText("Prehistoric Island: \226\157\140")
-			else
-				StatusPrehistoricIsland.SetText("Prehistoric Island: \226\156\133")
-			end
-			if not workspace._WorldOrigin.Locations:FindFirstChild("Frozen Dimension") then
-				StatusFrozenDimension.SetText("Frozen Dimension: \226\157\140")
-			else
-				StatusFrozenDimension.SetText("Frozen Dimension: \226\156\133")
-			end
-			StatusGear.SetText("Ancient One: " .. CheckAcientOneStatus())
-			if getgenv().StatusGearDraco then
-				getgenv().StatusGearDraco.SetText("Draco: " .. CheckAcientOneDracoStatus())
-			end
-			StatusMoon.SetText("Moon Phase: " .. CheckMoon() .. " | " .. function8())
+task.spawn(function()
+	local Players = game:GetService("Players")
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	local function setLabel(label, value)
+		pcall(function() if label then label.SetText(tostring(value)) end end)
+	end
+	while task.wait(1) do
+		-- Timers are independent so one unavailable remote/status cannot freeze the whole panel.
+		pcall(function()
+			local elapsed = math.max(0, workspace.DistributedGameTime)
+			local h = math.floor(elapsed / 3600)
+			local m = math.floor(elapsed % 3600 / 60)
+			local sec = math.floor(elapsed % 60)
+			setLabel(TimerLabel, string.format("Timer: %02dh %02dm %02ds", h, m, sec))
 		end)
+		pcall(function()
+			local locations = workspace:FindFirstChild("_WorldOrigin") and workspace._WorldOrigin:FindFirstChild("Locations")
+			local oldest, oldestTime
+			if locations then
+				for _, loc in ipairs(locations:GetChildren()) do
+					local t = loc:GetAttribute("TimeIn")
+					if type(t) == "number" and (not oldestTime or t < oldestTime) then oldest, oldestTime = loc, t end
+				end
+			end
+			if oldestTime then
+				local elapsedServer = math.max(0, tick() - 25200 - oldestTime)
+				local remain = 14400 - (elapsedServer % 14400)
+				local sh, sm, ss = math.floor(elapsedServer / 3600), math.floor(elapsedServer % 3600 / 60), math.floor(elapsedServer % 60)
+				local rh, rm, rs = math.floor(remain / 3600), math.floor(remain % 3600 / 60), math.floor(remain % 60)
+				setLabel(TimerServerLabel, string.format("Server Timer: %02dh %02dm %02ds", sh, sm, ss))
+				setLabel(NextTimerServerLabel, string.format("Next Time Spawn Fist of Darkness or God's Chalice: %02dh %02dm %02ds", rh, rm, rs))
+				if rh == 0 and rm == 0 and rs <= 5 then getgenv().GoCollectChest = true end
+			else
+				setLabel(TimerServerLabel, "Server Timer: waiting for server time")
+				setLabel(NextTimerServerLabel, "Next spawn estimate: waiting for server data")
+			end
+		end)
+		pcall(function()
+			setLabel(StatusEliteHunter, DetectEliteHunter() and "Elite: ✅ Spawned" or "Elite: ❌ Not spawned")
+		end)
+		pcall(function()
+			local eyes = 0
+			if game.PlaceId == getgenv().CheckPlaceId then
+				local map = workspace:FindFirstChild("Map")
+				local tiki = map and map:FindFirstChild("TikiOutpost")
+				local island = tiki and tiki:FindFirstChild("IslandModel")
+				if island then
+					for i = 1, 4 do
+						local eye = island:FindFirstChild("Eye" .. i, true)
+						if eye and eye.Transparency == 1 then eyes = eyes + 1 end
+					end
+				end
+			end
+			K = eyes
+			setLabel(StatusTyrant, "Tyrant Eyes: " .. tostring(eyes) .. "/4")
+		end)
+		pcall(function()
+			local remote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_")
+			if remote then
+				local result = remote:InvokeServer("CakePrinceSpawner", true)
+				local text = tostring(result or "Unknown")
+				setLabel(StatusKatakuri, "Cake Prince: " .. text:gsub("%D", "") .. " Mobs | " .. text)
+				if text:find("open the portal now", 1, true) then remote:InvokeServer("CakePrinceSpawner") end
+			end
+		end)
+		pcall(function() setLabel(Statusspy, "Leviathan: " .. tostring(StatusCheckLeviathan())) end)
+		pcall(function()
+			local map = workspace:FindFirstChild("Map")
+			local found = map and map:FindFirstChild("MysticIsland")
+			setLabel(StatusMirage, "Mirage Island: " .. (found and "✅ Spawned" or "❌ Not spawned"))
+		end)
+		pcall(function()
+			local map = workspace:FindFirstChild("Map")
+			local locs = workspace:FindFirstChild("_WorldOrigin") and workspace._WorldOrigin:FindFirstChild("Locations")
+			local found = (map and map:FindFirstChild("KitsuneIsland")) or (locs and locs:FindFirstChild("Kitsune Island"))
+			setLabel(StatusKitsuneIsland, "Kitsune Island: " .. (found and "✅ Spawned" or "❌ Not spawned"))
+		end)
+		pcall(function()
+			local map = workspace:FindFirstChild("Map")
+			local found = map and map:FindFirstChild("PrehistoricIsland")
+			setLabel(StatusPrehistoricIsland, "Prehistoric Island: " .. (found and "✅ Spawned" or "❌ Not spawned"))
+		end)
+		pcall(function()
+			local locs = workspace:FindFirstChild("_WorldOrigin") and workspace._WorldOrigin:FindFirstChild("Locations")
+			local found = locs and locs:FindFirstChild("Frozen Dimension")
+			setLabel(StatusFrozenDimension, "Frozen Dimension: " .. (found and "✅ Spawned" or "❌ Not spawned"))
+		end)
+		pcall(function() setLabel(StatusGear, "Ancient One: " .. tostring(CheckAcientOneStatus())) end)
+		pcall(function()
+			if getgenv().StatusGearDraco then getgenv().StatusGearDraco.SetText("Draco: " .. tostring(CheckAcientOneDracoStatus())) end
+		end)
+		pcall(function() setLabel(StatusMoon, "Moon Phase: " .. tostring(CheckMoon()) .. " | " .. tostring(function8())) end)
 	end
 end)
+
 LocalPlayerMain = Main.CreatePage({ Page_Name = "LocalPlayer", Page_Title = "LocalPlayer" })
 SectionLocalPlayerMain = LocalPlayerMain.CreateSection("Local Player")
 SectionLocalPlayerMain.CreateToggle(
@@ -5069,7 +4932,7 @@ spawn(function()
 		wait(1)
 	until SCGUI
 	K = Instance.new("ImageLabel", SCGUI)
-	K.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	K.BackgroundColor3 = Color3.fromRGB(4, 10, 26)
 	K.Position = UDim2.new(0, 0, 0, -50)
 	K.Size = UDim2.new(1, 0, 1, 50)
 	K.Visible = false
@@ -17315,12 +17178,8 @@ local function X(I, _)
 			if g.Z < 0 then
 				l.Velocity = l.Velocity - P.CFrame.LookVector * (g.Z * ((_ and vehicleflyspeed or iyflyspeed) * 50))
 			end
-			J.MouseButton1Click:Connect(function()
-				l.Velocity = Vector3.new(0, -20, 0)
-			end)
-			H.MouseButton1Click:Connect(function()
-				l.Velocity = Vector3.new(0, 20, 0)
-			end)
+            -- Não conectar eventos aqui: este código roda em todo RenderStepped e causava mini travadas.
+            -- Os botões de subir/descer não criam mais listeners duplicados a cada frame.
 		end
 	end)
 end
@@ -24174,14 +24033,14 @@ function EspFruit()
 	g.Parent = X
 	local g, f =
 		({
-			["Leopard Fruit"] = Color3.fromRGB(255, 170, 0),
+			["Leopard Fruit"] = Color3.fromRGB(255, 45, 65),
 			["Dragon (East) Fruit"] = Color3.fromRGB(255, 0, 0),
 			["Dragon (West) Fruit"] = Color3.fromRGB(255, 80, 80),
 			["Kitsune Fruit"] = Color3.fromRGB(200, 100, 255),
 			["Spirit Fruit"] = Color3.fromRGB(120, 200, 255),
 			["Venom Fruit"] = Color3.fromRGB(180, 60, 200),
-			["Dough Fruit"] = Color3.fromRGB(255, 220, 180),
-			["Light Fruit"] = Color3.fromRGB(255, 255, 150),
+			["Dough Fruit"] = Color3.fromRGB(145, 235, 255),
+			["Light Fruit"] = Color3.fromRGB(190, 250, 255),
 		})[s] or (Color3.fromRGB(255, 255, 255)),
 		Drawing.new("Text")
 	f.Visible = false
@@ -24522,9 +24381,8 @@ do
 		local h = currentHumanoid()
 		if h then hook(h); enforce(h) end
 	end
-	table.insert(conns, RunService.Stepped:Connect(onStep))
+	-- Uma única conexão por ciclo evita aplicar as mesmas configurações três vezes por frame.
 	table.insert(conns, RunService.Heartbeat:Connect(onStep))
-	pcall(function() table.insert(conns, RunService.RenderStepped:Connect(onStep)) end)
 	table.insert(conns, t.CharacterAdded:Connect(function(ch)
 		local h = ch:WaitForChild("Humanoid", 10)
 		if h then hook(h) end
@@ -28178,12 +28036,12 @@ rawset(_G, "RecoveredFunction_0276", RecoveredFunction_0276)
 end
 
 do
-local function RecoveredFunction_0287(...)local __args = {...};local b = __args[1];local Z = __args[5];return function()local Z=GetEspFruit();if not Z then return;end;local F,c=GetFruitName(Z),Z:FindFirstChild("Handle");if not c then return;end;local l=Instance.new("IntValue");l.Name="Ignored";l.Parent=c;local l,H=({["Leopard Fruit"]=Color3.fromRGB(255,170,0),["Dragon (East) Fruit"]=Color3.fromRGB(255,0,0),["Dragon (West) Fruit"]=Color3.fromRGB(255,80,80),["Kitsune Fruit"]=Color3.fromRGB(200,100,255),["Spirit Fruit"]=Color3.fromRGB(120,200,255),["Venom Fruit"]=Color3.fromRGB(180,60,200),["Dough Fruit"]=Color3.fromRGB(255,220,180),["Light Fruit"]=Color3.fromRGB(255,255,150)})[F]or(Color3.fromRGB(255,255,255)),Drawing.new("Text");H.Visible=false;H.Transparency=1;H.Text=F;H.Color=l;H.Size=20;H.Outline=true;H.OutlineColor=Color3.fromRGB(0,0,0);H.Center=true;H.Font=2;local M=Drawing.new("Square");M.Visible=false;M.Filled=true;M.Color=Color3.fromRGB(0,0,0);M.Transparency=0.4;spawn(function()repeat task.wait();if c then local S,Q=workspace.CurrentCamera:WorldToViewportPoint(c.Position);if Q then H.Text=F.." ["..math.round(b[1]:DistanceFromCharacter(c.Position)).."m]";H.Position=Vector2.new(S.X,S.Y-20);H.Color=l;H.Visible=true;local b=H.TextBounds;M.Position=Vector2.new(H.Position.X-b.X/-2,H.Position.Y-2);M.Size=Vector2.new(b.X+8,b.Y+4);M.Visible=true;else H.Visible=false;M.Visible=false;end;end;until not Z or not Z.Parent or not c.Parent or not Settings["ESP Fruit"];H:Remove();M:Remove();if c:FindFirstChild("Ignored")then c.Ignored:Destroy();end;end);end;end
+local function RecoveredFunction_0287(...)local __args = {...};local b = __args[1];local Z = __args[5];return function()local Z=GetEspFruit();if not Z then return;end;local F,c=GetFruitName(Z),Z:FindFirstChild("Handle");if not c then return;end;local l=Instance.new("IntValue");l.Name="Ignored";l.Parent=c;local l,H=({["Leopard Fruit"]=Color3.fromRGB(255,45,65),["Dragon (East) Fruit"]=Color3.fromRGB(255,0,0),["Dragon (West) Fruit"]=Color3.fromRGB(255,80,80),["Kitsune Fruit"]=Color3.fromRGB(200,100,255),["Spirit Fruit"]=Color3.fromRGB(255, 125, 140),["Venom Fruit"]=Color3.fromRGB(180,60,200),["Dough Fruit"]=Color3.fromRGB(255, 165, 175),["Light Fruit"]=Color3.fromRGB(255, 220, 225)})[F]or(Color3.fromRGB(255,255,255)),Drawing.new("Text");H.Visible=false;H.Transparency=1;H.Text=F;H.Color=l;H.Size=20;H.Outline=true;H.OutlineColor=Color3.fromRGB(0,0,0);H.Center=true;H.Font=2;local M=Drawing.new("Square");M.Visible=false;M.Filled=true;M.Color=Color3.fromRGB(0,0,0);M.Transparency=0.4;spawn(function()repeat task.wait();if c then local S,Q=workspace.CurrentCamera:WorldToViewportPoint(c.Position);if Q then H.Text=F.." ["..math.round(b[1]:DistanceFromCharacter(c.Position)).."m]";H.Position=Vector2.new(S.X,S.Y-20);H.Color=l;H.Visible=true;local b=H.TextBounds;M.Position=Vector2.new(H.Position.X-b.X/-2,H.Position.Y-2);M.Size=Vector2.new(b.X+8,b.Y+4);M.Visible=true;else H.Visible=false;M.Visible=false;end;end;until not Z or not Z.Parent or not c.Parent or not Settings["ESP Fruit"];H:Remove();M:Remove();if c:FindFirstChild("Ignored")then c.Ignored:Destroy();end;end);end;end
 rawset(_G, "RecoveredFunction_0287", RecoveredFunction_0287)
 end
 
 do
-local function RecoveredFunction_0288()local Z=GetEspFruit();if not Z then return;end;local F,c=GetFruitName(Z),Z:FindFirstChild("Handle");if not c then return;end;local l=Instance.new("IntValue");l.Name="Ignored";l.Parent=c;local l,H=({["Leopard Fruit"]=Color3.fromRGB(255,170,0),["Dragon (East) Fruit"]=Color3.fromRGB(255,0,0),["Dragon (West) Fruit"]=Color3.fromRGB(255,80,80),["Kitsune Fruit"]=Color3.fromRGB(200,100,255),["Spirit Fruit"]=Color3.fromRGB(120,200,255),["Venom Fruit"]=Color3.fromRGB(180,60,200),["Dough Fruit"]=Color3.fromRGB(255,220,180),["Light Fruit"]=Color3.fromRGB(255,255,150)})[F]or(Color3.fromRGB(255,255,255)),Drawing.new("Text");H.Visible=false;H.Transparency=1;H.Text=F;H.Color=l;H.Size=20;H.Outline=true;H.OutlineColor=Color3.fromRGB(0,0,0);H.Center=true;H.Font=2;local M=Drawing.new("Square");M.Visible=false;M.Filled=true;M.Color=Color3.fromRGB(0,0,0);M.Transparency=0.4;spawn(function()repeat task.wait();if c then local S,Q=workspace.CurrentCamera:WorldToViewportPoint(c.Position);if Q then H.Text=F.." ["..math.round(b[1]:DistanceFromCharacter(c.Position)).."m]";H.Position=Vector2.new(S.X,S.Y-20);H.Color=l;H.Visible=true;local b=H.TextBounds;M.Position=Vector2.new(H.Position.X-b.X/-2,H.Position.Y-2);M.Size=Vector2.new(b.X+8,b.Y+4);M.Visible=true;else H.Visible=false;M.Visible=false;end;end;until not Z or not Z.Parent or not c.Parent or not Settings["ESP Fruit"];H:Remove();M:Remove();if c:FindFirstChild("Ignored")then c.Ignored:Destroy();end;end);end
+local function RecoveredFunction_0288()local Z=GetEspFruit();if not Z then return;end;local F,c=GetFruitName(Z),Z:FindFirstChild("Handle");if not c then return;end;local l=Instance.new("IntValue");l.Name="Ignored";l.Parent=c;local l,H=({["Leopard Fruit"]=Color3.fromRGB(255,45,65),["Dragon (East) Fruit"]=Color3.fromRGB(255,0,0),["Dragon (West) Fruit"]=Color3.fromRGB(255,80,80),["Kitsune Fruit"]=Color3.fromRGB(200,100,255),["Spirit Fruit"]=Color3.fromRGB(255, 125, 140),["Venom Fruit"]=Color3.fromRGB(180,60,200),["Dough Fruit"]=Color3.fromRGB(255, 165, 175),["Light Fruit"]=Color3.fromRGB(255, 220, 225)})[F]or(Color3.fromRGB(255,255,255)),Drawing.new("Text");H.Visible=false;H.Transparency=1;H.Text=F;H.Color=l;H.Size=20;H.Outline=true;H.OutlineColor=Color3.fromRGB(0,0,0);H.Center=true;H.Font=2;local M=Drawing.new("Square");M.Visible=false;M.Filled=true;M.Color=Color3.fromRGB(0,0,0);M.Transparency=0.4;spawn(function()repeat task.wait();if c then local S,Q=workspace.CurrentCamera:WorldToViewportPoint(c.Position);if Q then H.Text=F.." ["..math.round(b[1]:DistanceFromCharacter(c.Position)).."m]";H.Position=Vector2.new(S.X,S.Y-20);H.Color=l;H.Visible=true;local b=H.TextBounds;M.Position=Vector2.new(H.Position.X-b.X/-2,H.Position.Y-2);M.Size=Vector2.new(b.X+8,b.Y+4);M.Visible=true;else H.Visible=false;M.Visible=false;end;end;until not Z or not Z.Parent or not c.Parent or not Settings["ESP Fruit"];H:Remove();M:Remove();if c:FindFirstChild("Ignored")then c.Ignored:Destroy();end;end);end
 rawset(_G, "RecoveredFunction_0288", RecoveredFunction_0288)
 end
 
