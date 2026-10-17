@@ -1927,18 +1927,60 @@ function Nexora.CreateMain(config)
             return nil
         end
         local target
+        local function prepareWholeWindow()
+            if not target then return end
+            local hub = target:FindFirstChild("Hub", true)
+            if hub and hub:IsA("GuiObject") then
+                -- Reabre o painel inteiro, mesmo se o botão '-' da Redz tiver
+                -- deixado a janela minimizada antes de ocultar a ScreenGui.
+                hub.Visible = true
+                hub.Size = UDim2.fromOffset(550, 380)
+                local components = hub:FindFirstChild("Components")
+                if components then
+                    local tabs = components:FindFirstChild("Tab Scroll")
+                    local containers = components:FindFirstChild("Containers")
+                    if tabs then tabs.Visible = true end
+                    if containers then containers.Visible = true end
+                end
+                local sizeControl = hub:FindFirstChild("Control Hub Size")
+                local tabControl = hub:FindFirstChild("Control Tab Size")
+                if sizeControl then sizeControl.Visible = true end
+                if tabControl then tabControl.Visible = true end
+            end
+        end
         btn.Activated:Connect(function()
             target = target and target.Parent and target or findWindowGui()
             if target then
-                target.Enabled = not target.Enabled
+                if target.Enabled then
+                    target.Enabled = false
+                else
+                    prepareWholeWindow()
+                    target.Enabled = true
+                end
             else
-                -- Retry briefly in case Redz is still building its ScreenGui.
                 for _=1,20 do
                     task.wait(0.25)
                     target = findWindowGui()
-                    if target then target.Enabled = not target.Enabled; return end
+                    if target then prepareWholeWindow(); target.Enabled = true; return end
                 end
                 warn("[Nexora] Não encontrei a ScreenGui da Redz para abrir/fechar.")
+            end
+        end)
+        -- O botão '-' padrão da Redz normalmente só reduz a janela à barra do título.
+        -- Para Nexora, ele oculta a ScreenGui inteira; o botão flutuante reabre tudo.
+        task.spawn(function()
+            for _=1,80 do
+                target = target and target.Parent and target or findWindowGui()
+                local minimize = target and target:FindFirstChild("Minimize", true)
+                if minimize and minimize:IsA("GuiButton") then
+                    minimize.Activated:Connect(function()
+                        task.defer(function()
+                            if target and target.Parent then target.Enabled = false end
+                        end)
+                    end)
+                    return
+                end
+                task.wait(0.25)
             end
         end)
     end)
@@ -2082,19 +2124,16 @@ function Nexora.CreateMain(config)
                     default=selected
                 elseif default==nil then default=values[1] end
                 local control
-                if multi then
-                    -- Stable multi-select independent of the dropdown implementation in the
-                    -- fetched Redz V5 build. Each item has its own toggle, preserving all
-                    -- existing callback(item, state) and SaveSettings(title, item, state) calls.
+                if multi and (title == "Select Sea Events" or title == "Select Weapons Fix Lava") then
+                    -- Apenas estas duas listas permanecem expandidas em toggles individuais.
                     control = {Items = {}, Selected = default}
                     for _, item in ipairs(values) do
-                        local optionName = item -- isolate the loop value for the callback closure
+                        local optionName = item
                         local itemName = title .. " | " .. optionName
-                        local itemDefault = default[optionName] == true
                         local itemControl = safe(tab.AddToggle, tab, {
                             Title=itemName, Name=itemName,
                             Desc="Seleção múltipla • " .. title,
-                            Default=itemDefault,
+                            Default=default[optionName] == true,
                             Callback=function(v)
                                 default[optionName] = not not v
                                 control.Selected[optionName] = not not v
@@ -2103,6 +2142,29 @@ function Nexora.CreateMain(config)
                         })
                         control.Items[optionName] = itemControl
                     end
+                elseif multi then
+                    -- A Redz V5 original não implementa MultiSelect no AddDropdown.
+                    -- Usamos um dropdown nativo como lista: selecionar um item alterna
+                    -- apenas esse item, preservando os outros selecionados e o callback antigo.
+                    local firstSelected
+                    for _, item in ipairs(values) do
+                        if default[item] == true then firstSelected = item; break end
+                    end
+                    local previousSelection = firstSelected or values[1]
+                    control = safe(tab.AddDropdown, tab, {
+                        Title=title, Name=title, Options=values,
+                        Default=previousSelection,
+                        Callback=function(v)
+                            local item = tostring(v or "")
+                            if item == "" or default[item] == nil then return end
+                            local enabled = not (default[item] == true)
+                            default[item] = enabled
+                            if callback then task.spawn(function() safe(callback, item, enabled) end) end
+                            previousSelection = item
+                        end
+                    })
+                    control = control or {}
+                    control.Selected = default
                 else
                     control=safe(tab.AddDropdown,tab,{Title=title,Name=title,Options=values,Default=default,Callback=function(v)
                         if callback then task.spawn(function() safe(callback,v) end) end
@@ -2111,10 +2173,19 @@ function Nexora.CreateMain(config)
                 local opt=register(title,"dropdown",default,callback,control,name,sectionName)
                 opt.GetNewList=function(_,newList)
                     if multi and type(newList)=="table" then
-                        for item, itemControl in pairs(control.Items) do
+                        for _, item in ipairs(values) do
                             local enabled = newList[item] == true
                             default[item] = enabled
-                            if itemControl and type(itemControl.Set) == "function" then safe(itemControl.Set,itemControl,enabled) end
+                            if control.Items then
+                                local itemControl = control.Items[item]
+                                if itemControl and type(itemControl.Set) == "function" then safe(itemControl.Set,itemControl,enabled) end
+                            end
+                        end
+                        if control.Selected then control.Selected = default end
+                        if control and type(control.Set) == "function" then
+                            local selectedList = {}
+                            for _, item in ipairs(values) do if default[item] then table.insert(selectedList,item) end end
+                            safe(control.Set,control,selectedList)
                         end
                     elseif control and type(control.Set) == "function" then safe(control.Set,control,newList) end
                 end
