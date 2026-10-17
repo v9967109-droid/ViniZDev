@@ -17158,9 +17158,18 @@ BoatSettingSection.CreateToggle({ Title = "Fly Boat", Desc = nil, Default = Sett
 end)
 R = Settings["Value Speed Fly Boat"]
 BoatSettingSection.CreateSlider(
-	{ Title = "Value Speed Boat", Min = 0, Max = 300, Default = math.min(tonumber(Settings["Value Speed Boat"]) or 300, 300), Precise = true },
+	{ Title = "Value Speed Boat", Min = 0, Max = 300, Default = math.clamp(tonumber(Settings["Value Speed Boat"]) or 300, 0, 300), Precise = true },
 	function(b)
-		SaveSettings("Value Speed Boat", b)
+		local speed = math.clamp(tonumber(b) or 300, 0, 300)
+		SaveSettings("Value Speed Boat", speed)
+		-- Aplica a alteração imediatamente ao barco atual, inclusive quando a velocidade diminui.
+		task.defer(function()
+			pcall(function()
+				local boat = checkboat()
+				local seat = boat and boat:FindFirstChild("VehicleSeat")
+				if seat then seat.MaxSpeed = speed end
+			end)
+		end)
 	end
 )
 BoatSettingSection.CreateSlider(
@@ -17192,19 +17201,17 @@ BoatSettingSection.CreateSlider(
 	end
 )
 function checkSpeedboat()
-	local b, s = math.clamp(tonumber(Settings["Value Speed Boat"]) or 300, 0, 300), checkboat()
-	if s then
-		local X = s:FindFirstChild("VehicleSeat")
-		if X and X.MaxSpeed + 1 < b then
-			return s
-		end
-	end
+	-- Retorna o barco atual independentemente da velocidade anterior; isso permite diminuir ou aumentar.
+	local boat = checkboat()
+	if boat and boat:FindFirstChild("VehicleSeat") then return boat end
 	return false
 end
 function ChangeSpeedBoat()
-	local b, s = math.clamp(tonumber(Settings["Value Speed Boat"]) or 300, 0, 300), checkSpeedboat()
-	if s then
-		s.VehicleSeat.MaxSpeed = math.clamp(b, 0, 300)
+	local speed = math.clamp(tonumber(Settings["Value Speed Boat"]) or 300, 0, 300)
+	local boat = checkSpeedboat()
+	local seat = boat and boat:FindFirstChild("VehicleSeat")
+	if seat and seat.MaxSpeed ~= speed then
+		seat.MaxSpeed = speed
 	end
 end
 BoatSettingSection.CreateToggle(
@@ -24326,8 +24333,13 @@ do
 		local h = currentHumanoid()
 		if h then hook(h); enforce(h) end
 	end
-	-- Uma única conexão por ciclo evita aplicar as mesmas configurações três vezes por frame.
-	table.insert(conns, RunService.Heartbeat:Connect(onStep))
+	-- Fallback limitado a 5 verificações/s em vez de executar a cada frame.
+	task.spawn(function()
+		while getgenv().__MoveGen == gen do
+			task.wait(0.2)
+			if getgenv().__MoveGen == gen then onStep() end
+		end
+	end)
 	table.insert(conns, t.CharacterAdded:Connect(function(ch)
 		local h = ch:WaitForChild("Humanoid", 10)
 		if h then hook(h) end
