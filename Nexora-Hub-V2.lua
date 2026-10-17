@@ -32,8 +32,8 @@ do
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, logo)
 		mk("UIStroke", {Color=GOLD, Thickness=2}, logo)
 		mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,2), Size=UDim2.new(1,0,0,13), Text="♛", TextColor3=Color3.fromRGB(80, 180, 255), Font=Enum.Font.GothamBold, TextSize=12}, logo)
-		local n = mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,10), Size=UDim2.new(1,0,1,-12), Text="N", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.GothamBlack, TextSize=26}, logo)
-		mk("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 140, 255))}, n)
+		local n = mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,10), Size=UDim2.new(1,0,1,-12), Text="N", TextColor3=Color3.fromRGB(105, 210, 255), Font=Enum.Font.GothamBlack, TextSize=26}, logo)
+		mk("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(180, 240, 255), Color3.fromRGB(40, 145, 255))}, n)
 		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,64), Size=UDim2.fromOffset(220,20), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.GothamBlack, TextSize=16}, card)
 		local track = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,92), Size=UDim2.fromOffset(150,3), BackgroundColor3=Color3.fromRGB(30,28,24), BorderSizePixel=0}, card)
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, track)
@@ -1863,16 +1863,16 @@ local oldFloat = parentGui:FindFirstChild("NexoraFloat")
 if oldFloat then oldFloat:Destroy() end
 
 local C = {
-    -- Fundo preto e azul igual você pediu
-    bg = Color3.fromRGB(0, 0, 0),
-    panel = Color3.fromRGB(10, 10, 15),
-    panel2 = Color3.fromRGB(18, 18, 28),
-    line = Color3.fromRGB(0, 80, 180),
-    gold = Color3.fromRGB(0, 140, 255),
-    goldLight = Color3.fromRGB(80, 180, 255),
-    text = Color3.fromRGB(240, 245, 255),
-    muted = Color3.fromRGB(140, 150, 170),
-    green = Color3.fromRGB(0, 200, 255),
+    -- Nexora Blue Neon: inspirado no fundo azul geométrico enviado.
+    bg = Color3.fromRGB(5, 16, 48),
+    panel = Color3.fromRGB(9, 28, 70),
+    panel2 = Color3.fromRGB(13, 43, 94),
+    line = Color3.fromRGB(63, 160, 255),
+    gold = Color3.fromRGB(55, 177, 255),
+    goldLight = Color3.fromRGB(160, 230, 255),
+    text = Color3.fromRGB(245, 250, 255),
+    muted = Color3.fromRGB(160, 195, 225),
+    green = Color3.fromRGB(80, 220, 255),
 }
 
 local function make(class, props, parent)
@@ -1986,10 +1986,42 @@ function Nexora.CreateMain(config)
     local shell = make("Frame", {Name="Window", AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.new(0, persistedW, 0, persistedH), BackgroundColor3=C.bg, BorderSizePixel=0}, gui)
     corner(shell, 14); stroke(shell, Color3.fromRGB(255,255,255), 0.88)
     make("UIGradient", {Rotation = 135, Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
-        ColorSequenceKeypoint.new(0.52, Color3.fromRGB(0, 0, 0)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 10, 30)),
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(5, 20, 62)),
+        ColorSequenceKeypoint.new(0.52, Color3.fromRGB(7, 31, 82)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 8, 35)),
     })}, shell)
+    -- Fundo animado: brilho azul, pontos luminosos e quadrados/losangos flutuantes.
+    local ambience = make("Frame", {Name="BlueNeonAmbience", Size=UDim2.fromScale(1,1), BackgroundTransparency=1, ClipsDescendants=true, ZIndex=1}, shell)
+    local function addGlow(x,y,size,transparency)
+        local dot = make("Frame", {AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(x,y), Size=UDim2.fromOffset(size,size), BackgroundColor3=Color3.fromRGB(65,175,255), BackgroundTransparency=transparency or .55, BorderSizePixel=0, ZIndex=1}, ambience)
+        corner(dot, size)
+        local st = make("UIStroke", {Color=Color3.fromRGB(120,220,255), Thickness=1, Transparency=.45}, dot)
+        task.spawn(function()
+            while dot.Parent do
+                local target = UDim2.fromScale(math.clamp(x + math.random(-5,5)/100, .02, .98), math.clamp(y + math.random(-5,5)/100, .02, .98))
+                local tw = TweenService:Create(dot, TweenInfo.new(math.random(18,32)/10, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Position=target, BackgroundTransparency=.72})
+                tw:Play(); tw.Completed:Wait()
+                if not dot.Parent then break end
+                TweenService:Create(dot, TweenInfo.new(1.2, Enum.EasingStyle.Sine), {BackgroundTransparency=transparency or .55}):Play()
+                task.wait(.15)
+            end
+        end)
+        return dot
+    end
+    for i=1,18 do
+        addGlow(math.random(4,96)/100, math.random(5,95)/100, math.random(3,7), .48)
+    end
+    for i=1,9 do
+        local d = math.random(14,30)
+        local diamond = make("Frame", {AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(math.random(4,96)/100,math.random(5,95)/100), Size=UDim2.fromOffset(d,d), Rotation=45, BackgroundTransparency=1, BorderSizePixel=0, ZIndex=1}, ambience)
+        make("UIStroke", {Color=Color3.fromRGB(185,235,255), Thickness=1.3, Transparency=.2}, diamond)
+        task.spawn(function()
+            while diamond.Parent do
+                local tw = TweenService:Create(diamond, TweenInfo.new(math.random(22,36)/10, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Rotation=diamond.Rotation+math.random(15,50), Position=UDim2.fromScale(math.clamp(diamond.Position.X.Scale+math.random(-4,4)/100,.02,.98),math.clamp(diamond.Position.Y.Scale+math.random(-4,4)/100,.02,.98))})
+                tw:Play(); tw.Completed:Wait(); task.wait(.1)
+            end
+        end)
+    end
     local scale = make("UIScale", {Scale = 1}, shell)
     local function fitScale()
         local cam = workspace.CurrentCamera
@@ -2003,19 +2035,23 @@ function Nexora.CreateMain(config)
         scale.Scale = fitScale()
     end
     resize()
+    shell.Position = UDim2.new(.5, 0, .5, 14)
+    scale.Scale = fitScale() * .94
+    TweenService:Create(shell, TweenInfo.new(.42, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position=UDim2.fromScale(.5,.5)}):Play()
+    TweenService:Create(scale, TweenInfo.new(.42, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale=fitScale()}):Play()
     if workspace.CurrentCamera then workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(resize) end
 
     local HEADER_H, SIDEBAR_W = 64, 190
     local GOLD, GOLD_L, GRAY = Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255), Color3.fromRGB(165,165,174)
-    local top = make("Frame", {Size=UDim2.new(1,0,0,HEADER_H), BackgroundColor3=Color3.fromRGB(10,10,14), BorderSizePixel=0}, shell)
+    local top = make("Frame", {Size=UDim2.new(1,0,0,HEADER_H), BackgroundColor3=Color3.fromRGB(5,16,48), BorderSizePixel=0}, shell)
     corner(top, 12)
     make("UIGradient", {Rotation=0, Color=ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 15, 40)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(13,13,18)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(8,8,11)),
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(8, 58, 135)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(8, 30, 76)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(4, 15, 48)),
     })}, top)
     -- cobre os cantos de baixo do header e desenha a linha dourada
-    make("Frame", {Position=UDim2.new(0,0,1,-12), Size=UDim2.new(1,0,0,12), BackgroundColor3=Color3.fromRGB(10,10,14), BorderSizePixel=0}, top)
+    make("Frame", {Position=UDim2.new(0,0,1,-12), Size=UDim2.new(1,0,0,12), BackgroundColor3=Color3.fromRGB(7,24,62), BorderSizePixel=0}, top)
     do
         local hl = make("Frame", {Position=UDim2.new(0,0,1,-1), Size=UDim2.new(1,0,0,1), BackgroundColor3=GOLD, BackgroundTransparency=0, BorderSizePixel=0}, top)
         local hg = make("UIGradient", {Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,1),NumberSequenceKeypoint.new(0.5,0.1),NumberSequenceKeypoint.new(1,1)}), Offset=Vector2.new(-1,0)}, hl)
@@ -2027,7 +2063,7 @@ function Nexora.CreateMain(config)
             end
         end)
     end
-    local title = make("TextLabel", {Position=UDim2.new(0,18,0,10), Size=UDim2.new(0,300,0,26), BackgroundTransparency=1, RichText=true, Text='<font color="#FFFFFF">NEXORA</font> <font color="#008CFF">HUB</font>', TextColor3=Color3.fromRGB(255,255,255), Font=Enum.Font.GothamBlack, TextSize=22, TextXAlignment=Enum.TextXAlignment.Left}, top)
+    local title = make("TextLabel", {Position=UDim2.new(0,18,0,10), Size=UDim2.new(0,300,0,26), BackgroundTransparency=1, RichText=true, Text='<font color="#FFFFFF">NEXORA</font> <font color="#55B8FF">HUB</font>', TextColor3=Color3.fromRGB(255,255,255), Font=Enum.Font.GothamBlack, TextSize=22, TextXAlignment=Enum.TextXAlignment.Left}, top)
     local function tracked(t) return (string.gsub(string.upper(t), "(%S)", "%1\u{2009}")) end
     local desc = make("TextLabel", {Position=UDim2.new(0,19,0,37), Size=UDim2.new(0,300,0,16), BackgroundTransparency=1, Text=tracked(config.Subtitle or "Blox Fruits"), TextColor3=GRAY, Font=Enum.Font.GothamMedium, TextSize=10, TextXAlignment=Enum.TextXAlignment.Left}, top)
     -- 3 tracinhos removidos da UI como você pediu
@@ -2038,7 +2074,7 @@ function Nexora.CreateMain(config)
     local reopen = make("TextButton", {
         Name="NexoraFloatingButton",
         AutoButtonColor=false,
-        BackgroundColor3=Color3.fromRGB(20, 20, 25),
+        BackgroundColor3=Color3.fromRGB(5, 24, 65),
         BorderSizePixel=0,
         Size=UDim2.new(0, 145, 0, 36),
         Text="",
@@ -2046,10 +2082,10 @@ function Nexora.CreateMain(config)
     }, floatGui)
     reopen:SetAttribute("NexoraKeepColor", true)
     make("UICorner", {CornerRadius=UDim.new(0, 18)}, reopen)
-    make("UIStroke", {Color=Color3.fromRGB(60, 60, 65), Thickness=1, Transparency=0.3}, reopen)
+    make("UIStroke", {Color=Color3.fromRGB(90, 195, 255), Thickness=1.5, Transparency=0.12}, reopen)
     -- Ícone à esquerda (logo) - FIX N icon
     local iconFrame = make("Frame", {
-        BackgroundColor3=Color3.fromRGB(35, 35, 45),
+        BackgroundColor3=Color3.fromRGB(7, 49, 112),
         Size=UDim2.new(0, 24, 0, 24),
         Position=UDim2.new(0, 6, 0.5, -12),
         BorderSizePixel=0,
@@ -2075,7 +2111,7 @@ function Nexora.CreateMain(config)
         Position=UDim2.new(0, 2, 0, 2),
         Image="rbxassetid://18747094503",
         ScaleType=Enum.ScaleType.Fit,
-        ImageColor3=Color3.fromRGB(80, 180, 255),
+        ImageColor3=Color3.fromRGB(130, 220, 255),
         ZIndex=102,
         Visible=false
     }, iconFrame)
@@ -2268,7 +2304,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
         end
     end)
 
-    local sidebar = make("Frame", {Name="Sidebar", Position=UDim2.new(0,0,0,HEADER_H), Size=UDim2.new(0,SIDEBAR_W,1,-HEADER_H), BackgroundColor3=Color3.fromRGB(9,9,12), BorderSizePixel=0}, shell)
+    local sidebar = make("Frame", {Name="Sidebar", Position=UDim2.new(0,0,0,HEADER_H), Size=UDim2.new(0,SIDEBAR_W,1,-HEADER_H), BackgroundColor3=Color3.fromRGB(5,20,55), BorderSizePixel=0}, shell)
     make("Frame", {Position=UDim2.new(1,-1,0,0), Size=UDim2.new(0,1,1,0), BackgroundColor3=C.line, BorderSizePixel=0}, sidebar)
     make("UIStroke", {Color=Color3.fromRGB(245,245,245), Transparency=0.94, Thickness=1}, sidebar)
     local search = make("TextBox", {Position=UDim2.new(0,12,0,12), Size=UDim2.new(1,-24,0,32), BackgroundColor3=C.bg, BorderSizePixel=0, PlaceholderText="Pesquisar...", Text="", TextColor3=C.text, PlaceholderColor3=C.muted, Font=Enum.Font.Gotham, TextSize=11, ClearTextOnFocus=false}, sidebar); corner(search,7); stroke(search,C.line)
@@ -2399,7 +2435,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
         local p={name=pageName,frame=frame}
         pages[#pages+1]=p
         local navText = pageConfig.Page_Title or pageName
-        local nb = make("TextButton", {Name="Nav", AutoButtonColor=false, BackgroundColor3=Color3.fromRGB(22,22,28), BackgroundTransparency=1, BorderSizePixel=0, Size=UDim2.new(1,0,0,42), Text=""}, nav)
+        local nb = make("TextButton", {Name="Nav", AutoButtonColor=false, BackgroundColor3=Color3.fromRGB(8,31,75), BackgroundTransparency=1, BorderSizePixel=0, Size=UDim2.new(1,0,0,42), Text=""}, nav)
         corner(nb, 8)
         local bar = make("Frame", {Name="Bar", Position=UDim2.new(0,0,0,7), Size=UDim2.new(0,3,1,-14), BackgroundColor3=GOLD, BorderSizePixel=0, Visible=false}, nb); corner(bar, 2)
             do local ic = drawIcon(nb, iconKind(navText)); tintIcon(ic, GRAY, 0.4) end
@@ -28908,218 +28944,6 @@ __PASS38_NAMED_FUNCTIONS = {
     end
 end)()
 
-
-
-
--- PATCH: Farm Mastery Melee primeiro
-do
-    task.wait(1)
-    pcall(function()
-        if not Settings then return end
-        local function FixedHauntedCastleMasteryFarm()
-            if not Settings["Farm Mastery"] or not Settings["Start Farm"] then return end
-            local player = game:GetService("Players").LocalPlayer
-            local character = player and player.Character
-            local root = character and character:FindFirstChild("HumanoidRootPart")
-            if not root then return end
-            local masteryMobs = {"Reborn Skeleton", "Demonic Soul", "Living Zombie", "Possessed Mummy", "Posessed Mummy"}
-            local humanoid = character:FindFirstChildOfClass("Humanoid")
-            if not humanoid or humanoid.Health <= 0 then return end
-            local mob = nil
-            if DetectMob then mob = DetectMob(masteryMobs) end
-            if mob and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") then
-                if sizepart then sizepart(mob) end
-                pcall(function() if BringMob then BringMob(mob) end end)
-                local healthPercent = (Settings["Health %"] or 40) / 100
-                local mobHealth = mob.Humanoid.Health / mob.Humanoid.MaxHealth
-                local backpack = player:FindFirstChild("Backpack")
-                if mobHealth > healthPercent then
-                    local meleeName = NameWeapon and NameWeapon("Melee")
-                    if not meleeName and backpack then
-                        for _, tool in pairs(backpack:GetChildren()) do
-                            if tool:IsA("Tool") and tool.ToolTip == "Melee" then meleeName = tool.Name break end
-                        end
-                    end
-                    if meleeName then
-                        if backpack and backpack:FindFirstChild(meleeName) then character.Humanoid:EquipTool(backpack:FindFirstChild(meleeName)) end
-                        if toTarget then toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0)) end
-                        getgenv().AimPos = mob.HumanoidRootPart.CFrame
-                        pcall(function()
-                            local noAnim = Settings["Attack No Animation "] or Settings["Attack No Animation"]
-                            if noAnim then if AttackFunction then AttackFunction(60) end else if attackMelee then attackMelee(60) end end
-                            local t = character:FindFirstChild(meleeName) or character:FindFirstChildOfClass("Tool")
-                            if t then t:Activate() end
-                        end)
-                    end
-                else
-                    local method = Settings["Select Method Farm Mastery"] or "Blox Fruit"
-                    local toolName = NameWeapon and NameWeapon(method)
-                    if not toolName and backpack then
-                        for _, tool in pairs(backpack:GetChildren()) do
-                            if tool:IsA("Tool") and (tool.ToolTip == method or tool.Name == method) then toolName = tool.Name break end
-                        end
-                    end
-                    if toolName then
-                        if backpack:FindFirstChild(toolName) then character.Humanoid:EquipTool(backpack:FindFirstChild(toolName)) end
-                        if toTarget then
-                            if method == "Blox Fruit" then toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(-7, getgenv().YPosFruit or 20, 0)) else toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(7, 20, 0)) end
-                        end
-                        getgenv().AimPos = mob.HumanoidRootPart.CFrame
-                    end
-                end
-                return
-            end
-            local spawnPart = DetectPartSpawnMob and DetectNameTablePart and DetectPartSpawnMob(DetectNameTablePart(masteryMobs))
-            if spawnPart then if toTarget then toTarget(spawnPart.CFrame * CFrame.new(0, 60, 0)) end else if toTarget then toTarget(CFrame.new(-9509.34961, 142.130661, 5535.16309)) end end
-        end
-        getgenv().HauntedCastleMasteryFarm = FixedHauntedCastleMasteryFarm
-        _G.HauntedCastleMasteryFarm = FixedHauntedCastleMasteryFarm
-        HauntedCastleMasteryFarm = FixedHauntedCastleMasteryFarm
-    end)
-end
-
-
-
--- NOVO FUNDO NA UI - substitui o preto por um fundo estilizado
-pcall(function()
-    task.wait(0.5)
-    local function applyNewBackground()
-        local player = game:GetService("Players").LocalPlayer
-        local gui = nil
-        -- Tenta achar a UI do Nexora Hub
-        local host = (gethui and gethui()) or game:GetService("CoreGui")
-        for _, g in pairs(host:GetChildren()) do
-            if g.Name:find("Nexora") and g:FindFirstChild("Shell") then
-                gui = g
-                break
-            end
-        end
-        if not gui then
-            for _, g in pairs(player.PlayerGui:GetChildren()) do
-                if g.Name:find("Nexora") and g:FindFirstChild("Shell") then
-                    gui = g
-                    break
-                end
-            end
-        end
-        if not gui then return end
-        
-        local shell = gui:FindFirstChild("Shell")
-        if not shell then return end
-        
-        -- Muda o fundo da shell de preto pra um azul escuro estilizado
-        shell.BackgroundColor3 = Color3.fromRGB(12, 16, 28)
-        shell.BackgroundTransparency = 0.15
-        
-        -- Adiciona um gradiente de fundo
-        local bgGradient = Instance.new("UIGradient")
-        bgGradient.Color = ColorSequence.new{
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(15, 20, 35)),
-            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(10, 15, 25)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 12, 20))
-        }
-        bgGradient.Rotation = 90
-        bgGradient.Parent = shell
-        
-        -- Adiciona uma imagem de fundo sutil (pattern)
-        local bgImage = Instance.new("ImageLabel")
-        bgImage.Name = "NewBackgroundImage"
-        bgImage.Size = UDim2.new(1, 0, 1, 0)
-        bgImage.Position = UDim2.new(0, 0, 0, 0)
-        bgImage.BackgroundTransparency = 1
-        bgImage.Image = "rbxassetid://6073628839" -- Pattern sutil
-        bgImage.ImageTransparency = 0.92
-        bgImage.ImageColor3 = Color3.fromRGB(0, 140, 255)
-        bgImage.ScaleType = Enum.ScaleType.Tile
-        bgImage.TileSize = UDim2.new(0, 200, 0, 200)
-        bgImage.ZIndex = 0
-        bgImage.Parent = shell
-        
-        -- Adiciona borda neon azul
-        local stroke = shell:FindFirstChildOfClass("UIStroke")
-        if not stroke then
-            stroke = Instance.new("UIStroke")
-            stroke.Parent = shell
-        end
-        stroke.Color = Color3.fromRGB(0, 140, 255)
-        stroke.Thickness = 1.5
-        stroke.Transparency = 0.3
-        
-        -- Adiciona glow azul nos cantos
-        local glow = Instance.new("ImageLabel")
-        glow.Name = "BlueGlow"
-        glow.Size = UDim2.new(1, 0, 1, 0)
-        glow.Position = UDim2.new(0, 0, 0, 0)
-        glow.BackgroundTransparency = 1
-        glow.Image = "rbxassetid://5028857084"
-        glow.ImageColor3 = Color3.fromRGB(0, 140, 255)
-        glow.ImageTransparency = 0.85
-        glow.ScaleType = Enum.ScaleType.Slice
-        glow.SliceCenter = Rect.new(100, 100, 100, 100)
-        glow.ZIndex = 0
-        glow.Parent = shell
-        
-        -- Muda o fundo das tabs também (não fica tudo preto)
-        for _, child in pairs(shell:GetDescendants()) do
-            if child:IsA("Frame") and child.Name == "Content" then
-                child.BackgroundColor3 = Color3.fromRGB(14, 18, 30)
-                child.BackgroundTransparency = 0.2
-                local grad = Instance.new("UIGradient")
-                grad.Color = ColorSequence.new{
-                    ColorSequenceKeypoint.new(0, Color3.fromRGB(16, 20, 32)),
-                    ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 14, 24))
-                }
-                grad.Rotation = 90
-                grad.Parent = child
-            end
-            if child:IsA("Frame") and child.Name:find("Sidebar") then
-                child.BackgroundColor3 = Color3.fromRGB(10, 14, 24)
-                child.BackgroundTransparency = 0.1
-            end
-        end
-        
-        print("[NEXORA] Novo fundo da UI aplicado!")
-    end
-    
-    -- Aplica agora e tenta novamente após 2 segundos (caso UI ainda não tenha carregado)
-    applyNewBackground()
-    task.delay(2, applyNewBackground)
-    task.delay(4, applyNewBackground)
-end)
-
--- Também injeta na criação da UI library pra novos UIs
-do
-    local oldMake = nil
-    -- Tenta interceptar a função make da biblioteca
-    pcall(function()
-        if getgenv().NexoraUI then
-            local ui = getgenv().NexoraUI
-            if ui.CreateWindow then
-                local oldCreate = ui.CreateWindow
-                ui.CreateWindow = function(...)
-                    local window = oldCreate(...)
-                    task.spawn(function()
-                        task.wait(0.3)
-                        pcall(function()
-                            if window and window.Shell then
-                                window.Shell.BackgroundColor3 = Color3.fromRGB(12, 16, 28)
-                                window.Shell.BackgroundTransparency = 0.15
-                                local grad = Instance.new("UIGradient")
-                                grad.Color = ColorSequence.new{
-                                    ColorSequenceKeypoint.new(0, Color3.fromRGB(15, 20, 35)),
-                                    ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 12, 20))
-                                }
-                                grad.Rotation = 90
-                                grad.Parent = window.Shell
-                            end
-                        end)
-                    end)
-                    return window
-                end
-            end
-        end
-    end)
-end
 
 
 -- Restaura os toggles ativos (UI + callback) pelo mesmo caminho do clique manual.
