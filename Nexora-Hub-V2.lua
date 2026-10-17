@@ -28911,64 +28911,54 @@ end)()
 
 
 
--- PATCH: Select Weapon equipa Tool + Farm Mastery pega Melee pra dar dano até % e troca pra Select Method
+-- PATCH FINAL: Farm Mastery pega Melee primeiro pra dar dano até % e depois pega Tool do Select Method
 do
-    task.wait(1)
+    task.wait(2)
     pcall(function()
-        if not Settings then return end
+        print("[NEXORA] Aplicando patch final Farm Mastery Melee...")
         
-        -- Fix UsedualFlock (Select Weapon no Setting Farm)
-        if UsedualFlock then
-            function UsedualFlock()
-                local weaponType = Settings["Select Weapon"] or "Melee"
-                pcall(function()
-                    local toolName = NameWeapon(weaponType)
-                    if toolName then
-                        equiptool(toolName)
-                    else
-                        local player = game:GetService("Players").LocalPlayer
-                        local backpack = player and player:FindFirstChild("Backpack")
-                        if backpack then
-                            for _, tool in pairs(backpack:GetChildren()) do
-                                if tool:IsA("Tool") and (tool.ToolTip == weaponType or tool.Name == weaponType) then
-                                    player.Character.Humanoid:EquipTool(tool)
-                                    break
-                                end
+        -- Override HauntedCastleMasteryFarm completamente
+        local function FixedHauntedCastleMasteryFarm()
+            if not Settings or not Settings["Farm Mastery"] or not Settings["Start Farm"] then return end
+            local player = game:GetService("Players").LocalPlayer
+            local character = player and player.Character
+            local root = character and character:FindFirstChild("HumanoidRootPart")
+            if not root then return end
+            
+            local masteryMobs = {"Reborn Skeleton", "Demonic Soul", "Living Zombie", "Possessed Mummy", "Posessed Mummy"}
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if not humanoid or humanoid.Health <= 0 then return end
+            
+            local mob = nil
+            if DetectMob then
+                mob = DetectMob(masteryMobs)
+            else
+                -- fallback procura manual
+                for _, m in pairs(game.Workspace.Enemies:GetChildren()) do
+                    if m:FindFirstChild("Humanoid") and m.Humanoid.Health > 0 then
+                        for _, name in pairs(masteryMobs) do
+                            if m.Name == name then
+                                mob = m
+                                break
                             end
                         end
                     end
-                end)
-            end
-        end
-        
-        -- Fix FarmMastery: pega Melee pra dar dano até % do slide, depois troca pra Select Method
-        local function FixedFarmMastery(V)
-            if not V or not V:FindFirstChild("Humanoid") or not V:FindFirstChild("HumanoidRootPart") then return end
-            getgenv().AimPos = V.HumanoidRootPart.CFrame
-            getgenv().TargetMob = V
-            
-            if not Settings["Farm Mastery"] then
-                UsedualFlock()
-                return
+                    if mob then break end
+                end
             end
             
-            local healthPercent = (Settings["Health %"] or 40) / 100
-            local mobHealth = V.Humanoid.Health / V.Humanoid.MaxHealth
-            
-            if mobHealth > healthPercent then
-                -- FASE 1: Pega Melee pra dar dano até % do slide
-                pcall(function()
-                    local player = game:GetService("Players").LocalPlayer
-                    local backpack = player and player:FindFirstChild("Backpack")
-                    local char = player and player.Character
+            if mob and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChild("Humanoid") then
+                if sizepart then sizepart(mob) end
+                pcall(function() if BringMob then BringMob(mob) end end)
+                
+                local healthPercent = (Settings["Health %"] or 40) / 100
+                local mobHealth = mob.Humanoid.Health / mob.Humanoid.MaxHealth
+                local backpack = player:FindFirstChild("Backpack")
+                
+                if mobHealth > healthPercent then
+                    -- FASE 1: Vida > % -> PEGA MELEE PRA DAR DANO
                     local meleeName = nil
-                    
-                    -- Tenta achar Melee por NameWeapon
-                    if NameWeapon then
-                        meleeName = NameWeapon("Melee")
-                    end
-                    
-                    -- Se não achou, procura manual na mochila
+                    if NameWeapon then meleeName = NameWeapon("Melee") end
                     if not meleeName and backpack then
                         for _, tool in pairs(backpack:GetChildren()) do
                             if tool:IsA("Tool") and tool.ToolTip == "Melee" then
@@ -28977,10 +28967,8 @@ do
                             end
                         end
                     end
-                    
-                    -- Se não achou, procura no character
-                    if not meleeName and char then
-                        for _, tool in pairs(char:GetChildren()) do
+                    if not meleeName and character then
+                        for _, tool in pairs(character:GetChildren()) do
                             if tool:IsA("Tool") and tool.ToolTip == "Melee" then
                                 meleeName = tool.Name
                                 break
@@ -28990,42 +28978,35 @@ do
                     
                     if meleeName then
                         -- Equipa Melee
-                        if backpack and backpack:FindFirstChild(meleeName) and char and char:FindFirstChild("Humanoid") then
-                            char.Humanoid:EquipTool(backpack:FindFirstChild(meleeName))
+                        if backpack and backpack:FindFirstChild(meleeName) then
+                            character.Humanoid:EquipTool(backpack:FindFirstChild(meleeName))
                         end
-                        getgenv().AimPos = V.HumanoidRootPart.CFrame
-                        -- Ataca com Melee
-                        local noAnim = Settings["Attack No Animation "] or Settings["Attack No Animation"]
-                        if noAnim then
-                            if AttackFunction then AttackFunction(60) end
-                        else
-                            if attackMelee then attackMelee(60) end
+                        -- Vai até o mob
+                        if toTarget then
+                            toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0))
                         end
-                        if char then
-                            local t = char:FindFirstChild(meleeName) or char:FindFirstChildOfClass("Tool")
-                            if t then pcall(function() t:Activate() end) end
-                        end
-                    else
-                        -- Fallback: tenta usar qualquer tool do Select Weapon
-                        local weaponType = Settings["Select Weapon"] or "Melee"
-                        local toolName = NameWeapon and NameWeapon(weaponType)
-                        if toolName then equiptool(toolName) end
+                        getgenv().AimPos = mob.HumanoidRootPart.CFrame
+                        -- Ataca
+                        pcall(function()
+                            local noAnim = Settings["Attack No Animation "] or Settings["Attack No Animation"]
+                            if noAnim then
+                                if AttackFunction then AttackFunction(60) end
+                            else
+                                if attackMelee then attackMelee(60) end
+                            end
+                            local t = character:FindFirstChild(meleeName) or character:FindFirstChildOfClass("Tool")
+                            if t then t:Activate() end
+                            if ClickM1 then ClickM1(mob) end
+                        end)
                     end
-                end)
-                return
-            else
-                -- FASE 2: Troca pra Tool do Select Method Farm Mastery pra farmar maestria
-                pcall(function()
+                else
+                    -- FASE 2: Vida <= % -> PEGA TOOL DO SELECT METHOD PRA FARMAR MAESTRIA
                     local method = Settings["Select Method Farm Mastery"]
-                    if not method or method == "" then return end
+                    if not method or method == "" then method = "Blox Fruit" end
                     
-                    local player = game:GetService("Players").LocalPlayer
-                    local backpack = player and player:FindFirstChild("Backpack")
-                    local char = player and player.Character
-                    if not backpack or not char then return end
-                    
-                    local toolName = NameWeapon and NameWeapon(method)
-                    if not toolName then
+                    local toolName = nil
+                    if NameWeapon then toolName = NameWeapon(method) end
+                    if not toolName and backpack then
                         for _, tool in pairs(backpack:GetChildren()) do
                             if tool:IsA("Tool") and (tool.ToolTip == method or tool.Name == method or string.find(tool.ToolTip or "", method, 1, true)) then
                                 toolName = tool.Name
@@ -29033,45 +29014,110 @@ do
                             end
                         end
                     end
-                    if not toolName then return end
                     
-                    if backpack:FindFirstChild(toolName) then
-                        char.Humanoid:EquipTool(backpack:FindFirstChild(toolName))
-                    end
-                    getgenv().AimPos = V.HumanoidRootPart.CFrame
-                    
-                    local toolObj = NameWeapon and NameWeapon(method, true)
-                    if not toolObj then
-                        toolObj = backpack:FindFirstChild(toolName) or char:FindFirstChild(toolName)
-                    end
-                    
-                    if method == "Gun" and char:FindFirstChild(toolName) then
-                        if ShootM1 then ShootM1(V) end
-                    end
-                    
-                    if toolObj and H then
-                        local skillKey = H(toolObj)
-                        if skillKey then
-                            local holdTime = Settings["Skill " .. skillKey .. " " .. toolObj.ToolTip] or 0.5
-                            local vim = game:GetService("VirtualInputManager")
-                            vim:SendKeyEvent(true, skillKey, false, game)
-                            if Settings["Use skill fast dont hold"] then
-                                task.wait(0.05)
+                    if toolName then
+                        if backpack:FindFirstChild(toolName) then
+                            character.Humanoid:EquipTool(backpack:FindFirstChild(toolName))
+                        end
+                        if toTarget then
+                            if method == "Blox Fruit" then
+                                toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(-7, getgenv().YPosFruit or 20, 0))
                             else
-                                task.wait(holdTime)
+                                toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(7, 20, 0))
                             end
-                            vim:SendKeyEvent(false, skillKey, false, game)
+                        end
+                        getgenv().AimPos = mob.HumanoidRootPart.CFrame
+                        -- Usa skill
+                        pcall(function()
+                            local toolObj = nil
+                            if NameWeapon then toolObj = NameWeapon(method, true) end
+                            if not toolObj then toolObj = backpack:FindFirstChild(toolName) or character:FindFirstChild(toolName) end
+                            if method == "Gun" and character:FindFirstChild(toolName) then
+                                if ShootM1 then ShootM1(mob) end
+                            end
+                            if toolObj and H then
+                                local skillKey = H(toolObj)
+                                if skillKey then
+                                    local holdTime = Settings["Skill " .. skillKey .. " " .. toolObj.ToolTip] or 0.5
+                                    local vim = game:GetService("VirtualInputManager")
+                                    vim:SendKeyEvent(true, skillKey, false, game)
+                                    if Settings["Use skill fast dont hold"] then
+                                        task.wait(0.05)
+                                    else
+                                        task.wait(holdTime)
+                                    end
+                                    vim:SendKeyEvent(false, skillKey, false, game)
+                                end
+                            end
+                            if ClickM1 then ClickM1(mob) end
+                        end)
+                    end
+                end
+                return
+            end
+            
+            -- Se não achou mob, vai pro spawn
+            local spawnPart = nil
+            if DetectPartSpawnMob and DetectNameTablePart then
+                spawnPart = DetectPartSpawnMob(DetectNameTablePart(masteryMobs))
+            end
+            if spawnPart then
+                if toTarget then toTarget(spawnPart.CFrame * CFrame.new(0, 60, 0)) end
+            else
+                if toTarget then toTarget(CFrame.new(-9509.34961, 142.130661, 5535.16309)) end
+            end
+        end
+        
+        -- Sobrescreve HauntedCastleMasteryFarm
+        getgenv().HauntedCastleMasteryFarm = FixedHauntedCastleMasteryFarm
+        _G.HauntedCastleMasteryFarm = FixedHauntedCastleMasteryFarm
+        HauntedCastleMasteryFarm = FixedHauntedCastleMasteryFarm
+        pcall(function() rawset(_G, "HauntedCastleMasteryFarm", FixedHauntedCastleMasteryFarm) end)
+        
+        -- Também sobrescreve FarmMastery pra garantir
+        local function FixedFarmMastery(V)
+            if not V then return end
+            getgenv().AimPos = V.HumanoidRootPart.CFrame
+            getgenv().TargetMob = V
+            -- Chama o Haunted fixado que já tem a lógica de Melee -> Method
+            -- Mas se for chamado direto, faz a mesma lógica
+            local healthPercent = (Settings["Health %"] or 40) / 100
+            if V:FindFirstChild("Humanoid") then
+                local mobHealth = V.Humanoid.Health / V.Humanoid.MaxHealth
+                local player = game:GetService("Players").LocalPlayer
+                local backpack = player and player:FindFirstChild("Backpack")
+                local char = player and player.Character
+                
+                if mobHealth > healthPercent then
+                    local meleeName = NameWeapon and NameWeapon("Melee")
+                    if not meleeName and backpack then
+                        for _, tool in pairs(backpack:GetChildren()) do
+                            if tool:IsA("Tool") and tool.ToolTip == "Melee" then meleeName = tool.Name break end
                         end
                     end
-                end)
+                    if meleeName and backpack and backpack:FindFirstChild(meleeName) and char then
+                        char.Humanoid:EquipTool(backpack:FindFirstChild(meleeName))
+                    end
+                else
+                    local method = Settings["Select Method Farm Mastery"] or "Blox Fruit"
+                    local toolName = NameWeapon and NameWeapon(method)
+                    if not toolName and backpack then
+                        for _, tool in pairs(backpack:GetChildren()) do
+                            if tool:IsA("Tool") and (tool.ToolTip == method or tool.Name == method) then toolName = tool.Name break end
+                        end
+                    end
+                    if toolName and backpack and backpack:FindFirstChild(toolName) and char then
+                        char.Humanoid:EquipTool(backpack:FindFirstChild(toolName))
+                    end
+                end
             end
         end
         
         getgenv().FarmMastery = FixedFarmMastery
         _G.FarmMastery = FixedFarmMastery
         FarmMastery = FixedFarmMastery
-        pcall(function() rawset(_G, "FarmMastery", FixedFarmMastery) end)
-        print("[NEXORA] Farm Mastery fix: pega Melee pra dar dano até % e troca pra Select Method")
+        
+        print("[NEXORA] Patch final aplicado: Melee primeiro até % e depois Select Method")
     end)
 end
 
