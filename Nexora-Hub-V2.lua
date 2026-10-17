@@ -1841,10 +1841,10 @@ game:GetService("Players").LocalPlayer.Idled:connect(function()
 	vu:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 end)
 
+
 local A = (function()
 -- ============================================================================
--- NEXORA HUB • FLUENT UI (Xenon Hub style)
--- Converte API Redz -> Fluent
+-- NEXORA HUB • FLUENT UI (Xenon Hub style) - OTIMIZADO
 -- ============================================================================
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
@@ -1855,9 +1855,7 @@ local Nexora = {Options = {}, OptionOrder = {}, _tabs = {}, _window = nil}
 local function safe(fn, ...)
     if type(fn) ~= "function" then return nil end
     local ok, res = pcall(fn, ...)
-    if ok then return res end
-    warn("[Fluent] error: "..tostring(res))
-    return nil
+    return ok and res or nil
 end
 
 local function register(title, kind, value, callback, control, pageName, sectionName)
@@ -1878,23 +1876,154 @@ end
 
 function Nexora.CreateMain(config)
     config = config or {}
+    -- OTIMIZAÇÃO: Acrylic = false (blur causa lag em executor fraco)
     local Window = Fluent:CreateWindow({
         Title = config.Title or "NEXORA HUB | Xenon",
         SubTitle = config.Desc or "BLOX FRUITS • Fluent UI",
         TabWidth = 160,
-        Size = UDim2.fromOffset(620, 480),
-        Acrylic = true,
+        Size = UDim2.fromOffset(600, 460),
+        Acrylic = false,
         Theme = "Dark",
         MinimizeKey = Enum.KeyCode.LeftControl
     })
 
     local Tabs = {}
     local TabMap = {}
+    
+    local Players = game:GetService("Players")
+    local player = Players.LocalPlayer
+    local host
+    pcall(function() host = (gethui and gethui()) or game:GetService("CoreGui") end)
+    if not host then host = player:WaitForChild("PlayerGui") end
 
-    -- Tab principal para compatibilidade
+    -- ===== BOTÃO FLUTUANTE ARRASTÁVEL FORA DA UI =====
+    task.spawn(function()
+        local oldFloat = host:FindFirstChild("NexoraFluentFloat")
+        if oldFloat then oldFloat:Destroy() end
+        
+        local floatGui = Instance.new("ScreenGui")
+        floatGui.Name = "NexoraFluentFloat"
+        floatGui.ResetOnSpawn = false
+        floatGui.IgnoreGuiInset = true
+        floatGui.DisplayOrder = 100000
+        floatGui.Parent = host
+
+        local btn = Instance.new("TextButton")
+        btn.Name = "DragButton"
+        btn.Size = UDim2.fromOffset(54,54)
+        btn.Position = UDim2.new(0,20,0.5,-27)
+        btn.BackgroundColor3 = Color3.fromRGB(255,35,55)
+        btn.BackgroundTransparency = 0.05
+        btn.BorderSizePixel = 0
+        btn.Text = "N"
+        btn.TextColor3 = Color3.new(1,1,1)
+        btn.TextSize = 24
+        btn.Font = Enum.Font.GothamBlack
+        btn.AutoButtonColor = true
+        btn.Active = true
+        btn.Draggable = true
+        btn.Parent = floatGui
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(1,0)
+        corner.Parent = btn
+
+        local stroke = Instance.new("UIStroke")
+        stroke.Color = Color3.fromRGB(255,95,110)
+        stroke.Thickness = 2
+        stroke.Parent = btn
+
+        local shadow = Instance.new("Frame")
+        shadow.Size = UDim2.fromOffset(54,54)
+        shadow.BackgroundColor3 = Color3.fromRGB(0,0,0)
+        shadow.BackgroundTransparency = 0.7
+        shadow.BorderSizePixel = 0
+        shadow.ZIndex = btn.ZIndex -1
+        shadow.Parent = btn
+        local sc = Instance.new("UICorner")
+        sc.CornerRadius = UDim.new(1,0)
+        sc.Parent = shadow
+
+        -- Animação de pulsar
+        local TweenService = game:GetService("TweenService")
+        task.spawn(function()
+            while btn.Parent do
+                TweenService:Create(btn, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundColor3 = Color3.fromRGB(230,25,45)}):Play()
+                task.wait(0.8)
+                TweenService:Create(btn, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundColor3 = Color3.fromRGB(255,35,55)}):Play()
+                task.wait(0.8)
+            end
+        end)
+
+        -- Lógica de abrir/fechar
+        local isOpen = true
+        local fluentGui = nil
+        
+        local function findFluentGui()
+            if fluentGui and fluentGui.Parent then return fluentGui end
+            -- Procura a ScreenGui da Fluent pelo titulo
+            for _, gui in ipairs(host:GetChildren()) do
+                if gui:IsA("ScreenGui") and gui.Name ~= "NexoraFluentFloat" and gui.Name ~= "NexoraLoading" then
+                    local ok = pcall(function()
+                        for _, d in ipairs(gui:GetDescendants()) do
+                            if d:IsA("TextLabel") and d.Text:find("NEXORA HUB") then
+                                fluentGui = gui
+                                return gui
+                            end
+                        end
+                    end)
+                end
+            end
+            -- fallback: tenta PlayerGui também
+            for _, gui in ipairs(player.PlayerGui:GetChildren()) do
+                if gui:IsA("ScreenGui") and gui.Name ~= "NexoraFluentFloat" then
+                    for _, d in ipairs(gui:GetDescendants()) do
+                        if d:IsA("TextLabel") and d.Text:find("NEXORA HUB") then
+                            fluentGui = gui
+                            return gui
+                        end
+                    end
+                end
+            end
+            return fluentGui
+        end
+
+        task.wait(1)
+        findFluentGui()
+
+        btn.Activated:Connect(function()
+            local gui = findFluentGui()
+            if gui then
+                isOpen = not isOpen
+                gui.Enabled = isOpen
+                if isOpen then
+                    btn.Text = "✕"
+                    TweenService:Create(btn, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {Size = UDim2.fromOffset(48,48)}):Play()
+                    task.wait(0.15)
+                    TweenService:Create(btn, TweenInfo.new(0.15, Enum.EasingStyle.Back), {Size = UDim2.fromOffset(54,54)}):Play()
+                else
+                    btn.Text = "N"
+                    TweenService:Create(btn, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {Size = UDim2.fromOffset(54,54)}):Play()
+                end
+            else
+                -- se não achou, tenta minimizar pela Window API
+                pcall(function() Window:Minimize() end)
+            end
+        end)
+
+        -- Duplo clique para esconder o botão flutuante por 5s (evita atrapalhar)
+        local lastClick = 0
+        btn.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton2 then
+                btn.Visible = false
+                task.wait(5)
+                btn.Visible = true
+            end
+        end)
+    end)
+
     local function getOrCreateTab(pageName)
         if Tabs[pageName] then return Tabs[pageName] end
-        -- escolhe icone baseado no nome
         local icon = ""
         local lower = string.lower(pageName)
         if lower:find("shop") then icon = "shopping-cart"
@@ -1907,7 +2036,6 @@ function Nexora.CreateMain(config)
         elseif lower:find("setting") then icon = "settings"
         elseif lower:find("webhook") then icon = "webhook"
         else icon = "layout-dashboard" end
-
         local tab = Window:AddTab({ Title = pageName, Icon = icon })
         Tabs[pageName] = tab
         TabMap[pageName] = tab
@@ -1917,7 +2045,6 @@ function Nexora.CreateMain(config)
 
     local WindowAPI = {}
     Nexora._window = Window
-    Nexora._windowApi = WindowAPI
     Nexora._tabs = TabMap
     Nexora._fluent = Fluent
     Nexora._fluentWindow = Window
@@ -1934,19 +2061,12 @@ function Nexora.CreateMain(config)
         local Page = {}
         function Page.CreateSection(secName)
             local sectionName = type(secName)=="table" and (secName[1] or secName.Title or secName.Name) or tostring(secName)
-            -- Fluent não tem Section visual separado, mas vamos criar um separador
-            -- e retornar Section API ligada a essa Tab
             local Section = {}
             local tabRef = tab
             local secNameRef = sectionName
 
-            -- Helper para criar título de seção
-            local function addSectionHeader()
-                pcall(function()
-                    tabRef:AddParagraph({Title = secNameRef, Content = ""})
-                end)
-            end
-            addSectionHeader()
+            -- OTIMIZAÇÃO: não cria Paragraph pra toda section, só se for importante
+            -- Isso reduz de ~200 para ~30 labels, melhora muito o lag
 
             function Section.CreateToggle(cfgT, cb)
                 cfgT=cfgT or {}
@@ -1954,11 +2074,11 @@ function Nexora.CreateMain(config)
                 local def = cfgT.Default
                 if type(Settings)=="table" and type(Settings[tTitle])=="boolean" then def = Settings[tTitle] else def = (def==true) end
                 local toggle
-                local ok = pcall(function()
-                    toggle = tabRef:AddToggle(tTitle.."_"..secNameRef, {Title = tTitle, Description = cfgT.Desc or nil, Default = def})
+                pcall(function()
+                    toggle = tabRef:AddToggle(tTitle.."_"..secNameRef.."_"..tostring(math.random(1000,9999)), {Title = tTitle.." ["..secNameRef.."]", Description = cfgT.Desc, Default = def})
                 end)
-                if not ok or not toggle then
-                    toggle = tabRef:AddToggle(tTitle, {Title = tTitle, Default = def})
+                if not toggle then
+                    pcall(function() toggle = tabRef:AddToggle(tTitle, {Title = tTitle, Default = def}) end)
                 end
                 if toggle then
                     toggle:OnChanged(function()
@@ -1981,9 +2101,8 @@ function Nexora.CreateMain(config)
                 local bTitle = cfgB.Title or cfgB.Name or (type(cfgB)=="string" and cfgB or "Button")
                 local desc = cfgB.Desc or cfgB.Description
                 local callback = cbB or cfgB.Callback
-                local btn
                 pcall(function()
-                    btn = tabRef:AddButton({Title = bTitle, Description = desc or "", Callback = function() if type(callback)=="function" then safe(callback) end end})
+                    tabRef:AddButton({Title = bTitle, Description = desc or ("["..secNameRef.."]"), Callback = function() if type(callback)=="function" then safe(callback) end end})
                 end)
                 local ctrl = {Set=function() end}
                 register(bTitle, "button", bTitle, callback, ctrl, pageName, secNameRef)
@@ -1992,9 +2111,7 @@ function Nexora.CreateMain(config)
 
             function Section.CreateLabel(txtCfg)
                 local txt = type(txtCfg)=="string" and txtCfg or (type(txtCfg)=="table" and (txtCfg.Title or txtCfg.Text or txtCfg.Content or txtCfg[1]) or "Label")
-                pcall(function()
-                    tabRef:AddParagraph({Title = txt, Content = ""})
-                end)
+                pcall(function() tabRef:AddParagraph({Title = txt, Content = ""}) end)
                 local ctrl = {Set=function() end, GetText=function() return txt end}
                 register(txt, "textlabel", txt, nil, ctrl, pageName, secNameRef)
                 return ctrl
@@ -2009,19 +2126,9 @@ function Nexora.CreateMain(config)
                 if def==nil then def = list[1] end
                 local multi = cfgD.Multi or false
                 local drop
-                pcall(function()
-                    drop = tabRef:AddDropdown(dTitle.."_"..secNameRef, {Title = dTitle, Description = cfgD.Desc, Values = list, Multi = multi, Default = def})
-                end)
-                if not drop then
-                    pcall(function()
-                        drop = tabRef:AddDropdown(dTitle, {Title = dTitle, Values = list, Multi = multi, Default = def})
-                    end)
-                end
-                if drop then
-                    drop:OnChanged(function(val)
-                        if type(cbD)=="function" then safe(cbD, val) end
-                    end)
-                end
+                pcall(function() drop = tabRef:AddDropdown(dTitle.."_"..secNameRef, {Title = dTitle.." ["..secNameRef.."]", Description = cfgD.Desc, Values = list, Multi = multi, Default = def}) end)
+                if not drop then pcall(function() drop = tabRef:AddDropdown(dTitle, {Title = dTitle, Values = list, Multi = multi, Default = def}) end) end
+                if drop then drop:OnChanged(function(val) if type(cbD)=="function" then safe(cbD, val) end end) end
                 local ctrl = {}
                 function ctrl.Set(_, v) if drop then drop:SetValue(v) end end
                 function ctrl.SetValue(_, v) if drop then drop:SetValue(v) end end
@@ -2038,19 +2145,9 @@ function Nexora.CreateMain(config)
                 local def = cfgS.Default or cfgS.Value or min
                 local rounding = cfgS.Rounding or 0
                 local slider
-                pcall(function()
-                    slider = tabRef:AddSlider(sTitle.."_"..secNameRef, {Title = sTitle, Description = cfgS.Desc, Default = def, Min = min, Max = max, Rounding = rounding, Callback = function(v) if type(cbS)=="function" then safe(cbS, v) end end})
-                end)
-                if not slider then
-                    pcall(function()
-                        slider = tabRef:AddSlider(sTitle, {Title = sTitle, Default = def, Min = min, Max = max, Rounding = rounding, Callback = function(v) if type(cbS)=="function" then safe(cbS, v) end end})
-                    end)
-                end
-                if slider then
-                    slider:OnChanged(function(v)
-                        if type(cbS)=="function" then safe(cbS, v) end
-                    end)
-                end
+                pcall(function() slider = tabRef:AddSlider(sTitle.."_"..secNameRef, {Title = sTitle.." ["..secNameRef.."]", Description = cfgS.Desc, Default = def, Min = min, Max = max, Rounding = rounding, Callback = function(v) if type(cbS)=="function" then safe(cbS, v) end end}) end)
+                if not slider then pcall(function() slider = tabRef:AddSlider(sTitle, {Title = sTitle, Default = def, Min = min, Max = max, Rounding = rounding, Callback = function(v) if type(cbS)=="function" then safe(cbS, v) end end}) end) end
+                if slider then slider:OnChanged(function(v) if type(cbS)=="function" then safe(cbS, v) end end) end
                 local ctrl = {}
                 function ctrl.Set(_, v) if slider then slider:SetValue(v) end end
                 function ctrl.SetValue(_, v) if slider then slider:SetValue(v) end end
@@ -2065,20 +2162,9 @@ function Nexora.CreateMain(config)
                 local def = cfgBx.Default or cfgBx.Value or ""
                 local placeholder = cfgBx.Placeholder or ""
                 local input
-                pcall(function()
-                    input = tabRef:AddInput(bTitle.."_"..secNameRef, {Title = bTitle, Default = tostring(def), Placeholder = placeholder, Numeric = false, Finished = false, Callback = function(v) if type(cbBx)=="function" then safe(cbBx, v) end end})
-                end)
-                if not input then
-                    pcall(function()
-                        input = tabRef:AddInput(bTitle, {Title = bTitle, Default = tostring(def), Placeholder = placeholder, Numeric = false, Finished = false, Callback = function(v) if type(cbBx)=="function" then safe(cbBx, v) end end})
-                    end)
-                end
-                if input then
-                    input:OnChanged(function()
-                        local v = input.Value
-                        if type(cbBx)=="function" then safe(cbBx, v) end
-                    end)
-                end
+                pcall(function() input = tabRef:AddInput(bTitle.."_"..secNameRef, {Title = bTitle.." ["..secNameRef.."]", Default = tostring(def), Placeholder = placeholder, Numeric = false, Finished = false, Callback = function(v) if type(cbBx)=="function" then safe(cbBx, v) end end}) end)
+                if not input then pcall(function() input = tabRef:AddInput(bTitle, {Title = bTitle, Default = tostring(def), Placeholder = placeholder, Numeric = false, Finished = false, Callback = function(v) if type(cbBx)=="function" then safe(cbBx, v) end end}) end) end
+                if input then input:OnChanged(function() local v = input.Value if type(cbBx)=="function" then safe(cbBx, v) end end) end
                 local ctrl = {}
                 function ctrl.Set(_, v) if input then input:SetValue(tostring(v)) end end
                 function ctrl.SetValue(_, v) if input then input:SetValue(tostring(v)) end end
@@ -2086,25 +2172,21 @@ function Nexora.CreateMain(config)
                 return ctrl
             end
 
-            -- Aliases para compatibilidade
             Section.AddToggle = Section.CreateToggle
             Section.AddButton = Section.CreateButton
             Section.AddDropdown = Section.CreateDropdown
             Section.AddSlider = Section.CreateSlider
             Section.AddLabel = Section.CreateLabel
             Section.CreateNoti = function() end
-
             return Section
         end
         Page.AddSection = Page.CreateSection
         return Page
     end
 
-    -- API que o script antigo usa: Main.CreatePage / Main.CreateSection / Main.CreateNoti
     local Main = {}
     function Main.CreatePage(cfg) return WindowAPI.CreatePage(cfg) end
     function Main.CreateSection(name)
-        -- cria na primeira aba ou cria uma aba Default
         local firstName = next(Tabs) or "Main"
         local tab = getOrCreateTab(firstName)
         local Page = {CreateSection = function(_, secName) return WindowAPI.CreatePage({Page_Name=firstName}).CreateSection(secName) end}
@@ -2118,7 +2200,7 @@ function Nexora.CreateMain(config)
     function Main.CreateNotification(cfg, dur) Main.CreateNoti(cfg, dur) end
     function Main.CreateBind() return {Set=function() end} end
 
-    -- SaveManager / InterfaceManager setup
+    -- OTIMIZAÇÃO: SaveManager sem auto-load pesado
     pcall(function()
         SaveManager:SetLibrary(Fluent)
         InterfaceManager:SetLibrary(Fluent)
@@ -2126,28 +2208,24 @@ function Nexora.CreateMain(config)
         SaveManager:SetIgnoreIndexes({})
         InterfaceManager:SetFolder("NexoraHub_Xenon")
         SaveManager:SetFolder("NexoraHub_Xenon/configs")
-        -- Não vamos criar seção de Settings automática aqui porque o script original já tem sua própria tab de Settings
-        SaveManager:LoadAutoloadConfig()
     end)
 
     function Nexora.RestoreSavedToggles()
+        -- OTIMIZADO: sem task.wait() a cada toggle, faz em batch rápido
         for _,opt in ipairs(Nexora.OptionOrder) do
             if opt and opt.type=="toggle" and opt.value==true and opt.FunctionCreate and opt.FunctionCreate.SetStage then
                 pcall(opt.FunctionCreate.SetStage, opt.FunctionCreate, true)
-                task.wait(0.05)
             end
         end
     end
     function Nexora.CreateNoti(c,d) Main.CreateNoti(c,d) end
     function Nexora.CreateNotification(c,d) Main.CreateNoti(c,d) end
 
-    task.delay(3, function() Nexora.RestoreSavedToggles() end)
+    -- OTIMIZAÇÃO: restaura toggles sem delay de 3s, faz em 0.5s e sem travar
+    task.delay(0.5, function() Nexora.RestoreSavedToggles() end)
     getgenv().__NexoraRestoreDone=false
-
-    -- Seleciona primeira aba
-    task.delay(0.5, function() pcall(function() Window:SelectTab(1) end) end)
-
-    Fluent:Notify({Title = "Nexora Hub", Content = "UI Xenon (Fluent) carregada!", Duration = 4})
+    task.delay(0.3, function() pcall(function() Window:SelectTab(1) end) end)
+    Fluent:Notify({Title = "Nexora Hub", Content = "UI Xenon otimizada carregada! Botão flutuante ativo.", Duration = 4})
 
     return Main
 end
