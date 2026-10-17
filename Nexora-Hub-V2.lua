@@ -2701,7 +2701,7 @@ do
 			if not container then
 				return
 			end
-			for _, model in ipairs(container:GetChildren()) do
+			for _, model in ipairs(container:GetDescendants()) do
 				if model:IsA("Model") and not model.Name:find("%[Raid Boss%]") then
 					local e = Known[CleanName(model.Name)]
 					if e then
@@ -4244,99 +4244,101 @@ function GetOldestLocation()
 	end
 	return m
 end
-spawn(function()
-	while wait(0.25) do
-		local R, R = pcall(function()
-			local m = game.workspace.DistributedGameTime
-			local E, l, Q = m % 60, math.floor(m / 60 % 60), math.floor(m / 3600)
-			TimerLabel.SetText(string.format("Timer: %.0fh %.0fm %.0fs", Q, l, E))
-			l = GetOldestLocation()
-			if l then
-				Q = l:GetAttribute("TimeIn")
-				E, m = tick() - 25200 - Q, 14400
-				math.floor(E / m)
-				local S = m - E % m
-				local m, L, d, I, _, o =
-					math.floor(S / 3600),
-					math.floor(S % 3600 / 60),
-					math.floor(S % 60),
-					math.floor(E / 3600),
-					math.floor(E % 3600 / 60),
-					math.floor(E % 60)
-				TimerServerLabel.SetText(string.format("Server Timer: %.0fh %.0fm %.0fs", I, _, o))
-				NextTimerServerLabel.SetText(
-					string.format("Next Time Spawn Fist of Darkness or God's Chalice: %.0fh %.0fm %.0fs", m, L, d)
-				)
-				if tonumber(m) == 0 and tonumber(L) == 0 and tonumber(d) <= 5 then
-					getgenv().GoCollectChest = true
-				end
-			end
-			if DetectEliteHunter() then
-				StatusEliteHunter.SetText("Elite Hunter: \226\156\133")
-			else
-				StatusEliteHunter.SetText("Elite Hunter: \226\157\140")
-			end
-			if game.PlaceId == getgenv().CheckPlaceId then
-				K = 0
-				Q = workspace.Map:FindFirstChild("TikiOutpost") and workspace.Map.TikiOutpost.IslandModel
-				if Q then
-					l = {}
-					for m = 1, 4, 1 do
-						E = Q:FindFirstChild("Eye" .. m, true)
-						if E then
-							table.insert(l, E)
-						end
-					end
-					for m, Q in ipairs(l) do
-						m = Q.Transparency == 1 and K < 4
-						if m then
-							K += 1
-						end
-					end
-				end
-			end
-			StatusTyrant.SetText("Tyrant Eyes: " .. tostring(K) .. " Eyes")
-			E = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("CakePrinceSpawner", true) or ""
-			if E and (E:find("open the portal now")) then
-				game.ReplicatedStorage.Remotes.CommF_:InvokeServer("CakePrinceSpawner")
-			end
-			StatusKatakuri.SetText("Cake Prince: " .. string.gsub(E, "%D", "") .. " Mobs")
-			Statusspy.SetText("Leviathan: " .. StatusCheckLeviathan())
-			if workspace.Map:FindFirstChild("MysticIsland") then
-				StatusMirage.SetText("Mirage Island: \226\156\133")
-			else
-				StatusMirage.SetText("Mirage Island: \226\157\140")
-			end
-			do
-				local kitsuneOn = false
-				pcall(function()
-					kitsuneOn = workspace.Map:FindFirstChild("KitsuneIsland") ~= nil
-						or workspace._WorldOrigin.Locations:FindFirstChild("Kitsune Island") ~= nil
-				end)
-				if kitsuneOn then
-					StatusKitsuneIsland.SetText("Kitsune Island: \240\159\159\162")
-				else
-					StatusKitsuneIsland.SetText("Kitsune Island: \226\157\140")
-				end
-			end
-			if not workspace.Map:FindFirstChild("PrehistoricIsland") then
-				StatusPrehistoricIsland.SetText("Prehistoric Island: \226\157\140")
-			else
-				StatusPrehistoricIsland.SetText("Prehistoric Island: \226\156\133")
-			end
-			if not workspace._WorldOrigin.Locations:FindFirstChild("Frozen Dimension") then
-				StatusFrozenDimension.SetText("Frozen Dimension: \226\157\140")
-			else
-				StatusFrozenDimension.SetText("Frozen Dimension: \226\156\133")
-			end
-			StatusGear.SetText("Ancient One: " .. CheckAcientOneStatus())
-			if getgenv().StatusGearDraco then
-				getgenv().StatusGearDraco.SetText("Draco: " .. CheckAcientOneDracoStatus())
-			end
-			StatusMoon.SetText("Moon Phase: " .. CheckMoon() .. " | " .. function8())
+task.spawn(function()
+	local Players = game:GetService("Players")
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	local function setLabel(label, value)
+		pcall(function() if label then label.SetText(tostring(value)) end end)
+	end
+	while task.wait(1) do
+		-- Timers are independent so one unavailable remote/status cannot freeze the whole panel.
+		pcall(function()
+			local elapsed = math.max(0, workspace.DistributedGameTime)
+			local h = math.floor(elapsed / 3600)
+			local m = math.floor(elapsed % 3600 / 60)
+			local sec = math.floor(elapsed % 60)
+			setLabel(TimerLabel, string.format("Timer: %02dh %02dm %02ds", h, m, sec))
 		end)
+		pcall(function()
+			local locations = workspace:FindFirstChild("_WorldOrigin") and workspace._WorldOrigin:FindFirstChild("Locations")
+			local oldest, oldestTime
+			if locations then
+				for _, loc in ipairs(locations:GetChildren()) do
+					local t = loc:GetAttribute("TimeIn")
+					if type(t) == "number" and (not oldestTime or t < oldestTime) then oldest, oldestTime = loc, t end
+				end
+			end
+			if oldestTime then
+				local elapsedServer = math.max(0, tick() - 25200 - oldestTime)
+				local remain = 14400 - (elapsedServer % 14400)
+				local sh, sm, ss = math.floor(elapsedServer / 3600), math.floor(elapsedServer % 3600 / 60), math.floor(elapsedServer % 60)
+				local rh, rm, rs = math.floor(remain / 3600), math.floor(remain % 3600 / 60), math.floor(remain % 60)
+				setLabel(TimerServerLabel, string.format("Server Timer: %02dh %02dm %02ds", sh, sm, ss))
+				setLabel(NextTimerServerLabel, string.format("Next Time Spawn Fist of Darkness or God's Chalice: %02dh %02dm %02ds", rh, rm, rs))
+				if rh == 0 and rm == 0 and rs <= 5 then getgenv().GoCollectChest = true end
+			else
+				setLabel(TimerServerLabel, "Server Timer: waiting for server time")
+				setLabel(NextTimerServerLabel, "Next spawn estimate: waiting for server data")
+			end
+		end)
+		pcall(function()
+			setLabel(StatusEliteHunter, DetectEliteHunter() and "Elite: ✅ Spawned" or "Elite: ❌ Not spawned")
+		end)
+		pcall(function()
+			local eyes = 0
+			if game.PlaceId == getgenv().CheckPlaceId then
+				local map = workspace:FindFirstChild("Map")
+				local tiki = map and map:FindFirstChild("TikiOutpost")
+				local island = tiki and tiki:FindFirstChild("IslandModel")
+				if island then
+					for i = 1, 4 do
+						local eye = island:FindFirstChild("Eye" .. i, true)
+						if eye and eye.Transparency == 1 then eyes = eyes + 1 end
+					end
+				end
+			end
+			K = eyes
+			setLabel(StatusTyrant, "Tyrant Eyes: " .. tostring(eyes) .. "/4")
+		end)
+		pcall(function()
+			local remote = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_")
+			if remote then
+				local result = remote:InvokeServer("CakePrinceSpawner", true)
+				local text = tostring(result or "Unknown")
+				setLabel(StatusKatakuri, "Cake Prince: " .. text:gsub("%D", "") .. " Mobs | " .. text)
+				if text:find("open the portal now", 1, true) then remote:InvokeServer("CakePrinceSpawner") end
+			end
+		end)
+		pcall(function() setLabel(Statusspy, "Leviathan: " .. tostring(StatusCheckLeviathan())) end)
+		pcall(function()
+			local map = workspace:FindFirstChild("Map")
+			local found = map and map:FindFirstChild("MysticIsland")
+			setLabel(StatusMirage, "Mirage Island: " .. (found and "✅ Spawned" or "❌ Not spawned"))
+		end)
+		pcall(function()
+			local map = workspace:FindFirstChild("Map")
+			local locs = workspace:FindFirstChild("_WorldOrigin") and workspace._WorldOrigin:FindFirstChild("Locations")
+			local found = (map and map:FindFirstChild("KitsuneIsland")) or (locs and locs:FindFirstChild("Kitsune Island"))
+			setLabel(StatusKitsuneIsland, "Kitsune Island: " .. (found and "✅ Spawned" or "❌ Not spawned"))
+		end)
+		pcall(function()
+			local map = workspace:FindFirstChild("Map")
+			local found = map and map:FindFirstChild("PrehistoricIsland")
+			setLabel(StatusPrehistoricIsland, "Prehistoric Island: " .. (found and "✅ Spawned" or "❌ Not spawned"))
+		end)
+		pcall(function()
+			local locs = workspace:FindFirstChild("_WorldOrigin") and workspace._WorldOrigin:FindFirstChild("Locations")
+			local found = locs and locs:FindFirstChild("Frozen Dimension")
+			setLabel(StatusFrozenDimension, "Frozen Dimension: " .. (found and "✅ Spawned" or "❌ Not spawned"))
+		end)
+		pcall(function() setLabel(StatusGear, "Ancient One: " .. tostring(CheckAcientOneStatus())) end)
+		pcall(function()
+			if getgenv().StatusGearDraco then getgenv().StatusGearDraco.SetText("Draco: " .. tostring(CheckAcientOneDracoStatus())) end
+		end)
+		pcall(function() setLabel(StatusMoon, "Moon Phase: " .. tostring(CheckMoon()) .. " | " .. tostring(function8())) end)
 	end
 end)
+
 LocalPlayerMain = Main.CreatePage({ Page_Name = "LocalPlayer", Page_Title = "LocalPlayer" })
 SectionLocalPlayerMain = LocalPlayerMain.CreateSection("Local Player")
 SectionLocalPlayerMain.CreateToggle(
