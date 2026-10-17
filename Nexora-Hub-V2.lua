@@ -1935,31 +1935,58 @@ function Nexora.CreateMain(config)
             function Section.CreateLabel(cfg)
                 local title = type(cfg)=="table" and (cfg.Title or cfg.Text or "") or tostring(cfg or "")
                 title = tostring(title)
-                -- Redz V5 AddParagraph recebe (título, texto) e retorna Frame + objeto Label.
-                -- A chamada antiga passava uma tabela e tentava usar control.Set, que não é
-                -- a API do Label da Redz; isso impedia os status de atualizarem.
+
+                -- A Redz V5 Paragraph normally receives a config table. Try both
+                -- common table formats first; passing two plain strings can make
+                -- some builds show the generic word "Paragraph" instead.
                 local frame, paragraphLabel
                 local ok = pcall(function()
-                    frame, paragraphLabel = tab:AddParagraph(title, title)
+                    frame, paragraphLabel = tab:AddParagraph({title, ""})
                 end)
-                if not ok then
+                if not ok or not frame then
+                    ok = pcall(function()
+                        frame, paragraphLabel = tab:AddParagraph({Title=title, Content=""})
+                    end)
+                end
+                if not ok or not frame then
+                    ok = pcall(function()
+                        frame, paragraphLabel = tab:AddParagraph(title, "")
+                    end)
+                end
+                if not ok or not frame then
                     frame = safe(tab.AddLabel, tab, title)
                 end
+
                 local handle = {Object=frame, Label=paragraphLabel, _text=title}
-                handle.SetText = function(_, v)
+                -- Existing source calls this as Label.SetText("text"), while
+                -- other callers may use Label:SetText("text"). Support both.
+                handle.SetText = function(first, second)
+                    local v = second ~= nil and second or first
                     v = tostring(v or "")
                     handle._text = v
                     local updated = false
-                    if paragraphLabel and type(paragraphLabel.SetTitle) == "function" then
-                        updated = pcall(paragraphLabel.SetTitle, paragraphLabel, v)
+                    if paragraphLabel then
+                        if type(paragraphLabel.SetTitle) == "function" then
+                            updated = pcall(paragraphLabel.SetTitle, paragraphLabel, v)
+                        end
+                        if type(paragraphLabel.SetDesc) == "function" then
+                            pcall(paragraphLabel.SetDesc, paragraphLabel, "")
+                        end
                     end
-                    -- Fallback para forks da Redz com estrutura de label diferente.
                     if not updated and frame then
                         pcall(function()
-                            if frame:IsA("TextLabel") then frame.Text = v; updated = true end
-                            for _, obj in ipairs(frame:GetDescendants()) do
-                                if obj:IsA("TextLabel") then
-                                    obj.Text = v
+                            if frame:IsA("TextLabel") then
+                                frame.Text = v
+                                updated = true
+                            else
+                                local firstTextLabel
+                                for _, obj in ipairs(frame:GetDescendants()) do
+                                    if obj:IsA("TextLabel") then
+                                        if not firstTextLabel then firstTextLabel = obj end
+                                    end
+                                end
+                                if firstTextLabel then
+                                    firstTextLabel.Text = v
                                     updated = true
                                 end
                             end
