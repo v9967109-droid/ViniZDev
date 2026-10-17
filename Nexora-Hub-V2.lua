@@ -1,152 +1,153 @@
+-- NEXORA HUB V2 - LUCIDUI INTEGRADA FINAL
+-- Método Banana Cat Hub: biblioteca integrada de verdade, sem adaptador separado, sem loading screen
+-- Data: V5 FINAL
 
--- NEXORA HUB V2 - LUCIDUI INTEGRADA V4 CLEAN
--- Sem telemetria, sem loading screen, sem request externo, UI blindada
+-- LucidUI v2.0 - Biblioteca Integrada para Nexora Hub V2
+-- Baseado na API Kyotaah/lucidui, reescrita limpa sem dependência externa
+-- API: LucidUI:CreateWindow -> Window:CreateTab -> Tab:CreateSection -> Section:CreateToggle/Button/Slider/Dropdown/Input/TextDisplay
+-- Tema Nebula, Pill flutuante, sem loading screen
 
 local LucidUI = {}
 LucidUI.__index = LucidUI
-LucidUI._Theme = {
+
+LucidUI._Themes = {
     Nebula = {
-        Background = Color3.fromRGB(16,16,22),
+        Background = Color3.fromRGB(15,15,22),
         Background2 = Color3.fromRGB(22,22,32),
-        Background3 = Color3.fromRGB(28,28,42),
-        Sidebar = Color3.fromRGB(18,18,26),
-        Accent = Color3.fromRGB(124, 92, 255),
-        Text = Color3.fromRGB(240,240,255),
-        TextDim = Color3.fromRGB(160,160,180),
-        Border = Color3.fromRGB(45,45,65),
+        Background3 = Color3.fromRGB(30,30,44),
+        Sidebar = Color3.fromRGB(17,17,26),
+        Accent = Color3.fromRGB(124,92,255),
+        Accent2 = Color3.fromRGB(85,130,255),
+        Text = Color3.fromRGB(235,235,250),
+        TextDim = Color3.fromRGB(150,150,170),
+        Border = Color3.fromRGB(42,42,62),
+        Success = Color3.fromRGB(80,200,120),
     }
 }
 
-local function corner(p,r)
-    local c=Instance.new("UICorner"); c.CornerRadius=UDim.new(0,r or 8); c.Parent=p; return c
-end
-local function stroke(p,c,t)
-    local s=Instance.new("UIStroke"); s.Color=c; s.Thickness=t or 1; s.Transparency=0.3; s.Parent=p; return s
-end
+local function Corner(p,r) local c=Instance.new("UICorner") c.CornerRadius=UDim.new(0,r or 8) c.Parent=p return c end
+local function Stroke(p,c,t,tr) local s=Instance.new("UIStroke") s.Color=c s.Thickness=t or 1 s.Transparency=tr or 0.3 s.ApplyStrokeMode=Enum.ApplyStrokeMode.Border s.Parent=p return s end
+local function Pad(p,t,b,l,r) local pa=Instance.new("UIPadding") pa.PaddingTop=UDim.new(0,t or 0) pa.PaddingBottom=UDim.new(0,b or 0) pa.PaddingLeft=UDim.new(0,l or 0) pa.PaddingRight=UDim.new(0,r or 0) pa.Parent=p return pa end
 
 function LucidUI:CreateWindow(cfg)
-    cfg=cfg or {}
-    local theme=self._Theme[cfg.Theme or "Nebula"] or self._Theme.Nebula
-    local Players=game:GetService("Players")
-    local UIS=game:GetService("UserInputService")
-    local TweenService=game:GetService("TweenService")
-    local player=Players.LocalPlayer
+    cfg = cfg or {}
+    local theme = self._Themes[cfg.Theme or "Nebula"] or self._Themes.Nebula
+    local Players = game:GetService("Players")
+    local UIS = game:GetService("UserInputService")
+    local TweenService = game:GetService("TweenService")
+    local player = Players.LocalPlayer
     local guiParent
     pcall(function()
-        if gethui then guiParent=gethui()
-        elseif get_hidden_gui then guiParent=get_hidden_gui()
-        else guiParent=player:WaitForChild("PlayerGui") end
+        if gethui then guiParent = gethui()
+        elseif get_hidden_gui then guiParent = get_hidden_gui()
+        elseif get_hidden_ui then guiParent = get_hidden_ui()
+        else guiParent = player:WaitForChild("PlayerGui") end
     end)
-    if not guiParent then guiParent=player:WaitForChild("PlayerGui") end
+    if not guiParent then guiParent = player:WaitForChild("PlayerGui") end
 
-    local ok, ScreenGui = pcall(function()
-        local sg=Instance.new("ScreenGui")
-        sg.Name="NexoraHubV2_LucidUI_V4"
-        sg.ResetOnSpawn=false
-        sg.IgnoreGuiInset=true
-        sg.ZIndexBehavior=Enum.ZIndexBehavior.Sibling
-        sg.Parent=guiParent
-        return sg
-    end)
-    if not ok or not ScreenGui then
-        ScreenGui=Instance.new("ScreenGui")
-        ScreenGui.Name="NexoraHubV2_Fallback"
-        ScreenGui.ResetOnSpawn=false
-        ScreenGui.Parent=player:WaitForChild("PlayerGui")
-    end
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "LucidUI_"..(cfg.Name or "Window"):gsub("%s+","")
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.IgnoreGuiInset = true
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    ScreenGui.Parent = guiParent
 
-    local Main=Instance.new("Frame")
-    Main.Name="MainFrame"
-    Main.Size=UDim2.new(0,cfg.Width or 620,0,cfg.Height or 460)
-    Main.Position=UDim2.new(0.5,-(cfg.Width or 620)/2,0.5,-(cfg.Height or 460)/2)
-    Main.BackgroundColor3=theme.Background
-    Main.BorderSizePixel=0
-    Main.Parent=ScreenGui
-    corner(Main,12)
-    stroke(Main,theme.Border,1)
+    local Main = Instance.new("Frame")
+    Main.Name = "LucidMainFrame"
+    Main.Size = UDim2.new(0, cfg.Width or 620, 0, cfg.Height or 460)
+    Main.Position = UDim2.new(0.5, -(cfg.Width or 620)/2, 0.5, -(cfg.Height or 460)/2)
+    Main.BackgroundColor3 = theme.Background
+    Main.BorderSizePixel = 0
+    Main.Parent = ScreenGui
+    Corner(Main,12); Stroke(Main, theme.Border, 1, 0.2)
 
-    local TitleBar=Instance.new("Frame")
-    TitleBar.Name="TitleBar"
-    TitleBar.Size=UDim2.new(1,0,0,44)
-    TitleBar.BackgroundColor3=theme.Background2
-    TitleBar.BorderSizePixel=0
-    TitleBar.Parent=Main
-    corner(TitleBar,12)
-    local fix=Instance.new("Frame")
-    fix.Size=UDim2.new(1,0,0,12); fix.Position=UDim2.new(0,0,1,-12)
-    fix.BackgroundColor3=theme.Background2; fix.BorderSizePixel=0; fix.Parent=TitleBar
+    local TitleBar = Instance.new("Frame")
+    TitleBar.Name = "TitleBar"
+    TitleBar.Size = UDim2.new(1,0,0,44)
+    TitleBar.BackgroundColor3 = theme.Background2
+    TitleBar.BorderSizePixel = 0
+    TitleBar.Parent = Main
+    Corner(TitleBar,12)
+    local fix = Instance.new("Frame")
+    fix.Size = UDim2.new(1,0,0,12); fix.Position = UDim2.new(0,0,1,-12)
+    fix.BackgroundColor3 = theme.Background2; fix.BorderSizePixel = 0; fix.Parent = TitleBar
 
-    local TitleLabel=Instance.new("TextLabel")
-    TitleLabel.Text=cfg.Name or "NEXORA HUB V2"
-    TitleLabel.Font=Enum.Font.GothamBold; TitleLabel.TextSize=13
-    TitleLabel.TextColor3=theme.Text; TitleLabel.BackgroundTransparency=1
-    TitleLabel.Size=UDim2.new(1,-90,1,0); TitleLabel.Position=UDim2.new(0,12,0,0)
-    TitleLabel.TextXAlignment=Enum.TextXAlignment.Left; TitleLabel.Parent=TitleBar
+    local TitleLabel = Instance.new("TextLabel")
+    TitleLabel.Text = cfg.Name or "NEXORA HUB V2"
+    TitleLabel.Font = Enum.Font.GothamBold; TitleLabel.TextSize = 13
+    TitleLabel.TextColor3 = theme.Text; TitleLabel.BackgroundTransparency = 1
+    TitleLabel.Size = UDim2.new(1,-90,1,0); TitleLabel.Position = UDim2.new(0,14,0,0)
+    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left; TitleLabel.Parent = TitleBar
 
-    local CloseBtn=Instance.new("TextButton")
-    CloseBtn.Size=UDim2.new(0,30,0,30); CloseBtn.Position=UDim2.new(1,-36,0,7)
-    CloseBtn.BackgroundColor3=theme.Background3; CloseBtn.Text="X"
-    CloseBtn.TextColor3=theme.Text; CloseBtn.Font=Enum.Font.GothamBold; CloseBtn.TextSize=12
-    CloseBtn.Parent=TitleBar; corner(CloseBtn,6)
-    local MinBtn=Instance.new("TextButton")
-    MinBtn.Size=UDim2.new(0,30,0,30); MinBtn.Position=UDim2.new(1,-70,0,7)
-    MinBtn.BackgroundColor3=theme.Background3; MinBtn.Text="-"
-    MinBtn.TextColor3=theme.Text; MinBtn.Font=Enum.Font.GothamBold; MinBtn.TextSize=16
-    MinBtn.Parent=TitleBar; corner(MinBtn,6)
+    local Sub = Instance.new("TextLabel")
+    Sub.Text = "LucidUI • Integrated"; Sub.Font = Enum.Font.Gotham; Sub.TextSize = 10
+    Sub.TextColor3 = theme.TextDim; Sub.BackgroundTransparency = 1
+    Sub.Size = UDim2.new(1,-90,0,12); Sub.Position = UDim2.new(0,14,0,24)
+    Sub.TextXAlignment = Enum.TextXAlignment.Left; Sub.Parent = TitleBar
 
-    local Body=Instance.new("Frame")
-    Body.Name="Body"; Body.Size=UDim2.new(1,0,1,-44); Body.Position=UDim2.new(0,0,0,44)
-    Body.BackgroundTransparency=1; Body.Parent=Main
+    local CloseBtn = Instance.new("TextButton")
+    CloseBtn.Size = UDim2.new(0,30,0,30); CloseBtn.Position = UDim2.new(1,-36,0,7)
+    CloseBtn.BackgroundColor3 = theme.Background3; CloseBtn.Text = "✕"
+    CloseBtn.TextColor3 = theme.Text; CloseBtn.Font = Enum.Font.GothamBold; CloseBtn.TextSize = 12
+    CloseBtn.Parent = TitleBar; Corner(CloseBtn,6)
 
-    local Sidebar=Instance.new("ScrollingFrame")
-    Sidebar.Name="Sidebar"; Sidebar.Size=UDim2.new(0,150,1,0)
-    Sidebar.BackgroundColor3=theme.Sidebar; Sidebar.BorderSizePixel=0
-    Sidebar.ScrollBarThickness=0; Sidebar.CanvasSize=UDim2.new(0,0,0,0)
-    Sidebar.AutomaticCanvasSize=Enum.AutomaticSize.Y; Sidebar.Parent=Body
-    corner(Sidebar,12)
-    local fix2=Instance.new("Frame")
-    fix2.Size=UDim2.new(0,12,1,0); fix2.Position=UDim2.new(1,-12,0,0)
-    fix2.BackgroundColor3=theme.Sidebar; fix2.BorderSizePixel=0; fix2.Parent=Sidebar
+    local MinBtn = Instance.new("TextButton")
+    MinBtn.Size = UDim2.new(0,30,0,30); MinBtn.Position = UDim2.new(1,-70,0,7)
+    MinBtn.BackgroundColor3 = theme.Background3; MinBtn.Text = "—"
+    MinBtn.TextColor3 = theme.Text; MinBtn.Font = Enum.Font.GothamBold; MinBtn.TextSize = 14
+    MinBtn.Parent = TitleBar; Corner(MinBtn,6)
 
-    local SideList=Instance.new("UIListLayout")
-    SideList.Padding=UDim.new(0,4); SideList.SortOrder=Enum.SortOrder.LayoutOrder; SideList.Parent=Sidebar
-    local SidePad=Instance.new("UIPadding")
-    SidePad.PaddingTop=UDim.new(0,6); SidePad.PaddingBottom=UDim.new(0,6)
-    SidePad.PaddingLeft=UDim.new(0,6); SidePad.PaddingRight=UDim.new(0,6); SidePad.Parent=Sidebar
+    local Body = Instance.new("Frame")
+    Body.Name = "Body"; Body.Size = UDim2.new(1,0,1,-44); Body.Position = UDim2.new(0,0,0,44)
+    Body.BackgroundTransparency = 1; Body.Parent = Main
 
-    local Content=Instance.new("Frame")
-    Content.Name="Content"; Content.Size=UDim2.new(1,-150,1,0); Content.Position=UDim2.new(0,150,0,0)
-    Content.BackgroundTransparency=1; Content.ClipsDescendants=true; Content.Parent=Body
+    local Sidebar = Instance.new("ScrollingFrame")
+    Sidebar.Name = "Sidebar"; Sidebar.Size = UDim2.new(0,150,1,0)
+    Sidebar.BackgroundColor3 = theme.Sidebar; Sidebar.BorderSizePixel = 0
+    Sidebar.ScrollBarThickness = 0; Sidebar.CanvasSize = UDim2.new(0,0,0,0)
+    Sidebar.AutomaticCanvasSize = Enum.AutomaticSize.Y; Sidebar.Parent = Body
+    Corner(Sidebar,12)
+    local sFix = Instance.new("Frame")
+    sFix.Size = UDim2.new(0,12,1,0); sFix.Position = UDim2.new(1,-12,0,0)
+    sFix.BackgroundColor3 = theme.Sidebar; sFix.BorderSizePixel = 0; sFix.Parent = Sidebar
+    local SideList = Instance.new("UIListLayout")
+    SideList.Padding = UDim.new(0,4); SideList.SortOrder = Enum.SortOrder.LayoutOrder; SideList.Parent = Sidebar
+    Pad(Sidebar,6,6,6,6)
 
-    local Pill=Instance.new("TextButton")
-    Pill.Name="Pill"; Pill.Size=UDim2.new(0,50,0,50); Pill.Position=UDim2.new(0,20,0,80)
-    Pill.BackgroundColor3=theme.Accent; Pill.Text="NX"; Pill.TextColor3=Color3.new(1,1,1)
-    Pill.Font=Enum.Font.GothamBlack; Pill.TextSize=16; Pill.Visible=false; Pill.Parent=ScreenGui
-    corner(Pill,25)
+    local Content = Instance.new("Frame")
+    Content.Name = "Content"; Content.Size = UDim2.new(1,-150,1,0); Content.Position = UDim2.new(0,150,0,0)
+    Content.BackgroundTransparency = 1; Content.ClipsDescendants = true; Content.Parent = Body
 
-    local windowObj={Gui=ScreenGui, Main=Main, Theme=theme, Tabs={}, Visible=true}
+    local Pill = Instance.new("TextButton")
+    Pill.Name = "LucidPill"; Pill.Size = UDim2.new(0,52,0,52); Pill.Position = UDim2.new(0,24,0,100)
+    Pill.BackgroundColor3 = theme.Accent; Pill.Text = "NX"; Pill.TextColor3 = Color3.new(1,1,1)
+    Pill.Font = Enum.Font.GothamBlack; Pill.TextSize = 16; Pill.Visible = false; Pill.Parent = ScreenGui
+    Corner(Pill,26); Stroke(Pill, Color3.new(1,1,1), 1, 0.7)
+
+    local windowObj = {Gui=ScreenGui, Main=Main, Theme=theme, Tabs={}, CurrentTab=nil, Visible=true}
+
     function windowObj:ToggleVisibility()
-        windowObj.Visible=not windowObj.Visible
-        Main.Visible=windowObj.Visible
-        Pill.Visible=not windowObj.Visible
+        windowObj.Visible = not windowObj.Visible
+        Main.Visible = windowObj.Visible
+        Pill.Visible = not windowObj.Visible
     end
     function windowObj:BuildSettingsPanel() end
     function windowObj:Notify(data)
         data=data or {}
         pcall(function()
             local n=Instance.new("Frame")
-            n.Size=UDim2.new(0,240,0,50); n.Position=UDim2.new(1,-250,1,-80)
+            n.Size=UDim2.new(0,260,0,56); n.Position=UDim2.new(1,-270,1,-86)
             n.BackgroundColor3=theme.Background2; n.Parent=ScreenGui
-            corner(n,8)
+            Corner(n,8); Stroke(n,theme.Border,1,0.3)
             local t=Instance.new("TextLabel")
             t.Text=data.Title or "NEXORA"; t.Font=Enum.Font.GothamBold; t.TextSize=12
             t.TextColor3=theme.Text; t.BackgroundTransparency=1
-            t.Size=UDim2.new(1,-10,0,18); t.Position=UDim2.new(0,8,0,4)
+            t.Size=UDim2.new(1,-12,0,18); t.Position=UDim2.new(0,8,0,6)
             t.TextXAlignment=Enum.TextXAlignment.Left; t.Parent=n
             local m=Instance.new("TextLabel")
             m.Text=data.Message or data.Text or ""; m.Font=Enum.Font.Gotham; m.TextSize=11
             m.TextColor3=theme.TextDim; m.BackgroundTransparency=1
-            m.Size=UDim2.new(1,-10,0,24); m.Position=UDim2.new(0,8,0,20)
+            m.Size=UDim2.new(1,-12,0,28); m.Position=UDim2.new(0,8,0,22)
             m.TextXAlignment=Enum.TextXAlignment.Left; m.TextWrapped=true; m.Parent=n
             task.delay(data.Duration or 3,function() if n.Parent then n:Destroy() end end)
         end)
@@ -156,7 +157,7 @@ function LucidUI:CreateWindow(cfg)
     MinBtn.MouseButton1Click:Connect(function() windowObj:ToggleVisibility() end)
     Pill.MouseButton1Click:Connect(function() windowObj:ToggleVisibility() end)
 
-    local dragging,dragStart,startPos
+    local dragging, dragStart, startPos
     TitleBar.InputBegan:Connect(function(input)
         if input.UserInputType==Enum.UserInputType.MouseButton1 then
             dragging=true; dragStart=input.Position; startPos=Main.Position
@@ -172,7 +173,7 @@ function LucidUI:CreateWindow(cfg)
         if input.UserInputType==Enum.UserInputType.MouseButton1 then dragging=false end
     end)
 
-    local pillKey=cfg.PillKeybind or Enum.KeyCode.RightControl
+    local pillKey = cfg.PillKeybind or Enum.KeyCode.RightControl
     UIS.InputBegan:Connect(function(input,gpe)
         if gpe then return end
         if input.KeyCode==pillKey then windowObj:ToggleVisibility() end
@@ -184,10 +185,10 @@ function LucidUI:CreateWindow(cfg)
         local TabButton=Instance.new("TextButton")
         TabButton.Name=tabName; TabButton.Size=UDim2.new(1,0,0,32)
         TabButton.BackgroundColor3=theme.Background3; TabButton.BackgroundTransparency=0.4
-        TabButton.Text=" "..tabName; TabButton.TextColor3=theme.TextDim
+        TabButton.Text="  "..tabName; TabButton.TextColor3=theme.TextDim
         TabButton.Font=Enum.Font.GothamMedium; TabButton.TextSize=11
         TabButton.TextXAlignment=Enum.TextXAlignment.Left; TabButton.Parent=Sidebar
-        corner(TabButton,6)
+        Corner(TabButton,6)
 
         local TabContent=Instance.new("ScrollingFrame")
         TabContent.Name=tabName.."_Content"; TabContent.Size=UDim2.new(1,0,1,0)
@@ -196,29 +197,26 @@ function LucidUI:CreateWindow(cfg)
         TabContent.AutomaticCanvasSize=Enum.AutomaticSize.Y; TabContent.Visible=false; TabContent.Parent=Content
         local tcList=Instance.new("UIListLayout")
         tcList.Padding=UDim.new(0,8); tcList.SortOrder=Enum.SortOrder.LayoutOrder; tcList.Parent=TabContent
-        local tcPad=Instance.new("UIPadding")
-        tcPad.PaddingAll=UDim.new(0,8); tcPad.Parent=TabContent
+        Pad(TabContent,8,8,8,8)
 
         local function select()
             for _,t in pairs(windowObj.Tabs) do
-                if t.Button then t.Button.BackgroundColor3=theme.Background3; t.Button.TextColor3=theme.TextDim end
+                if t.Button then t.Button.BackgroundColor3=theme.Background3; t.Button.TextColor3=theme.TextDim; t.Button.BackgroundTransparency=0.4 end
                 if t.Content then t.Content.Visible=false end
             end
             TabButton.BackgroundColor3=theme.Accent; TabButton.BackgroundTransparency=0.2; TabButton.TextColor3=theme.Text
-            TabContent.Visible=true
-            windowObj.CurrentTab=TabContent
+            TabContent.Visible=true; windowObj.CurrentTab=TabContent
         end
         TabButton.MouseButton1Click:Connect(select)
 
         local tabObj={Name=tabName, Button=TabButton, Content=TabContent, _currentSection=nil}
         function tabObj:CreateSection(secCfg)
-            secCfg=secCfg or {}
-            local secName=secCfg.Name or "Section"
+            secCfg=secCfg or {}; local secName=secCfg.Name or "Section"
             local SectionFrame=Instance.new("Frame")
             SectionFrame.Name=secName; SectionFrame.Size=UDim2.new(1,0,0,36)
             SectionFrame.BackgroundColor3=theme.Background2; SectionFrame.BorderSizePixel=0
             SectionFrame.AutomaticSize=Enum.AutomaticSize.Y; SectionFrame.Parent=TabContent
-            corner(SectionFrame,8); stroke(SectionFrame,theme.Border,1)
+            Corner(SectionFrame,8); Stroke(SectionFrame,theme.Border,1,0.4)
             local SecTitle=Instance.new("TextLabel")
             SecTitle.Text=secName:upper(); SecTitle.Font=Enum.Font.GothamBold; SecTitle.TextSize=10
             SecTitle.TextColor3=theme.TextDim; SecTitle.BackgroundTransparency=1
@@ -226,17 +224,14 @@ function LucidUI:CreateWindow(cfg)
             SecTitle.TextXAlignment=Enum.TextXAlignment.Left; SecTitle.Parent=SectionFrame
             local SecList=Instance.new("UIListLayout")
             SecList.Padding=UDim.new(0,5); SecList.SortOrder=Enum.SortOrder.LayoutOrder; SecList.Parent=SectionFrame
-            local SecPad=Instance.new("UIPadding")
-            SecPad.PaddingTop=UDim.new(0,26); SecPad.PaddingBottom=UDim.new(0,6)
-            SecPad.PaddingLeft=UDim.new(0,6); SecPad.PaddingRight=UDim.new(0,6); SecPad.Parent=SectionFrame
-
-            local sectionObj={Frame=SectionFrame, List=SecList, Name=secName}
+            Pad(SectionFrame,26,6,6,6)
+            local sectionObj={Frame=SectionFrame, Name=secName}
 
             function sectionObj:CreateToggle(tCfg)
                 tCfg=tCfg or {}; local name=tCfg.Name or "Toggle"; local current=tCfg.CurrentValue==true
                 local Holder=Instance.new("Frame")
                 Holder.Size=UDim2.new(1,0,0,32); Holder.BackgroundColor3=theme.Background3; Holder.BorderSizePixel=0; Holder.Parent=SectionFrame
-                corner(Holder,6)
+                Corner(Holder,6)
                 local Label=Instance.new("TextLabel")
                 Label.Text=name; Label.Font=Enum.Font.GothamMedium; Label.TextSize=11; Label.TextColor3=theme.Text
                 Label.BackgroundTransparency=1; Label.Size=UDim2.new(1,-50,1,0); Label.Position=UDim2.new(0,8,0,0)
@@ -244,22 +239,13 @@ function LucidUI:CreateWindow(cfg)
                 local ToggleBtn=Instance.new("TextButton")
                 ToggleBtn.Size=UDim2.new(0,36,0,18); ToggleBtn.Position=UDim2.new(1,-42,0.5,-9)
                 ToggleBtn.BackgroundColor3=current and theme.Accent or Color3.fromRGB(40,40,50); ToggleBtn.Text=""; ToggleBtn.Parent=Holder
-                corner(ToggleBtn,9)
+                Corner(ToggleBtn,9)
                 local Dot=Instance.new("Frame")
                 Dot.Size=UDim2.new(0,12,0,12); Dot.Position=UDim2.new(0,current and 20 or 3,0.5,-6)
-                Dot.BackgroundColor3=Color3.new(1,1,1); Dot.Parent=ToggleBtn; corner(Dot,6)
+                Dot.BackgroundColor3=Color3.new(1,1,1); Dot.Parent=ToggleBtn; Corner(Dot,6)
                 local ctrl={Value=current, Instance=Holder}
-                function ctrl:Set(v)
-                    v=not not v; ctrl.Value=v
-                    pcall(function()
-                        TweenService:Create(ToggleBtn,TweenInfo.new(0.15),{BackgroundColor3=v and theme.Accent or Color3.fromRGB(40,40,50)}):Play()
-                        TweenService:Create(Dot,TweenInfo.new(0.15),{Position=UDim2.new(0,v and 20 or 3,0.5,-6)}):Play()
-                    end)
-                end
-                ToggleBtn.MouseButton1Click:Connect(function()
-                    ctrl:Set(not ctrl.Value)
-                    if type(tCfg.Callback)=="function" then task.spawn(function() pcall(tCfg.Callback,ctrl.Value) end) end
-                end)
+                function ctrl:Set(v) v=not not v; ctrl.Value=v; pcall(function() TweenService:Create(ToggleBtn,TweenInfo.new(0.15),{BackgroundColor3=v and theme.Accent or Color3.fromRGB(40,40,50)}):Play(); TweenService:Create(Dot,TweenInfo.new(0.15),{Position=UDim2.new(0,v and 20 or 3,0.5,-6)}):Play() end) end
+                ToggleBtn.MouseButton1Click:Connect(function() ctrl:Set(not ctrl.Value); if type(tCfg.Callback)=="function" then task.spawn(function() pcall(tCfg.Callback,ctrl.Value) end) end end)
                 return ctrl
             end
 
@@ -268,67 +254,47 @@ function LucidUI:CreateWindow(cfg)
                 local Btn=Instance.new("TextButton")
                 Btn.Size=UDim2.new(1,0,0,32); Btn.BackgroundColor3=theme.Accent; Btn.BackgroundTransparency=0.1
                 Btn.Text=name; Btn.TextColor3=Color3.new(1,1,1); Btn.Font=Enum.Font.GothamBold; Btn.TextSize=11
-                Btn.Parent=SectionFrame; corner(Btn,6); stroke(Btn,theme.Accent,1)
-                if type(bCfg.Callback)=="function" then
-                    Btn.MouseButton1Click:Connect(function() task.spawn(function() pcall(bCfg.Callback) end) end)
-                end
+                Btn.Parent=SectionFrame; Corner(Btn,6); Stroke(Btn,theme.Accent,1,0.5)
+                if type(bCfg.Callback)=="function" then Btn.MouseButton1Click:Connect(function() task.spawn(function() pcall(bCfg.Callback) end) end) end
                 return {Instance=Btn, Set=function() end}
             end
 
             function sectionObj:CreateSlider(sCfg)
-                sCfg=sCfg or {}; local name=sCfg.Name or "Slider"
-                local range=sCfg.Range or {0,100}; local min=range[1] or 0; local max=range[2] or 100
+                sCfg=sCfg or {}; local name=sCfg.Name or "Slider"; local range=sCfg.Range or {0,100}; local min=range[1] or 0; local max=range[2] or 100
                 local cur=math.clamp(tonumber(sCfg.CurrentValue) or min,min,max); local inc=sCfg.Increment or 1
                 local Holder=Instance.new("Frame")
-                Holder.Size=UDim2.new(1,0,0,44); Holder.BackgroundColor3=theme.Background3; Holder.Parent=SectionFrame; corner(Holder,6)
+                Holder.Size=UDim2.new(1,0,0,44); Holder.BackgroundColor3=theme.Background3; Holder.Parent=SectionFrame; Corner(Holder,6)
                 local Label=Instance.new("TextLabel")
-                Label.Text=name.." : "..tostring(cur); Label.Font=Enum.Font.GothamMedium; Label.TextSize=11
-                Label.TextColor3=theme.Text; Label.BackgroundTransparency=1
-                Label.Size=UDim2.new(1,-16,0,18); Label.Position=UDim2.new(0,8,0,2)
-                Label.TextXAlignment=Enum.TextXAlignment.Left; Label.Parent=Holder
+                Label.Text=name.." : "..tostring(cur); Label.Font=Enum.Font.GothamMedium; Label.TextSize=11; Label.TextColor3=theme.Text; Label.BackgroundTransparency=1
+                Label.Size=UDim2.new(1,-16,0,18); Label.Position=UDim2.new(0,8,0,2); Label.TextXAlignment=Enum.TextXAlignment.Left; Label.Parent=Holder
                 local Bar=Instance.new("Frame")
-                Bar.Size=UDim2.new(1,-16,0,6); Bar.Position=UDim2.new(0,8,0,26)
-                Bar.BackgroundColor3=Color3.fromRGB(35,35,45); Bar.Parent=Holder; corner(Bar,3)
+                Bar.Size=UDim2.new(1,-16,0,6); Bar.Position=UDim2.new(0,8,0,26); Bar.BackgroundColor3=Color3.fromRGB(35,35,45); Bar.Parent=Holder; Corner(Bar,3)
                 local Fill=Instance.new("Frame")
-                Fill.Size=UDim2.new((cur-min)/(max-min),0,1,0); Fill.BackgroundColor3=theme.Accent; Fill.Parent=Bar; corner(Fill,3)
+                Fill.Size=UDim2.new((cur-min)/(max-min),0,1,0); Fill.BackgroundColor3=theme.Accent; Fill.Parent=Bar; Corner(Fill,3)
                 local ctrl={Value=cur}; local draggingBar=false
                 local function updateFromPos(x)
                     local rel=math.clamp((x-Bar.AbsolutePosition.X)/Bar.AbsoluteSize.X,0,1)
                     local v=min+rel*(max-min); if inc then v=math.floor(v/inc+0.5)*inc end; v=math.clamp(v,min,max)
-                    ctrl.Value=v; Fill.Size=UDim2.new(rel,0,1,0)
-                    Label.Text=name.." : "..tostring(math.floor(v*10)/10)
+                    ctrl.Value=v; Fill.Size=UDim2.new(rel,0,1,0); Label.Text=name.." : "..tostring(math.floor(v*10)/10)
                     if type(sCfg.Callback)=="function" then task.spawn(function() pcall(sCfg.Callback,v) end) end
                 end
-                Bar.InputBegan:Connect(function(input)
-                    if input.UserInputType==Enum.UserInputType.MouseButton1 then draggingBar=true; updateFromPos(input.Position.X) end
-                end)
-                UIS.InputChanged:Connect(function(input)
-                    if draggingBar and input.UserInputType==Enum.UserInputType.MouseMovement then updateFromPos(input.Position.X) end
-                end)
-                UIS.InputEnded:Connect(function(input)
-                    if input.UserInputType==Enum.UserInputType.MouseButton1 then draggingBar=false end
-                end)
-                function ctrl:Set(v)
-                    v=math.clamp(tonumber(v) or min,min,max); ctrl.Value=v
-                    local rel=(v-min)/(max-min); Fill.Size=UDim2.new(rel,0,1,0)
-                    Label.Text=name.." : "..tostring(v)
-                end
+                Bar.InputBegan:Connect(function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 then draggingBar=true; updateFromPos(input.Position.X) end end)
+                UIS.InputChanged:Connect(function(input) if draggingBar and input.UserInputType==Enum.UserInputType.MouseMovement then updateFromPos(input.Position.X) end end)
+                UIS.InputEnded:Connect(function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 then draggingBar=false end end)
+                function ctrl:Set(v) v=math.clamp(tonumber(v) or min,min,max); ctrl.Value=v; local rel=(v-min)/(max-min); Fill.Size=UDim2.new(rel,0,1,0); Label.Text=name.." : "..tostring(v) end
                 return ctrl
             end
 
             function sectionObj:CreateDropdown(dCfg)
                 dCfg=dCfg or {}; local name=dCfg.Name or "Dropdown"; local options=dCfg.Options or {}; local current=dCfg.CurrentOption or options[1] or ""
                 local Holder=Instance.new("Frame")
-                Holder.Size=UDim2.new(1,0,0,32); Holder.BackgroundColor3=theme.Background3; Holder.Parent=SectionFrame; corner(Holder,6)
+                Holder.Size=UDim2.new(1,0,0,32); Holder.BackgroundColor3=theme.Background3; Holder.Parent=SectionFrame; Corner(Holder,6)
                 local Label=Instance.new("TextLabel")
-                Label.Text=name..": "..tostring(current); Label.Font=Enum.Font.GothamMedium; Label.TextSize=10
-                Label.TextColor3=theme.Text; Label.BackgroundTransparency=1
-                Label.Size=UDim2.new(1,-16,1,0); Label.Position=UDim2.new(0,8,0,0)
-                Label.TextXAlignment=Enum.TextXAlignment.Left; Label.TextTruncate=Enum.TextTruncate.AtEnd; Label.Parent=Holder
+                Label.Text=name..": "..tostring(current); Label.Font=Enum.Font.GothamMedium; Label.TextSize=10; Label.TextColor3=theme.Text; Label.BackgroundTransparency=1
+                Label.Size=UDim2.new(1,-16,1,0); Label.Position=UDim2.new(0,8,0,0); Label.TextXAlignment=Enum.TextXAlignment.Left; Label.TextTruncate=Enum.TextTruncate.AtEnd; Label.Parent=Holder
                 local Btn=Instance.new("TextButton")
                 Btn.Size=UDim2.new(1,0,1,0); Btn.BackgroundTransparency=1; Btn.Text=""; Btn.Parent=Holder
-                local ctrl={Value=current, Options=options}
-                local open=false; local listFrame
+                local ctrl={Value=current, Options=options}; local open=false; local listFrame
                 local function closeList() if listFrame then listFrame:Destroy(); listFrame=nil end; open=false; Holder.Size=UDim2.new(1,0,0,32) end
                 Btn.MouseButton1Click:Connect(function()
                     if open then closeList(); return end
@@ -337,18 +303,15 @@ function LucidUI:CreateWindow(cfg)
                     listFrame.Size=UDim2.new(1,0,0,math.clamp(#options*24,24,120)); listFrame.Position=UDim2.new(0,0,1,2)
                     listFrame.BackgroundColor3=theme.Background; listFrame.ScrollBarThickness=2; listFrame.CanvasSize=UDim2.new(0,0,0,0)
                     listFrame.AutomaticCanvasSize=Enum.AutomaticSize.Y; listFrame.ZIndex=10; listFrame.Parent=Holder
-                    corner(listFrame,6); stroke(listFrame,theme.Border,1)
+                    Corner(listFrame,6); Stroke(listFrame,theme.Border,1,0.3)
                     local ll=Instance.new("UIListLayout"); ll.Padding=UDim.new(0,2); ll.Parent=listFrame
                     local pad=Instance.new("UIPadding"); pad.PaddingAll=UDim.new(0,3); pad.Parent=listFrame
                     Holder.Size=UDim2.new(1,0,0,32+listFrame.Size.Y.Offset+2)
                     for _,opt in ipairs(options) do
                         local optBtn=Instance.new("TextButton")
                         optBtn.Size=UDim2.new(1,-4,0,22); optBtn.BackgroundColor3=theme.Background2; optBtn.Text=tostring(opt)
-                        optBtn.TextColor3=theme.Text; optBtn.Font=Enum.Font.Gotham; optBtn.TextSize=10; optBtn.Parent=listFrame; corner(optBtn,4)
-                        optBtn.MouseButton1Click:Connect(function()
-                            ctrl.Value=opt; Label.Text=name..": "..tostring(opt); closeList()
-                            if type(dCfg.Callback)=="function" then task.spawn(function() pcall(dCfg.Callback,opt) end) end
-                        end)
+                        optBtn.TextColor3=theme.Text; optBtn.Font=Enum.Font.Gotham; optBtn.TextSize=10; optBtn.Parent=listFrame; Corner(optBtn,4)
+                        optBtn.MouseButton1Click:Connect(function() ctrl.Value=opt; Label.Text=name..": "..tostring(opt); closeList(); if type(dCfg.Callback)=="function" then task.spawn(function() pcall(dCfg.Callback,opt) end) end end)
                     end
                 end)
                 function ctrl:Set(v) ctrl.Value=v; Label.Text=name..": "..tostring(v) end
@@ -356,30 +319,30 @@ function LucidUI:CreateWindow(cfg)
             end
 
             function sectionObj:CreateInput(iCfg)
-                iCfg=iCfg or {}; local name=iCfg.Name or "Input"; local cur=iCfg.CurrentValue or ""
-                local placeholder=iCfg.Placeholder or ""
+                iCfg=iCfg or {}; local name=iCfg.Name or "Input"; local cur=iCfg.CurrentValue or ""; local placeholder=iCfg.Placeholder or ""
                 local Holder=Instance.new("Frame")
-                Holder.Size=UDim2.new(1,0,0,36); Holder.BackgroundColor3=theme.Background3; Holder.Parent=SectionFrame; corner(Holder,6)
+                Holder.Size=UDim2.new(1,0,0,36); Holder.BackgroundColor3=theme.Background3; Holder.Parent=SectionFrame; Corner(Holder,6)
                 local Label=Instance.new("TextLabel")
                 Label.Text=name; Label.Font=Enum.Font.GothamMedium; Label.TextSize=10; Label.TextColor3=theme.TextDim
-                Label.BackgroundTransparency=1; Label.Size=UDim2.new(1,-16,0,12); Label.Position=UDim2.new(0,6,0,2)
-                Label.TextXAlignment=Enum.TextXAlignment.Left; Label.Parent=Holder
+                Label.BackgroundTransparency=1; Label.Size=UDim2.new(1,-16,0,12); Label.Position=UDim2.new(0,6,0,2); Label.TextXAlignment=Enum.TextXAlignment.Left; Label.Parent=Holder
                 local Box=Instance.new("TextBox")
                 Box.Size=UDim2.new(1,-12,0,18); Box.Position=UDim2.new(0,6,0,16)
                 Box.BackgroundColor3=Color3.fromRGB(30,30,40); Box.Text=tostring(cur); Box.PlaceholderText=placeholder
                 Box.TextColor3=theme.Text; Box.PlaceholderColor3=theme.TextDim; Box.Font=Enum.Font.Gotham; Box.TextSize=11
-                Box.ClearTextOnFocus=false; Box.Parent=Holder; corner(Box,4)
+                Box.ClearTextOnFocus=false; Box.Parent=Holder; Corner(Box,4)
                 local ctrl={Value=cur}
                 Box.FocusLost:Connect(function() ctrl.Value=Box.Text; if type(iCfg.Callback)=="function" then task.spawn(function() pcall(iCfg.Callback,Box.Text) end) end end)
                 function ctrl:Set(v) ctrl.Value=v; Box.Text=tostring(v) end
                 return ctrl
             end
+            -- Alias para compatibilidade com Banana Cat
+            sectionObj.CreateTextBox = sectionObj.CreateInput
 
             function sectionObj:CreateTextDisplay(tCfg)
                 tCfg=tCfg or {}; local title=tCfg.Title or ""; local content=tCfg.Content or ""
                 local Holder=Instance.new("Frame")
                 Holder.Size=UDim2.new(1,0,0,30); Holder.BackgroundColor3=theme.Background3; Holder.BackgroundTransparency=0.5
-                Holder.AutomaticSize=Enum.AutomaticSize.Y; Holder.Parent=SectionFrame; corner(Holder,6)
+                Holder.AutomaticSize=Enum.AutomaticSize.Y; Holder.Parent=SectionFrame; Corner(Holder,6)
                 local TitleL=Instance.new("TextLabel")
                 TitleL.Text=title; TitleL.Font=Enum.Font.GothamBold; TitleL.TextSize=10; TitleL.TextColor3=theme.Text
                 TitleL.BackgroundTransparency=1; TitleL.Size=UDim2.new(1,-12,0,14); TitleL.Position=UDim2.new(0,6,0,4)
@@ -417,169 +380,168 @@ function LucidUI:CreateWindow(cfg)
     return windowObj
 end
 
-local LucidUIInstance=setmetatable({},LucidUI)
-return LucidUIInstance
+return setmetatable({}, LucidUI)
 
 
 
-local Nexora = {Options = {}, OptionOrder = {}, _tabs = {}, _window = nil, CompatibilityVersion = 3, Library = LucidUI}
-local function safe(fn, ...)
-    if type(fn) ~= "function" then return nil end
-    local args = table.pack(...)
-    local result = table.pack(pcall(function() return fn(table.unpack(args, 1, args.n)) end))
-    if not result[1] then return nil end
-    return table.unpack(result, 2, result.n)
-end
-local function createNative(parent, methodName, config)
-    if not parent then return nil end
-    local method = parent[methodName]
-    if type(method) ~= "function" then return nil end
-    return safe(method, parent, config or {})
-end
-local function register(title, kind, value, callback, control, pageName, sectionName)
-    local opt = {title=title, type=kind, value=value, Callback=callback, FunctionCreate=control, page=pageName, section=sectionName}
-    opt._setValue = function(v, fire)
-        opt.value = v
-        if control and type(control.Set) == "function" then safe(control.Set, control, v) end
-        if fire and type(callback) == "function" then task.spawn(function() safe(callback, v) end) end
-    end
-    Nexora.Options[title] = opt
-    table.insert(Nexora.OptionOrder, opt)
-    return opt
-end
-
--- UNIFIED MOVEMENT CONTROLLER V4
+-- SISTEMA DE VELOCIDADE UNIFICADO (sem duplicatas, sem voltar ao padrão)
 do
     getgenv().__MoveGen = (getgenv().__MoveGen or 0) + 1
     local generation = getgenv().__MoveGen
     getgenv().__MoveConns = getgenv().__MoveConns or {}
-    for _, conn in ipairs(getgenv().__MoveConns) do pcall(function() conn:Disconnect() end) end
+    for _, c in ipairs(getgenv().__MoveConns) do pcall(function() c:Disconnect() end) end
     getgenv().__MoveConns = {}
-    local connections = getgenv().__MoveConns
-    local hooked = setmetatable({}, {__mode = "k"})
+    local conns = getgenv().__MoveConns
+    local hooked = setmetatable({}, {__mode="k"})
     local player = game.Players.LocalPlayer
-    local function applyToHumanoid(humanoid)
-        if getgenv().__MoveGen ~= generation or not humanoid or not humanoid.Parent then return end
+    local function apply(hum)
+        if getgenv().__MoveGen ~= generation or not hum or not hum.Parent then return end
         if Settings["Change WalkSpeed"] then
-            local speed = math.clamp(tonumber(Settings["Input WalkSpeed"]) or 16, 0, 220)
-            if math.abs(humanoid.WalkSpeed - speed) > 0.01 then humanoid.WalkSpeed = speed end
+            local s = math.clamp(tonumber(Settings["Input WalkSpeed"]) or 16, 0, 220)
+            if math.abs(hum.WalkSpeed - s) > 0.01 then hum.WalkSpeed = s end
         end
         if Settings["Change JumpPower"] then
-            local jp = math.clamp(tonumber(Settings["Input JumpPower"]) or 50, 0, 220)
-            if not humanoid.UseJumpPower then humanoid.UseJumpPower = true end
-            if math.abs(humanoid.JumpPower - jp) > 0.01 then humanoid.JumpPower = jp end
+            local j = math.clamp(tonumber(Settings["Input JumpPower"]) or 50, 0, 220)
+            if not hum.UseJumpPower then hum.UseJumpPower = true end
+            if math.abs(hum.JumpPower - j) > 0.01 then hum.JumpPower = j end
         end
     end
-    local function hookHumanoid(humanoid)
-        if not humanoid or hooked[humanoid] then return end
-        hooked[humanoid] = true
-        for _, prop in ipairs({"WalkSpeed", "JumpPower", "UseJumpPower"}) do
-            table.insert(connections, humanoid:GetPropertyChangedSignal(prop):Connect(function() applyToHumanoid(humanoid) end))
+    local function hook(hum)
+        if not hum or hooked[hum] then return end
+        hooked[hum]=true
+        for _,prop in ipairs({"WalkSpeed","JumpPower","UseJumpPower"}) do
+            table.insert(conns, hum:GetPropertyChangedSignal(prop):Connect(function() apply(hum) end))
         end
-        applyToHumanoid(humanoid)
+        apply(hum)
     end
     function ApplyMovementSettings()
         local char = player.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
-        if hum then hookHumanoid(hum); applyToHumanoid(hum) end
+        if hum then hook(hum); apply(hum) end
     end
     if getgenv().__MoveCharConn then pcall(function() getgenv().__MoveCharConn:Disconnect() end) end
     getgenv().__MoveCharConn = player.CharacterAdded:Connect(function(char)
         task.spawn(function()
             local hum = char:WaitForChild("Humanoid", 10) or char:FindFirstChildOfClass("Humanoid")
-            if hum and getgenv().__MoveGen == generation then hookHumanoid(hum); task.delay(0.5, ApplyMovementSettings) end
+            if hum and getgenv().__MoveGen == generation then hook(hum); task.delay(0.5, ApplyMovementSettings) end
         end)
     end)
-    task.spawn(function() ApplyMovementSettings() end)
+    task.spawn(ApplyMovementSettings)
+end
+
+
+
+local Nexora = {Options = {}, OptionOrder = {}, _tabs = {}, _window = nil, Library = LucidUI}
+
+local function safe(fn, ...)
+    if type(fn) ~= "function" then return nil end
+    local a=table.pack(...)
+    local r=table.pack(pcall(function() return fn(table.unpack(a,1,a.n)) end))
+    if not r[1] then return nil end
+    return table.unpack(r,2,r.n)
+end
+local function createNative(parent, method, cfg)
+    if not parent then return nil end
+    local m=parent[method]
+    if type(m)~="function" then return nil end
+    return safe(m, parent, cfg or {})
+end
+local function register(title, kind, value, cb, ctrl, page, sec)
+    local opt={title=title, type=kind, value=value, Callback=cb, FunctionCreate=ctrl, page=page, section=sec}
+    Nexora.Options[title]=opt
+    table.insert(Nexora.OptionOrder, opt)
+    return opt
 end
 
 function Nexora.BuildWindow(config)
-    config = config or {}
-    local win = LucidUI:CreateWindow({Name=config.Title or "NEXORA HUB V2", Theme="Nebula", PillKeybind=Enum.KeyCode.RightControl, Width=620, Height=460, IntroEnabled=false, IntroDuration=0})
-    pcall(function() win:BuildSettingsPanel() end)
-    Nexora._window = win
-    Nexora.ToggleWindow = function() if win and type(win.ToggleVisibility)=="function" then pcall(function() win:ToggleVisibility() end) end end
-    local Main = {}
+    config=config or {}
+    local win=LucidUI:CreateWindow({
+        Name=config.Title or "NEXORA HUB V2",
+        Theme="Nebula",
+        Width=660,
+        Height=500,
+        PillKeybind=Enum.KeyCode.RightControl,
+        IntroEnabled=false,
+        IntroDuration=0
+    })
+    Nexora._window=win
+    Nexora.ToggleWindow=function() if win and type(win.ToggleVisibility)=="function" then pcall(function() win:ToggleVisibility() end) end end
+    local Main={}
     function Main.AddTab(pageConfig)
         pageConfig=pageConfig or {}
         local name=pageConfig.Page_Title or pageConfig.Page_Name or "Page"
         local lucidTab=win:CreateTab({Name=name, Icon="home"})
         local tab={_currentSection=nil, _lucidTab=lucidTab}
-        local function currentSection()
+        local function curSec()
             if not tab._currentSection then tab._currentSection=lucidTab:CreateSection({Name="General"}) end
             return tab._currentSection
         end
         function tab.AddSection(_, arg)
-            local sectionName=type(arg)=="table" and (arg[1] or arg.Name or arg.Title) or arg
-            tab._currentSection=lucidTab:CreateSection({Name=tostring(sectionName or "General")})
+            local sn=type(arg)=="table" and (arg[1] or arg.Name or arg.Title) or arg
+            tab._currentSection=lucidTab:CreateSection({Name=tostring(sn or "General")})
             return tab._currentSection
         end
-        function tab.AddToggle(_, cfg) cfg=cfg or {}; local cur=cfg.CurrentValue; if cur==nil then cur=cfg.Default end; return createNative(currentSection(),"CreateToggle",{Name=cfg.Title or cfg.Name or "Toggle", CurrentValue=cur==true, Callback=cfg.Callback}) end
-        function tab.AddButton(_, cfg) cfg=cfg or {}; return createNative(currentSection(),"CreateButton",{Name=cfg.Title or cfg.Name or "Button", Callback=cfg.Callback}) end
-        function tab.AddSlider(_, cfg) cfg=cfg or {}; local range=cfg.Range; local minValue=(type(range)=="table" and tonumber(range[1])) or tonumber(cfg.Min) or 0; local maxValue=(type(range)=="table" and tonumber(range[2])) or tonumber(cfg.Max) or 100; local cur=cfg.CurrentValue; if cur==nil then cur=cfg.Default end; cur=math.clamp(tonumber(cur) or minValue,minValue,maxValue); return createNative(currentSection(),"CreateSlider",{Name=cfg.Title or cfg.Name or "Slider", Range={minValue,maxValue}, CurrentValue=cur, Increment=cfg.Increment or 1, Callback=cfg.Callback}) end
-        function tab.AddDropdown(_, cfg) cfg=cfg or {}; local options=cfg.Options or {}; local default=cfg.CurrentOption; if default==nil then default=cfg.Default end; if type(default)=="table" then local first; for _,item in ipairs(options) do if default[item]==true then first=item; break end end; default=first or options[1] end; return createNative(currentSection(),"CreateDropdown",{Name=cfg.Title or cfg.Name or "Dropdown", Options=options, CurrentOption=default, Callback=cfg.Callback}) end
-        function tab.AddTextBox(_, cfg) cfg=cfg or {}; local cur=cfg.CurrentValue; if cur==nil then cur=cfg.Default end; return createNative(currentSection(),"CreateInput",{Name=cfg.Title or cfg.Name or "Input", Placeholder=cfg.Placeholder or "", CurrentValue=cur or "", Callback=cfg.Callback}) end
-        function tab.AddParagraph(_, cfg, desc) local title,body; if type(cfg)=="table" then title=cfg.Title or cfg.Name or cfg[1] or "Info"; body=cfg.Content or cfg.Desc or cfg[2] or "" else title=tostring(cfg or "Info"); body=tostring(desc or "") end; local obj=createNative(currentSection(),"CreateTextDisplay",{Title=tostring(title), Content=tostring(body)}); return obj,obj end
-        function tab.AddLabel(_, title) local obj=createNative(currentSection(),"CreateTextDisplay",{Title=tostring(title or "Info"), Content=""}); return obj end
+        function tab.AddToggle(_, cfg) cfg=cfg or {}; local cur=cfg.CurrentValue; if cur==nil then cur=cfg.Default end; return createNative(curSec(),"CreateToggle",{Name=cfg.Title or cfg.Name or "Toggle", CurrentValue=cur==true, Callback=cfg.Callback}) end
+        function tab.AddButton(_, cfg) cfg=cfg or {}; return createNative(curSec(),"CreateButton",{Name=cfg.Title or cfg.Name or "Button", Callback=cfg.Callback}) end
+        function tab.AddSlider(_, cfg) cfg=cfg or {}; local range=cfg.Range; local minV=(type(range)=="table" and tonumber(range[1])) or tonumber(cfg.Min) or 0; local maxV=(type(range)=="table" and tonumber(range[2])) or tonumber(cfg.Max) or 100; local cur=cfg.CurrentValue; if cur==nil then cur=cfg.Default end; cur=math.clamp(tonumber(cur) or minV,minV,maxV); return createNative(curSec(),"CreateSlider",{Name=cfg.Title or cfg.Name or "Slider", Range={minV,maxV}, CurrentValue=cur, Increment=cfg.Increment or 1, Callback=cfg.Callback}) end
+        function tab.AddDropdown(_, cfg) cfg=cfg or {}; local opts=cfg.Options or {}; local def=cfg.CurrentOption; if def==nil then def=cfg.Default end; if type(def)=="table" then local first; for _,it in ipairs(opts) do if def[it]==true then first=it; break end end; def=first or opts[1] end; return createNative(curSec(),"CreateDropdown",{Name=cfg.Title or cfg.Name or "Dropdown", Options=opts, CurrentOption=def, Callback=cfg.Callback}) end
+        function tab.AddTextBox(_, cfg) cfg=cfg or {}; local cur=cfg.CurrentValue; if cur==nil then cur=cfg.Default end; return createNative(curSec(),"CreateInput",{Name=cfg.Title or cfg.Name or "Input", Placeholder=cfg.Placeholder or "", CurrentValue=cur or "", Callback=cfg.Callback}) end
+        function tab.AddParagraph(_, cfg, desc) local title,body; if type(cfg)=="table" then title=cfg.Title or cfg.Name or cfg[1] or "Info"; body=cfg.Content or cfg.Desc or cfg[2] or "" else title=tostring(cfg or "Info"); body=tostring(desc or "") end; local obj=createNative(curSec(),"CreateTextDisplay",{Title=tostring(title), Content=tostring(body)}); return obj,obj end
+        function tab.AddLabel(_, title) local obj=createNative(curSec(),"CreateTextDisplay",{Title=tostring(title or "Info"), Content=""}); return obj end
         Nexora._tabs[name]=tab
         local Page={}
         function Page.AddGroup(sectionName)
             local section=safe(tab.AddSection,tab,{sectionName}) or safe(tab.AddSection,tab,sectionName) or tab
             local Section={}
-            function Section.AddToggle(cfg, callback)
-                cfg=cfg or {}; local title=cfg.Title or "Toggle"; Settings=Settings or {}
-                local default; if type(Settings[title])=="boolean" then default=Settings[title] else default=(cfg.Default==true) end
-                local control=safe(tab.AddToggle,tab,{Title=title, Name=title, Desc=cfg.Desc or "", CurrentValue=default, Callback=function(v)
-                    Settings[title]=not not v; pcall(function() SaveSettings(title, not not v) end)
-                    if title=="Change WalkSpeed" or title=="Change JumpPower" then pcall(function() if ApplyMovementSettings then ApplyMovementSettings() end end) end
-                    if callback then task.spawn(function() safe(callback, not not v) end) end
-                end})
-                local opt=register(title,"toggle",default,callback,control,name,sectionName)
-                opt.FunctionCreate={SetStage=function(_,v) opt.value=not not v; if control and type(control.Set)=="function" then safe(control.Set,control,not not v) end; Settings[title]=not not v; pcall(function() SaveSettings(title,not not v) end); if title=="Change WalkSpeed" or title=="Change JumpPower" then pcall(function() if ApplyMovementSettings then ApplyMovementSettings() end end) end; if type(callback)=="function" then task.spawn(function() safe(callback,not not v) end) end end}
+            function Section.AddToggle(cfg, cb)
+                cfg=cfg or {}; local title=cfg.Title or "Toggle"; Settings=Settings or {}; local def; if type(Settings[title])=="boolean" then def=Settings[title] else def=(cfg.Default==true) end
+                local ctrl=safe(tab.AddToggle,tab,{Title=title, Name=title, Desc=cfg.Desc or "", CurrentValue=def, Callback=function(v) Settings[title]=not not v; pcall(function() SaveSettings(title, not not v) end); if title=="Change WalkSpeed" or title=="Change JumpPower" then pcall(ApplyMovementSettings) end; if cb then task.spawn(function() safe(cb, not not v) end) end})
+                local opt=register(title,"toggle",def,cb,ctrl,name,sectionName)
+                opt.FunctionCreate={SetStage=function(_,v) opt.value=not not v; if ctrl and type(ctrl.Set)=="function" then safe(ctrl.Set,ctrl,not not v) end; Settings[title]=not not v; pcall(function() SaveSettings(title,not not v) end); if title=="Change WalkSpeed" or title=="Change JumpPower" then pcall(ApplyMovementSettings) end; if type(cb)=="function" then task.spawn(function() safe(cb,not not v) end) end end}
                 return opt
             end
-            function Section.AddButton(cfg, callback)
+            function Section.AddButton(cfg, cb)
                 cfg=cfg or {}; local title=cfg.Title or "Button"; local fired=false
-                local function onPressed() if fired then return end; fired=true; task.defer(function() fired=false end); if type(callback)=="function" then task.spawn(function() local ok,err=pcall(callback); if not ok then warn("[Nexora] Button '"..tostring(title).."' error: "..tostring(err)) end end) end end
-                local button=safe(tab.AddButton,tab,{Title=title, Name=title, Desc=cfg.Desc or "", Callback=onPressed})
-                if not button then button=safe(tab.AddButton,tab,{Title=title, Callback=onPressed}) end
-                return button
+                local function onPressed() if fired then return end; fired=true; task.defer(function() fired=false end); if type(cb)=="function" then task.spawn(function() local ok,err=pcall(cb); if not ok then warn("[Nexora] Button '"..tostring(title).."' error: "..tostring(err)) end end) end end
+                local btn=safe(tab.AddButton,tab,{Title=title, Name=title, Desc=cfg.Desc or "", Callback=onPressed})
+                if not btn then btn=safe(tab.AddButton,tab,{Title=title, Callback=onPressed}) end
+                return btn
             end
             function Section.AddLabel(cfg)
                 local title=type(cfg)=="table" and (cfg.Title or cfg.Text or "") or tostring(cfg or ""); title=tostring(title)
-                local labelObj=safe(currentSection().CreateTextDisplay,currentSection(),{Title=title, Content=""})
+                local labelObj=safe(curSec().CreateTextDisplay,curSec(),{Title=title, Content=""})
                 local handle={Object=labelObj and labelObj.Instance or nil, Label=labelObj, Paragraph=labelObj, _text=title}
                 handle.SetText=function(first, second) local v=tostring((second~=nil and second or first) or ""); handle._text=v; if labelObj and type(labelObj.SetTitle)=="function" then safe(labelObj.SetTitle,labelObj,v) elseif labelObj and type(labelObj.Set)=="function" then safe(labelObj.Set,labelObj,v) end end
                 handle.GetText=function() return handle._text end
                 return handle
             end
-            function Section.AddSlider(cfg, callback)
-                cfg=cfg or {}; local title=cfg.Title or "Slider"; local min=cfg.Min or 0; local max=cfg.Max or 100; local default=math.clamp(tonumber(cfg.Default or cfg.Value) or min,min,max)
-                local control=safe(tab.AddSlider,tab,{Title=title,Name=title,Range={min,max},CurrentValue=default,Increment=cfg.Increment or 1,Callback=function(v) pcall(function() SaveSettings(title, v) end); if title=="Input WalkSpeed" or title=="Input JumpPower" then pcall(function() if ApplyMovementSettings then ApplyMovementSettings() end end) end; if callback then task.spawn(function() safe(callback,v) end) end end})
-                return register(title,"slider",default,callback,control,name,sectionName)
+            function Section.AddSlider(cfg, cb)
+                cfg=cfg or {}; local title=cfg.Title or "Slider"; local min=cfg.Min or 0; local max=cfg.Max or 100; local def=math.clamp(tonumber(cfg.Default or cfg.Value) or min,min,max)
+                local ctrl=safe(tab.AddSlider,tab,{Title=title,Name=title,Range={min,max},CurrentValue=def,Increment=cfg.Increment or 1,Callback=function(v) pcall(function() SaveSettings(title, v) end); if title=="Input WalkSpeed" or title=="Input JumpPower" then pcall(ApplyMovementSettings) end; if cb then task.spawn(function() safe(cb,v) end) end end})
+                return register(title,"slider",def,cb,ctrl,name,sectionName)
             end
-            function Section.AddDropdown(cfg, callback)
+            function Section.AddDropdown(cfg, cb)
                 cfg=cfg or {}; local title=cfg.Title or "Dropdown"; local raw=cfg.List or cfg.Values or cfg.Options or {}; local values={}
                 if type(raw)=="table" then if #raw>0 then for _,v in ipairs(raw) do table.insert(values,tostring(v)) end else for k in pairs(raw) do table.insert(values,tostring(k)) end; table.sort(values) end end
-                local multi=cfg.Selected==true; local default=cfg.Default
-                if multi then local selected={}; if type(default)=="table" then for k,v in pairs(default) do if type(k)=="number" then selected[tostring(v)]=true elseif v==true then selected[tostring(k)]=true end end end; for _,v in ipairs(values) do if selected[v]==nil then selected[v]=raw[v]==true end end; default=selected else if default==nil then default=values[1] end end
-                local control
+                local multi=cfg.Selected==true; local def=cfg.Default
+                if multi then local sel={}; if type(def)=="table" then for k,v in pairs(def) do if type(k)=="number" then sel[tostring(v)]=true elseif v==true then sel[tostring(k)]=true end end end; for _,v in ipairs(values) do if sel[v]==nil then sel[v]=raw[v]==true end end; def=sel else if def==nil then def=values[1] end end
+                local ctrl
                 if multi and (title=="Select Sea Events" or title=="Select Weapons Fix Lava") then
-                    control={Items={}, Selected=default}
-                    for _,item in ipairs(values) do local optionName=item; local itemName=title.." | "..optionName; local itemControl=safe(tab.AddToggle,tab,{Title=itemName, Name=itemName, Desc="Seleção múltipla • "..title, CurrentValue=default[optionName]==true, Callback=function(v) default[optionName]=not not v; control.Selected[optionName]=not not v; if callback then task.spawn(function() safe(callback, optionName, not not v) end) end end}); control.Items[optionName]=itemControl end
+                    ctrl={Items={}, Selected=def}
+                    for _,item in ipairs(values) do local on=item; local iname=title.." | "..on; local ic=safe(tab.AddToggle,tab,{Title=iname, Name=iname, Desc="Seleção múltipla • "..title, CurrentValue=def[on]==true, Callback=function(v) def[on]=not not v; ctrl.Selected[on]=not not v; if cb then task.spawn(function() safe(cb, on, not not v) end) end end}); ctrl.Items[on]=ic end
                 elseif multi then
-                    local firstSelected; for _,item in ipairs(values) do if default[item]==true then firstSelected=item; break end end
-                    local previousSelection=firstSelected or values[1]
-                    control=safe(tab.AddDropdown,tab,{Title=title, Name=title, Options=values, CurrentOption=previousSelection, Callback=function(v) local item=tostring(v or ""); if item=="" or default[item]==nil then return end; local enabled=not (default[item]==true); default[item]=enabled; if callback then task.spawn(function() safe(callback, item, enabled) end) end; previousSelection=item end})
-                    control=control or {}; control.Selected=default
+                    local firstSel; for _,it in ipairs(values) do if def[it]==true then firstSel=it; break end end
+                    local prev=firstSel or values[1]
+                    ctrl=safe(tab.AddDropdown,tab,{Title=title, Name=title, Options=values, CurrentOption=prev, Callback=function(v) local item=tostring(v or ""); if item=="" or def[item]==nil then return end; local en=not (def[item]==true); def[item]=en; if cb then task.spawn(function() safe(cb, item, en) end) end; prev=item end})
+                    ctrl=ctrl or {}; ctrl.Selected=def
                 else
-                    control=safe(tab.AddDropdown,tab,{Title=title,Name=title,Options=values,CurrentOption=default,Callback=function(v) if callback then task.spawn(function() safe(callback,v) end) end end})
+                    ctrl=safe(tab.AddDropdown,tab,{Title=title,Name=title,Options=values,CurrentOption=def,Callback=function(v) if cb then task.spawn(function() safe(cb,v) end) end end})
                 end
-                local opt=register(title,"dropdown",default,callback,control,name,sectionName)
-                opt.GetNewList=function(_,newList) if multi and type(newList)=="table" then for _,item in ipairs(values) do local enabled=newList[item]==true; default[item]=enabled; if control.Items and control.Items[item] and type(control.Items[item].Set)=="function" then safe(control.Items[item].Set,control.Items[item],enabled) end end end end
+                local opt=register(title,"dropdown",def,cb,ctrl,name,sectionName)
+                opt.GetNewList=function(_,nl) if multi and type(nl)=="table" then for _,it in ipairs(values) do local en=nl[it]==true; def[it]=en; if ctrl.Items and ctrl.Items[it] and type(ctrl.Items[it].Set)=="function" then safe(ctrl.Items[it].Set,ctrl.Items[it],en) end end end end
                 return opt
             end
-            function Section.AddInput(cfg, callback) cfg=cfg or {}; local title=cfg.Title or "Input"; local def=cfg.Default or ""; local placeholder=cfg.Placeholder or ""; local control=safe(tab.AddTextBox,tab,{Title=title, Name=title, Placeholder=placeholder, CurrentValue=def, Callback=function(v) if callback then task.spawn(function() safe(callback, v) end) end end}); return control end
+            function Section.AddInput(cfg, cb) cfg=cfg or {}; local title=cfg.Title or "Input"; local def=cfg.Default or ""; local ph=cfg.Placeholder or ""; local ctrl=safe(tab.AddTextBox,tab,{Title=title, Name=title, Placeholder=ph, CurrentValue=def, Callback=function(v) if cb then task.spawn(function() safe(cb, v) end) end end}); return ctrl end
             Section.AddTextBox=Section.AddInput
             Section.AddParagraph=function(_, cfg, desc) local title,body; if type(cfg)=="table" then title=cfg.Title or cfg.Name or cfg[1] or "Info"; body=cfg.Content or cfg.Desc or cfg[2] or "" else title=tostring(cfg or "Info"); body=tostring(desc or "") end; return safe(tab.AddParagraph,tab,{Title=title, Content=body}) end
             return Section
@@ -593,8 +555,8 @@ A=Nexora
 _G.Nexora=Nexora
 
 
--- INICIALIZAÇÃO JANELA (SEM LOADING)
-local Main = Nexora.BuildWindow({Title="NEXORA HUB V2 - LUCIDUI INTEGRADA V4"})
+-- JANELA (SEM LOADING SCREEN)
+local Main = Nexora.BuildWindow({Title="NEXORA HUB V2"})
 
 Settings = {}
 HttpService = game:GetService("HttpService")
@@ -688,8 +650,8 @@ function EnsureAllTrueDefaults(b, t)
 		end
 	end
 end
-repeat task.wait() until game:FindFirstChild("CoreGui") or task.wait(15)
-repeat task.wait() until game:IsLoaded() and game.Players.LocalPlayer:FindFirstChild("DataLoaded") or task.wait(15)
+repeat task.wait() until game:FindFirstChild("CoreGui")
+repeat task.wait() until game:IsLoaded() and game.Players.LocalPlayer:FindFirstChild("DataLoaded")
 function FireButton(b)
 	b.Selectable = true
 	game:GetService("GuiService").SelectedObject = b
@@ -730,7 +692,7 @@ game:GetService("GuiService").SelectedObject = nil
 repeat
 	wait()
 until game:IsLoaded() and game.Players.LocalPlayer
-repeat task.wait() until game:FindFirstChild("CoreGui") or task.wait(15)
+repeat task.wait() until game:FindFirstChild("CoreGui")
 getgenv().ExploitReq = syn and syn.request
 	or identifyexecutor() == "Fluxus" and request
 	or http_request
@@ -2183,7 +2145,7 @@ local A = (function()
 -- Todos os controles visuais são criados pela API nativa da LucidUI.
 -- A API interna Nexora organiza abas/grupos e preserva callbacks/estado das funcionalidades;
 -- não carrega nem instancia bibliotecas visuais antigas.
--- external LucidUI removed
+-- LucidUI externa removida - integrada
 local Nexora = {Options = {}, OptionOrder = {}, _tabs = {}, _window = nil, CompatibilityVersion = 3, Library = LucidUI}
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
@@ -25355,7 +25317,7 @@ spawn(function()
 		end
 		T(
 			string.format(
-				' repeat wait() until game:IsLoaded()\10 getgenv().Key = %q\10 getgenv().__BANANA_SCRIPT_ROUTE = "bf_main"\10 return -- loadstring removed -- loadstring(game:HttpGet("https://banana-hub.xyz/loader/banana.lua"))()\10 ',
+				' repeat wait() until game:IsLoaded()\10 getgenv().Key = %q\10 getgenv().__BANANA_SCRIPT_ROUTE = "bf_main"\10 return -- loadstring removido("https://banana-hub.xyz/loader/banana.lua"))()\10 ',
 				getgenv().Key
 			)
 		)
@@ -28570,3 +28532,7 @@ task.spawn(function()
     task.wait()
     if A and A.RestoreSavedToggles then A.RestoreSavedToggles() end
 end)
+
+
+-- Restaura toggles sem loading
+task.spawn(function() task.wait(0.5); if A and A.RestoreSavedToggles then A.RestoreSavedToggles() end; pcall(ApplyMovementSettings) end)
