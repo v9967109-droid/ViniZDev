@@ -28912,191 +28912,128 @@ end)()
 
 
 
--- PATCH: Fix Select Weapon not equipping and Farm Mastery
+)
+
+
+
+-- PATCH CORRIGIDO: Select Weapon equipe Tool selecionada e Farm Mastery usa essa Tool até % depois troca
 do
-    local t = getgenv().t or game:GetService("Players").LocalPlayer
-    -- Wait for Settings to be available
     task.wait(1)
-    
-    -- Fix NameWeapon robusto
-    if NameWeapon then
-        local oldNameWeapon = NameWeapon
-        function NameWeapon(g, G)
-            local function m(E)
-                local l, Q, d = next, E:GetChildren()
-                for E, E in l, Q, d do
-                    if E:IsA("Tool") then
-                        if E.ToolTip == g then
-                            return G and E or E.Name
-                        end
-                        if string.find(E.ToolTip or "", g, 1, true) then
-                            return G and E or E.Name
-                        end
-                    end
-                end
-            end
-            local player = game:GetService("Players").LocalPlayer
-            local backpack = player:FindFirstChild("Backpack") or player:WaitForChild("Backpack")
-            local char = player.Character
-            local found = backpack and m(backpack)
-            if found then return found end
-            if char then found = m(char) end
-            if found then return found end
-            if g == "Melee" then
+    pcall(function()
+        -- Garante funções existem
+        if not NameWeapon or not equiptool or not Settings then return end
+        
+        -- 1) FIX SELECT WEAPON EM SETTING FARM
+        local oldUsedual = UsedualFlock
+        function UsedualFlock()
+            local weaponType = Settings["Select Weapon"] or "Melee"
+            local toolName = NameWeapon(weaponType)
+            if toolName then
+                equiptool(toolName)
+            else
+                -- fallback procura direta
+                local player = game:GetService("Players").LocalPlayer
+                local backpack = player and player:FindFirstChild("Backpack")
                 if backpack then
                     for _, tool in pairs(backpack:GetChildren()) do
-                        if tool:IsA("Tool") and tool.ToolTip == "Melee" then
-                            return G and tool or tool.Name
-                        end
-                    end
-                end
-                if char then
-                    for _, tool in pairs(char:GetChildren()) do
-                        if tool:IsA("Tool") and tool.ToolTip == "Melee" then
-                            return G and tool or tool.Name
+                        if tool:IsA("Tool") and (tool.ToolTip == weaponType or tool.Name == weaponType or string.find(tool.ToolTip or "", weaponType, 1, true)) then
+                            pcall(function() player.Character.Humanoid:EquipTool(tool) end)
+                            break
                         end
                     end
                 end
             end
-            return nil
         end
-    end
-    
-    -- Fix equiptool robusto
-    if equiptool then
-        function equiptool(g)
-            if not g or g == "" then return end
-            pcall(function()
-                local player = game:GetService("Players").LocalPlayer
-                local backpack = player:FindFirstChild("Backpack")
-                local char = player.Character
-                if not backpack or not char then return end
-                if char:FindFirstChild(g) then return end
-                local tool = backpack:FindFirstChild(g)
-                if tool then
-                    char.Humanoid:EquipTool(tool)
-                    return
-                end
-                for _, tool in pairs(backpack:GetChildren()) do
-                    if tool:IsA("Tool") and (tool.Name == g or tool.ToolTip == g or string.find(tool.ToolTip or "", g, 1, true) or string.find(tool.Name or "", g, 1, true)) then
-                        char.Humanoid:EquipTool(tool)
-                        return
-                    end
-                end
-            end)
-        end
-    end
-    
-    -- Fix UsedualFlock para Select Weapon
-    if UsedualFlock then
-        function UsedualFlock()
-            local weaponType = Settings and Settings["Select Weapon"] or "Melee"
-            pcall(function()
+        
+        -- 2) FIX FARM MASTERY: usa Tool do Select Weapon até % do slide, depois troca pra Select Method Farm Mastery
+        local function FixedFarmMastery(V)
+            if not V or not V:FindFirstChild("Humanoid") or not V:FindFirstChild("HumanoidRootPart") then return end
+            getgenv().AimPos = V.HumanoidRootPart.CFrame
+            getgenv().TargetMob = V
+            
+            if not Settings["Farm Mastery"] then
+                UsedualFlock()
+                return
+            end
+            
+            local healthSlide = Settings["Health %"] or 40
+            local healthPercent = healthSlide / 100
+            local mobHealth = V.Humanoid.Health / V.Humanoid.MaxHealth
+            
+            if mobHealth > healthPercent then
+                -- FASE 1: Usa a Tool selecionada no Select Weapon pra dar dano até % do slide
+                local weaponType = Settings["Select Weapon"] or "Melee"
                 local toolName = NameWeapon(weaponType)
-                if toolName then
-                    equiptool(toolName)
-                else
+                if not toolName then
                     local player = game:GetService("Players").LocalPlayer
-                    local backpack = player:FindFirstChild("Backpack")
+                    local backpack = player and player:FindFirstChild("Backpack")
                     if backpack then
                         for _, tool in pairs(backpack:GetChildren()) do
-                            if tool:IsA("Tool") and tool.ToolTip == weaponType then
-                                player.Character.Humanoid:EquipTool(tool)
+                            if tool:IsA("Tool") and (tool.ToolTip == weaponType or tool.Name == weaponType) then
+                                toolName = tool.Name
                                 break
                             end
                         end
                     end
                 end
-            end)
-        end
-    end
-    
-    -- Fix FarmMastery completo
-    if getgenv().FarmMastery or _G.FarmMastery or FarmMastery then
-        local function FixedFarmMastery(V)
-            if not V or not V:FindFirstChild("Humanoid") or not V:FindFirstChild("HumanoidRootPart") then
-                return
-            end
-            getgenv().AimPos = V.HumanoidRootPart.CFrame
-            getgenv().TargetMob = V
-            
-            local S = Settings or getgenv().Settings
-            if not S or not S["Farm Mastery"] then
-                UsedualFlock()
-                return
-            end
-            
-            local healthPercent = (S["Health %"] or 40) / 100
-            local mobHealth = V.Humanoid.Health / V.Humanoid.MaxHealth
-            
-            if mobHealth > healthPercent then
-                -- FASE 1: Usa estilo de luta até 40%
-                pcall(function()
-                    local meleeName = NameWeapon("Melee")
-                    if not meleeName then
-                        local player = game:GetService("Players").LocalPlayer
-                        local backpack = player:FindFirstChild("Backpack")
-                        if backpack then
-                            for _, tool in pairs(backpack:GetChildren()) do
-                                if tool:IsA("Tool") and tool.ToolTip == "Melee" then
-                                    meleeName = tool.Name
-                                    break
-                                end
-                            end
-                        end
-                    end
-                    if meleeName then
-                        equiptool(meleeName)
-                        getgenv().AimPos = V.HumanoidRootPart.CFrame
-                        local noAnim = S["Attack No Animation "] or S["Attack No Animation"]
+                if toolName then
+                    equiptool(toolName)
+                    getgenv().AimPos = V.HumanoidRootPart.CFrame
+                    -- Ataca
+                    pcall(function()
+                        local noAnim = Settings["Attack No Animation "] or Settings["Attack No Animation"]
                         if noAnim then
                             if AttackFunction then AttackFunction(60) end
                         else
-                            pcall(function() if attackMelee then attackMelee(60) end end)
+                            if attackMelee then attackMelee(60) end
                         end
                         local player = game:GetService("Players").LocalPlayer
-                        local char = player.Character
+                        local char = player and player.Character
                         if char then
-                            local tool = char:FindFirstChild(meleeName) or char:FindFirstChildOfClass("Tool")
-                            if tool then tool:Activate() end
+                            local t = char:FindFirstChild(toolName) or char:FindFirstChildOfClass("Tool")
+                            if t then t:Activate() end
                         end
-                    end
-                end)
+                    end)
+                end
                 return
             else
-                -- FASE 2: Equipa arma do Select Weapon / Select Method para farmar maestria
-                pcall(function()
-                    local method = S["Select Method Farm Mastery"] or S["Select Weapon"] or "Blox Fruit"
-                    local toolName = NameWeapon(method)
-                    if not toolName then
-                        local player = game:GetService("Players").LocalPlayer
-                        local backpack = player:FindFirstChild("Backpack")
-                        if backpack then
-                            for _, tool in pairs(backpack:GetChildren()) do
-                                if tool:IsA("Tool") and (tool.ToolTip == method or string.find(tool.ToolTip or "", method, 1, true) or string.find(tool.Name or "", method, 1, true)) then
-                                    toolName = tool.Name
-                                    break
-                                end
+                -- FASE 2: Vida <= % do slide -> troca pra Tool selecionada no Select Method Farm Mastery
+                local method = Settings["Select Method Farm Mastery"]
+                if not method or method == "" then
+                    method = Settings["Select Weapon"] -- fallback se não tiver method
+                end
+                local toolName = NameWeapon(method)
+                if not toolName then
+                    local player = game:GetService("Players").LocalPlayer
+                    local backpack = player and player:FindFirstChild("Backpack")
+                    if backpack then
+                        for _, tool in pairs(backpack:GetChildren()) do
+                            if tool:IsA("Tool") and (tool.ToolTip == method or tool.Name == method or string.find(tool.ToolTip or "", method, 1, true)) then
+                                toolName = tool.Name
+                                break
                             end
                         end
                     end
-                    if not toolName then return end
-                    equiptool(toolName)
-                    getgenv().AimPos = V.HumanoidRootPart.CFrame
+                end
+                if not toolName then return end
+                equiptool(toolName)
+                getgenv().AimPos = V.HumanoidRootPart.CFrame
+                -- Usa skill pra farmar maestria
+                pcall(function()
                     local player = game:GetService("Players").LocalPlayer
-                    local char = player.Character
+                    local char = player and player.Character
                     if not char then return end
                     local toolObj = NameWeapon(method, true) or (player:FindFirstChild("Backpack") and player.Backpack:FindFirstChild(toolName)) or char:FindFirstChild(toolName)
                     if method == "Gun" and char:FindFirstChild(toolName) then
-                        pcall(function() if ShootM1 then ShootM1(V) end end)
+                        if ShootM1 then ShootM1(V) end
                     end
                     if toolObj and H then
                         local skillKey = H(toolObj)
                         if skillKey then
-                            local holdTime = S["Skill " .. skillKey .. " " .. toolObj.ToolTip] or 0.5
+                            local holdTime = Settings["Skill " .. skillKey .. " " .. toolObj.ToolTip] or 0.5
                             local vim = game:GetService("VirtualInputManager")
                             vim:SendKeyEvent(true, skillKey, false, game)
-                            if S["Use skill fast dont hold"] then
+                            if Settings["Use skill fast dont hold"] then
                                 task.wait(0.05)
                             else
                                 task.wait(holdTime)
@@ -29108,21 +29045,11 @@ do
             end
         end
         
-        -- Sobrescreve em todos os lugares possíveis
+        -- Sobrescreve global
         getgenv().FarmMastery = FixedFarmMastery
         _G.FarmMastery = FixedFarmMastery
         FarmMastery = FixedFarmMastery
-        -- Tenta sobrescrever no rawset também
         pcall(function() rawset(_G, "FarmMastery", FixedFarmMastery) end)
-    end
-    
-    print("[NEXORA] Fix Select Weapon + Farm Mastery aplicado com sucesso!")
+        print("[NEXORA] Fix aplicado: Select Weapon equipa + Farm Mastery usa Select Weapon até % e troca pra Select Method")
+    end)
 end
-
-
--- Restaura os toggles ativos (UI + callback) pelo mesmo caminho do clique manual.
-task.spawn(function()
-    task.wait()
-    if A and A.RestoreSavedToggles then A.RestoreSavedToggles() end
-    pcall(function() if getgenv().NexoraLoadingFinish then getgenv().NexoraLoadingFinish() end end)
-end)
