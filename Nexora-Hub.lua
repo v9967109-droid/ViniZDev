@@ -4835,68 +4835,81 @@ function IsMobAlive(K)
 		return true
 	end
 end
--- Helpers do Elite Hunter (compartilhados).
+getgenv().BringBlacklist = getgenv().BringBlacklist or {
+    ["Deandre"]=true, ["Urban"]=true, ["Diablo"]=true,
+    ["Cake Prince"]=true, ["Dough King"]=true, ["Cake Queen"]=true,
+    ["rip_indra"]=true, ["rip_indra True Form"]=true,
+    ["Soul Reaper"]=true, ["Cursed Captain"]=true,
+    ["Darkbeard"]=true, ["Order"]=true,
+    ["Island Empress"]=true, ["Stone"]=true,
+}
+
+-- Helpers do Elite Hunter (corrigidos)
 function EliteRequest()
-	-- Vai na hora, sem espera dos 3 tracinhos
-	getgenv().__EliteReq = tick()
-	pcall(function()
-		game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("EliteHunter")
-	end)
+    getgenv().__EliteReq = tick()
+    pcall(function()
+        local Remotes = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
+        if Remotes then
+            local CommF = Remotes:FindFirstChild("CommF_") or Remotes:FindFirstChild("CommF")
+            if CommF then CommF:InvokeServer("EliteHunter") end
+        end
+    end)
 end
+
 function EliteQuestOK(name)
-	local txt, visible = "", false
-	pcall(function()
-		local G = game:GetService("Players").LocalPlayer.PlayerGui.Main.Quest
-		visible = G.Visible
-		txt = G.Container.QuestTitle.Title.Text
-	end)
-	if visible then
-		if name and string.find(txt, name, 1, true) then
-			return true
-		end
-		for _, n in ipairs({ "Deandre", "Urban", "Diablo" }) do
-			if string.find(txt, n, 1, true) then
-				return true
-			end
-		end
-	end
-	-- Sem missão de elite: pede uma INSTANTANEO, sem esperar 5 segundos, já vai atrás
-	getgenv().__EliteReq = tick()
-	local R = game:GetService("ReplicatedStorage").Remotes.CommF_
-	pcall(function()
-		if visible then
-			R:InvokeServer("AbandonQuest")
-		end
-		R:InvokeServer("EliteHunter")
-	end)
-	return false
+    local txt, visible = "", false
+    pcall(function()
+        local Player = game:GetService("Players").LocalPlayer
+        local QuestGui = Player:FindFirstChild("PlayerGui") and Player.PlayerGui:FindFirstChild("Main") and Player.PlayerGui.Main:FindFirstChild("Quest")
+        if QuestGui then
+            visible = QuestGui.Visible
+            if QuestGui:FindFirstChild("Container") and QuestGui.Container:FindFirstChild("QuestTitle") and QuestGui.Container.QuestTitle:FindFirstChild("Title") then
+                txt = QuestGui.Container.QuestTitle.Title.Text
+            end
+        end
+    end)
+    if visible and txt ~= "" then
+        if name and string.find(txt, name, 1, true) then return true end
+        for _, n in ipairs({"Deandre","Urban","Diablo"}) do
+            if string.find(txt, n, 1, true) then return true end
+        end
+    end
+    pcall(function()
+        local R = game:GetService("ReplicatedStorage").Remotes.CommF_
+        if visible then R:InvokeServer("AbandonQuest") task.wait(0.3) end
+        R:InvokeServer("EliteHunter")
+    end)
+    return false
 end
-local K = { "Deandre", "Urban", "Diablo" }
+
 function DetectEliteHunter()
-	local enemies = game:GetService("Workspace"):FindFirstChild("Enemies")
-	if enemies then
-		-- Caminho mais rápido: os Elites normalmente ficam diretamente em Workspace.Enemies.
-		for _, name in ipairs(K) do
-			local mob = enemies:FindFirstChild(name)
-			if mob and mob:IsA("Model") and IsMobAlive(mob) then
-				return mob
-			end
-		end
-		-- Fallback para estruturas aninhadas.
-		for _, mob in ipairs(enemies:GetDescendants()) do
-			if mob:IsA("Model") and table.find(K, mob.Name) and IsMobAlive(mob) then
-				return mob
-			end
-		end
-	end
-	local replicated = game:GetService("ReplicatedStorage")
-	for _, name in ipairs(K) do
-		local mob = replicated:FindFirstChild(name, true)
-		if mob and mob:IsA("Model") and IsMobAlive(mob) then
-			return mob
-		end
-	end
+    local function isAlive(model)
+        if not model or not model:IsA("Model") then return false end
+        local hum = model:FindFirstChildOfClass("Humanoid")
+        if hum then return hum.Health > 0 end
+        return model:FindFirstChild("HumanoidRootPart") ~= nil
+    end
+    local enemies = workspace:FindFirstChild("Enemies")
+    if enemies then
+        for _, name in ipairs({"Deandre","Urban","Diablo"}) do
+            local mob = enemies:FindFirstChild(name)
+            if mob and isAlive(mob) then return mob end
+        end
+        for _, mob in ipairs(enemies:GetChildren()) do
+            if mob:IsA("Model") and table.find({"Deandre","Urban","Diablo"}, mob.Name) and isAlive(mob) then return mob end
+        end
+    end
+    local ok, result = pcall(function()
+        for _, name in ipairs({"Deandre","Urban","Diablo"}) do
+            local m = game:GetService("ReplicatedStorage"):FindFirstChild(name, true)
+            if m and m:IsA("Model") and isAlive(m) then return m end
+        end
+    end)
+    if ok and result then return result end
+    return nil
 end
+
+
 local K = 0
 lastCheckTime = tick()
 function GetOldestLocation()
@@ -7800,34 +7813,42 @@ function isnetworkowner2(Q)
 	return true
 end
 function BringMob(Q)
-	if not Settings["Bring Mob"] then return end
-	if not Q or not Q.Parent or not Q:FindFirstChild("HumanoidRootPart") then return end
-	local Character = t.Character
-	local Root = Character and Character:FindFirstChild("HumanoidRootPart")
-	if not Root then return end
-	if tick() - (getgenv().__BringLast or 0) < 0.25 then return end
-	getgenv().__BringLast = tick()
-	local anchor = Q.HumanoidRootPart.CFrame
-	if (Root.Position - anchor.Position).Magnitude > 120 then return end
-	pcall(function() sethiddenproperty(t, "SimulationRadius", math.huge) sethiddenproperty(t, "MaxSimulationRadius", math.huge) end)
-	local count = math.clamp(tonumber(Settings["Bring Mob Count"]) or 2, 2, 6)
-	local radius = count > 2 and 350 or 250
-	local gathered = 1
-	for _, mob in ipairs(workspace.Enemies:GetChildren()) do
-		if gathered >= count then break end
-		if mob ~= Q and mob.Name == Q.Name and not mob:FindFirstChild("Ignored") and IsMobAlive(mob) then
-			local hrp = mob.HumanoidRootPart
-			if (hrp.Position - anchor.Position).Magnitude <= radius then
-				hrp.CFrame = anchor * CFrame.new(math.random(-3, 3), 0, math.random(-3, 3))
-				hrp.CanCollide = false
-				pcall(function() mob.Humanoid.WalkSpeed = 0 mob.Humanoid.JumpPower = 0 end)
-				sizepart(mob)
-				gathered += 1
-				task.wait(0.15)
-			end
-		end
-	end
+    if not Settings["Bring Mob"] then return end
+    if not Q or not Q.Parent or not Q:FindFirstChild("HumanoidRootPart") then return end
+    if getgenv().BringBlacklist and getgenv().BringBlacklist[Q.Name] then return end
+    if Q:FindFirstChild("Ignored") then return end
+    local Character = t.Character
+    local Root = Character and Character:FindFirstChild("HumanoidRootPart")
+    if not Root then return end
+    if tick() - (getgenv().__BringLast or 0) < 0.35 then return end
+    getgenv().__BringLast = tick()
+    local anchor = Q.HumanoidRootPart.CFrame
+    if (Root.Position - anchor.Position).Magnitude > 150 then return end
+    pcall(function() sethiddenproperty(t, "SimulationRadius", math.huge) end)
+    local count = math.clamp(tonumber(Settings["Bring Mob Count"]) or 6, 2, 8)
+    local radius = 350
+    local gathered = 0
+    for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+        if gathered >= count then break end
+        if mob ~= Q and mob.Name == Q.Name and not mob:FindFirstChild("Ignored") and IsMobAlive(mob) then
+            if not (getgenv().BringBlacklist and getgenv().BringBlacklist[mob.Name]) then
+                local hrp = mob:FindFirstChild("HumanoidRootPart")
+                if hrp and (hrp.Position - anchor.Position).Magnitude <= radius then
+                    hrp.CFrame = anchor * CFrame.new(math.random(-4,4), 0, math.random(-4,4))
+                    hrp.CanCollide = false
+                    hrp.Velocity = Vector3.new(0,0,0)
+                    pcall(function() 
+                        local hum = mob:FindFirstChildOfClass("Humanoid")
+                        if hum then hum.WalkSpeed = 0 hum.JumpPower = 0 hum:ChangeState(Enum.HumanoidStateType.Physics) end
+                    end)
+                    sizepart(mob)
+                    gathered += 1
+                end
+            end
+        end
+    end
 end
+
 task.wait(1)
 SettingFarmMain = Main.CreatePage({ Page_Name = "Setting Farm", Page_Title = "Setting Farm" })
 SettingFarmMainSection = SettingFarmMain.CreateSection("Setting Farm")
@@ -13563,33 +13584,29 @@ function DetectMobRaid()
 	end
 end
 function BringMobNearst(b)
-	if DaBringMob then
-		delay(0.15, function()
-			getgenv().DaBringMob = false
-		end)
-		return
-	end
-	if l and (t.Character.HumanoidRootPart.Position - b.HumanoidRootPart.Position).Magnitude <= 50 then
-		for y, y in pairs(game:GetService("Workspace").Enemies:GetChildren()) do
-			if
-				y ~= b
-				and not y:FindFirstChild("Ignored")
-				and (IsMobAlive(y))
-				and (isnetworkowner2(y.HumanoidRootPart))
-			then
-				if (y.HumanoidRootPart.Position - l.Position).Magnitude <= 350 then
-					sizepart(y)
-					y.HumanoidRootPart.CFrame = l * CFrame.new(0, math.random(0, 2), math.random(0, 2))
-					getgenv().DaBringMob = true
-				end
-			end
-		end
-	end
+    if not Settings["Bring Mob"] then return end
+    if not b or (getgenv().BringBlacklist and getgenv().BringBlacklist[b.Name]) then return end
+    BringMob(b)
 end
+
 function BringMobRaid(b)
-	if not Settings["Bring Mob"] then
-		return
-	end
+    if not Settings["Bring Mob"] then return end
+    if not b or (getgenv().BringBlacklist and getgenv().BringBlacklist[b.Name]) then return end
+    local anchor = b.HumanoidRootPart and b.HumanoidRootPart.CFrame
+    if not anchor then return end
+    for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+        if mob ~= b and not mob:FindFirstChild("Ignored") and IsMobAlive(mob) then
+            if not (getgenv().BringBlacklist and getgenv().BringBlacklist[mob.Name]) then
+                local hrp = mob:FindFirstChild("HumanoidRootPart")
+                if hrp and (hrp.Position - anchor.Position).Magnitude <= 300 then
+                    hrp.CFrame = anchor * CFrame.new(math.random(-2,2), 1, math.random(-2,2))
+                    hrp.CanCollide = false
+                end
+            end
+        end
+    end
+end
+
 	if b and E ~= b then
 		E = b
 		l = b.HumanoidRootPart.CFrame
@@ -14008,191 +14025,37 @@ end
 
 
 function RandomFruit()
-	local Players = game:GetService("Players")
-	local LocalPlayer = Players.LocalPlayer
-	local ReplicatedStorage = game:GetService("ReplicatedStorage")
-	local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
-	local CommF = Remotes and Remotes:FindFirstChild("CommF_")
-	if not CommF or not LocalPlayer then return false end
-	if not Settings["Random Devil Fruit"] then return false end
-	if Settings["Auto Find Leviathan"] or Settings["Multi Find Leviathan"] then return false end
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
+    local CommF = Remotes and Remotes:FindFirstChild("CommF_")
+    if not CommF or not LocalPlayer then return false end
+    if not Settings["Random Devil Fruit"] then return false end
+    if (getgenv().__RandomFruitNext or 0) > tick() or getgenv().__RandomFruitBusy then return false end
+    getgenv().__RandomFruitBusy = true
+    local function GetBeli() local ok,v=pcall(function() return LocalPlayer.Data.Beli.Value end) return ok and v or 0 end
+    local before = GetBeli()
+    local success = false
+    local function Try(label, fn)
+        local ok,res=pcall(fn)
+        task.wait(0.4)
+        local now=GetBeli()
+        if before and now and now < before - 1000 then success=true end
+        if ok and (res==true or res==1) then success=true end
+        return ok,res
+    end
+    pcall(function()
+        Try("Zioles-Buy", function() return CommF:InvokeServer("Zioles", "Buy") end)
+        if not success then Try("Cousin-Buy", function() return CommF:InvokeServer("Cousin", "Buy") end) end
+        if not success then Try("BloxFruitsGacha-Buy", function() return CommF:InvokeServer("BloxFruitsGacha", "Buy") end) end
+        if not success then Try("Gacha-Buy", function() return CommF:InvokeServer("Gacha", "Buy") end) end
+    end)
+    getgenv().__RandomFruitBusy = false
+    if success then getgenv().__RandomFruitNext = tick() + 7200 else getgenv().__RandomFruitNext = tick() + 15 end
+    return success
+end
 
-	-- Verifica se já está girando ou em cooldown
-	if (getgenv().__RandomFruitNext or 0) > tick() or getgenv().__RandomFruitBusy then
-		return false
-	end
-	getgenv().__RandomFruitBusy = true
-
-	local function GetBeli()
-		local ok, v = pcall(function() return LocalPlayer.Data.Beli.Value end)
-		return ok and v or nil
-	end
-	local before = GetBeli()
-	local success = false
-	local responses = {}
-
-	local function TryRemote(label, fn)
-		local ok, res = pcall(fn)
-		responses[#responses+1] = label..":"..tostring(res)
-		-- Verifica se beli diminuiu = comprou
-		task.wait(0.3)
-		local now = GetBeli()
-		if before and now and now < before then
-			success = true
-		end
-		if ok and (res == true or res == 1) then
-			success = true
-		end
-		-- Se janela abriu também é sucesso
-		local gui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-		local win = gui and gui:FindFirstChild("SpinnerWindow")
-		if win and win.Enabled then
-			success = true
-		end
-	end
-
-	pcall(function()
-		-- 1) Tenta comprar direto SEM ir até o NPC - inclui Zioles BloxFruitsGacha
-		TryRemote("Cousin-Buy", function() return CommF:InvokeServer("Cousin", "Buy") end)
-		TryRemote("Zioles-Buy", function() return CommF:InvokeServer("Zioles", "Buy") end)
-		TryRemote("BloxFruitsGacha-Buy", function() return CommF:InvokeServer("BloxFruitsGacha", "Buy") end)
-		TryRemote("BloxFruitsGacha", function() return CommF:InvokeServer("BloxFruitsGacha") end)
-		TryRemote("Gacha-Buy", function() return CommF:InvokeServer("Gacha", "Buy") end)
-		TryRemote("Gacha", function() return CommF:InvokeServer("Gacha") end)
-		TryRemote("Cousin-Buy2", function() return CommF:InvokeServer("Cousin", "Buy", true) end)
-		TryRemote("BloxFruitDealer-Buy", function() return CommF:InvokeServer("BloxFruitDealer", "Buy") end)
-		TryRemote("Shop-Buy", function() return CommF:InvokeServer("Shop", "BuyRandomFruit") end)
-		TryRemote("RandomFruit", function() return CommF:InvokeServer("RandomFruit") end)
-		TryRemote("Zioless-Buy", function() return CommF:InvokeServer("Zioless", "Buy") end)
-		-- Tenta todos os Comm (CommF_, CommE_ etc)
-		pcall(function()
-			local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
-			if Remotes then
-				for _, remote in ipairs(Remotes:GetChildren()) do
-					if remote.Name:find("Comm") then
-						pcall(function() remote:InvokeServer("Cousin", "Buy") end)
-						pcall(function() remote:InvokeServer("Zioles", "Buy") end)
-						pcall(function() remote:InvokeServer("BloxFruitsGacha", "Buy") end)
-					end
-				end
-			end
-		end)
-		-- 2) Fallbacks de caixa/banner
-		if not success then
-			local boxName = GetBoxName()
-			pcall(function()
-				local checkOk, avail = pcall(function() return CommF:InvokeServer("Cousin", "CheckTime", boxName) end)
-				if checkOk then
-					TryRemote("Cousin-Box", function() return CommF:InvokeServer("Cousin", boxName) end)
-				end
-			end)
-			pcall(function()
-				TryRemote("Zioles-Check", function() return CommF:InvokeServer("Zioles", "CheckTime", boxName) end)
-				TryRemote("Zioles-Box", function() return CommF:InvokeServer("Zioles", boxName) end)
-			end)
-		end
-		-- 3) Tenta girar direto sem interface - tenta vários remotos possíveis
-		local gui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-		local win = gui and gui:FindFirstChild("SpinnerWindow")
-		if win and win.Enabled then
-			-- NOVO: Detecta Zioles Gacha Box UI ($444,850) e clica direto
-		pcall(function()
-			local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-			if playerGui then
-				for _, gui in ipairs(playerGui:GetDescendants()) do
-					if gui:IsA("TextButton") or gui:IsA("ImageButton") then
-						local txt = tostring(gui.Text or "") .. tostring(gui.Name or "")
-						if string.find(txt, "444,850") or string.find(txt, "444850") or (gui.Parent and string.find(tostring(gui.Parent.Name), "Gacha")) then
-							pcall(function()
-								for _, conn in ipairs(getconnections(gui.MouseButton1Click)) do
-									conn:Fire()
-								end
-								gui:Activate()
-							end)
-						end
-					end
-				end
-			end
-		end)
-		pcall(function()
-			local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-			local gachaBox = playerGui:FindFirstChild("Zioles' Gacha Box", true) or playerGui:FindFirstChild("Zioles", true)
-			if gachaBox then
-				for _, btn in ipairs(gachaBox:GetDescendants()) do
-					if btn:IsA("TextButton") and (string.find(btn.Text, "%$") or btn.Text == "444,850" or string.find(btn.Text, "444")) then
-						pcall(function()
-							for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do conn:Fire() end
-							btn:Activate()
-						end)
-					end
-				end
-			end
-		end)
-
-		-- Tenta girar via módulos internos sem clicar na UI
-		pcall(function()
-			local Spinner = nil
-			pcall(function() Spinner = require(ReplicatedStorage.Controllers.UI.Spinner) end)
-			if Spinner then
-				-- Tenta métodos comuns
-				if Spinner.Spin then pcall(function() Spinner:Spin() end) end
-				if Spinner.Roll then pcall(function() Spinner:Roll() end) end
-				if Spinner.Open then pcall(function() Spinner:Open() end) end
-			end
-		end)
-			-- Tenta remotos de giro direto
-			pcall(function() CommF:InvokeServer("Cousin", "Spin") end)
-			pcall(function() CommF:InvokeServer("Zioles", "Spin") end)
-			pcall(function() CommF:InvokeServer("Zioles", "Buy") end)
-			pcall(function() CommF:InvokeServer("Cousin", "Roll") end)
-			pcall(function() CommF:InvokeServer("Cousin", "Gacha") end)
-			pcall(function() CommF:InvokeServer("Cousin", "Buy", true) end)
-			-- Fallback: se remoto não funcionou, tenta interagir com NPC Zioles / Cousin / BloxFruitsGacha no mapa (sem teleportar longe)
-		if not success then
-			pcall(function()
-				local NPCs = {"Zioles", "Cousin", "Blox Fruit Dealer Cousin", "BloxFruitsGacha", "Gacha", "Cousin"}
-				for _, npcName in ipairs(NPCs) do
-					local npc = workspace:FindFirstChild(npcName, true) or game:GetService("Workspace").NPCs:FindFirstChild(npcName, true)
-					if npc then
-						for _, pp in ipairs(npc:GetDescendants()) do
-							if pp:IsA("ProximityPrompt") or pp:IsA("ClickDetector") then
-								pcall(function()
-									if pp:IsA("ProximityPrompt") then fireproximityprompt(pp) else fireclickdetector(pp) end
-								end)
-								task.wait(0.3)
-							end
-						end
-					end
-				end
-			end)
-		end
-
-		-- Se ainda não girou, força clique invisível no botão (sem precisar ir até NPC)
-			pcall(function()
-				local above = win:FindFirstChild("AboveSpinner")
-				if above then
-					for _, btn in ipairs(above:GetDescendants()) do
-						if btn:IsA("TextButton") then
-							local txt = string.lower(btn.Text or ""..btn.Name)
-							if string.find(txt, "spin") or string.find(txt, "roll") or string.find(txt, "buy") then
-								for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do
-									pcall(function() conn:Fire() end)
-								end
-								pcall(function() btn:Activate() end)
-							end
-						end
-					end
-				end
-			end)
-		end
-	end)
-
-	getgenv().__RandomFruitBusy = false
-	if success then
-		getgenv().__RandomFruitNext = tick() + 1.5
-		return true
-	end
-	getgenv().__RandomFruitNext = tick() + 3
 	return false
 end
 local FruitInfoModule = nil
@@ -25964,8 +25827,15 @@ do
 					BuyFruitShop()
 				end
 				if Settings["Auto Awake Fruit"] then
-					L.Remotes.CommF_:InvokeServer("Awakener", "Check")
-					L.Remotes.CommF_:InvokeServer("Awakener", "Awaken")
+					if tick() - (getgenv().__AwakenCooldown or 0) > 3 then
+						getgenv().__AwakenCooldown = tick()
+						pcall(function()
+							local chk = L.Remotes.CommF_:InvokeServer("Awakener", "Check")
+							if chk and tostring(chk) ~= "" and not string.find(tostring(chk), "need", 1, true) then
+								L.Remotes.CommF_:InvokeServer("Awakener", "Awaken")
+							end
+						end)
+					end
 				end
 				if Settings["Auto Buy Legendary Sword"] then
 					L.Remotes.CommF_:InvokeServer("LegendarySwordDealer", "2")
