@@ -1,4 +1,76 @@
--- Splash screen custom removida: a interface principal usa apenas a biblioteca Redz V5.
+-- Nexora Hub • Redz-inspired compact UI skin (custom implementation; existing callbacks preserved)
+-- Tela de carregamento (Nexora Hub): pequena e rápida. O resto do script só roda depois dela terminar.
+do
+	pcall(function()
+		local TS = game:GetService("TweenService")
+		local host = (gethui and gethui()) or game:GetService("CoreGui")
+		local oldLoad = host:FindFirstChild("NexoraLoading")
+		if oldLoad then oldLoad:Destroy() end
+		local gui = Instance.new("ScreenGui")
+		gui.Name = "NexoraLoading"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true; gui.DisplayOrder = 10000
+		gui.Parent = host
+		local RED, RED_L, GRAY = Color3.fromRGB(255, 35, 55), Color3.fromRGB(255, 95, 110), Color3.fromRGB(235,235,242)
+		local function mk(class, props, parent)
+			local o = Instance.new(class)
+			for k, v in pairs(props) do o[k] = v end
+			o.Parent = parent
+			return o
+		end
+		local function sfx(id, vol, speed)
+			pcall(function()
+				local snd = Instance.new("Sound")
+				snd.SoundId = id; snd.Volume = vol or 0.5; snd.PlaybackSpeed = speed or 1
+				snd.Parent = game:GetService("SoundService")
+				snd:Play()
+				game:GetService("Debris"):AddItem(snd, 4)
+			end)
+		end
+		local card = mk("CanvasGroup", {AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.fromOffset(230,128), BackgroundColor3=Color3.fromRGB(18, 7, 10), BorderSizePixel=0, GroupTransparency=1}, gui)
+		mk("UICorner", {CornerRadius=UDim.new(0,16)}, card)
+		mk("UIStroke", {Color=RED, Thickness=1, Transparency=0.55}, card)
+		local sc = mk("UIScale", {Scale=0.9}, card)
+		local logo = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,12), Size=UDim2.fromOffset(46,46), BackgroundColor3=Color3.fromRGB(18, 7, 10), BorderSizePixel=0}, card)
+		mk("UICorner", {CornerRadius=UDim.new(1,0)}, logo)
+		mk("UIStroke", {Color=RED, Thickness=2}, logo)
+		mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,2), Size=UDim2.new(1,0,0,13), Text="♛", TextColor3=Color3.fromRGB(255, 95, 110), Font=Enum.Font.GothamBold, TextSize=12}, logo)
+		local n = mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,10), Size=UDim2.new(1,0,1,-12), Text="N", TextColor3=Color3.fromRGB(255, 35, 55), Font=Enum.Font.GothamBlack, TextSize=26}, logo)
+		mk("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(255, 95, 110), Color3.fromRGB(255, 35, 55))}, n)
+		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,64), Size=UDim2.fromOffset(220,20), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=Color3.fromRGB(255, 35, 55), Font=Enum.Font.GothamBlack, TextSize=16}, card)
+		local track = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,92), Size=UDim2.fromOffset(150,3), BackgroundColor3=Color3.fromRGB(24, 10, 13), BorderSizePixel=0}, card)
+		mk("UICorner", {CornerRadius=UDim.new(1,0)}, track)
+		local fill = mk("Frame", {Size=UDim2.new(0,0,1,0), BackgroundColor3=RED, BorderSizePixel=0}, track)
+		mk("UICorner", {CornerRadius=UDim.new(1,0)}, fill)
+		mk("UIGradient", {Color=ColorSequence.new(Color3.fromRGB(255, 35, 55), Color3.fromRGB(255, 95, 110))}, fill)
+		local status = mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,102), Size=UDim2.fromOffset(220,14), BackgroundTransparency=1, Text="Carregando...", TextColor3=GRAY, Font=Enum.Font.Gotham, TextSize=10}, card)
+		-- entrada rápida + som de abertura
+		TS:Create(card, TweenInfo.new(.18, Enum.EasingStyle.Quad), {GroupTransparency=0}):Play()
+		TS:Create(sc, TweenInfo.new(.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale=1}):Play()
+		local PING = "rbxasset://sounds/electronicpingshort.wav"
+		sfx(PING, 0.5, 1.0)
+		task.delay(.09, function() sfx(PING, 0.45, 1.26) end)
+		task.delay(.18, function() sfx(PING, 0.4, 1.5) end)
+		-- progresso curto (~1,3s) bloqueando o resto do script até terminar
+		local steps = { {0,"Carregando..."}, {0.45,"Preparando interface..."}, {0.8,"Quase pronto..."} }
+		local DURATION, startT = 1.3, tick()
+		while true do
+			local p = math.clamp((tick() - startT) / DURATION, 0, 1)
+			fill.Size = UDim2.new(1 - (1 - p) ^ 2, 0, 1, 0)
+			for _, st in ipairs(steps) do if p >= st[1] then status.Text = st[2] end end
+			if p >= 1 then break end
+			task.wait()
+		end
+		status.Text = "Pronto!"
+		sfx(PING, 0.55, 1.5)
+		task.delay(.1, function() sfx(PING, 0.5, 2.0) end)
+		task.wait(0.12)
+		local out = TS:Create(card, TweenInfo.new(.22, Enum.EasingStyle.Quad), {GroupTransparency=1})
+		out:Play()
+		TS:Create(sc, TweenInfo.new(.22, Enum.EasingStyle.Quad), {Scale=0.94}):Play()
+		task.delay(.3, function() gui:Destroy() end)
+	end)
+	-- compatibilidade: o fim do script ainda chama isto, mas a tela já terminou.
+	getgenv().NexoraLoadingFinish = function() end
+end
 -- Registro de erros (diagnóstico): guarda erros que o pcall engole e erros do console,
 -- para descobrir por que uma toggle não faz nada. Botão "Copy Error Log" em Settings.
 do
@@ -1769,7 +1841,7 @@ game:GetService("Players").LocalPlayer.Idled:connect(function()
 	vu:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 end)
 local A = (function()
--- Adapter Nexora -> Redz UI Library V5. Mantém os nomes/callbacks usados pela source.
+-- Nexora Hub V2: Redz UI Library V5 adapter. Existing tabs and callbacks are preserved.
 local redzlib = loadstring(game:HttpGet("https://raw.githubusercontent.com/XenTz-Z/RedzLibV5/refs/heads/main/Source.lua"))()
 local Nexora = {Options = {}, OptionOrder = {}, _tabs = {}, _window = nil}
 local Players = game:GetService("Players")
@@ -1862,7 +1934,6 @@ function Nexora.CreateMain(config)
                 -- Reabre o painel inteiro, mesmo se o botão '-' da Redz tiver
                 -- deixado a janela minimizada antes de ocultar a ScreenGui.
                 hub.Visible = true
-                hub.Size = UDim2.fromOffset(550, 380)
                 local components = hub:FindFirstChild("Components")
                 if components then
                     local tabs = components:FindFirstChild("Tab Scroll")
@@ -1917,9 +1988,9 @@ function Nexora.CreateMain(config)
                             end
                         end
                     end
-                    -- Encontrou a janela: continua procurando controles recriados pela biblioteca.
+                    -- Recheck slowly in case the library recreates its window controls.
                 end
-                task.wait(0.5)
+                task.wait(target and target.Parent and 2 or 0.5)
             end
         end)
     end)
@@ -2604,102 +2675,91 @@ do
         end
     end)
     
-    -- Fruit stock: keep each dealer in a fixed section and update a single
-    -- multiline label. This avoids creating dozens of UI rows that push the
-    -- rest of Status And Server down every time the stock changes.
     local SectionNormal = PageStatusAndServer.CreateSection("Normal Fruit Stock - Normal Dealer")
-    local NormalStockLabel = SectionNormal.CreateLabel({ Title = "Loading normal dealer stock..." })
-
+    SectionNormal.CreateLabel({ Title = "Fruits on sale at the normal dealer" })
+    local NormalLabels = {}
+    NormalLabels[1] = SectionNormal.CreateLabel({ Title = "Loading normal dealer stock..." })
+    
     local SectionAdvance = PageStatusAndServer.CreateSection("Advance Fruit Stock - Mirage Island Dealer")
-    local AdvanceStockLabel = SectionAdvance.CreateLabel({ Title = "Loading Mirage dealer stock..." })
-
+    SectionAdvance.CreateLabel({ Title = "Fruits on sale at the Mirage Island dealer" })
+    local AdvanceLabels = {}
+    AdvanceLabels[1] = SectionAdvance.CreateLabel({ Title = "Loading Mirage dealer stock..." })
+    
+    -- PATCH FIX: estoque 100% dinamico - usa lista real da loja
     local function ParseFruit(v)
-        if type(v) == "table" then
-            if v.OnSale == false or v.InStock == false or v.CanBuy == false then return nil, nil end
+        if type(v)=="table" then
+            -- Blox Fruits retorna: {Name, Price, OnSale, InStock, etc}
+            -- Só queremos frutas que dão pra comprar
+            if v.OnSale == false then return nil, nil end
+            if v.InStock == false then return nil, nil end
+            if v.CanBuy == false then return nil, nil end
+            -- Se tem campo Stock ou Amount e é 0, pula
             if v.Stock == 0 or v.Amount == 0 then return nil, nil end
-            local name = v.Name or v.name or v.FruitName or v[1]
-            local price = v.Price or v.price or v.Cost or v[2] or 0
-            if name then return tostring(name), tonumber(price) or 0 end
-        elseif type(v) == "string" then
+            local n = v.Name or v[1] or v.name or v.FruitName
+            local p = v.Price or v[2] or v.price or v.Cost or 0
+            if n then return n, p end
+        elseif type(v)=="string" then
             return v, 0
         end
         return nil, nil
     end
-
-    local function FormatPrice(price)
-        price = tonumber(price) or 0
-        if price <= 0 then return "" end
-        local value = tostring(math.floor(price))
-        while true do
-            local changed
-            value, changed = value:gsub("^(%-?%d+)(%d%d%d)", "%1,%2")
-            if changed == 0 then break end
-        end
-        return " - $" .. value
+    local function FormatPrice(p)
+        if not p or p==0 then return "" end
+        local s = tostring(math.floor(p))
+        return " - $" .. s:reverse():gsub("(%d%d%d)","%1,"):reverse():gsub("^,","")
     end
-
-    local function UpdateStockLabel(label, stock, dealerName)
-        if type(stock) ~= "table" then
-            label.SetText(dealerName .. ": stock unavailable")
-            return
+    local function Ensure(section, labels, need)
+        for i=#labels+1, need do
+            labels[i] = section.CreateLabel({ Title = "Slot "..i..": Loading..." })
         end
-        local rows, seen = {}, {}
-        for k, v in pairs(stock) do
+    end
+    local function UpdateStock(section, labels, stock)
+        if not stock or type(stock)~="table" then return end
+        local list = {}
+        if #stock>0 then list=stock else for k,v in pairs(stock) do if type(v)=="table" then table.insert(list,v) elseif type(k)=="string" then table.insert(list,{Name=k, Price=v}) end end end
+        -- FILTRA SÓ AS QUE DÁ PRA COMPRAR
+        local filtered = {}
+        for _, v in ipairs(list) do
             local name, price = ParseFruit(v)
-            -- Some responses are keyed by fruit name, with the price as value.
-            if not name and type(k) == "string" and (type(v) == "number" or type(v) == "string") then
-                name, price = k, tonumber(v) or 0
-            end
-            if name and not seen[name] then
-                seen[name] = true
-                rows[#rows + 1] = { name = name, price = price or 0 }
-            end
+            if name then table.insert(filtered, {Name=name, Price=price, _raw=v}) end
         end
-        table.sort(rows, function(a, b) return a.name:lower() < b.name:lower() end)
-        if #rows == 0 then
-            label.SetText(dealerName .. ": no fruits available right now")
+        if #filtered==0 then
+            if labels[1] then labels[1].SetText("Nenhuma fruta no stock agora") end
+            for i=2, #labels do if labels[i] then labels[i].SetText("Slot "..i..": Empty") end end
             return
         end
-        local lines = { dealerName .. " (" .. #rows .. " fruits):" }
-        for _, fruit in ipairs(rows) do
-            lines[#lines + 1] = fruit.name .. FormatPrice(fruit.price)
+        Ensure(section, labels, #filtered)
+        for i, data in ipairs(filtered) do
+            if labels[i] then
+                local disp = data.Name
+                if not disp:find("-") then disp = disp.."-"..disp end
+                labels[i].SetText(disp .. FormatPrice(data.Price))
+            end
         end
-        -- One label per dealer; newline text stays in this stock section rather
-        -- than inserting one UI component per fruit and shifting later sections.
-        label.SetText(table.concat(lines, "\n"))
+        for i=#filtered+1, #labels do if labels[i] then labels[i].SetText("Slot "..i..": Empty") end end
     end
 
-    task.spawn(function()
-        -- Refresh slowly; stock is not a per-frame value. Calls are sequential
-        -- to avoid simultaneous remote requests adding load during gameplay.
-        local firstRun = true
-        while true do
-            if not firstRun then task.wait(60) end
-            firstRun = false
-            local remotes = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
-            local comm = remotes and remotes:FindFirstChild("CommF_")
-            if comm then
-                local normalStock
-                local okNormal = pcall(function()
-                    normalStock = comm:InvokeServer("GetFruits", false)
-                end)
-                if not okNormal or type(normalStock) ~= "table" then
-                    pcall(function() normalStock = comm:InvokeServer("GetFruits") end)
+    spawn(function()
+        -- Refresh at a modest interval to avoid repeatedly invoking stock remotes.
+        while task.wait(15) do
+            pcall(function()
+                local normalStock = nil
+                pcall(function() normalStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetFruits", false) end)
+                if not normalStock or type(normalStock)~="table" or #normalStock==0 then
+                    pcall(function() normalStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetFruits") end)
                 end
-                UpdateStockLabel(NormalStockLabel, normalStock, "Normal Dealer")
+                UpdateStock(SectionNormal, NormalLabels, normalStock)
 
-                local mirageStock
-                local okMirage = pcall(function()
-                    mirageStock = comm:InvokeServer("GetFruits", true)
-                end)
-                if not okMirage or type(mirageStock) ~= "table" then
-                    pcall(function() mirageStock = comm:InvokeServer("GetStock", "Mirage") end)
+                local mirageStock = nil
+                pcall(function() mirageStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetFruits", true) end)
+                if not mirageStock or type(mirageStock)~="table" or #mirageStock==0 then
+                    pcall(function() mirageStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetStock", "Mirage") end)
                 end
-                if type(mirageStock) ~= "table" then
-                    pcall(function() mirageStock = comm:InvokeServer("GetFruits", "Mirage") end)
+                if not mirageStock or type(mirageStock)~="table" or #mirageStock==0 then
+                    pcall(function() mirageStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetFruits", "Mirage") end)
                 end
-                UpdateStockLabel(AdvanceStockLabel, mirageStock, "Mirage Dealer")
-            end
+                UpdateStock(SectionAdvance, AdvanceLabels, mirageStock)
+            end)
         end
     end)
 end
@@ -25310,18 +25370,10 @@ do
 	getgenv().__FruitBusy = false
 	lastHopTick = tick()
 	lastFruitTick = tick()
-	local lastSimulationRadiusTick = 0
-	local lastNoclipTick = 0
 	getgenv().BananaCatMainLoopConn = x.RenderStepped:Connect(function()
-		-- SimulationRadius não precisa ser imposto em todos os frames.
-		-- Limita a chamada protegida a uma vez a cada 2 segundos.
-		local now = tick()
-		if now - lastSimulationRadiusTick >= 2 then
-			lastSimulationRadiusTick = now
-			pcall(function()
-				sethiddenproperty(t, "SimulationRadius", 5000)
-			end)
-		end
+		pcall(function()
+			sethiddenproperty(t, "SimulationRadius", 5000)
+		end)
 		if tick() - lastHopTick >= 500 then
 			lastHopTick = tick()
 			pcall(function()
@@ -25350,11 +25402,9 @@ do
 				end
 			end
 			local Character = t.Character
-			-- Noclip só precisa reaplicar colisões periodicamente, não a cada frame.
-			if Character and (ToggleNoclip() or Settings.Noclip) and tick() - lastNoclipTick >= 0.15 then
-				lastNoclipTick = tick()
+			if Character and (ToggleNoclip() or Settings.Noclip) then
 				for _, part in ipairs(Character:GetDescendants()) do
-					if part:IsA("BasePart") and part.CanCollide then
+					if part:IsA("BasePart") then
 						part.CanCollide = false
 					end
 				end
