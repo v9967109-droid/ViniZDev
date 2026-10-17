@@ -1,76 +1,4 @@
--- Nexora Hub • LucidUI glass interface migration (existing callbacks preserved)
--- Tela de carregamento (Nexora Hub): pequena e rápida. O resto do script só roda depois dela terminar.
-do
-	pcall(function()
-		local TS = game:GetService("TweenService")
-		local host = (gethui and gethui()) or game:GetService("CoreGui")
-		local oldLoad = host:FindFirstChild("NexoraLoading")
-		if oldLoad then oldLoad:Destroy() end
-		local gui = Instance.new("ScreenGui")
-		gui.Name = "NexoraLoading"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true; gui.DisplayOrder = 10000
-		gui.Parent = host
-		local RED, RED_L, GRAY = Color3.fromRGB(255, 35, 55), Color3.fromRGB(255, 95, 110), Color3.fromRGB(235,235,242)
-		local function mk(class, props, parent)
-			local o = Instance.new(class)
-			for k, v in pairs(props) do o[k] = v end
-			o.Parent = parent
-			return o
-		end
-		local function sfx(id, vol, speed)
-			pcall(function()
-				local snd = Instance.new("Sound")
-				snd.SoundId = id; snd.Volume = vol or 0.5; snd.PlaybackSpeed = speed or 1
-				snd.Parent = game:GetService("SoundService")
-				snd:Play()
-				game:GetService("Debris"):AddItem(snd, 4)
-			end)
-		end
-		local card = mk("CanvasGroup", {AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.fromOffset(230,128), BackgroundColor3=Color3.fromRGB(18, 7, 10), BorderSizePixel=0, GroupTransparency=1}, gui)
-		mk("UICorner", {CornerRadius=UDim.new(0,16)}, card)
-		mk("UIStroke", {Color=RED, Thickness=1, Transparency=0.55}, card)
-		local sc = mk("UIScale", {Scale=0.9}, card)
-		local logo = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,12), Size=UDim2.fromOffset(46,46), BackgroundColor3=Color3.fromRGB(18, 7, 10), BorderSizePixel=0}, card)
-		mk("UICorner", {CornerRadius=UDim.new(1,0)}, logo)
-		mk("UIStroke", {Color=RED, Thickness=2}, logo)
-		mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,2), Size=UDim2.new(1,0,0,13), Text="♛", TextColor3=Color3.fromRGB(255, 95, 110), Font=Enum.Font.GothamBold, TextSize=12}, logo)
-		local n = mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,10), Size=UDim2.new(1,0,1,-12), Text="N", TextColor3=Color3.fromRGB(255, 35, 55), Font=Enum.Font.GothamBlack, TextSize=26}, logo)
-		mk("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(255, 95, 110), Color3.fromRGB(255, 35, 55))}, n)
-		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,64), Size=UDim2.fromOffset(220,20), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=Color3.fromRGB(255, 35, 55), Font=Enum.Font.GothamBlack, TextSize=16}, card)
-		local track = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,92), Size=UDim2.fromOffset(150,3), BackgroundColor3=Color3.fromRGB(24, 10, 13), BorderSizePixel=0}, card)
-		mk("UICorner", {CornerRadius=UDim.new(1,0)}, track)
-		local fill = mk("Frame", {Size=UDim2.new(0,0,1,0), BackgroundColor3=RED, BorderSizePixel=0}, track)
-		mk("UICorner", {CornerRadius=UDim.new(1,0)}, fill)
-		mk("UIGradient", {Color=ColorSequence.new(Color3.fromRGB(255, 35, 55), Color3.fromRGB(255, 95, 110))}, fill)
-		local status = mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,102), Size=UDim2.fromOffset(220,14), BackgroundTransparency=1, Text="Carregando...", TextColor3=GRAY, Font=Enum.Font.Gotham, TextSize=10}, card)
-		-- entrada rápida + som de abertura
-		TS:Create(card, TweenInfo.new(.18, Enum.EasingStyle.Quad), {GroupTransparency=0}):Play()
-		TS:Create(sc, TweenInfo.new(.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale=1}):Play()
-		local PING = "rbxasset://sounds/electronicpingshort.wav"
-		sfx(PING, 0.5, 1.0)
-		task.delay(.09, function() sfx(PING, 0.45, 1.26) end)
-		task.delay(.18, function() sfx(PING, 0.4, 1.5) end)
-		-- progresso curto (~1,3s) bloqueando o resto do script até terminar
-		local steps = { {0,"Carregando..."}, {0.45,"Preparando interface..."}, {0.8,"Quase pronto..."} }
-		local DURATION, startT = 1.3, tick()
-		while true do
-			local p = math.clamp((tick() - startT) / DURATION, 0, 1)
-			fill.Size = UDim2.new(1 - (1 - p) ^ 2, 0, 1, 0)
-			for _, st in ipairs(steps) do if p >= st[1] then status.Text = st[2] end end
-			if p >= 1 then break end
-			task.wait()
-		end
-		status.Text = "Pronto!"
-		sfx(PING, 0.55, 1.5)
-		task.delay(.1, function() sfx(PING, 0.5, 2.0) end)
-		task.wait(0.12)
-		local out = TS:Create(card, TweenInfo.new(.22, Enum.EasingStyle.Quad), {GroupTransparency=1})
-		out:Play()
-		TS:Create(sc, TweenInfo.new(.22, Enum.EasingStyle.Quad), {Scale=0.94}):Play()
-		task.delay(.3, function() gui:Destroy() end)
-	end)
-	-- compatibilidade: o fim do script ainda chama isto, mas a tela já terminou.
-	getgenv().NexoraLoadingFinish = function() end
-end
+-- Nexora Hub • LucidUI migration (compatibility layer v2; legacy feature callbacks preserved)
 -- Registro de erros (diagnóstico): guarda erros que o pcall engole e erros do console,
 -- para descobrir por que uma toggle não faz nada. Botão "Copy Error Log" em Settings.
 do
@@ -1841,17 +1769,32 @@ game:GetService("Players").LocalPlayer.Idled:connect(function()
 	vu:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 end)
 local A = (function()
--- UI base única: LucidUI. Esta camada traduz a API antiga da source para controles nativos LucidUI, sem carregar outra biblioteca de interface.
+-- CAMADA DE COMPATIBILIDADE V2
+-- A source antiga continua chamando Main/Page/Section; esta camada converte essas chamadas
+-- para controles nativos LucidUI, centraliza chamadas protegidas e mantém o estado dos controles.
+-- A interface externa é carregada uma única vez e é criada somente pela LucidUI.
 local LucidUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Kyotaah/lucidui/main/dist/lucidui.lua"))()
-local Nexora = {Options = {}, OptionOrder = {}, _tabs = {}, _window = nil}
+local Nexora = {Options = {}, OptionOrder = {}, _tabs = {}, _window = nil, CompatibilityVersion = 2, Library = LucidUI}
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local function safe(fn, ...)
     if type(fn) ~= "function" then return nil end
     local args = table.pack(...)
-    local ok, result = pcall(function() return fn(table.unpack(args, 1, args.n)) end)
-    if ok then return result end
-    return nil
+    local result = table.pack(pcall(function()
+        return fn(table.unpack(args, 1, args.n))
+    end))
+    if not result[1] then
+        return nil
+    end
+    return table.unpack(result, 2, result.n)
+end
+
+-- Criação unificada de elementos nativos: evita que uma falha isolada derrube a interface.
+local function createNative(parent, methodName, config)
+    if not parent then return nil end
+    local method = parent[methodName]
+    if type(method) ~= "function" then return nil end
+    return safe(method, parent, config or {})
 end
 local function register(title, kind, value, callback, control, pageName, sectionName)
     local opt = {title=title, type=kind, value=value, Callback=callback, FunctionCreate=control, page=pageName, section=sectionName}
@@ -1899,15 +1842,15 @@ function Nexora.CreateMain(config)
         end
         function tab.AddToggle(_, cfg)
             cfg=cfg or {}
-            return currentSection():CreateToggle({Name=cfg.Title or cfg.Name or "Toggle", CurrentValue=cfg.Default==true, Callback=cfg.Callback})
+            return createNative(currentSection(), "CreateToggle", {Name=cfg.Title or cfg.Name or "Toggle", CurrentValue=cfg.Default==true, Callback=cfg.Callback})
         end
         function tab.AddButton(_, cfg)
             cfg=cfg or {}
-            return currentSection():CreateButton({Name=cfg.Title or cfg.Name or "Button", Callback=cfg.Callback})
+            return createNative(currentSection(), "CreateButton", {Name=cfg.Title or cfg.Name or "Button", Callback=cfg.Callback})
         end
         function tab.AddSlider(_, cfg)
             cfg=cfg or {}
-            return currentSection():CreateSlider({Name=cfg.Title or cfg.Name or "Slider", Range={cfg.Min or 0, cfg.Max or 100}, CurrentValue=cfg.Default or 0, Increment=cfg.Increment or 1, Callback=cfg.Callback})
+            return createNative(currentSection(), "CreateSlider", {Name=cfg.Title or cfg.Name or "Slider", Range={cfg.Min or 0, cfg.Max or 100}, CurrentValue=cfg.Default or 0, Increment=cfg.Increment or 1, Callback=cfg.Callback})
         end
         function tab.AddDropdown(_, cfg)
             cfg=cfg or {}
@@ -1919,21 +1862,21 @@ function Nexora.CreateMain(config)
                 for _, item in ipairs(options) do if default[item] == true then first=item; break end end
                 default = first or options[1]
             end
-            return currentSection():CreateDropdown({Name=cfg.Title or cfg.Name or "Dropdown", Options=options, CurrentOption=default, Callback=cfg.Callback})
+            return createNative(currentSection(), "CreateDropdown", {Name=cfg.Title or cfg.Name or "Dropdown", Options=options, CurrentOption=default, Callback=cfg.Callback})
         end
         function tab.AddTextBox(_, cfg)
             cfg=cfg or {}
-            return currentSection():CreateInput({Name=cfg.Title or cfg.Name or "Input", Placeholder=cfg.Placeholder or "", CurrentValue=cfg.Default or "", Callback=cfg.Callback})
+            return createNative(currentSection(), "CreateInput", {Name=cfg.Title or cfg.Name or "Input", Placeholder=cfg.Placeholder or "", CurrentValue=cfg.Default or "", Callback=cfg.Callback})
         end
         function tab.AddParagraph(_, cfg, desc)
             local title, body
             if type(cfg)=="table" then title=cfg.Title or cfg.Name or cfg[1] or "Info"; body=cfg.Content or cfg.Desc or cfg[2] or ""
             else title=tostring(cfg or "Info"); body=tostring(desc or "") end
-            local obj=currentSection():CreateTextDisplay({Title=tostring(title), Content=tostring(body)})
+            local obj=createNative(currentSection(), "CreateTextDisplay", {Title=tostring(title), Content=tostring(body)})
             return obj, obj
         end
         function tab.AddLabel(_, title)
-            local obj=currentSection():CreateTextDisplay({Title=tostring(title or "Info"), Content=""})
+            local obj=createNative(currentSection(), "CreateTextDisplay", {Title=tostring(title or "Info"), Content=""})
             return obj
         end
         Nexora._tabs[name] = tab
@@ -28263,9 +28206,8 @@ end)()
 
 
 
--- Restaura os toggles ativos (UI + callback) pelo mesmo caminho do clique manual.
+-- Restaura os toggles ativos (UI + callback) pelo mesmo caminho do clique manual; sem tela de loading.
 task.spawn(function()
     task.wait()
     if A and A.RestoreSavedToggles then A.RestoreSavedToggles() end
-    pcall(function() if getgenv().NexoraLoadingFinish then getgenv().NexoraLoadingFinish() end end)
 end)
