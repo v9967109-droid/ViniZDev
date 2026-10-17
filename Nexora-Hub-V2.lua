@@ -1871,6 +1871,40 @@ function Nexora.CreateMain(config)
     config = config or {}
     local win = redzlib:MakeWindow({Title=config.Title or "NEXORA HUB", SubTitle=config.Desc or "BLOX FRUITS • ViniZDev", SaveFolder="Nexora Hub"})
     Nexora._window = win
+
+    -- Botão flutuante arrastável: alterna a visibilidade da janela Redz.
+    pcall(function()
+        local mini = win:AddMinimizeButton({
+            Corner = {CornerRadius = UDim.new(1, 0)},
+            Stroke = {Color = Color3.fromRGB(0, 0, 0), Thickness = 2},
+            Button = {
+                Size = UDim2.fromOffset(46, 46),
+                Position = UDim2.new(0, 24, 0.5, -23),
+                BackgroundTransparency = 0,
+                BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                Image = "", AutoButtonColor = false, Name = "NexoraFloatingButton"
+            }
+        })
+        local btn = mini and mini.Button
+        if btn then
+            btn.Image = ""
+            btn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            btn.BackgroundTransparency = 0
+            btn.AutoButtonColor = false
+            local stroke = btn:FindFirstChildOfClass("UIStroke") or Instance.new("UIStroke")
+            stroke.Color = Color3.fromRGB(0, 0, 0); stroke.Thickness = 2; stroke.Parent = btn
+            local corner = btn:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(1, 0); corner.Parent = btn
+            local mark = Instance.new("TextLabel")
+            mark.Name = "NexoraMark"; mark.BackgroundTransparency = 1
+            mark.Size = UDim2.fromScale(1, 1); mark.Position = UDim2.fromScale(0, 0)
+            mark.Font = Enum.Font.GothamBlack; mark.Text = "N"
+            mark.TextColor3 = Color3.fromRGB(255, 255, 255)
+            mark.TextStrokeColor3 = Color3.fromRGB(0, 0, 0); mark.TextStrokeTransparency = 0
+            mark.TextSize = 25; mark.ZIndex = btn.ZIndex + 1; mark.Parent = btn
+        end
+    end)
+
     local Main = {}
     function Main.CreatePage(pageConfig)
         pageConfig = pageConfig or {}
@@ -1884,7 +1918,7 @@ function Nexora.CreateMain(config)
             function Section.CreateToggle(cfg, callback)
                 cfg = cfg or {}; local title = cfg.Title or "Toggle"
                 Settings = Settings or {}
-                local default = type(Settings[title]) == "boolean" and Settings[title] or (cfg.Default == true)
+                local default; if type(Settings[title]) == "boolean" then default = Settings[title] else default = (cfg.Default == true) end
                 local control = safe(tab.AddToggle, tab, {Name=title, Desc=cfg.Desc or "", Default=default, Callback=function(v)
                     Settings[title] = not not v
                     pcall(function() SaveSettings(title, not not v) end)
@@ -1952,9 +1986,19 @@ function Nexora.CreateMain(config)
                 local control=safe(tab.AddDropdown,tab,{Name=title,Options=values,Default=default,MultipleOptions=multi,Callback=function(v)
                     if multi then
                         if type(v)=="table" then
-                            local selected={}; for _,item in ipairs(v) do selected[tostring(item)]=true end
-                            for _,item in ipairs(values) do if selected[item]==nil then selected[item]=false end end
-                            for item,state in pairs(selected) do if callback then task.spawn(function() safe(callback,item,state) end) end end
+                            local selected = {}
+                            -- Redz pode retornar uma lista ou um mapa item=true/false.
+                            for k, item in pairs(v) do
+                                if type(k) == "number" then selected[tostring(item)] = true
+                                elseif type(item) == "boolean" then selected[tostring(k)] = item
+                                elseif item ~= nil then selected[tostring(item)] = true end
+                            end
+                            for _, item in ipairs(values) do
+                                if selected[item] == nil then selected[item] = false end
+                            end
+                            for item, state in pairs(selected) do
+                                if callback then task.spawn(function() safe(callback, item, state) end) end
+                            end
                         end
                     elseif callback then task.spawn(function() safe(callback,v) end) end
                 end})
