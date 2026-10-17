@@ -1899,11 +1899,40 @@ function Nexora.CreateMain(config)
                 return safe(tab.AddButton,tab,{Name=title,Desc=cfg.Desc or "",Callback=function() if callback then task.spawn(function() safe(callback) end) end end})
             end
             function Section.CreateLabel(cfg)
-                local title=type(cfg)=="table" and (cfg.Title or cfg.Text or "") or tostring(cfg or "")
-                local control=safe(tab.AddParagraph,tab,{Title=tostring(title),Text=""}) or safe(tab.AddLabel,tab,{tostring(title)})
-                local handle={Object=control}
-                handle.SetText=function(_,v) if control and type(control.Set) == "function" then safe(control.Set,control,tostring(v)) end end
-                handle.GetText=function() return tostring(title) end
+                local title = type(cfg)=="table" and (cfg.Title or cfg.Text or "") or tostring(cfg or "")
+                title = tostring(title)
+                -- Redz V5 AddParagraph recebe (título, texto) e retorna Frame + objeto Label.
+                -- A chamada antiga passava uma tabela e tentava usar control.Set, que não é
+                -- a API do Label da Redz; isso impedia os status de atualizarem.
+                local frame, paragraphLabel
+                local ok = pcall(function()
+                    frame, paragraphLabel = tab:AddParagraph(title, title)
+                end)
+                if not ok then
+                    frame = safe(tab.AddLabel, tab, title)
+                end
+                local handle = {Object=frame, Label=paragraphLabel, _text=title}
+                handle.SetText = function(_, v)
+                    v = tostring(v or "")
+                    handle._text = v
+                    local updated = false
+                    if paragraphLabel and type(paragraphLabel.SetTitle) == "function" then
+                        updated = pcall(paragraphLabel.SetTitle, paragraphLabel, v)
+                    end
+                    -- Fallback para forks da Redz com estrutura de label diferente.
+                    if not updated and frame then
+                        pcall(function()
+                            if frame:IsA("TextLabel") then frame.Text = v; updated = true end
+                            for _, obj in ipairs(frame:GetDescendants()) do
+                                if obj:IsA("TextLabel") then
+                                    obj.Text = v
+                                    updated = true
+                                end
+                            end
+                        end)
+                    end
+                end
+                handle.GetText = function() return handle._text end
                 return handle
             end
             function Section.CreateSlider(cfg, callback)
