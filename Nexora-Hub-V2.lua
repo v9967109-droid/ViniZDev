@@ -1899,9 +1899,11 @@ function Nexora.CreateMain(config)
             mark.Name = "NexoraMark"; mark.BackgroundTransparency = 1
             mark.Size = UDim2.fromScale(1, 1); mark.Position = UDim2.fromScale(0, 0)
             mark.Font = Enum.Font.GothamBlack; mark.Text = "N"
-            mark.TextColor3 = Color3.fromRGB(255, 255, 255)
-            mark.TextStrokeColor3 = Color3.fromRGB(0, 0, 0); mark.TextStrokeTransparency = 0
-            mark.TextSize = 25; mark.ZIndex = btn.ZIndex + 1; mark.Parent = btn
+            mark.TextColor3 = Color3.fromRGB(20, 16, 8)
+            mark.TextStrokeTransparency = 1
+            mark.TextSize = 25; mark.ZIndex = btn.ZIndex + 2; mark.Active = false; mark.Selectable = false; mark.Parent = btn
+            -- The Redz library already connects this button to Window:Minimize().
+            -- Keep the mark non-interactive so it cannot intercept taps.
         end
     end)
 
@@ -1919,7 +1921,7 @@ function Nexora.CreateMain(config)
                 cfg = cfg or {}; local title = cfg.Title or "Toggle"
                 Settings = Settings or {}
                 local default; if type(Settings[title]) == "boolean" then default = Settings[title] else default = (cfg.Default == true) end
-                local control = safe(tab.AddToggle, tab, {Name=title, Desc=cfg.Desc or "", Default=default, Callback=function(v)
+                local control = safe(tab.AddToggle, tab, {Title=title, Name=title, Desc=cfg.Desc or "", Default=default, Callback=function(v)
                     Settings[title] = not not v
                     pcall(function() SaveSettings(title, not not v) end)
                     if callback then task.spawn(function() safe(callback, not not v) end) end
@@ -1930,7 +1932,23 @@ function Nexora.CreateMain(config)
             end
             function Section.CreateButton(cfg, callback)
                 cfg=cfg or {}; local title=cfg.Title or "Button"
-                return safe(tab.AddButton,tab,{Name=title,Desc=cfg.Desc or "",Callback=function() if callback then task.spawn(function() safe(callback) end) end end})
+                local fired = false
+                local function onPressed()
+                    if fired then return end
+                    fired = true
+                    task.defer(function() fired = false end)
+                    if type(callback) == "function" then
+                        task.spawn(function()
+                            local ok, err = pcall(callback)
+                            if not ok then warn("[Nexora] Button '" .. tostring(title) .. "' callback error: " .. tostring(err)) end
+                        end)
+                    end
+                end
+                local button = safe(tab.AddButton, tab, {Title=title, Name=title, Desc=cfg.Desc or "", Description=cfg.Desc or "", Callback=onPressed})
+                if not button then
+                    button = safe(tab.AddButton, tab, {Title=title, Callback=onPressed})
+                end
+                return button
             end
             function Section.CreateLabel(cfg)
                 local title = type(cfg)=="table" and (cfg.Title or cfg.Text or "") or tostring(cfg or "")
@@ -1998,7 +2016,7 @@ function Nexora.CreateMain(config)
             end
             function Section.CreateSlider(cfg, callback)
                 cfg=cfg or {}; local title=cfg.Title or "Slider"; local min=cfg.Min or cfg.MinValue or 0; local max=cfg.Max or cfg.MaxValue or 100; local default=math.clamp(tonumber(cfg.Default or cfg.Value) or min,min,max)
-                local control=safe(tab.AddSlider,tab,{Name=title,Min=min,Max=max,Default=default,Increment=cfg.Increment or 1,Callback=function(v) if callback then task.spawn(function() safe(callback,v) end) end end})
+                local control=safe(tab.AddSlider,tab,{Title=title,Name=title,Min=min,Max=max,Default=default,Increment=cfg.Increment or 1,Callback=function(v) if callback then task.spawn(function() safe(callback,v) end) end end})
                 return register(title,"slider",default,callback,control,name,sectionName)
             end
             function Section.CreateDropdown(cfg, callback)
@@ -2010,33 +2028,49 @@ function Nexora.CreateMain(config)
                     for _,v in ipairs(values) do if selected[v]==nil then selected[v]=raw[v]==true end end
                     default=selected
                 elseif default==nil then default=values[1] end
-                local control=safe(tab.AddDropdown,tab,{Name=title,Options=values,Default=default,MultipleOptions=multi,Callback=function(v)
-                    if multi then
-                        if type(v)=="table" then
-                            local selected = {}
-                            -- Redz pode retornar uma lista ou um mapa item=true/false.
-                            for k, item in pairs(v) do
-                                if type(k) == "number" then selected[tostring(item)] = true
-                                elseif type(item) == "boolean" then selected[tostring(k)] = item
-                                elseif item ~= nil then selected[tostring(item)] = true end
+                local control
+                if multi then
+                    -- Stable multi-select independent of the dropdown implementation in the
+                    -- fetched Redz V5 build. Each item has its own toggle, preserving all
+                    -- existing callback(item, state) and SaveSettings(title, item, state) calls.
+                    control = {Items = {}, Selected = default}
+                    for _, item in ipairs(values) do
+                        local optionName = item -- isolate the loop value for the callback closure
+                        local itemName = title .. " | " .. optionName
+                        local itemDefault = default[optionName] == true
+                        local itemControl = safe(tab.AddToggle, tab, {
+                            Title=itemName, Name=itemName,
+                            Desc="Seleção múltipla • " .. title,
+                            Default=itemDefault,
+                            Callback=function(v)
+                                default[optionName] = not not v
+                                control.Selected[optionName] = not not v
+                                if callback then task.spawn(function() safe(callback, optionName, not not v) end) end
                             end
-                            for _, item in ipairs(values) do
-                                if selected[item] == nil then selected[item] = false end
-                            end
-                            for item, state in pairs(selected) do
-                                if callback then task.spawn(function() safe(callback, item, state) end) end
-                            end
-                        end
-                    elseif callback then task.spawn(function() safe(callback,v) end) end
-                end})
+                        })
+                        control.Items[optionName] = itemControl
+                    end
+                else
+                    control=safe(tab.AddDropdown,tab,{Title=title,Name=title,Options=values,Default=default,Callback=function(v)
+                        if callback then task.spawn(function() safe(callback,v) end) end
+                    end})
+                end
                 local opt=register(title,"dropdown",default,callback,control,name,sectionName)
-                opt.GetNewList=function(_,newList) if control and type(control.Set) == "function" then safe(control.Set,control,newList) end end
+                opt.GetNewList=function(_,newList)
+                    if multi and type(newList)=="table" then
+                        for item, itemControl in pairs(control.Items) do
+                            local enabled = newList[item] == true
+                            default[item] = enabled
+                            if itemControl and type(itemControl.Set) == "function" then safe(itemControl.Set,itemControl,enabled) end
+                        end
+                    elseif control and type(control.Set) == "function" then safe(control.Set,control,newList) end
+                end
                 opt.SetList=opt.GetNewList
                 return opt
             end
             function Section.CreateBox(cfg, callback)
                 cfg=cfg or {}; local title=cfg.Title or "Text input"
-                local control=safe(tab.AddTextBox,tab,{Name=title,Default=cfg.Default or "",Placeholder=cfg.Placeholder or "",Callback=function(v) if callback then task.spawn(function() safe(callback,v) end) end end})
+                local control=safe(tab.AddTextBox,tab,{Title=title,Name=title,Default=cfg.Default or "",Placeholder=cfg.Placeholder or "",Callback=function(v) if callback then task.spawn(function() safe(callback,v) end) end end})
                 local opt=register(title,"box",cfg.Default or "",callback,control,name,sectionName)
                 opt.FunctionCreate.GetText=function() return tostring(opt.value or "") end
                 return opt
