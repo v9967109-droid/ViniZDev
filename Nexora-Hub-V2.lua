@@ -1966,21 +1966,32 @@ function Nexora.CreateMain(config)
                 warn("[Nexora] Não encontrei a ScreenGui da Redz para abrir/fechar.")
             end
         end)
-        -- O botão '-' padrão da Redz normalmente só reduz a janela à barra do título.
-        -- Para Nexora, ele oculta a ScreenGui inteira; o botão flutuante reabre tudo.
+        -- Os botões '-' e 'X' escondem a janela sem destruir a UI.
+        -- O botão N permanece independente e alterna entre abrir/fechar.
         task.spawn(function()
+            local hooked = setmetatable({}, {__mode = "k"})
             for _=1,80 do
                 target = target and target.Parent and target or findWindowGui()
-                local minimize = target and target:FindFirstChild("Minimize", true)
-                if minimize and minimize:IsA("GuiButton") then
-                    minimize.Activated:Connect(function()
-                        task.defer(function()
-                            if target and target.Parent then target.Enabled = false end
-                        end)
-                    end)
-                    return
+                if target then
+                    for _, control in ipairs(target:GetDescendants()) do
+                        if control:IsA("GuiButton") and not hooked[control] then
+                            local n = string.lower(tostring(control.Name))
+                            local t = string.lower(tostring(control.Text or ""))
+                            local isClose = n == "close" or n == "closebutton" or n == "exit" or t == "x" or t == "×"
+                            local isMinimize = n == "minimize" or n == "minimizebutton" or n == "minimize button" or t == "-" or t == "−"
+                            if isClose or isMinimize then
+                                hooked[control] = true
+                                control.Activated:Connect(function()
+                                    task.defer(function()
+                                        if target and target.Parent then target.Enabled = false end
+                                    end)
+                                end)
+                            end
+                        end
+                    end
+                    -- Encontrou a janela: continua procurando controles recriados pela biblioteca.
                 end
-                task.wait(0.25)
+                task.wait(0.5)
             end
         end)
     end)
@@ -17238,12 +17249,8 @@ local function X(I, _)
 			if g.Z < 0 then
 				l.Velocity = l.Velocity - P.CFrame.LookVector * (g.Z * ((_ and vehicleflyspeed or iyflyspeed) * 50))
 			end
-			J.MouseButton1Click:Connect(function()
-				l.Velocity = Vector3.new(0, -20, 0)
-			end)
-			H.MouseButton1Click:Connect(function()
-				l.Velocity = Vector3.new(0, 20, 0)
-			end)
+            -- Não conectar eventos aqui: este código roda em todo RenderStepped e causava mini travadas.
+            -- Os botões de subir/descer não criam mais listeners duplicados a cada frame.
 		end
 	end)
 end
@@ -24445,9 +24452,8 @@ do
 		local h = currentHumanoid()
 		if h then hook(h); enforce(h) end
 	end
-	table.insert(conns, RunService.Stepped:Connect(onStep))
+	-- Uma única conexão por ciclo evita aplicar as mesmas configurações três vezes por frame.
 	table.insert(conns, RunService.Heartbeat:Connect(onStep))
-	pcall(function() table.insert(conns, RunService.RenderStepped:Connect(onStep)) end)
 	table.insert(conns, t.CharacterAdded:Connect(function(ch)
 		local h = ch:WaitForChild("Humanoid", 10)
 		if h then hook(h) end
