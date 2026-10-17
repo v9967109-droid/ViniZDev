@@ -8,7 +8,7 @@ do
 		local gui = Instance.new("ScreenGui")
 		gui.Name = "NexoraLoading"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true; gui.DisplayOrder = 10000
 		gui.Parent = host
-		local GOLD, GOLD_L, GRAY = Color3.fromRGB(0, 190, 255), Color3.fromRGB(100, 225, 255), Color3.fromRGB(165,165,174)
+		local RED, RED_L, GRAY = Color3.fromRGB(255, 35, 55), Color3.fromRGB(255, 105, 120), Color3.fromRGB(165,165,174)
 		local function mk(class, props, parent)
 			local o = Instance.new(class)
 			for k, v in pairs(props) do o[k] = v end
@@ -24,22 +24,22 @@ do
 				game:GetService("Debris"):AddItem(snd, 4)
 			end)
 		end
-		local card = mk("CanvasGroup", {AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.fromOffset(230,128), BackgroundColor3=Color3.fromRGB(5,12,30), BorderSizePixel=0, GroupTransparency=1}, gui)
+		local card = mk("CanvasGroup", {AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.fromOffset(230,128), BackgroundColor3=Color3.fromRGB(18, 7, 10), BorderSizePixel=0, GroupTransparency=1}, gui)
 		mk("UICorner", {CornerRadius=UDim.new(0,16)}, card)
-		mk("UIStroke", {Color=GOLD, Thickness=1, Transparency=0.55}, card)
+		mk("UIStroke", {Color=RED, Thickness=1, Transparency=0.55}, card)
 		local sc = mk("UIScale", {Scale=0.9}, card)
-		local logo = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,12), Size=UDim2.fromOffset(46,46), BackgroundColor3=Color3.fromRGB(5,12,30), BorderSizePixel=0}, card)
+		local logo = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,12), Size=UDim2.fromOffset(46,46), BackgroundColor3=Color3.fromRGB(18, 7, 10), BorderSizePixel=0}, card)
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, logo)
-		mk("UIStroke", {Color=GOLD, Thickness=2}, logo)
-		mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,2), Size=UDim2.new(1,0,0,13), Text="♛", TextColor3=Color3.fromRGB(100, 225, 255), Font=Enum.Font.GothamBold, TextSize=12}, logo)
-		local n = mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,10), Size=UDim2.new(1,0,1,-12), Text="N", TextColor3=Color3.fromRGB(0, 190, 255), Font=Enum.Font.GothamBlack, TextSize=26}, logo)
-		mk("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(100, 225, 255), Color3.fromRGB(0, 190, 255))}, n)
-		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,64), Size=UDim2.fromOffset(220,20), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=Color3.fromRGB(0, 190, 255), Font=Enum.Font.GothamBlack, TextSize=16}, card)
-		local track = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,92), Size=UDim2.fromOffset(150,3), BackgroundColor3=Color3.fromRGB(15,28,52), BorderSizePixel=0}, card)
+		mk("UIStroke", {Color=RED, Thickness=2}, logo)
+		mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,2), Size=UDim2.new(1,0,0,13), Text="♛", TextColor3=Color3.fromRGB(255, 105, 120), Font=Enum.Font.GothamBold, TextSize=12}, logo)
+		local n = mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,10), Size=UDim2.new(1,0,1,-12), Text="N", TextColor3=Color3.fromRGB(255, 35, 55), Font=Enum.Font.GothamBlack, TextSize=26}, logo)
+		mk("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(255, 105, 120), Color3.fromRGB(255, 35, 55))}, n)
+		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,64), Size=UDim2.fromOffset(220,20), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=Color3.fromRGB(255, 35, 55), Font=Enum.Font.GothamBlack, TextSize=16}, card)
+		local track = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,92), Size=UDim2.fromOffset(150,3), BackgroundColor3=Color3.fromRGB(24, 10, 13), BorderSizePixel=0}, card)
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, track)
-		local fill = mk("Frame", {Size=UDim2.new(0,0,1,0), BackgroundColor3=GOLD, BorderSizePixel=0}, track)
+		local fill = mk("Frame", {Size=UDim2.new(0,0,1,0), BackgroundColor3=RED, BorderSizePixel=0}, track)
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, fill)
-		mk("UIGradient", {Color=ColorSequence.new(Color3.fromRGB(0, 190, 255), Color3.fromRGB(100, 225, 255))}, fill)
+		mk("UIGradient", {Color=ColorSequence.new(Color3.fromRGB(255, 35, 55), Color3.fromRGB(255, 105, 120))}, fill)
 		local status = mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,102), Size=UDim2.fromOffset(220,14), BackgroundTransparency=1, Text="Carregando...", TextColor3=GRAY, Font=Enum.Font.Gotham, TextSize=10}, card)
 		-- entrada rápida + som de abertura
 		TS:Create(card, TweenInfo.new(.18, Enum.EasingStyle.Quad), {GroupTransparency=0}):Play()
@@ -1865,14 +1865,14 @@ if oldFloat then oldFloat:Destroy() end
 local C = {
     -- Fundo preto e azul igual você pediu
     bg = Color3.fromRGB(0, 0, 0),
-    panel = Color3.fromRGB(7, 15, 36),
-    panel2 = Color3.fromRGB(8, 20, 48),
-    line = Color3.fromRGB(0, 110, 220),
-    gold = Color3.fromRGB(0, 190, 255),
-    goldLight = Color3.fromRGB(100, 225, 255),
+    panel = Color3.fromRGB(17, 8, 11),
+    panel2 = Color3.fromRGB(24, 9, 13),
+    line = Color3.fromRGB(190, 15, 35),
+    gold = Color3.fromRGB(255, 35, 55),
+    goldLight = Color3.fromRGB(255, 105, 120),
     text = Color3.fromRGB(240, 245, 255),
     muted = Color3.fromRGB(140, 150, 170),
-    green = Color3.fromRGB(0, 200, 255),
+    green = Color3.fromRGB(255, 45, 65),
 }
 
 local function make(class, props, parent)
@@ -1902,10 +1902,10 @@ local function button(parent, text, height)
         Font = Enum.Font.Gotham, TextSize = 12,
     }, parent)
     corner(b, 7)
-    b.MouseEnter:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.12), {BackgroundColor3 = Color3.fromRGB(12, 24, 48)}):Play() end end)
+    b.MouseEnter:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.12), {BackgroundColor3 = Color3.fromRGB(30, 10, 14)}):Play() end end)
     b.MouseLeave:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.12), {BackgroundColor3 = C.panel2}):Play() end end)
-    b.MouseButton1Down:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.08), {BackgroundColor3 = Color3.fromRGB(12, 45, 78)}):Play() end end)
-    b.MouseButton1Up:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.14), {BackgroundColor3 = Color3.fromRGB(12, 24, 48)}):Play() end end)
+    b.MouseButton1Down:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.08), {BackgroundColor3 = Color3.fromRGB(55, 15, 22)}):Play() end end)
+    b.MouseButton1Up:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.14), {BackgroundColor3 = Color3.fromRGB(30, 10, 14)}):Play() end end)
     return b
 end
 -- Sons da UI. Para usar os seus: getgenv().NexoraSounds = { ping="rbxassetid://ID", switch="rbxassetid://ID", click="rbxassetid://ID" } antes de executar.
@@ -1988,7 +1988,7 @@ function Nexora.CreateMain(config)
     make("UIGradient", {Rotation = 135, Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
         ColorSequenceKeypoint.new(0.52, Color3.fromRGB(0, 0, 0)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 10, 30)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 5, 7)),
     })}, shell)
     local scale = make("UIScale", {Scale = 1}, shell)
     local function fitScale()
@@ -2006,18 +2006,18 @@ function Nexora.CreateMain(config)
     if workspace.CurrentCamera then workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(resize) end
 
     local HEADER_H, SIDEBAR_W = 64, 190
-    local GOLD, GOLD_L, GRAY = Color3.fromRGB(0, 190, 255), Color3.fromRGB(100, 225, 255), Color3.fromRGB(165,165,174)
-    local top = make("Frame", {Size=UDim2.new(1,0,0,HEADER_H), BackgroundColor3=Color3.fromRGB(7,15,36), BorderSizePixel=0}, shell)
+    local RED, RED_L, GRAY = Color3.fromRGB(255, 35, 55), Color3.fromRGB(255, 105, 120), Color3.fromRGB(165,165,174)
+    local top = make("Frame", {Size=UDim2.new(1,0,0,HEADER_H), BackgroundColor3=Color3.fromRGB(17, 8, 11), BorderSizePixel=0}, shell)
     corner(top, 12)
     make("UIGradient", {Rotation=0, Color=ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 15, 40)),
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(14, 5, 8)),
         ColorSequenceKeypoint.new(0.5, Color3.fromRGB(13,13,18)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(5,12,30)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(18, 7, 10)),
     })}, top)
     -- cobre os cantos de baixo do header e desenha a linha dourada
-    make("Frame", {Position=UDim2.new(0,0,1,-12), Size=UDim2.new(1,0,0,12), BackgroundColor3=Color3.fromRGB(7,15,36), BorderSizePixel=0}, top)
+    make("Frame", {Position=UDim2.new(0,0,1,-12), Size=UDim2.new(1,0,0,12), BackgroundColor3=Color3.fromRGB(17, 8, 11), BorderSizePixel=0}, top)
     do
-        local hl = make("Frame", {Position=UDim2.new(0,0,1,-1), Size=UDim2.new(1,0,0,1), BackgroundColor3=GOLD, BackgroundTransparency=0, BorderSizePixel=0}, top)
+        local hl = make("Frame", {Position=UDim2.new(0,0,1,-1), Size=UDim2.new(1,0,0,1), BackgroundColor3=RED, BackgroundTransparency=0, BorderSizePixel=0}, top)
         local hg = make("UIGradient", {Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,1),NumberSequenceKeypoint.new(0.5,0.1),NumberSequenceKeypoint.new(1,1)}), Offset=Vector2.new(-1,0)}, hl)
         task.spawn(function()
             while hl.Parent do
@@ -2062,20 +2062,20 @@ function Nexora.CreateMain(config)
         Size=UDim2.new(1, 0, 1, 0),
         Position=UDim2.new(0, 0, 0, 0),
         Text="N",
-        TextColor3=Color3.fromRGB(0, 190, 255),
+        TextColor3=Color3.fromRGB(255, 35, 55),
         Font=Enum.Font.GothamBlack,
         TextSize=18,
         TextStrokeTransparency=0.5,
         ZIndex=103
     }, iconFrame)
-    make("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(100, 225, 255), Color3.fromRGB(0, 190, 255))}, iconText)
+    make("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(255, 105, 120), Color3.fromRGB(255, 35, 55))}, iconText)
     local iconImg = make("ImageLabel", {
         BackgroundTransparency=1,
         Size=UDim2.new(1, -4, 1, -4),
         Position=UDim2.new(0, 2, 0, 2),
         Image="rbxassetid://18747094503",
         ScaleType=Enum.ScaleType.Fit,
-        ImageColor3=Color3.fromRGB(100, 225, 255),
+        ImageColor3=Color3.fromRGB(255, 105, 120),
         ZIndex=102,
         Visible=false
     }, iconFrame)
@@ -2379,7 +2379,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
                 b.Bar.Size = UDim2.new(0,3,0,0)
                 TweenService:Create(b.Bar, TweenInfo.new(.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Size=UDim2.new(0,3,1,-14)}):Play()
             end
-            tintIcon(b.Icon, on and GOLD or GRAY, on and 0 or 0.4)
+            tintIcon(b.Icon, on and RED or GRAY, on and 0 or 0.4)
             TweenService:Create(b.Txt, TweenInfo.new(.18), {TextColor3 = on and Color3.fromRGB(255,255,255) or GRAY}):Play()
         end
         if changed and p.frame then
@@ -2401,7 +2401,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
         local navText = pageConfig.Page_Title or pageName
         local nb = make("TextButton", {Name="Nav", AutoButtonColor=false, BackgroundColor3=Color3.fromRGB(22,22,28), BackgroundTransparency=1, BorderSizePixel=0, Size=UDim2.new(1,0,0,42), Text=""}, nav)
         corner(nb, 8)
-        local bar = make("Frame", {Name="Bar", Position=UDim2.new(0,0,0,7), Size=UDim2.new(0,3,1,-14), BackgroundColor3=GOLD, BorderSizePixel=0, Visible=false}, nb); corner(bar, 2)
+        local bar = make("Frame", {Name="Bar", Position=UDim2.new(0,0,0,7), Size=UDim2.new(0,3,1,-14), BackgroundColor3=RED, BorderSizePixel=0, Visible=false}, nb); corner(bar, 2)
             do local ic = drawIcon(nb, iconKind(navText)); tintIcon(ic, GRAY, 0.4) end
         make("TextLabel", {Name="Txt", BackgroundTransparency=1, Position=UDim2.new(0,46,0,0), Size=UDim2.new(1,-52,1,0), Text=navText, TextColor3=GRAY, Font=Enum.Font.GothamBold, TextSize=12, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd}, nb)
         nb.MouseEnter:Connect(function() if not nb:GetAttribute("NexoraActive") then nb.BackgroundTransparency = 0.55 end end)
@@ -2435,9 +2435,9 @@ local fScale = make("UIScale", {Scale=1}, reopen)
                 b.Size=UDim2.new(0,44,0,24); b.Position=UDim2.new(1,-44,.5,-12)
                 local bc=b:FindFirstChildOfClass("UICorner"); if bc then bc.CornerRadius=UDim.new(0,12) end
                 local bs=make("UIStroke",{Color=C.line,Thickness=1,Transparency=0.2},b)
-                local knob=make("Frame",{Size=UDim2.new(0,18,0,18),Position=UDim2.new(0,3,.5,-9),BackgroundColor3=Color3.fromRGB(150,205,230),BorderSizePixel=0,ZIndex=2},b); corner(knob,9)
+                local knob=make("Frame",{Size=UDim2.new(0,18,0,18),Position=UDim2.new(0,3,.5,-9),BackgroundColor3=Color3.fromRGB(255, 190, 195),BorderSizePixel=0,ZIndex=2},b); corner(knob,9)
                 local function paint(animate)
-                    local goal={Position=val and UDim2.new(1,-21,.5,-9) or UDim2.new(0,3,.5,-9), BackgroundColor3=val and Color3.fromRGB(255,255,255) or Color3.fromRGB(150,205,230)}
+                    local goal={Position=val and UDim2.new(1,-21,.5,-9) or UDim2.new(0,3,.5,-9), BackgroundColor3=val and Color3.fromRGB(255,255,255) or Color3.fromRGB(255, 190, 195)}
                     local trackColor=val and C.gold or Color3.fromRGB(22,21,26)
                     bs.Color=val and C.goldLight or C.line
                     if animate then
@@ -2688,23 +2688,23 @@ local fScale = make("UIScale", {Scale=1}, reopen)
         local container = getNotifContainer()
         local card = make("Frame", {Name="Notif", BackgroundColor3=Color3.fromRGB(15,15,20), BorderSizePixel=0, Size=UDim2.new(0,310,0,72), ClipsDescendants=true}, container)
         corner(card, 14)
-        local border = make("UIStroke", {Color=Color3.fromRGB(0,190,255), Thickness=1.2, Transparency=0.2, ApplyStrokeMode=Enum.ApplyStrokeMode.Border}, card)
+        local border = make("UIStroke", {Color=Color3.fromRGB(255,35,55), Thickness=1.2, Transparency=0.2, ApplyStrokeMode=Enum.ApplyStrokeMode.Border}, card)
         make("UIGradient", {Color=ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(25,25,35)), ColorSequenceKeypoint.new(1, Color3.fromRGB(12,12,18))}, Rotation=90}, card)
-        local sideBar = make("Frame", {Name="SideBar", BackgroundColor3=Color3.fromRGB(0,190,255), BorderSizePixel=0, Size=UDim2.new(0,3,1,0)}, card)
+        local sideBar = make("Frame", {Name="SideBar", BackgroundColor3=Color3.fromRGB(255,35,55), BorderSizePixel=0, Size=UDim2.new(0,3,1,0)}, card)
         corner(sideBar, 2)
-        make("UIGradient", {Color=ColorSequence.new(Color3.fromRGB(100,225,255), Color3.fromRGB(0,100,220)), Rotation=90}, sideBar)
+        make("UIGradient", {Color=ColorSequence.new(Color3.fromRGB(255,105,120), Color3.fromRGB(200, 20, 40)), Rotation=90}, sideBar)
         local iconBg = make("Frame", {BackgroundColor3=Color3.fromRGB(28,28,40), Size=UDim2.new(0,36,0,36), Position=UDim2.new(0,14,0,10), BorderSizePixel=0}, card)
         corner(iconBg, 10)
-        make("UIStroke", {Color=Color3.fromRGB(0,190,255), Transparency=0.6, Thickness=1}, iconBg)
-        local iconText = make("TextLabel", {BackgroundTransparency=1, Size=UDim2.new(1,0,1,0), Text="N", TextColor3=Color3.fromRGB(0,190,255), Font=Enum.Font.GothamBlack, TextSize=20}, iconBg)
-        make("UIGradient", {Color=ColorSequence.new(Color3.fromRGB(100,225,255), Color3.fromRGB(0,190,255)), Rotation=90}, iconText)
+        make("UIStroke", {Color=Color3.fromRGB(255,35,55), Transparency=0.6, Thickness=1}, iconBg)
+        local iconText = make("TextLabel", {BackgroundTransparency=1, Size=UDim2.new(1,0,1,0), Text="N", TextColor3=Color3.fromRGB(255,35,55), Font=Enum.Font.GothamBlack, TextSize=20}, iconBg)
+        make("UIGradient", {Color=ColorSequence.new(Color3.fromRGB(255,105,120), Color3.fromRGB(255,35,55)), Rotation=90}, iconText)
         make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,62,0,8), Size=UDim2.new(1,-70,0,18), Text=string.upper(title), TextColor3=Color3.fromRGB(255,255,255), Font=Enum.Font.GothamBold, TextSize=12, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd}, card)
         make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,62,0,28), Size=UDim2.new(1,-70,0,32), Text=desc, TextColor3=Color3.fromRGB(180,190,210), Font=Enum.Font.Gotham, TextSize=11, TextXAlignment=Enum.TextXAlignment.Left, TextYAlignment=Enum.TextYAlignment.Top, TextWrapped=true}, card)
         local progressBg = make("Frame", {BackgroundColor3=Color3.fromRGB(30,30,40), BorderSizePixel=0, Size=UDim2.new(1,-16,0,2), Position=UDim2.new(0,8,1,-6)}, card)
         corner(progressBg, 1)
-        local progressBar = make("Frame", {BackgroundColor3=Color3.fromRGB(0,190,255), BorderSizePixel=0, Size=UDim2.new(1,0,1,0)}, progressBg)
+        local progressBar = make("Frame", {BackgroundColor3=Color3.fromRGB(255,35,55), BorderSizePixel=0, Size=UDim2.new(1,0,1,0)}, progressBg)
         corner(progressBar, 1)
-        make("UIGradient", {Color=ColorSequence.new(Color3.fromRGB(100,225,255), Color3.fromRGB(0,100,220)), Rotation=0}, progressBar)
+        make("UIGradient", {Color=ColorSequence.new(Color3.fromRGB(255,105,120), Color3.fromRGB(200, 20, 40)), Rotation=0}, progressBar)
         card.Position = UDim2.new(0,340,0,0)
         card.Size = UDim2.new(0,310,0,0)
         TweenService:Create(card, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position=UDim2.new(0,0,0,0), Size=UDim2.new(0,310,0,72)}):Play()
@@ -3440,12 +3440,12 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 			ROW_HOVER = Color3.fromRGB(20, 22, 35),
 			ROW_TOP = Color3.fromRGB(10, 22, 34),
 			BORDER = Color3.fromRGB(28, 31, 48),
-			BORDER_HOV = Color3.fromRGB(0, 80, 150),
+			BORDER_HOV = Color3.fromRGB(130, 12, 28),
 			CYAN = Color3.fromRGB(0, 212, 255),
-			CYAN_DIM = Color3.fromRGB(0, 80, 150),
+			CYAN_DIM = Color3.fromRGB(130, 12, 28),
 			GREEN = Color3.fromRGB(0, 204, 102),
 			GREEN_GLOW = Color3.fromRGB(0, 255, 136),
-			AMBER = Color3.fromRGB(0, 200, 255),
+			AMBER = Color3.fromRGB(255, 45, 65),
 			RED = Color3.fromRGB(255, 68, 85),
 			TEXT_PRI = Color3.fromRGB(232, 234, 240),
 			TEXT_SEC = Color3.fromRGB(80, 90, 120),
@@ -24636,7 +24636,7 @@ function EspFruit()
 	g.Parent = X
 	local g, f =
 		({
-			["Leopard Fruit"] = Color3.fromRGB(0, 200, 255),
+			["Leopard Fruit"] = Color3.fromRGB(255, 45, 65),
 			["Dragon (East) Fruit"] = Color3.fromRGB(255, 0, 0),
 			["Dragon (West) Fruit"] = Color3.fromRGB(255, 80, 80),
 			["Kitsune Fruit"] = Color3.fromRGB(200, 100, 255),
@@ -28640,12 +28640,12 @@ rawset(_G, "RecoveredFunction_0276", RecoveredFunction_0276)
 end
 
 do
-local function RecoveredFunction_0287(...)local __args = {...};local b = __args[1];local Z = __args[5];return function()local Z=GetEspFruit();if not Z then return;end;local F,c=GetFruitName(Z),Z:FindFirstChild("Handle");if not c then return;end;local l=Instance.new("IntValue");l.Name="Ignored";l.Parent=c;local l,H=({["Leopard Fruit"]=Color3.fromRGB(0,200,255),["Dragon (East) Fruit"]=Color3.fromRGB(255,0,0),["Dragon (West) Fruit"]=Color3.fromRGB(255,80,80),["Kitsune Fruit"]=Color3.fromRGB(200,100,255),["Spirit Fruit"]=Color3.fromRGB(120,200,255),["Venom Fruit"]=Color3.fromRGB(180,60,200),["Dough Fruit"]=Color3.fromRGB(145,235,255),["Light Fruit"]=Color3.fromRGB(190,250,255)})[F]or(Color3.fromRGB(255,255,255)),Drawing.new("Text");H.Visible=false;H.Transparency=1;H.Text=F;H.Color=l;H.Size=20;H.Outline=true;H.OutlineColor=Color3.fromRGB(0,0,0);H.Center=true;H.Font=2;local M=Drawing.new("Square");M.Visible=false;M.Filled=true;M.Color=Color3.fromRGB(0,0,0);M.Transparency=0.4;spawn(function()repeat task.wait();if c then local S,Q=workspace.CurrentCamera:WorldToViewportPoint(c.Position);if Q then H.Text=F.." ["..math.round(b[1]:DistanceFromCharacter(c.Position)).."m]";H.Position=Vector2.new(S.X,S.Y-20);H.Color=l;H.Visible=true;local b=H.TextBounds;M.Position=Vector2.new(H.Position.X-b.X/-2,H.Position.Y-2);M.Size=Vector2.new(b.X+8,b.Y+4);M.Visible=true;else H.Visible=false;M.Visible=false;end;end;until not Z or not Z.Parent or not c.Parent or not Settings["ESP Fruit"];H:Remove();M:Remove();if c:FindFirstChild("Ignored")then c.Ignored:Destroy();end;end);end;end
+local function RecoveredFunction_0287(...)local __args = {...};local b = __args[1];local Z = __args[5];return function()local Z=GetEspFruit();if not Z then return;end;local F,c=GetFruitName(Z),Z:FindFirstChild("Handle");if not c then return;end;local l=Instance.new("IntValue");l.Name="Ignored";l.Parent=c;local l,H=({["Leopard Fruit"]=Color3.fromRGB(255,45,65),["Dragon (East) Fruit"]=Color3.fromRGB(255,0,0),["Dragon (West) Fruit"]=Color3.fromRGB(255,80,80),["Kitsune Fruit"]=Color3.fromRGB(200,100,255),["Spirit Fruit"]=Color3.fromRGB(255, 125, 140),["Venom Fruit"]=Color3.fromRGB(180,60,200),["Dough Fruit"]=Color3.fromRGB(255, 165, 175),["Light Fruit"]=Color3.fromRGB(255, 220, 225)})[F]or(Color3.fromRGB(255,255,255)),Drawing.new("Text");H.Visible=false;H.Transparency=1;H.Text=F;H.Color=l;H.Size=20;H.Outline=true;H.OutlineColor=Color3.fromRGB(0,0,0);H.Center=true;H.Font=2;local M=Drawing.new("Square");M.Visible=false;M.Filled=true;M.Color=Color3.fromRGB(0,0,0);M.Transparency=0.4;spawn(function()repeat task.wait();if c then local S,Q=workspace.CurrentCamera:WorldToViewportPoint(c.Position);if Q then H.Text=F.." ["..math.round(b[1]:DistanceFromCharacter(c.Position)).."m]";H.Position=Vector2.new(S.X,S.Y-20);H.Color=l;H.Visible=true;local b=H.TextBounds;M.Position=Vector2.new(H.Position.X-b.X/-2,H.Position.Y-2);M.Size=Vector2.new(b.X+8,b.Y+4);M.Visible=true;else H.Visible=false;M.Visible=false;end;end;until not Z or not Z.Parent or not c.Parent or not Settings["ESP Fruit"];H:Remove();M:Remove();if c:FindFirstChild("Ignored")then c.Ignored:Destroy();end;end);end;end
 rawset(_G, "RecoveredFunction_0287", RecoveredFunction_0287)
 end
 
 do
-local function RecoveredFunction_0288()local Z=GetEspFruit();if not Z then return;end;local F,c=GetFruitName(Z),Z:FindFirstChild("Handle");if not c then return;end;local l=Instance.new("IntValue");l.Name="Ignored";l.Parent=c;local l,H=({["Leopard Fruit"]=Color3.fromRGB(0,200,255),["Dragon (East) Fruit"]=Color3.fromRGB(255,0,0),["Dragon (West) Fruit"]=Color3.fromRGB(255,80,80),["Kitsune Fruit"]=Color3.fromRGB(200,100,255),["Spirit Fruit"]=Color3.fromRGB(120,200,255),["Venom Fruit"]=Color3.fromRGB(180,60,200),["Dough Fruit"]=Color3.fromRGB(145,235,255),["Light Fruit"]=Color3.fromRGB(190,250,255)})[F]or(Color3.fromRGB(255,255,255)),Drawing.new("Text");H.Visible=false;H.Transparency=1;H.Text=F;H.Color=l;H.Size=20;H.Outline=true;H.OutlineColor=Color3.fromRGB(0,0,0);H.Center=true;H.Font=2;local M=Drawing.new("Square");M.Visible=false;M.Filled=true;M.Color=Color3.fromRGB(0,0,0);M.Transparency=0.4;spawn(function()repeat task.wait();if c then local S,Q=workspace.CurrentCamera:WorldToViewportPoint(c.Position);if Q then H.Text=F.." ["..math.round(b[1]:DistanceFromCharacter(c.Position)).."m]";H.Position=Vector2.new(S.X,S.Y-20);H.Color=l;H.Visible=true;local b=H.TextBounds;M.Position=Vector2.new(H.Position.X-b.X/-2,H.Position.Y-2);M.Size=Vector2.new(b.X+8,b.Y+4);M.Visible=true;else H.Visible=false;M.Visible=false;end;end;until not Z or not Z.Parent or not c.Parent or not Settings["ESP Fruit"];H:Remove();M:Remove();if c:FindFirstChild("Ignored")then c.Ignored:Destroy();end;end);end
+local function RecoveredFunction_0288()local Z=GetEspFruit();if not Z then return;end;local F,c=GetFruitName(Z),Z:FindFirstChild("Handle");if not c then return;end;local l=Instance.new("IntValue");l.Name="Ignored";l.Parent=c;local l,H=({["Leopard Fruit"]=Color3.fromRGB(255,45,65),["Dragon (East) Fruit"]=Color3.fromRGB(255,0,0),["Dragon (West) Fruit"]=Color3.fromRGB(255,80,80),["Kitsune Fruit"]=Color3.fromRGB(200,100,255),["Spirit Fruit"]=Color3.fromRGB(255, 125, 140),["Venom Fruit"]=Color3.fromRGB(180,60,200),["Dough Fruit"]=Color3.fromRGB(255, 165, 175),["Light Fruit"]=Color3.fromRGB(255, 220, 225)})[F]or(Color3.fromRGB(255,255,255)),Drawing.new("Text");H.Visible=false;H.Transparency=1;H.Text=F;H.Color=l;H.Size=20;H.Outline=true;H.OutlineColor=Color3.fromRGB(0,0,0);H.Center=true;H.Font=2;local M=Drawing.new("Square");M.Visible=false;M.Filled=true;M.Color=Color3.fromRGB(0,0,0);M.Transparency=0.4;spawn(function()repeat task.wait();if c then local S,Q=workspace.CurrentCamera:WorldToViewportPoint(c.Position);if Q then H.Text=F.." ["..math.round(b[1]:DistanceFromCharacter(c.Position)).."m]";H.Position=Vector2.new(S.X,S.Y-20);H.Color=l;H.Visible=true;local b=H.TextBounds;M.Position=Vector2.new(H.Position.X-b.X/-2,H.Position.Y-2);M.Size=Vector2.new(b.X+8,b.Y+4);M.Visible=true;else H.Visible=false;M.Visible=false;end;end;until not Z or not Z.Parent or not c.Parent or not Settings["ESP Fruit"];H:Remove();M:Remove();if c:FindFirstChild("Ignored")then c.Ignored:Destroy();end;end);end
 rawset(_G, "RecoveredFunction_0288", RecoveredFunction_0288)
 end
 
