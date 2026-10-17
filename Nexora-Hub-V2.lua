@@ -1,4 +1,4 @@
--- Nexora Hub • Redz-inspired compact UI skin (custom implementation; existing callbacks preserved)
+-- Nexora Hub • Redz UI Library V5 adapter; original feature callbacks and settings logic retained
 -- Tela de carregamento (Nexora Hub): pequena e rápida. O resto do script só roda depois dela terminar.
 do
 	pcall(function()
@@ -1892,9 +1892,13 @@ local A = (function()
             local v = (a == control) and b or a
             if v == nil then v = true end
             opt.value = v
+            local before = opt.value
+            local applied = false
             if widget and type(widget.SetValue) == "function" then
-                pcall(function() widget:SetValue(v) end)
-            elseif callback then
+                applied = pcall(function() widget:SetValue(v) end)
+            end
+            -- If the widget cannot accept a value, fall back to the original callback.
+            if callback and not applied and before ~= v then
                 task.spawn(function() pcall(callback, v) end)
             end
         end
@@ -1933,7 +1937,9 @@ local A = (function()
                     end
                     page.sections[sectionName] = section or page.tab
                 end
-                local base = page.sections[sectionName]
+                -- Redz V5 adiciona os controles diretamente na Tab; AddSection é apenas o cabeçalho visual.
+                -- Usar o objeto retornado por AddSection como se fosse uma Tab fazia os controles falharem.
+                local base = page.tab
                 local Section = {}
                 function Section.CreateToggle(cfg2, callback)
                     cfg2 = cfg2 or {}
@@ -1966,10 +1972,16 @@ local A = (function()
                     cfg2 = cfg2 or {}
                     local title = tostring(cfg2.Title or cfg2.Name or "Slider")
                     local default = tonumber(cfg2.Default) or tonumber(cfg2.Min) or 0
-                    local widget = base:AddSlider({Name=title, Min=tonumber(cfg2.Min) or 0, Max=tonumber(cfg2.Max) or 100, Increase=tonumber(cfg2.Increase) or 1, Default=default, Callback=function(v)
+                    local sliderCfg = {Name=title, Min=tonumber(cfg2.Min) or 0, Max=tonumber(cfg2.Max) or 100, Increment=tonumber(cfg2.Increase or cfg2.Increment) or 1, Increase=tonumber(cfg2.Increase or cfg2.Increment) or 1, Default=default, Callback=function(v)
                         local opt=Nexora.Options[title]; if opt then opt.value=v end
                         if callback then callback(v) end
-                    end})
+                    end}
+                    local widget
+                    local sliderOK = pcall(function() widget = base:AddSlider(sliderCfg) end)
+                    if not sliderOK or not widget then
+                        sliderCfg.Increment = nil
+                        widget = base:AddSlider(sliderCfg)
+                    end
                     addOption(title, "slider", default, callback, widget, name, sectionName, tonumber(cfg2.Min) or 0, tonumber(cfg2.Max) or 100)
                     return Nexora.Options[title].FunctionCreate
                 end
@@ -2026,13 +2038,16 @@ local A = (function()
     end
     function Nexora.RestoreSavedToggles()
         if getgenv().__NexoraRestoreDone then return end
-        getgenv().__NexoraRestoreDone = true
         for _, opt in ipairs(Nexora.OptionOrder) do
             if opt and opt.type == "toggle" and opt.value == true and opt.FunctionCreate then
-                pcall(function() opt.FunctionCreate:SetStage(true) end)
-                task.wait()
+                local okRestore = pcall(function() opt.FunctionCreate:SetStage(true) end)
+                if not okRestore then
+                    getgenv().__NexoraRestoreDone = false
+                end
+                task.wait(0.05)
             end
         end
+        getgenv().__NexoraRestoreDone = true
     end
     getgenv().__NEXORA_REDZ_WINDOW = Window
     getgenv().__NexoraRestoreDone = false
