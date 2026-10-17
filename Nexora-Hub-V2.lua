@@ -1840,25 +1840,33 @@ game:GetService("Players").LocalPlayer.Idled:connect(function()
 	wait(1)
 	vu:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 end)
+
 local A = (function()
--- Nexora Hub V2: Redz UI Library V5 adapter. Existing tabs and callbacks are preserved.
-local redzlib = loadstring(game:HttpGet("https://raw.githubusercontent.com/XenTz-Z/RedzLibV5/refs/heads/main/Source.lua"))()
+-- ============================================================================
+-- NEXORA HUB • FLUENT UI (Xenon Hub style)
+-- Converte API Redz -> Fluent
+-- ============================================================================
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+
 local Nexora = {Options = {}, OptionOrder = {}, _tabs = {}, _window = nil}
-local Players = game:GetService("Players")
-local UIS = game:GetService("UserInputService")
+
 local function safe(fn, ...)
     if type(fn) ~= "function" then return nil end
-    local args = table.pack(...)
-    local ok, result = pcall(function() return fn(table.unpack(args, 1, args.n)) end)
-    if ok then return result end
+    local ok, res = pcall(fn, ...)
+    if ok then return res end
+    warn("[Fluent] error: "..tostring(res))
     return nil
 end
+
 local function register(title, kind, value, callback, control, pageName, sectionName)
     local opt = {title=title, type=kind, value=value, Callback=callback, FunctionCreate=control, page=pageName, section=sectionName}
     opt._setValue = function(v, fire)
         opt.value = v
         if control then
-            if type(control.Set) == "function" then safe(control.Set, control, v)
+            if type(control.SetValue) == "function" then safe(control.SetValue, control, v)
+            elseif type(control.Set) == "function" then safe(control.Set, control, v)
             elseif type(control.SetStage) == "function" then safe(control.SetStage, control, v) end
         end
         if fire and type(callback) == "function" then task.spawn(function() safe(callback, v) end) end
@@ -1867,375 +1875,286 @@ local function register(title, kind, value, callback, control, pageName, section
     table.insert(Nexora.OptionOrder, opt)
     return opt
 end
+
 function Nexora.CreateMain(config)
     config = config or {}
-    local win = redzlib:MakeWindow({Title=config.Title or "NEXORA HUB", SubTitle=config.Desc or "BLOX FRUITS • ViniZDev", SaveFolder="Nexora Hub"})
-    Nexora._window = win
+    local Window = Fluent:CreateWindow({
+        Title = config.Title or "NEXORA HUB | Xenon",
+        SubTitle = config.Desc or "BLOX FRUITS • Fluent UI",
+        TabWidth = 160,
+        Size = UDim2.fromOffset(620, 480),
+        Acrylic = true,
+        Theme = "Dark",
+        MinimizeKey = Enum.KeyCode.LeftControl
+    })
 
-    -- Botão flutuante próprio: não depende do AddMinimizeButton da biblioteca,
-    -- que em algumas versões cria apenas um círculo transparente sem alternar a janela.
-    task.spawn(function()
-        local Players = game:GetService("Players")
-        local player = Players.LocalPlayer
-        local host
-        pcall(function() host = (gethui and gethui()) or game:GetService("CoreGui") end)
-        if not host then host = player:WaitForChild("PlayerGui") end
-        local old = host:FindFirstChild("NexoraFloatingToggle")
-        if old then old:Destroy() end
-        local gui = Instance.new("ScreenGui")
-        gui.Name = "NexoraFloatingToggle"
-        gui.ResetOnSpawn = false
-        gui.IgnoreGuiInset = true
-        gui.DisplayOrder = 100000
-        gui.Parent = host
-        local btn = Instance.new("TextButton")
-        btn.Name = "ToggleButton"
-        btn.Size = UDim2.fromOffset(46,46)
-        btn.Position = UDim2.new(0,24,0.5,-23)
-        btn.BackgroundColor3 = Color3.fromRGB(20,20,24)
-        btn.BackgroundTransparency = 0
-        btn.Text = "N"
-        btn.TextColor3 = Color3.fromRGB(255,255,255)
-        btn.TextSize = 23
-        btn.Font = Enum.Font.GothamBlack
-        btn.AutoButtonColor = true
-        btn.Active = true
-        btn.Draggable = true
-        btn.Parent = gui
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(1,0)
-        corner.Parent = btn
-        local stroke = Instance.new("UIStroke")
-        stroke.Color = Color3.fromRGB(50,130,255)
-        stroke.Thickness = 2
-        stroke.Parent = btn
+    local Tabs = {}
+    local TabMap = {}
 
-        local function findWindowGui()
-            -- Redz V5 cria a ScreenGui com este nome; não dependa do texto
-            -- interno do título, que varia entre versões da biblioteca.
-            local roots = {host}
-            pcall(function() table.insert(roots, player:WaitForChild("PlayerGui")) end)
-            for _, root in ipairs(roots) do
-                local direct = root:FindFirstChild("redz Library V5")
-                if direct and direct:IsA("ScreenGui") then return direct end
-                for _, obj in ipairs(root:GetDescendants()) do
-                    if obj:IsA("ScreenGui") and obj ~= gui and obj.Name ~= "NexoraLoading" then
-                        if obj.Name == "redz Library V5" then return obj end
-                    end
-                end
-            end
-            return nil
-        end
-        local target
-        local function prepareWholeWindow()
-            if not target then return end
-            local hub = target:FindFirstChild("Hub", true)
-            if hub and hub:IsA("GuiObject") then
-                -- Reabre o painel inteiro, mesmo se o botão '-' da Redz tiver
-                -- deixado a janela minimizada antes de ocultar a ScreenGui.
-                hub.Visible = true
-                local components = hub:FindFirstChild("Components")
-                if components then
-                    local tabs = components:FindFirstChild("Tab Scroll")
-                    local containers = components:FindFirstChild("Containers")
-                    if tabs then tabs.Visible = true end
-                    if containers then containers.Visible = true end
-                end
-                local sizeControl = hub:FindFirstChild("Control Hub Size")
-                local tabControl = hub:FindFirstChild("Control Tab Size")
-                if sizeControl then sizeControl.Visible = true end
-                if tabControl then tabControl.Visible = true end
-            end
-        end
-        btn.Activated:Connect(function()
-            target = target and target.Parent and target or findWindowGui()
-            if target then
-                if target.Enabled then
-                    target.Enabled = false
-                else
-                    prepareWholeWindow()
-                    target.Enabled = true
-                end
-            else
-                for _=1,20 do
-                    task.wait(0.25)
-                    target = findWindowGui()
-                    if target then prepareWholeWindow(); target.Enabled = true; return end
-                end
-                warn("[Nexora] Não encontrei a ScreenGui da Redz para abrir/fechar.")
-            end
-        end)
-        -- Os botões '-' e 'X' escondem a janela sem destruir a UI.
-        -- O botão N permanece independente e alterna entre abrir/fechar.
-        task.spawn(function()
-            local hooked = setmetatable({}, {__mode = "k"})
-            for _=1,80 do
-                target = target and target.Parent and target or findWindowGui()
-                if target then
-                    for _, control in ipairs(target:GetDescendants()) do
-                        if control:IsA("GuiButton") and not hooked[control] then
-                            local n = string.lower(tostring(control.Name))
-                            local t = string.lower(tostring(control.Text or ""))
-                            local isClose = n == "close" or n == "closebutton" or n == "exit" or t == "x" or t == "×"
-                            local isMinimize = n == "minimize" or n == "minimizebutton" or n == "minimize button" or t == "-" or t == "−"
-                            if isClose or isMinimize then
-                                hooked[control] = true
-                                control.Activated:Connect(function()
-                                    task.defer(function()
-                                        if target and target.Parent then target.Enabled = false end
-                                    end)
-                                end)
-                            end
-                        end
-                    end
-                    -- Recheck slowly in case the library recreates its window controls.
-                end
-                task.wait(target and target.Parent and 2 or 0.5)
-            end
-        end)
-    end)
+    -- Tab principal para compatibilidade
+    local function getOrCreateTab(pageName)
+        if Tabs[pageName] then return Tabs[pageName] end
+        -- escolhe icone baseado no nome
+        local icon = ""
+        local lower = string.lower(pageName)
+        if lower:find("shop") then icon = "shopping-cart"
+        elseif lower:find("status") or lower:find("server") then icon = "server"
+        elseif lower:find("player") or lower:find("local") then icon = "user"
+        elseif lower:find("farm") then icon = "sprout"
+        elseif lower:find("combat") or lower:find("fight") then icon = "swords"
+        elseif lower:find("fruit") or lower:find("esp") then icon = "eye"
+        elseif lower:find("raid") or lower:find("sea") then icon = "waves"
+        elseif lower:find("setting") then icon = "settings"
+        elseif lower:find("webhook") then icon = "webhook"
+        else icon = "layout-dashboard" end
 
-    local Main = {}
-    function Main.CreatePage(pageConfig)
-        pageConfig = pageConfig or {}
-        local name = pageConfig.Page_Title or pageConfig.Page_Name or "Page"
-        local tab = win:MakeTab({name, "Home"})
-        Nexora._tabs[name] = tab
+        local tab = Window:AddTab({ Title = pageName, Icon = icon })
+        Tabs[pageName] = tab
+        TabMap[pageName] = tab
+        Nexora._tabs[pageName] = tab
+        return tab
+    end
+
+    local WindowAPI = {}
+    Nexora._window = Window
+    Nexora._windowApi = WindowAPI
+    Nexora._tabs = TabMap
+    Nexora._fluent = Fluent
+    Nexora._fluentWindow = Window
+    Nexora._fluentTabs = Tabs
+
+    function WindowAPI:MakeTab(cfg)
+        local name = type(cfg)=="table" and (cfg[1] or cfg.Name or cfg.Title or "Tab") or tostring(cfg)
+        return getOrCreateTab(name)
+    end
+
+    function WindowAPI.CreatePage(cfg)
+        local pageName = type(cfg)=="table" and (cfg.Page_Name or cfg.Page_Title or cfg.Title or cfg.Name) or tostring(cfg)
+        local tab = getOrCreateTab(pageName)
         local Page = {}
-        function Page.CreateSection(sectionName)
-            local section = safe(tab.AddSection, tab, {sectionName}) or safe(tab.AddSection, tab, sectionName) or tab
+        function Page.CreateSection(secName)
+            local sectionName = type(secName)=="table" and (secName[1] or secName.Title or secName.Name) or tostring(secName)
+            -- Fluent não tem Section visual separado, mas vamos criar um separador
+            -- e retornar Section API ligada a essa Tab
             local Section = {}
-            function Section.CreateToggle(cfg, callback)
-                cfg = cfg or {}; local title = cfg.Title or "Toggle"
-                Settings = Settings or {}
-                local default; if type(Settings[title]) == "boolean" then default = Settings[title] else default = (cfg.Default == true) end
-                local control = safe(tab.AddToggle, tab, {Title=title, Name=title, Desc=cfg.Desc or "", Default=default, Callback=function(v)
-                    Settings[title] = not not v
-                    pcall(function() SaveSettings(title, not not v) end)
-                    if callback then task.spawn(function() safe(callback, not not v) end) end
-                end})
-                local opt = register(title,"toggle",default,callback,control,name,sectionName)
-                opt.FunctionCreate = {SetStage=function(_,v) opt.value=not not v; if control and type(control.Set)=="function" then safe(control.Set,control,not not v) end; Settings[title]=not not v; pcall(function() SaveSettings(title,not not v) end); if type(callback)=="function" then task.spawn(function() safe(callback,not not v) end) end end}
-                return opt
-            end
-            function Section.CreateButton(cfg, callback)
-                cfg=cfg or {}; local title=cfg.Title or "Button"
-                local fired = false
-                local function onPressed()
-                    if fired then return end
-                    fired = true
-                    task.defer(function() fired = false end)
-                    if type(callback) == "function" then
-                        task.spawn(function()
-                            local ok, err = pcall(callback)
-                            if not ok then warn("[Nexora] Button '" .. tostring(title) .. "' callback error: " .. tostring(err)) end
-                        end)
-                    end
-                end
-                local button = safe(tab.AddButton, tab, {Title=title, Name=title, Desc=cfg.Desc or "", Description=cfg.Desc or "", Callback=onPressed})
-                if not button then
-                    button = safe(tab.AddButton, tab, {Title=title, Callback=onPressed})
-                end
-                return button
-            end
-            function Section.CreateLabel(cfg)
-                local title = type(cfg)=="table" and (cfg.Title or cfg.Text or "") or tostring(cfg or "")
-                title = tostring(title)
+            local tabRef = tab
+            local secNameRef = sectionName
 
-                -- A Redz V5 Paragraph normally receives a config table. Try both
-                -- common table formats first; passing two plain strings can make
-                -- some builds show the generic word "Paragraph" instead.
-                local frame, paragraphLabel
-                local ok = pcall(function()
-                    frame, paragraphLabel = tab:AddParagraph({title, ""})
+            -- Helper para criar título de seção
+            local function addSectionHeader()
+                pcall(function()
+                    tabRef:AddParagraph({Title = secNameRef, Content = ""})
                 end)
-                if not ok or not frame then
-                    ok = pcall(function()
-                        frame, paragraphLabel = tab:AddParagraph({Title=title, Content=""})
-                    end)
-                end
-                if not ok or not frame then
-                    ok = pcall(function()
-                        frame, paragraphLabel = tab:AddParagraph(title, "")
-                    end)
-                end
-                -- Algumas versões retornam um objeto Paragraph (com SetTitle/
-                -- SetDesc) em vez de duas instâncias separadas.
-                local paragraphObject
-                if type(frame) == "table" then
-                    paragraphObject = frame
-                    paragraphLabel = paragraphLabel or frame
-                    frame = frame.Frame or frame.Object or frame.Instance
-                elseif type(paragraphLabel) == "table" then
-                    paragraphObject = paragraphLabel
-                end
-                if not ok or (not frame and not paragraphObject) then
-                    frame = safe(tab.AddLabel, tab, title)
-                end
+            end
+            addSectionHeader()
 
-                local handle = {Object=frame, Label=paragraphLabel, Paragraph=paragraphObject, _text=title}
-                -- Existing source calls this as Label.SetText("text"), while
-                -- other callers may use Label:SetText("text"). Support both.
-                handle.SetText = function(first, second)
-                    local v = second ~= nil and second or first
-                    v = tostring(v or "")
-                    handle._text = v
-                    local updated = false
-                    local paragraph = handle.Paragraph or (type(paragraphLabel) == "table" and paragraphLabel) or nil
-                    if paragraph then
-                        if type(paragraph.SetTitle) == "function" then
-                            updated = pcall(paragraph.SetTitle, paragraph, v)
-                        end
-                        if type(paragraph.SetDesc) == "function" then
-                            pcall(paragraph.SetDesc, paragraph, "")
-                        end
-                        if type(paragraph.SetText) == "function" and not updated then
-                            updated = pcall(paragraph.SetText, paragraph, v)
-                        end
-                    end
-                    if not updated and paragraphLabel and type(paragraphLabel) ~= "table" then
-                        pcall(function() if paragraphLabel:IsA("TextLabel") then paragraphLabel.Text = v; updated = true end end)
-                    end
-                    if not updated and frame then
-                        pcall(function()
-                            if frame:IsA("TextLabel") then
-                                frame.Text = v
-                                updated = true
-                            else
-                                local firstTextLabel
-                                for _, obj in ipairs(frame:GetDescendants()) do
-                                    if obj:IsA("TextLabel") then
-                                        if not firstTextLabel then firstTextLabel = obj end
-                                    end
-                                end
-                                if firstTextLabel then
-                                    firstTextLabel.Text = v
-                                    updated = true
-                                end
-                            end
-                        end)
-                    end
+            function Section.CreateToggle(cfgT, cb)
+                cfgT=cfgT or {}
+                local tTitle = cfgT.Title or cfgT.Name or "Toggle"
+                local def = cfgT.Default
+                if type(Settings)=="table" and type(Settings[tTitle])=="boolean" then def = Settings[tTitle] else def = (def==true) end
+                local toggle
+                local ok = pcall(function()
+                    toggle = tabRef:AddToggle(tTitle.."_"..secNameRef, {Title = tTitle, Description = cfgT.Desc or nil, Default = def})
+                end)
+                if not ok or not toggle then
+                    toggle = tabRef:AddToggle(tTitle, {Title = tTitle, Default = def})
                 end
-                handle.GetText = function() return handle._text end
-                return handle
-            end
-            function Section.CreateSlider(cfg, callback)
-                cfg=cfg or {}; local title=cfg.Title or "Slider"; local min=cfg.Min or cfg.MinValue or 0; local max=cfg.Max or cfg.MaxValue or 100; local default=math.clamp(tonumber(cfg.Default or cfg.Value) or min,min,max)
-                local control=safe(tab.AddSlider,tab,{Title=title,Name=title,Min=min,Max=max,Default=default,Increment=cfg.Increment or 1,Callback=function(v) if callback then task.spawn(function() safe(callback,v) end) end end})
-                return register(title,"slider",default,callback,control,name,sectionName)
-            end
-            function Section.CreateDropdown(cfg, callback)
-                cfg=cfg or {}; local title=cfg.Title or "Dropdown"; local raw=cfg.List or cfg.Values or cfg.Options or {}; local values={}
-                if type(raw)=="table" then if #raw>0 then for _,v in ipairs(raw) do table.insert(values,tostring(v)) end else for k in pairs(raw) do table.insert(values,tostring(k)) end; table.sort(values) end end
-                local multi=cfg.Selected==true; local default=cfg.Default
-                if multi then
-                    local selected={}; if type(default)=="table" then for k,v in pairs(default) do if type(k)=="number" then selected[tostring(v)]=true elseif v==true then selected[tostring(k)]=true end end end
-                    for _,v in ipairs(values) do if selected[v]==nil then selected[v]=raw[v]==true end end
-                    default=selected
-                elseif default==nil then default=values[1] end
-                local control
-                if multi and (title == "Select Sea Events" or title == "Select Weapons Fix Lava") then
-                    -- Apenas estas duas listas permanecem expandidas em toggles individuais.
-                    control = {Items = {}, Selected = default}
-                    for _, item in ipairs(values) do
-                        local optionName = item
-                        local itemName = title .. " | " .. optionName
-                        local itemControl = safe(tab.AddToggle, tab, {
-                            Title=itemName, Name=itemName,
-                            Desc="Seleção múltipla • " .. title,
-                            Default=default[optionName] == true,
-                            Callback=function(v)
-                                default[optionName] = not not v
-                                control.Selected[optionName] = not not v
-                                if callback then task.spawn(function() safe(callback, optionName, not not v) end) end
-                            end
-                        })
-                        control.Items[optionName] = itemControl
-                    end
-                elseif multi then
-                    -- A Redz V5 original não implementa MultiSelect no AddDropdown.
-                    -- Usamos um dropdown nativo como lista: selecionar um item alterna
-                    -- apenas esse item, preservando os outros selecionados e o callback antigo.
-                    local firstSelected
-                    for _, item in ipairs(values) do
-                        if default[item] == true then firstSelected = item; break end
-                    end
-                    local previousSelection = firstSelected or values[1]
-                    control = safe(tab.AddDropdown, tab, {
-                        Title=title, Name=title, Options=values,
-                        Default=previousSelection,
-                        Callback=function(v)
-                            local item = tostring(v or "")
-                            if item == "" or default[item] == nil then return end
-                            local enabled = not (default[item] == true)
-                            default[item] = enabled
-                            if callback then task.spawn(function() safe(callback, item, enabled) end) end
-                            previousSelection = item
-                        end
-                    })
-                    control = control or {}
-                    control.Selected = default
-                else
-                    control=safe(tab.AddDropdown,tab,{Title=title,Name=title,Options=values,Default=default,Callback=function(v)
-                        if callback then task.spawn(function() safe(callback,v) end) end
-                    end})
+                if toggle then
+                    toggle:OnChanged(function()
+                        local val = toggle.Value
+                        if type(cb)=="function" then task.spawn(function() safe(cb, val) end) end
+                        if Settings then Settings[tTitle]=val end
+                        if type(SaveSettings)=="function" then pcall(function() SaveSettings(tTitle, val) end) end
+                    end)
                 end
-                local opt=register(title,"dropdown",default,callback,control,name,sectionName)
-                opt.GetNewList=function(_,newList)
-                    if multi and type(newList)=="table" then
-                        for _, item in ipairs(values) do
-                            local enabled = newList[item] == true
-                            default[item] = enabled
-                            if control.Items then
-                                local itemControl = control.Items[item]
-                                if itemControl and type(itemControl.Set) == "function" then safe(itemControl.Set,itemControl,enabled) end
-                            end
-                        end
-                        if control.Selected then control.Selected = default end
-                        if control and type(control.Set) == "function" then
-                            local selectedList = {}
-                            for _, item in ipairs(values) do if default[item] then table.insert(selectedList,item) end end
-                            safe(control.Set,control,selectedList)
-                        end
-                    elseif control and type(control.Set) == "function" then safe(control.Set,control,newList) end
+                local ctrl = {}
+                function ctrl.Set(_, v) if toggle then toggle:SetValue(v) end end
+                function ctrl.SetStage(_, v) if toggle then toggle:SetValue(v) end end
+                function ctrl.SetValue(_, v) if toggle then toggle:SetValue(v) end end
+                register(tTitle, "toggle", def, cb, ctrl, pageName, secNameRef)
+                return ctrl
+            end
+
+            function Section.CreateButton(cfgB, cbB)
+                cfgB=cfgB or {}
+                local bTitle = cfgB.Title or cfgB.Name or (type(cfgB)=="string" and cfgB or "Button")
+                local desc = cfgB.Desc or cfgB.Description
+                local callback = cbB or cfgB.Callback
+                local btn
+                pcall(function()
+                    btn = tabRef:AddButton({Title = bTitle, Description = desc or "", Callback = function() if type(callback)=="function" then safe(callback) end end})
+                end)
+                local ctrl = {Set=function() end}
+                register(bTitle, "button", bTitle, callback, ctrl, pageName, secNameRef)
+                return ctrl
+            end
+
+            function Section.CreateLabel(txtCfg)
+                local txt = type(txtCfg)=="string" and txtCfg or (type(txtCfg)=="table" and (txtCfg.Title or txtCfg.Text or txtCfg.Content or txtCfg[1]) or "Label")
+                pcall(function()
+                    tabRef:AddParagraph({Title = txt, Content = ""})
+                end)
+                local ctrl = {Set=function() end, GetText=function() return txt end}
+                register(txt, "textlabel", txt, nil, ctrl, pageName, secNameRef)
+                return ctrl
+            end
+
+            function Section.CreateDropdown(cfgD, cbD)
+                cfgD=cfgD or {}
+                local dTitle = cfgD.Title or cfgD.Name or "Dropdown"
+                local list = cfgD.List or cfgD.Values or cfgD.Options or {}
+                local def = cfgD.Default or cfgD.Value
+                if type(def)=="number" and list[def] then def = list[def] end
+                if def==nil then def = list[1] end
+                local multi = cfgD.Multi or false
+                local drop
+                pcall(function()
+                    drop = tabRef:AddDropdown(dTitle.."_"..secNameRef, {Title = dTitle, Description = cfgD.Desc, Values = list, Multi = multi, Default = def})
+                end)
+                if not drop then
+                    pcall(function()
+                        drop = tabRef:AddDropdown(dTitle, {Title = dTitle, Values = list, Multi = multi, Default = def})
+                    end)
                 end
-                opt.SetList=opt.GetNewList
-                return opt
+                if drop then
+                    drop:OnChanged(function(val)
+                        if type(cbD)=="function" then safe(cbD, val) end
+                    end)
+                end
+                local ctrl = {}
+                function ctrl.Set(_, v) if drop then drop:SetValue(v) end end
+                function ctrl.SetValue(_, v) if drop then drop:SetValue(v) end end
+                function ctrl.SetStage(_, v) if drop then drop:SetValue(v) end end
+                register(dTitle, "dropdown", def, cbD, ctrl, pageName, secNameRef)
+                return ctrl
             end
-            function Section.CreateBox(cfg, callback)
-                cfg=cfg or {}; local title=cfg.Title or "Text input"
-                local control=safe(tab.AddTextBox,tab,{Title=title,Name=title,Default=cfg.Default or "",Placeholder=cfg.Placeholder or "",Callback=function(v) if callback then task.spawn(function() safe(callback,v) end) end end})
-                local opt=register(title,"box",cfg.Default or "",callback,control,name,sectionName)
-                opt.FunctionCreate.GetText=function() return tostring(opt.value or "") end
-                return opt
+
+            function Section.CreateSlider(cfgS, cbS)
+                cfgS=cfgS or {}
+                local sTitle = cfgS.Title or cfgS.Name or "Slider"
+                local min = cfgS.Min or cfgS.min or 0
+                local max = cfgS.Max or cfgS.max or 100
+                local def = cfgS.Default or cfgS.Value or min
+                local rounding = cfgS.Rounding or 0
+                local slider
+                pcall(function()
+                    slider = tabRef:AddSlider(sTitle.."_"..secNameRef, {Title = sTitle, Description = cfgS.Desc, Default = def, Min = min, Max = max, Rounding = rounding, Callback = function(v) if type(cbS)=="function" then safe(cbS, v) end end})
+                end)
+                if not slider then
+                    pcall(function()
+                        slider = tabRef:AddSlider(sTitle, {Title = sTitle, Default = def, Min = min, Max = max, Rounding = rounding, Callback = function(v) if type(cbS)=="function" then safe(cbS, v) end end})
+                    end)
+                end
+                if slider then
+                    slider:OnChanged(function(v)
+                        if type(cbS)=="function" then safe(cbS, v) end
+                    end)
+                end
+                local ctrl = {}
+                function ctrl.Set(_, v) if slider then slider:SetValue(v) end end
+                function ctrl.SetValue(_, v) if slider then slider:SetValue(v) end end
+                function ctrl.SetStage(_, v) if slider then slider:SetValue(v) end end
+                register(sTitle, "slider", def, cbS, ctrl, pageName, secNameRef)
+                return ctrl
             end
-            function Section.CreateNoti(text,duration) return Main.CreateNoti(text,duration) end
+
+            function Section.CreateBox(cfgBx, cbBx)
+                cfgBx=cfgBx or {}
+                local bTitle = cfgBx.Title or cfgBx.Name or "Input"
+                local def = cfgBx.Default or cfgBx.Value or ""
+                local placeholder = cfgBx.Placeholder or ""
+                local input
+                pcall(function()
+                    input = tabRef:AddInput(bTitle.."_"..secNameRef, {Title = bTitle, Default = tostring(def), Placeholder = placeholder, Numeric = false, Finished = false, Callback = function(v) if type(cbBx)=="function" then safe(cbBx, v) end end})
+                end)
+                if not input then
+                    pcall(function()
+                        input = tabRef:AddInput(bTitle, {Title = bTitle, Default = tostring(def), Placeholder = placeholder, Numeric = false, Finished = false, Callback = function(v) if type(cbBx)=="function" then safe(cbBx, v) end end})
+                    end)
+                end
+                if input then
+                    input:OnChanged(function()
+                        local v = input.Value
+                        if type(cbBx)=="function" then safe(cbBx, v) end
+                    end)
+                end
+                local ctrl = {}
+                function ctrl.Set(_, v) if input then input:SetValue(tostring(v)) end end
+                function ctrl.SetValue(_, v) if input then input:SetValue(tostring(v)) end end
+                register(bTitle, "box", def, cbBx, ctrl, pageName, secNameRef)
+                return ctrl
+            end
+
+            -- Aliases para compatibilidade
+            Section.AddToggle = Section.CreateToggle
+            Section.AddButton = Section.CreateButton
+            Section.AddDropdown = Section.CreateDropdown
+            Section.AddSlider = Section.CreateSlider
+            Section.AddLabel = Section.CreateLabel
+            Section.CreateNoti = function() end
+
             return Section
         end
+        Page.AddSection = Page.CreateSection
         return Page
     end
-    function Main.CreateBind(config, callback)
-        config=config or {}; local key=config.Key or Enum.KeyCode.LeftControl
-        local conn=UIS.InputBegan:Connect(function(input,processed) if not processed and input.KeyCode==key then if callback then task.spawn(callback) end end end)
-        return {Disconnect=function() conn:Disconnect() end,SetKey=function(v) key=v end}
+
+    -- API que o script antigo usa: Main.CreatePage / Main.CreateSection / Main.CreateNoti
+    local Main = {}
+    function Main.CreatePage(cfg) return WindowAPI.CreatePage(cfg) end
+    function Main.CreateSection(name)
+        -- cria na primeira aba ou cria uma aba Default
+        local firstName = next(Tabs) or "Main"
+        local tab = getOrCreateTab(firstName)
+        local Page = {CreateSection = function(_, secName) return WindowAPI.CreatePage({Page_Name=firstName}).CreateSection(secName) end}
+        return Page.CreateSection(name)
     end
-    function Main.CreateNoti(payload,duration)
-        if type(payload)=="table" then payload={Title=payload.Title or "NEXORA HUB",Text=payload.Desc or payload.Text or "",Duration=payload.ShowTime or duration or 4} else payload={Title="NEXORA HUB",Text=tostring(payload),Duration=duration or 4} end
-        if Nexora._window and type(Nexora._window.MakeNotification)=="function" then safe(Nexora._window.MakeNotification,Nexora._window,payload) end
+    function Main.CreateNoti(cfg, dur)
+        local title = type(cfg)=="table" and (cfg.Title or "Nexora") or "Nexora"
+        local content = type(cfg)=="table" and (cfg.Desc or cfg.Content or cfg.Text or "") or tostring(cfg)
+        Fluent:Notify({Title = title, Content = content, Duration = dur or 3})
     end
-    Main.CreateNotification=Main.CreateNoti
+    function Main.CreateNotification(cfg, dur) Main.CreateNoti(cfg, dur) end
+    function Main.CreateBind() return {Set=function() end} end
+
+    -- SaveManager / InterfaceManager setup
+    pcall(function()
+        SaveManager:SetLibrary(Fluent)
+        InterfaceManager:SetLibrary(Fluent)
+        SaveManager:IgnoreThemeSettings()
+        SaveManager:SetIgnoreIndexes({})
+        InterfaceManager:SetFolder("NexoraHub_Xenon")
+        SaveManager:SetFolder("NexoraHub_Xenon/configs")
+        -- Não vamos criar seção de Settings automática aqui porque o script original já tem sua própria tab de Settings
+        SaveManager:LoadAutoloadConfig()
+    end)
+
+    function Nexora.RestoreSavedToggles()
+        for _,opt in ipairs(Nexora.OptionOrder) do
+            if opt and opt.type=="toggle" and opt.value==true and opt.FunctionCreate and opt.FunctionCreate.SetStage then
+                pcall(opt.FunctionCreate.SetStage, opt.FunctionCreate, true)
+                task.wait(0.05)
+            end
+        end
+    end
+    function Nexora.CreateNoti(c,d) Main.CreateNoti(c,d) end
+    function Nexora.CreateNotification(c,d) Main.CreateNoti(c,d) end
+
+    task.delay(3, function() Nexora.RestoreSavedToggles() end)
+    getgenv().__NexoraRestoreDone=false
+
+    -- Seleciona primeira aba
+    task.delay(0.5, function() pcall(function() Window:SelectTab(1) end) end)
+
+    Fluent:Notify({Title = "Nexora Hub", Content = "UI Xenon (Fluent) carregada!", Duration = 4})
+
     return Main
 end
-function Nexora.CreateNoti(payload,duration) if Nexora._main then return Nexora._main.CreateNoti(payload,duration) end end
-function Nexora.RestoreSavedToggles()
-    for _,opt in ipairs(Nexora.OptionOrder) do
-        if opt and opt.type=="toggle" and opt.value==true and opt.FunctionCreate and opt.FunctionCreate.SetStage then pcall(opt.FunctionCreate.SetStage,opt.FunctionCreate,true); task.wait() end
-    end
-end
-getgenv().__NexoraRestoreDone=false
-task.delay(10,function() Nexora.RestoreSavedToggles() end)
+
 return Nexora
 end)()
+
 Main = A.CreateMain({ Title = "NEXORA HUB", Desc = "BLOX FRUITS • ViniZDev" })
 A._main = Main
 
