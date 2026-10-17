@@ -1,3 +1,4 @@
+-- Nexora Hub • Redz-inspired compact UI skin (custom implementation; existing callbacks preserved)
 -- Tela de carregamento (Nexora Hub): pequena e rápida. O resto do script só roda depois dela terminar.
 do
 	pcall(function()
@@ -8,7 +9,7 @@ do
 		local gui = Instance.new("ScreenGui")
 		gui.Name = "NexoraLoading"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true; gui.DisplayOrder = 10000
 		gui.Parent = host
-		local RED, RED_L, GRAY = Color3.fromRGB(255, 35, 55), Color3.fromRGB(255, 105, 120), Color3.fromRGB(165,165,174)
+		local RED, RED_L, GRAY = Color3.fromRGB(255, 35, 55), Color3.fromRGB(255, 95, 110), Color3.fromRGB(235,235,242)
 		local function mk(class, props, parent)
 			local o = Instance.new(class)
 			for k, v in pairs(props) do o[k] = v end
@@ -31,15 +32,15 @@ do
 		local logo = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,12), Size=UDim2.fromOffset(46,46), BackgroundColor3=Color3.fromRGB(18, 7, 10), BorderSizePixel=0}, card)
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, logo)
 		mk("UIStroke", {Color=RED, Thickness=2}, logo)
-		mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,2), Size=UDim2.new(1,0,0,13), Text="♛", TextColor3=Color3.fromRGB(255, 105, 120), Font=Enum.Font.GothamBold, TextSize=12}, logo)
+		mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,2), Size=UDim2.new(1,0,0,13), Text="♛", TextColor3=Color3.fromRGB(255, 95, 110), Font=Enum.Font.GothamBold, TextSize=12}, logo)
 		local n = mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,10), Size=UDim2.new(1,0,1,-12), Text="N", TextColor3=Color3.fromRGB(255, 35, 55), Font=Enum.Font.GothamBlack, TextSize=26}, logo)
-		mk("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(255, 105, 120), Color3.fromRGB(255, 35, 55))}, n)
+		mk("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(255, 95, 110), Color3.fromRGB(255, 35, 55))}, n)
 		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,64), Size=UDim2.fromOffset(220,20), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=Color3.fromRGB(255, 35, 55), Font=Enum.Font.GothamBlack, TextSize=16}, card)
 		local track = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,92), Size=UDim2.fromOffset(150,3), BackgroundColor3=Color3.fromRGB(24, 10, 13), BorderSizePixel=0}, card)
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, track)
 		local fill = mk("Frame", {Size=UDim2.new(0,0,1,0), BackgroundColor3=RED, BorderSizePixel=0}, track)
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, fill)
-		mk("UIGradient", {Color=ColorSequence.new(Color3.fromRGB(255, 35, 55), Color3.fromRGB(255, 105, 120))}, fill)
+		mk("UIGradient", {Color=ColorSequence.new(Color3.fromRGB(255, 35, 55), Color3.fromRGB(255, 95, 110))}, fill)
 		local status = mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,102), Size=UDim2.fromOffset(220,14), BackgroundTransparency=1, Text="Carregando...", TextColor3=GRAY, Font=Enum.Font.Gotham, TextSize=10}, card)
 		-- entrada rápida + som de abertura
 		TS:Create(card, TweenInfo.new(.18, Enum.EasingStyle.Quad), {GroupTransparency=0}):Play()
@@ -1869,7 +1870,7 @@ local C = {
     panel2 = Color3.fromRGB(24, 9, 13),
     line = Color3.fromRGB(190, 15, 35),
     gold = Color3.fromRGB(255, 35, 55),
-    goldLight = Color3.fromRGB(255, 105, 120),
+    goldLight = Color3.fromRGB(255, 95, 110),
     text = Color3.fromRGB(240, 245, 255),
     muted = Color3.fromRGB(140, 150, 170),
     green = Color3.fromRGB(255, 45, 65),
@@ -2005,8 +2006,8 @@ function Nexora.CreateMain(config)
     resize()
     if workspace.CurrentCamera then workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(resize) end
 
-    local HEADER_H, SIDEBAR_W = 64, 190
-    local RED, RED_L, GRAY = Color3.fromRGB(255, 35, 55), Color3.fromRGB(255, 105, 120), Color3.fromRGB(165,165,174)
+    local HEADER_H, SIDEBAR_W = 58, 158
+    local RED, RED_L, GRAY = Color3.fromRGB(255, 35, 55), Color3.fromRGB(255, 95, 110), Color3.fromRGB(165,165,174)
     local top = make("Frame", {Size=UDim2.new(1,0,0,HEADER_H), BackgroundColor3=Color3.fromRGB(17, 8, 11), BorderSizePixel=0}, shell)
     corner(top, 12)
     make("UIGradient", {Rotation=0, Color=ColorSequence.new({
@@ -2068,14 +2069,14 @@ function Nexora.CreateMain(config)
         TextStrokeTransparency=0.5,
         ZIndex=103
     }, iconFrame)
-    make("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(255, 105, 120), Color3.fromRGB(255, 35, 55))}, iconText)
+    make("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(255, 95, 110), Color3.fromRGB(255, 35, 55))}, iconText)
     local iconImg = make("ImageLabel", {
         BackgroundTransparency=1,
         Size=UDim2.new(1, -4, 1, -4),
         Position=UDim2.new(0, 2, 0, 2),
         Image="rbxassetid://18747094503",
         ScaleType=Enum.ScaleType.Fit,
-        ImageColor3=Color3.fromRGB(255, 105, 120),
+        ImageColor3=Color3.fromRGB(255, 95, 110),
         ZIndex=102,
         Visible=false
     }, iconFrame)
@@ -2092,7 +2093,7 @@ function Nexora.CreateMain(config)
         Position=UDim2.new(0, 36, 0, 0),
         Size=UDim2.new(0, 85, 1, 0),
         Text="Nexora Hub",
-        TextColor3=Color3.fromRGB(255, 255, 255),
+        TextColor3=Color3.fromRGB(255, 55, 70),
         TextSize=13,
         Font=Enum.Font.GothamMedium,
         TextXAlignment=Enum.TextXAlignment.Left,
@@ -2268,7 +2269,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
         end
     end)
 
-    local sidebar = make("Frame", {Name="Sidebar", Position=UDim2.new(0,0,0,HEADER_H), Size=UDim2.new(0,SIDEBAR_W,1,-HEADER_H), BackgroundColor3=Color3.fromRGB(9,9,12), BorderSizePixel=0}, shell)
+    local sidebar = make("Frame", {Name="Sidebar", Position=UDim2.new(0,0,0,HEADER_H), Size=UDim2.new(0,SIDEBAR_W,1,-HEADER_H), BackgroundColor3=Color3.fromRGB(14,14,17), BorderSizePixel=0}, shell)
     make("Frame", {Position=UDim2.new(1,-1,0,0), Size=UDim2.new(0,1,1,0), BackgroundColor3=C.line, BorderSizePixel=0}, sidebar)
     make("UIStroke", {Color=Color3.fromRGB(245,245,245), Transparency=0.94, Thickness=1}, sidebar)
     local search = make("TextBox", {Position=UDim2.new(0,12,0,12), Size=UDim2.new(1,-24,0,32), BackgroundColor3=C.bg, BorderSizePixel=0, PlaceholderText="Pesquisar...", Text="", TextColor3=C.text, PlaceholderColor3=C.muted, Font=Enum.Font.Gotham, TextSize=11, ClearTextOnFocus=false}, sidebar); corner(search,7); stroke(search,C.line)
