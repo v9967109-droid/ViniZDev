@@ -1,41 +1,59 @@
 
--- NEXORA HUB V2 -> REDZ UI V5 MIGRAÇÃO COMPLETA
--- Removido: UI antiga, sistema adaptador Nexora, BuildSchema, Options registry
--- Mantido: 100% abas, funções, toggles
--- Otimizado: loops, conexões, floating N, Status And Server com listas roláveis
+-- NEXORA HUB V2 -> REDZ UI V5 MIGRAÇÃO TOTAL - FIX DELTA v3
+-- Correção do erro "attempt to call a nil value" na linha 1
 
--- ERROR LOG (mantido leve)
-do
-    local env = getgenv()
-    if not env.__NexoraPcallHooked then
-        env.__NexoraPcallHooked = true
-        env.NexoraErrors = {}
-        local seen, count = {}, 0
-        local function log(prefix, err)
-            err = tostring(err)
-            if seen[err] or count >= 80 then return end
-            seen[err]=true; count+=1
-            table.insert(env.NexoraErrors, os.date("%H:%M:%S").." "..prefix..err)
-        end
-        env.NexoraDumpErrors = function()
-            local txt = table.concat(env.NexoraErrors, "\n")
-            pcall(function() if setclipboard then setclipboard(txt) end end)
-            return txt
-        end
-        pcall(function()
-            game:GetService("LogService").MessageOut:Connect(function(msg, kind)
-                if kind == Enum.MessageType.MessageError and string.find(msg, ":%d+:") then log("[console] ", msg) end
-            end)
-        end)
+-- Ambiente seguro (funciona em Delta, Fluxus, etc)
+local _env = (function()
+    local ok, g = pcall(function() return getgenv and getgenv() or nil end)
+    if ok and g then return g end
+    return _G
+end)()
+getgenv = getgenv or function() return _G end
+if not _env.__NexoraPcallHooked then
+    _env.__NexoraPcallHooked = true
+    _env.NexoraErrors = {}
+end
+
+-- HttpGet seguro
+local function SafeHttpGet(url)
+    local ok, res = pcall(function() return game:HttpGet(url) end)
+    if ok and res and #res > 100 then return res end
+    -- tenta via request do executor
+    if syn and syn.request then
+        local s, r = pcall(function() return syn.request({Url=url, Method="GET"}).Body end)
+        if s and r then return r end
+    end
+    if http and http.request then
+        local s, r = pcall(function() return http.request({Url=url, Method="GET"}).Body end)
+        if s and r then return r end
+    end
+    if request then
+        local s, r = pcall(function() return request({Url=url, Method="GET"}).Body end)
+        if s and r then return r end
+    end
+    return nil
+end
+
+-- REDZ V5 - tenta 3 fontes
+local redzlib = nil
+local urls = {
+    "https://raw.githubusercontent.com/XenTz-Z/RedzLibV5/refs/heads/main/Source.lua",
+    "https://raw.githubusercontent.com/realredz/Library/refs/heads/main/redzlib.txt",
+    "https://raw.githubusercontent.com/REDzHUB/LibraryV5/main/Source.lua"
+}
+for _, u in ipairs(urls) do
+    local src = SafeHttpGet(u)
+    if src then
+        local ok, lib = pcall(function() return loadstring(src)() end)
+        if ok and lib then redzlib = lib break end
     end
 end
-
--- REDZ V5
-local redzlib = loadstring(game:HttpGet("https://raw.githubusercontent.com/XenTz-Z/RedzLibV5/refs/heads/main/Source.lua"))()
 if not redzlib then
-    redzlib = loadstring(game:HttpGet("https://raw.githubusercontent.com/realredz/Library/refs/heads/main/redzlib.txt"))()
+    warn("[Nexora] Falha ao carregar RedzLib V5 - verifique Http")
+    return
 end
-local Window = redzlib:MakeWindow({Title="NEXORA HUB V2 • Redz V5", SubTitle="BLOX FRUITS • Migrado Sem Adapter", SaveFolder="NexoraHubV2_RedzV5"})
+
+local Window = redzlib:MakeWindow({Title="NEXORA HUB V2 • Redz V5", SubTitle="BLOX FRUITS • FIX DELTA", SaveFolder="NexoraHubV2_RedzV5"})
 
 -- LOOP & CONNECTION MANAGER (anti microtravamento)
 local Loops = {}
@@ -63,7 +81,7 @@ getgenv().NexoraStartLoop = StartLoop
 getgenv().NexoraStopLoop = StopLoop
 getgenv().NexoraAddConnection = AddConnection
 
--- FLOATING N - otimizado e 100% independente
+-- FLOATING N
 task.spawn(function()
     local Players = game:GetService("Players")
     local player = Players.LocalPlayer
@@ -114,7 +132,7 @@ task.spawn(function()
     end)
 end)
 
--- MAIN WRAPPER DIRETO REDZ (sem adapter, sem Options registry)
+-- MAIN WRAPPER DIRETO REDZ
 local Main = {}
 function Main.CreatePage(cfg)
     cfg = cfg or {}
@@ -135,19 +153,14 @@ function Main.CreatePage(cfg)
                 pcall(function() if SaveSettings then SaveSettings(title, v) end end)
                 if cb then task.spawn(function() pcall(cb, v) end) end
             end})
-            -- Compat com source que usa .SetStage
             local wrapper = {Object=ctrl, _title=title}
-            wrapper.SetStage = function(_, v)
-                if ctrl and ctrl.Set then pcall(ctrl.Set, ctrl, v) end
-            end
+            wrapper.SetStage = function(_, v) if ctrl and ctrl.Set then pcall(ctrl.Set, ctrl, v) end end
             wrapper.FunctionCreate = wrapper
             return wrapper
         end
         function Section.CreateButton(cfg2, cb)
             cfg2=cfg2 or {}; local title=cfg2.Title or "Button"
-            local function onPressed()
-                if cb then task.spawn(function() local ok,err=pcall(cb) if not ok then warn(err) end end) end
-            end
+            local function onPressed() if cb then task.spawn(function() local ok,err=pcall(cb) if not ok then warn(err) end end) end end
             local btn = tab:AddButton({Name=title, Title=title, Callback=onPressed})
             return btn
         end
@@ -192,7 +205,6 @@ function Main.CreatePage(cfg)
                 if type(def)=="table" then for k,v in pairs(def) do if type(k)=="number" then selected[tostring(v)]=true elseif v==true then selected[tostring(k)]=true end end end
                 for _,v in ipairs(values) do if selected[v]==nil then selected[v]=raw[v]==true end end
                 def=selected
-                -- Implementa multi como lista de toggles (mantém compatibilidade)
                 local control = {Items={}, Selected=def}
                 for _, item in ipairs(values) do
                     local itemName = title.." | "..item
@@ -220,11 +232,9 @@ function Main.CreatePage(cfg)
     return Page
 end
 
--- Compatibilidade global
 getgenv().Main = Main
 _G.Main = Main
 
--- Settings base
 if not _G.Settings then _G.Settings = {} end
 Settings = _G.Settings
 function SaveSettings(k,v) _G.Settings[k]=v pcall(function() if writefile then writefile("NexoraHubV2_Settings.json", game:GetService("HttpService"):JSONEncode(_G.Settings)) end end) end
@@ -232,7 +242,7 @@ pcall(function() if isfile and isfile("NexoraHubV2_Settings.json") and readfile 
 
 
 PageShop = Main.CreatePage({ Page_Name = "Shop", Page_Title = "Shop" })
--- getgenv().Options removido - usando Settings direto
+getgenv().Options = {}
 SectionShopMisc = PageShop.CreateSection("Misc Shop")
 function Remote(a, s, X)
 	if not a and X then
@@ -381,7 +391,7 @@ SectionShopMisc.CreateButton({ Title = "Buy Race Draco" }, function()
     local data = player and player:FindFirstChild("Data")
     local race = data and data:FindFirstChild("Race")
     if race and tostring(race.Value) == "Draco" then
-        -- A.CreateNoti removido({Title = "Nexora Hub", Desc = "You already have Draco Race", ShowTime = 5})
+        -- removed({Title = "Nexora Hub", Desc = "You already have Draco Race", ShowTime = 5})
         return
     end
 
@@ -390,7 +400,7 @@ SectionShopMisc.CreateButton({ Title = "Buy Race Draco" }, function()
         remote = game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RF/InteractDragonQuest")
     end)
     if not remote then
-        -- A.CreateNoti removido({Title = "Nexora Hub", Desc = "Draco purchase remote unavailable", ShowTime = 5})
+        -- removed({Title = "Nexora Hub", Desc = "Draco purchase remote unavailable", ShowTime = 5})
         return
     end
 
@@ -399,11 +409,11 @@ SectionShopMisc.CreateButton({ Title = "Buy Race Draco" }, function()
     end)
     task.wait(0.5)
     if race and tostring(race.Value) == "Draco" then
-        -- A.CreateNoti removido({Title = "Nexora Hub", Desc = "You Equipped Draco Race", ShowTime = 5})
+        -- removed({Title = "Nexora Hub", Desc = "You Equipped Draco Race", ShowTime = 5})
     elseif not ok then
-        -- A.CreateNoti removido({Title = "Nexora Hub", Desc = "Draco purchase request failed", ShowTime = 5})
+        -- removed({Title = "Nexora Hub", Desc = "Draco purchase request failed", ShowTime = 5})
     else
-        -- A.CreateNoti removido({Title = "Nexora Hub", Desc = "Game may require Draco prerequisites", ShowTime = 5})
+        -- removed({Title = "Nexora Hub", Desc = "Game may require Draco prerequisites", ShowTime = 5})
     end
 end)
 
@@ -616,59 +626,18 @@ StatusGear = SectionStatus.CreateLabel({ Title = "Acient One Status" })
 -- ============================================
 do
     local 
--- ============================================
--- STATUS AND SERVER - REORGANIZADO COM LISTAS ROLÁVEIS
--- ============================================
+-- STATUS AND SERVER - LISTAS ROLÁVEIS (FIX)
 do
-    -- Frutas listas
     local NormalFruits = {"Rocket","Spin","Blade","Spring","Bomb","Smoke","Spike","Flame","Sand","Dark","Diamond","Light","Rubber","Barrier","Ghost","Magma","Quake","Buddha","Love","Spider","Sound","Phoenix","Portal","Lightning","Pain","Blizzard","Gravity","Dough","Shadow","Venom","Control","Gas","Spirit","Leopard","Yeti","Kitsune","Dragon"}
     local MirageFruits = {"Leopard","Yeti","Kitsune","Dragon","Spirit","Control","Gas","Venom","Shadow","Dough","Gravity","Blizzard"}
-
-    -- Seção Dealer Normal com Scroll
     local SectionDealerNormal = PageStatusAndServer.CreateSection("Dealer Normal - Stock Rolável")
     local DealerNormalLabel = SectionDealerNormal.CreateLabel({Title="Normal Dealer: Carregando..."})
-    -- Dropdown rolável nativo Redz
-    SectionDealerNormal.CreateDropdown({Title="Filtrar Normal Dealer", List=NormalFruits, Default=NormalFruits[1]}, function(v)
-        DealerNormalLabel.SetText(DealerNormalLabel, "Normal Selecionado: "..tostring(v))
-    end)
-    -- Lista completa como botões (Redz já tem scroll interno na Tab)
-    for _, fruit in ipairs(NormalFruits) do
-        SectionDealerNormal.CreateButton({Title="[Normal] "..fruit}, function()
-            print("[Nexora] Normal Dealer -> "..fruit)
-            DealerNormalLabel.SetText(DealerNormalLabel, "Normal: "..fruit)
-        end)
-    end
-
-    -- Seção Mirage Dealer com Scroll
+    SectionDealerNormal.CreateDropdown({Title="Filtrar Normal Dealer", List=NormalFruits, Default=NormalFruits[1]}, function(v) DealerNormalLabel.SetText(DealerNormalLabel, "Normal Selecionado: "..tostring(v)) end)
+    for _, fruit in ipairs(NormalFruits) do SectionDealerNormal.CreateButton({Title="[Normal] "..fruit}, function() DealerNormalLabel.SetText(DealerNormalLabel, "Normal: "..fruit) end) end
     local SectionMirageDealer = PageStatusAndServer.CreateSection("Mirage Dealer - Stock Rolável")
     local MirageLabel = SectionMirageDealer.CreateLabel({Title="Mirage Dealer: Carregando..."})
-    SectionMirageDealer.CreateDropdown({Title="Filtrar Mirage Dealer", List=MirageFruits, Default=MirageFruits[1]}, function(v)
-        MirageLabel.SetText(MirageLabel, "Mirage Selecionado: "..tostring(v))
-    end)
-    for _, fruit in ipairs(MirageFruits) do
-        SectionMirageDealer.CreateButton({Title="[Mirage] "..fruit}, function()
-            print("[Nexora] Mirage Dealer -> "..fruit)
-            MirageLabel.SetText(MirageLabel, "Mirage: "..fruit)
-        end)
-    end
-
-    -- Atualização automática do stock real (se disponível no jogo)
-    StartLoop("DealerStockUpdater", 10, function()
-        local ok, stock = pcall(function()
-            -- Tenta pegar stock real via Remote se existir
-            return game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("GetFruits", false)
-        end)
-        if ok and type(stock)=="table" then
-            -- Atualiza labels com stock real
-            pcall(function()
-                local txt = "Normal Stock: "
-                for _, v in ipairs(stock) do
-                    if v and v.Name then txt = txt .. v.Name .. ", " end
-                end
-                DealerNormalLabel.SetText(DealerNormalLabel, txt)
-            end)
-        end
-    end)
+    SectionMirageDealer.CreateDropdown({Title="Filtrar Mirage Dealer", List=MirageFruits, Default=MirageFruits[1]}, function(v) MirageLabel.SetText(MirageLabel, "Mirage Selecionado: "..tostring(v)) end)
+    for _, fruit in ipairs(MirageFruits) do SectionMirageDealer.CreateButton({Title="[Mirage] "..fruit}, function() MirageLabel.SetText(MirageLabel, "Mirage: "..fruit) end) end
 end
 
 
@@ -5956,7 +5925,7 @@ FarmingMaterialSection.CreateToggle(
 	function(V)
 		SaveSettings("Farm Material", V)
 		if V and not Settings["Start Farm"] then
-			-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Turn On Start Farm Plz", ShowTime = 5 })
+			-- removed({ Title = "Nexora Hub", Desc = "Turn On Start Farm Plz", ShowTime = 5 })
 		end
 	end
 )
@@ -7531,7 +7500,7 @@ BossSoulReaperSection.CreateToggle(
 	{ Title = "Summon Soul Reaper", Desc = nil, Default = Settings["Summon Soul Reaper"] or false },
 	function(f)
 		if f and not Settings["Attack Soul Reaper"] then
-			-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Turn On Attack Soul Reaper Plz", ShowTime = 5 })
+			-- removed({ Title = "Nexora Hub", Desc = "Turn On Attack Soul Reaper Plz", ShowTime = 5 })
 		end
 		SaveSettings("Summon Soul Reaper", f)
 	end
@@ -7547,7 +7516,7 @@ BossDoughKingSection.CreateToggle(
 	{ Title = "Summon Dough King", Desc = nil, Default = Settings["Summon Dough King"] or false },
 	function(f)
 		if f and not Settings["Attack Dough King"] then
-			-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Turn On Attack Dough King Plz", ShowTime = 5 })
+			-- removed({ Title = "Nexora Hub", Desc = "Turn On Attack Dough King Plz", ShowTime = 5 })
 		end
 		if f then
 			spawn(function()
@@ -7565,7 +7534,7 @@ BossDoughKingSection.CreateToggle(
 	{ Title = "Hop Find Dough King", Desc = nil, Default = Settings["Hop Find Dough King"] or false },
 	function(f)
 		if f and not Settings["Attack Dough King"] then
-			-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Turn On Attack Dough King Plz", ShowTime = 5 })
+			-- removed({ Title = "Nexora Hub", Desc = "Turn On Attack Dough King Plz", ShowTime = 5 })
 		end
 		SaveSettings("Hop Find Dough King", f)
 	end
@@ -7581,7 +7550,7 @@ BossDarkbeardSection.CreateToggle(
 	{ Title = "Summon Darkbeard", Desc = nil, Default = Settings["Summon Darkbeard"] or false },
 	function(f)
 		if f and not Settings["Attack Darkbeard"] then
-			-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Turn On Attack Darkbeard Plz", ShowTime = 5 })
+			-- removed({ Title = "Nexora Hub", Desc = "Turn On Attack Darkbeard Plz", ShowTime = 5 })
 		end
 		SaveSettings("Summon Darkbeard", f)
 	end
@@ -7590,7 +7559,7 @@ BossDarkbeardSection.CreateToggle(
 	{ Title = "Hop Find Darkbeard", Desc = nil, Default = Settings["Hop Find Darkbeard"] or false },
 	function(f)
 		if f and not Settings["Attack Darkbeard"] then
-			-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Turn On Attack Darkbeard Plz", ShowTime = 5 })
+			-- removed({ Title = "Nexora Hub", Desc = "Turn On Attack Darkbeard Plz", ShowTime = 5 })
 		end
 		SaveSettings("Hop Find Darkbeard", f)
 	end
@@ -8509,7 +8478,7 @@ task.spawn(function()
 										end
 										return
 									else
-										-- A.CreateNoti removido({
+										-- removed({
 											Title = "Nexora Hub",
 											Desc = "Waiting Elite Hunter",
 											ShowTime = 5,
@@ -8683,7 +8652,7 @@ task.spawn(function()
 					elseif DetectItemPlr("God's Chalice") then
 						toTarget(CFrame.new(-12463.8740234375, 374.9144592285156, -7523.77392578125))
 					else
-						-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Searching Elite spawn", ShowTime = 5 })
+						-- removed({ Title = "Nexora Hub", Desc = "Searching Elite spawn", ShowTime = 5 })
 					end
 				end
 			end
@@ -9475,7 +9444,7 @@ function AutoQuestDojo()
 			elseif y.Quest.BeltName == "Red" then
 				getgenv().QuestTrainer = { BeltName = "Red", CountKillMob = 0 }
 			else
-				-- A.CreateNoti removido({
+				-- removed({
 					Title = "Nexora Hub",
 					Desc = "That's enough training for today... Come back tomorrow and we can continue.\10 or dont support Belt Currently",
 					ShowTime = 5,
@@ -10232,7 +10201,7 @@ end
 function AutoCraftingVolcanicMagnet()
     pcall(function()
         if CheckItemInventory("Volcanic Magnet") then
-            -- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Volcanic Magnet já craftado!", ShowTime = 5 })
+            -- removed({ Title = "Nexora Hub", Desc = "Volcanic Magnet já craftado!", ShowTime = 5 })
             if ToggleAutoCraftingVolcanicMagnet then ToggleAutoCraftingVolcanicMagnet:SetStage(false) end
             return
         end
@@ -10278,7 +10247,7 @@ function AutoCraftingVolcanicMagnet()
                 end)
                 task.wait(2)
                 if CheckItemInventory("Volcanic Magnet") then
-                    -- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Done Craft Volcanic Magnet", ShowTime = 5 })
+                    -- removed({ Title = "Nexora Hub", Desc = "Done Craft Volcanic Magnet", ShowTime = 5 })
                     ToggleAutoCraftingVolcanicMagnet:SetStage(false)
                 end
             end
@@ -10365,7 +10334,7 @@ BerrySection.CreateToggle(
 								end
 							end
 						else
-							-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Waiting Berry spawn", ShowTime = 5 })
+							-- removed({ Title = "Nexora Hub", Desc = "Waiting Berry spawn", ShowTime = 5 })
 							if Settings["Hop Find Berry"] then
 								HopServer()
 							end
@@ -10645,7 +10614,7 @@ function ObservationV2()
 					equiptool(NameWeapon(Settings["Select Weapon"]))
 				until not IsMobAlive(y) or not Settings["Auto UP Observation V2"]
 			else
-				-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Waiting Boss Captain Elephant", ShowTime = 5 })
+				-- removed({ Title = "Nexora Hub", Desc = "Waiting Boss Captain Elephant", ShowTime = 5 })
 				task.wait(5)
 			end
 		elseif t:DistanceFromCharacter(Vector3.new(-12441.5908203125, 331.4884948730469, -7676.197265625)) < 10 then
@@ -10680,7 +10649,7 @@ function ObservationV2()
 								0
 							)
 						else
-							-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Wating Fruit", ShowTime = 5 })
+							-- removed({ Title = "Nexora Hub", Desc = "Wating Fruit", ShowTime = 5 })
 							task.wait(3)
 						end
 					end
@@ -10754,7 +10723,7 @@ FarmObservationSection.CreateToggle(
 	},
 	function(y)
 		if y and not Settings["Farm Observation"] then
-			-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Turn On Farm Observation plz", ShowTime = 5 })
+			-- removed({ Title = "Nexora Hub", Desc = "Turn On Farm Observation plz", ShowTime = 5 })
 		end
 		SaveSettings("Farm Observation [ Hop Server ]", y)
 	end
@@ -10983,7 +10952,7 @@ AutoKillBossSection.CreateToggle(
 	{ Title = "Kill All Boss", Desc = nil, Default = Settings["Kill All Boss"] or false },
 	function(y)
 		if y and not Settings["Kill Boss"] then
-			-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Turn On Kill Boss plz", ShowTime = 5 })
+			-- removed({ Title = "Nexora Hub", Desc = "Turn On Kill Boss plz", ShowTime = 5 })
 		end
 		SaveSettings("Kill All Boss", y)
 	end
@@ -11006,13 +10975,13 @@ DevilFruitSection.CreateToggle(
 			getgenv().__RandomFruitNext = 0
 			getgenv().__RandomFruitWarn = 0
 			pcall(function()
-				-- A.CreateNoti removido({Title = "Nexora Hub", Desc = "Random Devil Fruit ativado", ShowTime = 4})
+				-- removed({Title = "Nexora Hub", Desc = "Random Devil Fruit ativado", ShowTime = 4})
 			end)
 		else
 			getgenv().__RandomFruitBusy = false
 			getgenv().__SpinOpenedAt = nil
 			pcall(function()
-				-- A.CreateNoti removido({Title = "Nexora Hub", Desc = "Random Devil Fruit desativado", ShowTime = 4})
+				-- removed({Title = "Nexora Hub", Desc = "Random Devil Fruit desativado", ShowTime = 4})
 			end)
 		end
 	end
@@ -11322,7 +11291,7 @@ RaidsSection.CreateToggle(
 	{ Title = "Hop Sever Raid", Desc = nil, Default = Settings["Hop Sever Raid"] or false },
 	function(b)
 		if b and not Settings["Auto Raid"] then
-			-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Turn On Auto Raid Plz", ShowTime = 5 })
+			-- removed({ Title = "Nexora Hub", Desc = "Turn On Auto Raid Plz", ShowTime = 5 })
 		end
 		SaveSettings("Hop Sever Raid", b)
 	end
@@ -13041,7 +13010,7 @@ function WarnOnce(b, l)
 	end
 	getgenv().__BFWarned[b] = tick()
 	pcall(function()
-		-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = l, ShowTime = 5 })
+		-- removed({ Title = "Nexora Hub", Desc = l, ShowTime = 5 })
 	end)
 end
 function DetectSeaEvents(b)
@@ -13540,7 +13509,7 @@ ToggleFindMirage = FarmingSeaEventSection.CreateToggle(
 							getgenv().TweenBoat:Pause()
 							getgenv().TweenBoat:Cancel()
 						end
-						-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Mirage Island Spawned", ShowTime = 5 })
+						-- removed({ Title = "Nexora Hub", Desc = "Mirage Island Spawned", ShowTime = 5 })
 						ToggleFindMirage:SetStage(false)
 						task.wait(5)
 					end
@@ -13572,7 +13541,7 @@ KitsuneEventSection.CreateToggle(
 	{ Title = "Auto Spawn Kitsune Island", Desc = nil, Default = Settings["Auto Spawn Kitsune Island"] or false },
 	function(y)
 		if y then
-			-- A.CreateNoti removido({
+			-- removed({
 				Title = "Nexora Hub",
 				Desc = "Turn On after Status Full Moon|( Will Full Moon In >= 0 Minutes )",
 				ShowTime = 5,
@@ -13840,7 +13809,7 @@ FarmingMultiSeaEvent.Section.CreateToggle(
 				if #selectedNames == 0 then
 					if tick() - lastWaitNotice >= 5 then
 						lastWaitNotice = tick()
-						pcall(function() -- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Select players in Select Player Multi Sea Event first", ShowTime = 5 }) end)
+						pcall(function() -- removed({ Title = "Nexora Hub", Desc = "Select players in Select Player Multi Sea Event first", ShowTime = 5 }) end)
 					end
 					task.wait(1)
 					continue
@@ -13875,7 +13844,7 @@ FarmingMultiSeaEvent.Section.CreateToggle(
 							if #missingPlayers > 0 and missingPlayers[1] ~= "Select Player Multi Sea Event" then
 								desc = "Waiting for: " .. table.concat(missingPlayers, ", ")
 							end
-							pcall(function() -- A.CreateNoti removido({ Title = "Nexora Hub", Desc = desc, ShowTime = 5 }) end)
+							pcall(function() -- removed({ Title = "Nexora Hub", Desc = desc, ShowTime = 5 }) end)
 						end
 					else
 						local currentCharacter = t.Character
@@ -13897,7 +13866,7 @@ FarmingMultiSeaEvent.Section.CreateToggle(
 								-- V10: Espera robusta nativa
 								if not stillSeated or not humNow or humNow.SeatPart ~= seat then
 									SetMultiSeaForward(seat, false)
-									pcall(function() -- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Player saiu do SEAT, pausando...", ShowTime = 3 }) end)
+									pcall(function() -- removed({ Title = "Nexora Hub", Desc = "Player saiu do SEAT, pausando...", ShowTime = 3 }) end)
 									repeat
 										task.wait(0.5)
 										stillSeated = areSelectedPlayersSeatedInBoat(boat)
@@ -13911,7 +13880,7 @@ FarmingMultiSeaEvent.Section.CreateToggle(
 										movementValid = false
 										break
 									end
-									pcall(function() -- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Todos de volta no SEAT, continuando...", ShowTime = 3 }) end)
+									pcall(function() -- removed({ Title = "Nexora Hub", Desc = "Todos de volta no SEAT, continuando...", ShowTime = 3 }) end)
 									SetMultiSeaForward(seat, true)
 									startPosition = seat.Position
 								end
@@ -14274,7 +14243,7 @@ function AutoFindLeviathan()
 			getgenv().TweenBoatBack:Pause()
 			getgenv().TweenBoatBack:Cancel()
 		end
-		-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Frozen Dimension Spawned", ShowTime = 5 })
+		-- removed({ Title = "Nexora Hub", Desc = "Frozen Dimension Spawned", ShowTime = 5 })
 		if getgenv().RespawnLeviathan and Settings["Webhook Find Leviathan"] then
 			getgenv().RespawnLeviathan = false
 			WebhookFindLeviathan()
@@ -14523,7 +14492,7 @@ LeviathanEventSection.CreateToggle(
 	},
 	function(s)
 		if s and not Settings["Auto Attack Leviathan"] then
-			-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Turn On Auto Attack Leviathan, plz", ShowTime = 5 })
+			-- removed({ Title = "Nexora Hub", Desc = "Turn On Auto Attack Leviathan, plz", ShowTime = 5 })
 		end
 		SaveSettings("Attack Multi Segments Leviathan", s)
 	end
@@ -14966,7 +14935,7 @@ function ShootHeartLeviathan()
 				toTarget(b.Harpoon.Seat.CFrame)
 			end
 		else
-			-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Successfully Fire Shoot Heart Leviathan", ShowTime = 5 })
+			-- removed({ Title = "Nexora Hub", Desc = "Successfully Fire Shoot Heart Leviathan", ShowTime = 5 })
 			task.wait(5)
 		end
 	end
@@ -15516,11 +15485,11 @@ end
 local b = { "V2InProgress", "V3InProgress", "V2TurnInReady", "V3TurnInReady" }
 function AutoUpgradeRaceDraco()
 	if game.Players.LocalPlayer.Data.Race.Value ~= "Draco" then
-		-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Change Race Draco plz", ShowTime = 5 })
+		-- removed({ Title = "Nexora Hub", Desc = "Change Race Draco plz", ShowTime = 5 })
 		task.wait(5)
 		return
 	elseif DetectItemPlr("Primordial Reign") then
-		-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Done V3 Draco", ShowTime = 5 })
+		-- removed({ Title = "Nexora Hub", Desc = "Done V3 Draco", ShowTime = 5 })
 		task.wait(5)
 		return
 	end
@@ -15777,7 +15746,7 @@ ToggleAutoTrialDraco = RaceDracoSection.CreateToggle(
 							end
 						else
 							if getgenv().DoneTrialDraco then
-								-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Done Trial", ShowTime = 5 })
+								-- removed({ Title = "Nexora Hub", Desc = "Done Trial", ShowTime = 5 })
 								getgenv().DoneTrialDraco = false
 								ToggleAutoTrialDraco:SetStage(false)
 								return
@@ -15793,7 +15762,7 @@ ToggleAutoTrialDraco = RaceDracoSection.CreateToggle(
 									end
 								end
 							else
-								-- A.CreateNoti removido({
+								-- removed({
 									Title = "Nexora Hub",
 									Desc = "Not have Prehistoric Island",
 									ShowTime = 5,
@@ -16526,7 +16495,7 @@ function AutoBuyRaceDraco()
     if tostring(race.Value) == "Draco" then
         if not getgenv().AutoBuyRaceDracoEquippedNoti then
             getgenv().AutoBuyRaceDracoEquippedNoti = true
-            -- A.CreateNoti removido({Title = "Nexora Hub", Desc = "You Equipped Draco Race", ShowTime = 5})
+            -- removed({Title = "Nexora Hub", Desc = "You Equipped Draco Race", ShowTime = 5})
         end
         SaveSettings("Auto Buy Race Draco", false)
         if ToggleAutoBuyRaceDraco then pcall(function() ToggleAutoBuyRaceDraco:SetStage(false) end) end
@@ -16538,7 +16507,7 @@ function AutoBuyRaceDraco()
         getgenv().AutoBuyRaceDracoHydraStarted = true
         if not getgenv().AutoBuyRaceDracoMovingNoti then
             getgenv().AutoBuyRaceDracoMovingNoti = true
-            -- A.CreateNoti removido({Title = "Nexora Hub", Desc = "Moving to Dragon Wizard...", ShowTime = 5})
+            -- removed({Title = "Nexora Hub", Desc = "Moving to Dragon Wizard...", ShowTime = 5})
         end
         -- Try the game's entrance remote first, then use the hub's own movement
         -- routine to reach the Hydra destination if the entrance request does not move us.
@@ -16586,7 +16555,7 @@ function AutoBuyRaceDraco()
     if tostring(race.Value) == "Draco" then
         if not getgenv().AutoBuyRaceDracoEquippedNoti then
             getgenv().AutoBuyRaceDracoEquippedNoti = true
-            -- A.CreateNoti removido({Title = "Nexora Hub", Desc = "You Equipped Draco Race", ShowTime = 5})
+            -- removed({Title = "Nexora Hub", Desc = "You Equipped Draco Race", ShowTime = 5})
         end
         SaveSettings("Auto Buy Race Draco", false)
         if ToggleAutoBuyRaceDraco then pcall(function() ToggleAutoBuyRaceDraco:SetStage(false) end) end
@@ -16835,7 +16804,7 @@ end
 function UpgradeRaceV2AndV3()
 	local m = CheckRace()
 	if m == " V3" then
-		-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Done V3", ShowTime = 5 })
+		-- removed({ Title = "Nexora Hub", Desc = "Done V3", ShowTime = 5 })
 		task.wait(5)
 		return
 	end
@@ -16845,7 +16814,7 @@ function UpgradeRaceV2AndV3()
 	end
 	if m == " V1" then
 		if t.Data.Beli.Value < 500000 then
-			-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Beli >= 500k", ShowTime = 5 })
+			-- removed({ Title = "Nexora Hub", Desc = "Beli >= 500k", ShowTime = 5 })
 			task.wait(5)
 			return
 		end
@@ -16909,7 +16878,7 @@ function UpgradeRaceV2AndV3()
 			game.ReplicatedStorage.Remotes.CommF_:InvokeServer("Wenlocktoad", "3")
 			return
 		elseif l == -1 then
-			-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Beli >= 2m", ShowTime = 5 })
+			-- removed({ Title = "Nexora Hub", Desc = "Beli >= 2m", ShowTime = 5 })
 			task.wait(5)
 			return
 		end
@@ -16937,7 +16906,7 @@ function UpgradeRaceV2AndV3()
 					end
 				end
 			else
-				-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Waiting Boss Spawn", ShowTime = 5 })
+				-- removed({ Title = "Nexora Hub", Desc = "Waiting Boss Spawn", ShowTime = 5 })
 				task.wait(5)
 			end
 		elseif l == "Mink V2" then
@@ -17075,7 +17044,7 @@ ToggleAutoGetFullyCyborg = RaceNormalSection.CreateToggle(
 	function(l)
 		SaveSettings("Auto Get Fully Cyborg", l)
 		if l and not Settings["Auto Get Cyborg"] then
-			-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Turn On Auto Get Cyborg plz", ShowTime = 5 })
+			-- removed({ Title = "Nexora Hub", Desc = "Turn On Auto Get Cyborg plz", ShowTime = 5 })
 		end
 	end
 )
@@ -17091,7 +17060,7 @@ RaceNormalSection.CreateToggle(
 )
 function GetCyborg()
 	if game.ReplicatedStorage.Remotes.CommF_:InvokeServer("CyborgTrainer", "Check") == 2 then
-		-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Plz Turn Off", ShowTime = 5 })
+		-- removed({ Title = "Nexora Hub", Desc = "Plz Turn Off", ShowTime = 5 })
 		task.wait(5)
 		return
 	end
@@ -17243,7 +17212,7 @@ function GetRaceGhoul()
 		or game.ReplicatedStorage.Remotes.CommF_:InvokeServer("Ectoplasm", "BuyCheck", 4, true) == 2
 		or game.ReplicatedStorage.Remotes.CommF_:InvokeServer("Ectoplasm", "Change", 4, true) == 1
 	then
-		-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Plz Turn Off", ShowTime = 5 })
+		-- removed({ Title = "Nexora Hub", Desc = "Plz Turn Off", ShowTime = 5 })
 		task.wait(5)
 		return
 	end
@@ -17353,7 +17322,7 @@ function GetRaceGhoul()
 			if Settings["Hop Server Get Ghoul"] then
 				SpecialHop("Cursed Captain")
 			end
-			-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Wating Boss Spawn", ShowTime = 5 })
+			-- removed({ Title = "Nexora Hub", Desc = "Wating Boss Spawn", ShowTime = 5 })
 			task.wait(5)
 		end
 	end
@@ -17523,7 +17492,7 @@ function CollectBlueGear()
 end
 function PullLeverV4()
 	if not CheckItemInventory("Valkyrie Helm") or not CheckItemInventory("Mirror Fractal") then
-		-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Not Valkyrie Helm or not Mirror Fractal", ShowTime = 5 })
+		-- removed({ Title = "Nexora Hub", Desc = "Not Valkyrie Helm or not Mirror Fractal", ShowTime = 5 })
 		task.wait(5)
 		return
 	end
@@ -17591,7 +17560,7 @@ function PullLeverV4()
 				fireproximityprompt(l.Lever.Prompt.ProximityPrompt, 1)
 			end
 		else
-			-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Done Pull Lever", ShowTime = 5 })
+			-- removed({ Title = "Nexora Hub", Desc = "Done Pull Lever", ShowTime = 5 })
 			task.wait(5)
 		end
 	end
@@ -18409,7 +18378,7 @@ function DetectQuestRainBowHaki(R)
 end
 function GetRainBowHaki()
 	if game.ReplicatedStorage.Remotes.CommF_:InvokeServer("HornedMan") == 1 then
-		-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Done Get Rainbow Haki", ShowTime = 5 })
+		-- removed({ Title = "Nexora Hub", Desc = "Done Get Rainbow Haki", ShowTime = 5 })
 		task.wait(5)
 		return
 	end
@@ -18438,7 +18407,7 @@ function GetRainBowHaki()
 				UsedualFlock()
 			until not IsMobAlive(g) or not Settings["Auto Get Rainbow Haki"]
 		else
-			-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Waiting Boss Spawn", ShowTime = 5 })
+			-- removed({ Title = "Nexora Hub", Desc = "Waiting Boss Spawn", ShowTime = 5 })
 			task.wait(5)
 		end
 	end
@@ -18505,7 +18474,7 @@ function GuitarPuzzleProgress()
 			CommF:InvokeServer("gravestoneEvent", 2, true)
 			task.wait(1)
 		else
-			-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Hop Full Moon", ShowTime = 5 })
+			-- removed({ Title = "Nexora Hub", Desc = "Hop Full Moon", ShowTime = 5 })
 			SpecialHop("FullMoon")
 		end
 	else
@@ -18620,12 +18589,12 @@ function AutoSoulGuitar()
 		game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("soulGuitarBuy", true)
 		== "[You already own this item.]"
 	then
-		-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "[You already own this item.]", ShowTime = 5 })
+		-- removed({ Title = "Nexora Hub", Desc = "[You already own this item.]", ShowTime = 5 })
 		task.wait(5)
 		return
 	end
 	if t.Data.Fragments.Value < 5000 then
-		-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Frag >= 5k", ShowTime = 5 })
+		-- removed({ Title = "Nexora Hub", Desc = "Frag >= 5k", ShowTime = 5 })
 		task.wait(5)
 		return
 	end
@@ -18852,7 +18821,7 @@ function QuestGood4()
 			if
 				(Settings["Select Method Hop CDK1"] or {})["Hop Raid Castle [ Delay 20s Hop Because check Raids Castle ]"]
 			then
-				-- A.CreateNoti removido({
+				-- removed({
 					Title = "Nexora Hub",
 					Desc = "Waiting 20s for check raid castle if dont have will Server",
 					ShowTime = 5,
@@ -18865,7 +18834,7 @@ function QuestGood4()
 					SpecialHop("Raid Castle")
 				end
 			else
-				-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Waint Raid Castle", ShowTime = 5 })
+				-- removed({ Title = "Nexora Hub", Desc = "Waint Raid Castle", ShowTime = 5 })
 			end
 			task.wait(5)
 		end
@@ -18969,10 +18938,10 @@ function Questgood5()
 		TweenManager.CancelCurrent()
 	else
 		if Settings["Select Method Hop CDK1"] and Settings["Select Method Hop CDK1"]["Find Cake Queen"] then
-			-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = 'Hop Server Find Cake Queen"', ShowTime = 5 })
+			-- removed({ Title = "Nexora Hub", Desc = 'Hop Server Find Cake Queen"', ShowTime = 5 })
 			HopServer()
 		else
-			-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = 'Wating Cake Queen"', ShowTime = 5 })
+			-- removed({ Title = "Nexora Hub", Desc = 'Wating Cake Queen"', ShowTime = 5 })
 		end
 		task.wait(5)
 	end
@@ -19188,13 +19157,13 @@ function CheckMasterSword(g, R)
 end
 function GetCDK()
 	if not CheckItemInventory("Tushita") or not CheckItemInventory("Yama") then
-		-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Get Tushita and Yama", ShowTime = 5 })
+		-- removed({ Title = "Nexora Hub", Desc = "Get Tushita and Yama", ShowTime = 5 })
 		task.wait(5)
 		return
 	end
 	if CheckItemInventory("Tushita") and (CheckItemInventory("Yama")) then
 		if not CheckMasterSword("Yama", 350) or not CheckMasterSword("Tushita", 350) then
-			-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Mastery >= 350", ShowTime = 5 })
+			-- removed({ Title = "Nexora Hub", Desc = "Mastery >= 350", ShowTime = 5 })
 			task.wait(5)
 			return
 		end
@@ -19451,7 +19420,7 @@ function GetTushita()
 				end
 			end
 		else
-			-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Rip Indra Dont Spawn", ShowTime = 5 })
+			-- removed({ Title = "Nexora Hub", Desc = "Rip Indra Dont Spawn", ShowTime = 5 })
 			task.wait(5)
 		end
 	end
@@ -19844,7 +19813,7 @@ GetItemsSection.CreateToggle(
 )
 function autoCraftSharkAnchor()
 	if CheckItemInventory("Shark Anchor") then
-		-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Done Shark Anchor", ShowTime = 5 })
+		-- removed({ Title = "Nexora Hub", Desc = "Done Shark Anchor", ShowTime = 5 })
 		task.wait(5)
 		return
 	end
@@ -19898,7 +19867,7 @@ GetItemsSection.CreateToggle(
 )
 function AutoYorumini()
 	if CheckItemInventory("Dark Dagger") then
-		-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "u haved Yoru Mini", ShowTime = 5 })
+		-- removed({ Title = "Nexora Hub", Desc = "u haved Yoru Mini", ShowTime = 5 })
 		return
 	end
 	local g = CheckNameBoss("rip_indra True Form")
@@ -20292,7 +20261,7 @@ function AutoUpgradeWeapon(R)
 	if m then
 		R = NameMaterials[m]
 		if not R then
-			-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Not Support Material" .. m .. "Sorry", ShowTime = 5 })
+			-- removed({ Title = "Nexora Hub", Desc = "Not Support Material" .. m .. "Sorry", ShowTime = 5 })
 			task.wait(5)
 			return
 		end
@@ -20604,7 +20573,7 @@ function AutoCraftinMagnetVol()
 			task.wait(2)
 		end
 	else
-		-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Done Craft Volcanic Magnet", ShowTime = 5 })
+		-- removed({ Title = "Nexora Hub", Desc = "Done Craft Volcanic Magnet", ShowTime = 5 })
 		ToggleAutoCraftingVolcanicMagnet:SetStage(false)
 	end
 end
@@ -20750,7 +20719,7 @@ function AutoMultiFindPrehistoric()
 		getgenv().MultiPrehistoricTwoMeterDone = false
 		if not getgenv().MultiPrehistoricSpawnNoti then
 			getgenv().MultiPrehistoricSpawnNoti = true
-			-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Prehistoric Island Spawned", ShowTime = 5 })
+			-- removed({ Title = "Nexora Hub", Desc = "Prehistoric Island Spawned", ShowTime = 5 })
 		end
 		return
 	else
@@ -20858,7 +20827,7 @@ function AutoMultiFindPrehistoric()
 			if #missingPlayers > 0 then
 				desc = "Waiting for: " .. table.concat(missingPlayers, ", ")
 			end
-			-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = desc, ShowTime = 2 })
+			-- removed({ Title = "Nexora Hub", Desc = desc, ShowTime = 2 })
 		end
 		local localHumanoid = t.Character and t.Character:FindFirstChildOfClass("Humanoid")
 		if localHumanoid and not localHumanoid.Sit then
@@ -20959,7 +20928,7 @@ function BuyMultiPrehistoricBoat()
 	if not checkboat() then
 		-- Sem Beast Hunter (indisponível/sem acesso): compra o Guardian.
 		pcall(function() remote:InvokeServer("BuyBoat", "Guardian") end)
-		pcall(function() -- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Beast Hunter indisponível - comprando Guardian", ShowTime = 4 }) end)
+		pcall(function() -- removed({ Title = "Nexora Hub", Desc = "Beast Hunter indisponível - comprando Guardian", ShowTime = 4 }) end)
 	end
 end
 function AutoFindPrehistoric()
@@ -21039,7 +21008,7 @@ function AutoFindPrehistoric()
 			getgenv().TweenBoat:Pause()
 			getgenv().TweenBoat:Cancel()
 		end
-		-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Prehistoric Island Spawned", ShowTime = 5 })
+		-- removed({ Title = "Nexora Hub", Desc = "Prehistoric Island Spawned", ShowTime = 5 })
 		if Settings["Auto Multi Find Prehistoric Island"] then
 			Settings["Auto Multi Find Prehistoric Island"] = false
 		else
@@ -21178,7 +21147,7 @@ function WaitForSelectedPlayersOnPrehistoricIsland()
 		if not getgenv().MultiPrehistoricEventWaitingNoti or not getgenv().MultiPrehistoricEventWaitingNotiTime or tick() - getgenv().MultiPrehistoricEventWaitingNotiTime >= 5 then
 			getgenv().MultiPrehistoricEventWaitingNoti = true
 			getgenv().MultiPrehistoricEventWaitingNotiTime = tick()
-			-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Waiting for selected players to be selected", ShowTime = 5 })
+			-- removed({ Title = "Nexora Hub", Desc = "Waiting for selected players to be selected", ShowTime = 5 })
 		end
 		return false
 	end
@@ -21186,7 +21155,7 @@ function WaitForSelectedPlayersOnPrehistoricIsland()
 		if not getgenv().MultiPrehistoricEventWaitingNoti or not getgenv().MultiPrehistoricEventWaitingNotiTime or tick() - getgenv().MultiPrehistoricEventWaitingNotiTime >= 5 then
 			getgenv().MultiPrehistoricEventWaitingNoti = true
 			getgenv().MultiPrehistoricEventWaitingNotiTime = tick()
-			-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Waiting for selected players to arrive at Prehistoric Island...", ShowTime = 5 })
+			-- removed({ Title = "Nexora Hub", Desc = "Waiting for selected players to arrive at Prehistoric Island...", ShowTime = 5 })
 		end
 		return false
 	end
@@ -21194,7 +21163,7 @@ function WaitForSelectedPlayersOnPrehistoricIsland()
 		getgenv().MultiPrehistoricEventStartedNoti = true
 		getgenv().MultiPrehistoricEventWaitingNoti = false
 		getgenv().MultiPrehistoricEventWaitingNotiTime = nil
-		-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "All selected players have arrived! Starting Auto Event Prehistoric Island...", ShowTime = 5 })
+		-- removed({ Title = "Nexora Hub", Desc = "All selected players have arrived! Starting Auto Event Prehistoric Island...", ShowTime = 5 })
 	end
 	return true
 end
@@ -23070,7 +23039,7 @@ a.CreateToggle({ Title = "Auto Load Script", Desc = nil, Default = Settings["Aut
 end)
 a.CreateButton({ Title = "Copy Error Log" }, function()
 	local txt = getgenv().NexoraDumpErrors and getgenv().NexoraDumpErrors() or ""
-	pcall(function() -- A.CreateNoti removido({ Title = "Nexora Hub", Desc = (txt == "") and "Nenhum erro registrado ainda" or "Erros copiados para a área de transferência", ShowTime = 4 }) end)
+	pcall(function() -- removed({ Title = "Nexora Hub", Desc = (txt == "") and "Nenhum erro registrado ainda" or "Erros copiados para a área de transferência", ShowTime = 4 }) end)
 end)
 a.CreateToggle({ Title = "Boost Fps", Desc = nil, Default = Settings["Boost Fps"] or false }, function(T)
 	if T then
@@ -23194,7 +23163,7 @@ spawn(function()
 end)
 a.CreateButton({ Title = "Copy Config" }, function()
 	setclipboard(b((HttpService:JSONDecode(readfile(FolderName .. "/" .. SaveFileName)))))
-	-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Successfully Copy Config", ShowTime = 5 })
+	-- removed({ Title = "Nexora Hub", Desc = "Successfully Copy Config", ShowTime = 5 })
 end)
 a.CreateBind({ Title = "Toggle GUI", Key = Enum.KeyCode.LeftControl }, function()
 	getgenv().UIToggled = not getgenv().UIToggled
@@ -23502,7 +23471,7 @@ do
 						if b then
 							SpecialHop(b)
 						else
-							-- A.CreateNoti removido({ Title = "Nexora Hub", Desc = "Full Sword Legendary", ShowTime = 5 })
+							-- removed({ Title = "Nexora Hub", Desc = "Full Sword Legendary", ShowTime = 5 })
 						end
 					end
 				end
@@ -23855,7 +23824,7 @@ function FindSimulationPad(Z)local F,c=workspace.Map["Simulation Hub"].Pads:GetC
 function FindSimulationPadFactory(...)local __args = {...};local b = __args[1];local Z = __args[5];return function(Z)local F,c=workspace.Map["Simulation Hub"].Pads:GetChildren();for l,l in b[1],F,c do if Z and l:GetAttribute("Initiator")==game.Players.LocalPlayer.UserId or l:GetAttribute("NumPlayersOnPad")==0 then return l;end;end;end;end
 
 -- TARGET-V14 FUNCTION: Find_Blade_Hits (source-recovery line 208)
-function Find_Blade_Hits(...)local __args = {...};local b = __args[1];return function(b,Z)local F,c,l,H,M,S,Q=require(game:GetService("ReplicatedStorage").Modules.CombatUtil),getgenv().getBladeHits,b.Character,{b.Character.HumanoidRootPart},math.huge;for V,A in c(l,H,Z,true)do V=F:GetRigOfHitPart(A);if V and(F:IsVulnerable(V))then local Z=(b.Character.HumanoidRootPart.Position--- A.Position removido).Magnitude;if Z<M then M,S,Q=Z,V,A;end;end;end;if S and Q then return{S,Q};end;return nil;end;end
+function Find_Blade_Hits(...)local __args = {...};local b = __args[1];return function(b,Z)local F,c,l,H,M,S,Q=require(game:GetService("ReplicatedStorage").Modules.CombatUtil),getgenv().getBladeHits,b.Character,{b.Character.HumanoidRootPart},math.huge;for V,A in c(l,H,Z,true)do V=F:GetRigOfHitPart(A);if V and(F:IsVulnerable(V))then local Z=(b.Character.HumanoidRootPart.Position--- removed).Magnitude;if Z<M then M,S,Q=Z,V,A;end;end;end;if S and Q then return{S,Q};end;return nil;end;end
 
 -- TARGET-V14 FUNCTION: GetCombatController (source-recovery line 2680)
 function GetCombatController()
@@ -23881,7 +23850,7 @@ function GetNearestBerry(...)local __args = {...};local b = __args[1];local Z = 
 function HopServerLess()local H,M=if c==""then(game.HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..Z.."/servers/Public?sortOrder=Asc&limit=100")))else(game.HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..Z.."/servers/Public?sortOrder=Asc&limit=100&cursor="..c))),"";local Z=H.nextPageCursor and H.nextPageCursor~="null"and H.nextPageCursor~=nil;if Z then c=H.nextPageCursor;end;local Z=0;for c,c in b[1](H.data)do local H=true;M=b[3](c.id);if b[4](c.maxPlayers)>b[4](c.playing)and b[4](c.playing)<=3 then for c,c in b[1](F)do if Z~=0 then H=if M==b[3](c)then false else H;elseif b[4](l)~=b[4](c)then b[2](function()delfile("Nexora Hub/NotSameServers.json");F={};table.insert(F,l);end);end;Z+=1;end;if H==true then table.insert(F,M);task.wait();b[2](function()writefile("Nexora Hub/NotSameServers.json",game:GetService("HttpService"):JSONEncode(F));task.wait();game:GetService("ReplicatedStorage").__ServerBrowser:InvokeServer("teleport",M);getgenv().limit_type("clearAll");end);task.wait(4);end;end;end;end
 
 -- TARGET-V14 FUNCTION: IsFarFromOtherPlayers (source-recovery line 1342)
-function IsFarFromOtherPlayers(V)for A,A in b[4](M)do if(-- A.Position removido-V.Position).Magnitude<=300 then return false;end;end;return true;end
+function IsFarFromOtherPlayers(V)for A,A in b[4](M)do if(-- removed-V.Position).Magnitude<=300 then return false;end;end;return true;end
 
 -- TARGET-V14 FUNCTION: Kill_Mob (source-recovery line 1456)
 function Kill_Mob(b)return function(b)return Settings["Kill Mob"]==true and StackFarmOther and(b==nil or b==FarmRuntime.MobHuntSession);end;end
@@ -25889,7 +25858,7 @@ getgenv().BananaCatFunctionCompleteness = {
 -- Source: previous target-derived BF-BananaCat deobfuscated corpus.
 -- 47 concrete bodies were absent by name from PASS35.
 -- ============================================================================
-function Find_Blade_Hits_0011(b,Z)local F,c,l,H,M,S,Q=require(game:GetService("ReplicatedStorage").Modules.CombatUtil),getgenv().getBladeHits,b.Character,{b.Character.HumanoidRootPart},math.huge;for V,A in c(l,H,Z,true)do V=F:GetRigOfHitPart(A);if V and(F:IsVulnerable(V))then local Z=(b.Character.HumanoidRootPart.Position--- A.Position removido).Magnitude;if Z<M then M,S,Q=Z,V,A;end;end;end;if S and Q then return{S,Q};end;return nil;end
+function Find_Blade_Hits_0011(b,Z)local F,c,l,H,M,S,Q=require(game:GetService("ReplicatedStorage").Modules.CombatUtil),getgenv().getBladeHits,b.Character,{b.Character.HumanoidRootPart},math.huge;for V,A in c(l,H,Z,true)do V=F:GetRigOfHitPart(A);if V and(F:IsVulnerable(V))then local Z=(b.Character.HumanoidRootPart.Position--- removed).Magnitude;if Z<M then M,S,Q=Z,V,A;end;end;end;if S and Q then return{S,Q};end;return nil;end
 
 function Speed_Boat_Auto_Drive_0016()for Z,F in b[1](b[2])do while _G.autoDrive and(task.wait())do local c=checkboatFind();if not c then return;end;Z=b[3][7][b[3][6]](c,F);if(c.PrimaryPart.Position-F).Magnitude<10 then c.PrimaryPart.ThrottleFloat=0;c.PrimaryPart.Throttle=0;break;end;spawn(function()c.VehicleSeat.MaxSpeed=Settings["Speed Boat Auto Drive"]or 300;NoclipBoat(c);end);if math.abs(Z)>5 then b[4][7][b[4][6]](c,F);c.PrimaryPart.ThrottleFloat=0;c.PrimaryPart.Throttle=0;else c.PrimaryPart.ThrottleFloat=1;c.PrimaryPart.Throttle=1;end;end;end;end
 
@@ -25991,7 +25960,7 @@ function Select_Player_PVP_0364()for Z,Z in b[1](game:GetService("Players"):GetC
 
 function Auto_Chest_0386()if not StackFarmOther then return;end;local Z=Settings["Value Collect Chest to Hop"]or 20;if CheckNameBoss("Darkbeard")and Settings["Attack Darkbeard"]then b[1][7][b[1][6]]=Z;return;end;if DetectItemPlr("Fist of Darkness")and Settings["Summon Darkbeard"]then b[1][7][b[1][6]]=Z;return;end;if(DetectItemPlr("Fist of Darkness")or(DetectItemPlr("God's Chalice")))and Settings["Tween Safe if have Items"]then return;end;if b[1][7][b[1][6]]and b[1][7][b[1][6]]>=Z and Settings["Auto Chest Hop"]then HopServer();return;end;Z=GetNearestChest();if Z then b[1][7][b[1][6]]+=1;local F;repeat task.wait();if(game.Players.LocalPlayer.Character.HumanoidRootPart.Position-Z.Position).Magnitude<=5 then if not F then F=(tick());elseif tick()-F>=5 then Instance.new("IntValue",Z).Name="Ignored";task.wait(0.1);end;if not Settings["Use Method Teleport"]then game:GetService("VirtualInputManager"):SendKeyEvent(true,"Space",false,game);task.wait();game:GetService("VirtualInputManager"):SendKeyEvent(false,"Space",false,game);end;TweenManager.CancelCurrent();end;if Settings["Use Method Teleport"]then b[2].Character.HumanoidRootPart.CFrame=Z.CFrame;TweenManager.CancelCurrent();else toTarget(Z.CFrame,true);end;until not Z or not Z.Parent or not Settings["Auto Chest"]or(Z:GetAttribute("IsDisabled"))or(Z:FindFirstChild("Ignored"))or not Z:FindFirstChild("TouchInterest")or not StackFarmOther;else local Z=PathFindChest();if Z then toTarget(Z.Part.CFrame);if(Z.Part.Position-b[2].Character.HumanoidRootPart.Position).Magnitude<=100 or(GetNearestChest())then Instance.new("IntValue",Z).Name="Ignored";end;else for Z,Z in b[3](game:GetService("Workspace")._WorldOrigin.PlayerSpawns.Pirates:GetChildren())do if Z:FindFirstChild("Ignored")then Z:FindFirstChild("Ignored"):Destroy();end;end;end;end;end
 
-function Bring_Mob_0387(Z)if not Settings["Bring Mob"]or not IsMobAlive(Z)then return;end;local F=b[1].Character;local c,l=F and(F:FindFirstChild("HumanoidRootPart")),b[1]:FindFirstChild("Data")and(b[1].Data:FindFirstChild("Race"));if not c or not l then return;end;local H=tick();if H<FarmRuntime.NextBringAt then return;end;FarmRuntime.NextBringAt=H + 15;if Z and b[2][7][b[2][6]]~=Z then b[2][7][b[2][6]]=Z;H=DetectPartMobBring(Z.Name,Z,true);b[3][7][b[3][6]]=H and H.CFrame or Z.HumanoidRootPart.CFrame;local M=l.Value=="Cyborg"and(F:FindFirstChild("RaceTransformed"))and F.RaceTransformed.Value;if M then b[3][7][b[3][6]]=getcenter(Z.Name)or b[3][7][b[3][6]];end;DeleteIgnoredMob();end;H=b[3][7][b[3][6]];if not H then b[3][7][b[3][6]]=Z.HumanoidRootPart.CFrame;end;local M,S={},workspace:FindFirstChild("Characters");if S then for Q,Q in b[4](S:GetChildren())do H=Q.Name~=b[1].Name and(Q:FindFirstChild("HumanoidRootPart"));if H then M[#M+1]=H;end;end;end;function Q(V)for A,A in b[4](M)do if(-- A.Position removido-V.Position).Magnitude<=300 then return false;end;end;return true;end;H={};if not Z:FindFirstChild("Ignored")then table.insert(H,Z);end;S=Settings["Bring Mob Count"]or 2;local M,V=if S>2 then 350 else 200;if l.Value=="Cyborg"and(F:FindFirstChild("RaceTransformed"))and F.RaceTransformed.Value then M,V=300,6;else V=S;end;for F,F in b[5](workspace.Enemies:GetChildren())do if F~=Z and string.lower(FarmRuntime.CleanMobName(F.Name))==string.lower(FarmRuntime.CleanMobName(Z.Name))and(FarmRuntime.MobOwnerMatches(F))and F:GetAttribute("MagnetEnemy")==true==(Z:GetAttribute("MagnetEnemy")==true)and not F:FindFirstChild("Ignored")and(IsMobAlive(F))and(Q(F.HumanoidRootPart))then if(F.HumanoidRootPart.Position-b[3][7][b[3][6]].Position).Magnitude<=M and#H<V then table.insert(H,F);end;end;end;if b[3][7][b[3][6]]and(c.Position-Z.HumanoidRootPart.Position).Magnitude<=50 and(Q(c))and#H>=2 then for Z,Z in b[5](H)do if not Q(Z.HumanoidRootPart)then if not Z:FindFirstChild("Ignored")then Instance.new("IntValue",Z).Name="Ignored";end;FarmRuntime.ReleaseFrozenMob(Z);else sizepart(Z);local F,c=b[3][7][b[3][6]]*CFrame.new(0,math.random(0,2),math.random(0,2)),FarmRuntime.BringWatchers[Z];if not c then c={OriginalCFrame=Z.HumanoidRootPart.CFrame};FarmRuntime.BringWatchers[Z]=c;end;c.IntendedCFrame=F;Z.HumanoidRootPart.CFrame=F;if not c.VerifierStarted then c.VerifierStarted=true;task.delay(2.2,function()if FarmRuntime.BringWatchers[Z]~=c then return;end;FarmRuntime.BringWatchers[Z]=nil;if not Settings["Bring Mob"]then FarmRuntime.ReleaseFrozenMob(Z);return;end;local b=c.IntendedCFrame;if IsMobAlive(Z)and not Z:FindFirstChild("Ignored")and b and(Z.HumanoidRootPart.Position-b.Position).Magnitude>25 then local b=c.OriginalCFrame;if b and(Z.HumanoidRootPart.Position-b.Position).Magnitude>60 then Z.HumanoidRootPart.CFrame=b;end;Instance.new("IntValue",Z).Name="Ignored";FarmRuntime.ReleaseFrozenMob(Z);end;end);end;end;end;end;end
+function Bring_Mob_0387(Z)if not Settings["Bring Mob"]or not IsMobAlive(Z)then return;end;local F=b[1].Character;local c,l=F and(F:FindFirstChild("HumanoidRootPart")),b[1]:FindFirstChild("Data")and(b[1].Data:FindFirstChild("Race"));if not c or not l then return;end;local H=tick();if H<FarmRuntime.NextBringAt then return;end;FarmRuntime.NextBringAt=H + 15;if Z and b[2][7][b[2][6]]~=Z then b[2][7][b[2][6]]=Z;H=DetectPartMobBring(Z.Name,Z,true);b[3][7][b[3][6]]=H and H.CFrame or Z.HumanoidRootPart.CFrame;local M=l.Value=="Cyborg"and(F:FindFirstChild("RaceTransformed"))and F.RaceTransformed.Value;if M then b[3][7][b[3][6]]=getcenter(Z.Name)or b[3][7][b[3][6]];end;DeleteIgnoredMob();end;H=b[3][7][b[3][6]];if not H then b[3][7][b[3][6]]=Z.HumanoidRootPart.CFrame;end;local M,S={},workspace:FindFirstChild("Characters");if S then for Q,Q in b[4](S:GetChildren())do H=Q.Name~=b[1].Name and(Q:FindFirstChild("HumanoidRootPart"));if H then M[#M+1]=H;end;end;end;function Q(V)for A,A in b[4](M)do if(-- removed-V.Position).Magnitude<=300 then return false;end;end;return true;end;H={};if not Z:FindFirstChild("Ignored")then table.insert(H,Z);end;S=Settings["Bring Mob Count"]or 2;local M,V=if S>2 then 350 else 200;if l.Value=="Cyborg"and(F:FindFirstChild("RaceTransformed"))and F.RaceTransformed.Value then M,V=300,6;else V=S;end;for F,F in b[5](workspace.Enemies:GetChildren())do if F~=Z and string.lower(FarmRuntime.CleanMobName(F.Name))==string.lower(FarmRuntime.CleanMobName(Z.Name))and(FarmRuntime.MobOwnerMatches(F))and F:GetAttribute("MagnetEnemy")==true==(Z:GetAttribute("MagnetEnemy")==true)and not F:FindFirstChild("Ignored")and(IsMobAlive(F))and(Q(F.HumanoidRootPart))then if(F.HumanoidRootPart.Position-b[3][7][b[3][6]].Position).Magnitude<=M and#H<V then table.insert(H,F);end;end;end;if b[3][7][b[3][6]]and(c.Position-Z.HumanoidRootPart.Position).Magnitude<=50 and(Q(c))and#H>=2 then for Z,Z in b[5](H)do if not Q(Z.HumanoidRootPart)then if not Z:FindFirstChild("Ignored")then Instance.new("IntValue",Z).Name="Ignored";end;FarmRuntime.ReleaseFrozenMob(Z);else sizepart(Z);local F,c=b[3][7][b[3][6]]*CFrame.new(0,math.random(0,2),math.random(0,2)),FarmRuntime.BringWatchers[Z];if not c then c={OriginalCFrame=Z.HumanoidRootPart.CFrame};FarmRuntime.BringWatchers[Z]=c;end;c.IntendedCFrame=F;Z.HumanoidRootPart.CFrame=F;if not c.VerifierStarted then c.VerifierStarted=true;task.delay(2.2,function()if FarmRuntime.BringWatchers[Z]~=c then return;end;FarmRuntime.BringWatchers[Z]=nil;if not Settings["Bring Mob"]then FarmRuntime.ReleaseFrozenMob(Z);return;end;local b=c.IntendedCFrame;if IsMobAlive(Z)and not Z:FindFirstChild("Ignored")and b and(Z.HumanoidRootPart.Position-b.Position).Magnitude>25 then local b=c.OriginalCFrame;if b and(Z.HumanoidRootPart.Position-b.Position).Magnitude>60 then Z.HumanoidRootPart.CFrame=b;end;Instance.new("IntValue",Z).Name="Ignored";FarmRuntime.ReleaseFrozenMob(Z);end;end);end;end;end;end;end
 
 function Bring_Mob_0389()if FarmRuntime.BringWatchers[Z]~=c then return;end;FarmRuntime.BringWatchers[Z]=nil;if not Settings["Bring Mob"]then FarmRuntime.ReleaseFrozenMob(Z);return;end;local b=c.IntendedCFrame;if IsMobAlive(Z)and not Z:FindFirstChild("Ignored")and b and(Z.HumanoidRootPart.Position-b.Position).Magnitude>25 then local b=c.OriginalCFrame;if b and(Z.HumanoidRootPart.Position-b.Position).Magnitude>60 then Z.HumanoidRootPart.CFrame=b;end;Instance.new("IntValue",Z).Name="Ignored";FarmRuntime.ReleaseFrozenMob(Z);end;end
 
@@ -26441,6 +26410,6 @@ end)()
 -- Restaura os toggles ativos (UI + callback) pelo mesmo caminho do clique manual.
 task.spawn(function()
     task.wait()
-    pcall(function() if getgenv().NexoraLoadingFinish then getgenv().NexoraLoadingFinish() end end) -- Restore removido
+    -- if A removed then -- removed() end
     pcall(function() if getgenv().NexoraLoadingFinish then getgenv().NexoraLoadingFinish() end end)
 end)
