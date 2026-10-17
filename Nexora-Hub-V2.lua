@@ -1966,30 +1966,44 @@ function Nexora.CreateMain(config)
                 warn("[Nexora] Não encontrei a ScreenGui da Redz para abrir/fechar.")
             end
         end)
-        -- Os botões '-' e 'X' escondem a janela sem destruir a UI.
-        -- O botão N permanece independente e alterna entre abrir/fechar.
+        -- O X fecha visualmente a janela sem destruir a ScreenGui; o N fica visível
+        -- como no vídeo e serve para reabrir/alternar a interface.
+        -- Também identifica os botões pelos nomes e pelo lugar no cabeçalho, pois
+        -- algumas versões da biblioteca não definem Text/Name como "X" ou "Close".
         task.spawn(function()
             local hooked = setmetatable({}, {__mode = "k"})
-            for _=1,80 do
+            for _=1,120 do
                 target = target and target.Parent and target or findWindowGui()
                 if target then
                     for _, control in ipairs(target:GetDescendants()) do
                         if control:IsA("GuiButton") and not hooked[control] then
                             local n = string.lower(tostring(control.Name))
                             local t = string.lower(tostring(control.Text or ""))
-                            local isClose = n == "close" or n == "closebutton" or n == "exit" or t == "x" or t == "×"
-                            local isMinimize = n == "minimize" or n == "minimizebutton" or n == "minimize button" or t == "-" or t == "−"
+                            local pos = control.AbsolutePosition
+                            local size = control.AbsoluteSize
+                            local parentSize = control.Parent and control.Parent.AbsoluteSize or Vector2.new(0,0)
+                            local nearHeaderRight = parentSize.X > 0
+                                and (pos.X + size.X) >= (control.Parent.AbsolutePosition.X + parentSize.X * 0.78)
+                                and (pos.Y <= (control.Parent.AbsolutePosition.Y + math.max(70, parentSize.Y * 0.22)))
+                            local isClose = n == "close" or n == "closebutton" or n == "exit"
+                                or t == "x" or t == "×" or t == "✕"
+                                or (nearHeaderRight and (t:find("x", 1, true) or n:find("close", 1, true)))
+                            local isMinimize = n == "minimize" or n == "minimizebutton"
+                                or n == "minimize button" or t == "-" or t == "−"
                             if isClose or isMinimize then
                                 hooked[control] = true
                                 control.Activated:Connect(function()
+                                    -- Defer until the library's own callback has run,
+                                    -- then hide rather than destroying the whole UI.
                                     task.defer(function()
-                                        if target and target.Parent then target.Enabled = false end
+                                        if target and target.Parent then
+                                            target.Enabled = false
+                                        end
                                     end)
                                 end)
                             end
                         end
                     end
-                    -- Encontrou a janela: continua procurando controles recriados pela biblioteca.
                 end
                 task.wait(0.5)
             end
@@ -2678,22 +2692,16 @@ do
     
     local SectionNormal = PageStatusAndServer.CreateSection("Normal Fruit Stock - Normal Dealer")
     SectionNormal.CreateLabel({ Title = "Fruits on sale at the normal dealer" })
+    -- Lista dinâmica: começa com um único estado de carregamento e cria uma linha
+    -- para cada fruta realmente retornada pelo dealer. As linhas extras ficam na
+    -- rolagem vertical normal da página, sem limite fixo de seis slots.
     local NormalLabels = {}
-    NormalLabels[1] = SectionNormal.CreateLabel({ Title = "Ghost-Ghost - $940,000" })
-    NormalLabels[2] = SectionNormal.CreateLabel({ Title = "Light-Light - $650,000" })
-    NormalLabels[3] = SectionNormal.CreateLabel({ Title = "Spin-Spin - $7,500" })
-    NormalLabels[4] = SectionNormal.CreateLabel({ Title = "Rocket-Rocket - $5,000" })
-    NormalLabels[5] = SectionNormal.CreateLabel({ Title = "Loading..." })
-    NormalLabels[6] = SectionNormal.CreateLabel({ Title = "Loading..." })
+    NormalLabels[1] = SectionNormal.CreateLabel({ Title = "Carregando estoque do dealer..." })
     
     local SectionAdvance = PageStatusAndServer.CreateSection("Advance Fruit Stock - Mirage Island Dealer")
     SectionAdvance.CreateLabel({ Title = "Fruits on sale at the Mirage Island dealer" })
     local AdvanceLabels = {}
-    AdvanceLabels[1] = SectionAdvance.CreateLabel({ Title = "Flame-Flame - $250,000" })
-    AdvanceLabels[2] = SectionAdvance.CreateLabel({ Title = "Smoke-Smoke - $100,000" })
-    AdvanceLabels[3] = SectionAdvance.CreateLabel({ Title = "Bomb-Bomb - $80,000" })
-    AdvanceLabels[4] = SectionAdvance.CreateLabel({ Title = "Spin-Spin - $7,500" })
-    AdvanceLabels[5] = SectionAdvance.CreateLabel({ Title = "Rocket-Rocket - $5,000" })
+    AdvanceLabels[1] = SectionAdvance.CreateLabel({ Title = "Carregando estoque da Mirage..." })
     
     -- PATCH FIX: estoque 100% dinamico - usa lista real da loja
     local function ParseFruit(v)
@@ -2750,22 +2758,28 @@ do
     end
 
     spawn(function()
-        while task.wait(2) do
+        -- Estoque não precisa consultar o servidor a cada 2s: isso gerava chamadas
+        -- remotas repetidas e atualizações constantes da UI, contribuindo para stutter.
+        while task.wait(20) do
             pcall(function()
-                local normalStock = nil
-                pcall(function() normalStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetFruits", false) end)
-                if not normalStock or type(normalStock)~="table" or #normalStock==0 then
-                    pcall(function() normalStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetFruits") end)
+                local remotes = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
+                local comm = remotes and remotes:FindFirstChild("CommF_")
+                if not comm then return end
+
+                local normalStock
+                pcall(function() normalStock = comm:InvokeServer("GetFruits", false) end)
+                if type(normalStock) ~= "table" then
+                    pcall(function() normalStock = comm:InvokeServer("GetFruits") end)
                 end
                 UpdateStock(SectionNormal, NormalLabels, normalStock)
 
-                local mirageStock = nil
-                pcall(function() mirageStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetFruits", true) end)
-                if not mirageStock or type(mirageStock)~="table" or #mirageStock==0 then
-                    pcall(function() mirageStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetStock", "Mirage") end)
+                local mirageStock
+                pcall(function() mirageStock = comm:InvokeServer("GetFruits", true) end)
+                if type(mirageStock) ~= "table" then
+                    pcall(function() mirageStock = comm:InvokeServer("GetStock", "Mirage") end)
                 end
-                if not mirageStock or type(mirageStock)~="table" or #mirageStock==0 then
-                    pcall(function() mirageStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetFruits", "Mirage") end)
+                if type(mirageStock) ~= "table" then
+                    pcall(function() mirageStock = comm:InvokeServer("GetFruits", "Mirage") end)
                 end
                 UpdateStock(SectionAdvance, AdvanceLabels, mirageStock)
             end)
