@@ -1911,18 +1911,16 @@ function Nexora.CreateMain(config)
         stroke.Parent = btn
 
         local function findWindowGui()
+            -- Redz V5 cria a ScreenGui com este nome; não dependa do texto
+            -- interno do título, que varia entre versões da biblioteca.
             local roots = {host}
             pcall(function() table.insert(roots, player:WaitForChild("PlayerGui")) end)
             for _, root in ipairs(roots) do
+                local direct = root:FindFirstChild("redz Library V5")
+                if direct and direct:IsA("ScreenGui") then return direct end
                 for _, obj in ipairs(root:GetDescendants()) do
                     if obj:IsA("ScreenGui") and obj ~= gui and obj.Name ~= "NexoraLoading" then
-                        local found = false
-                        for _, child in ipairs(obj:GetDescendants()) do
-                            if child:IsA("TextLabel") and string.find(string.upper(child.Text or ""), "NEXORA HUB", 1, true) then
-                                found = true; break
-                            end
-                        end
-                        if found then return obj end
+                        if obj.Name == "redz Library V5" then return obj end
                     end
                 end
             end
@@ -2009,11 +2007,21 @@ function Nexora.CreateMain(config)
                         frame, paragraphLabel = tab:AddParagraph(title, "")
                     end)
                 end
-                if not ok or not frame then
+                -- Algumas versões retornam um objeto Paragraph (com SetTitle/
+                -- SetDesc) em vez de duas instâncias separadas.
+                local paragraphObject
+                if type(frame) == "table" then
+                    paragraphObject = frame
+                    paragraphLabel = paragraphLabel or frame
+                    frame = frame.Frame or frame.Object or frame.Instance
+                elseif type(paragraphLabel) == "table" then
+                    paragraphObject = paragraphLabel
+                end
+                if not ok or (not frame and not paragraphObject) then
                     frame = safe(tab.AddLabel, tab, title)
                 end
 
-                local handle = {Object=frame, Label=paragraphLabel, _text=title}
+                local handle = {Object=frame, Label=paragraphLabel, Paragraph=paragraphObject, _text=title}
                 -- Existing source calls this as Label.SetText("text"), while
                 -- other callers may use Label:SetText("text"). Support both.
                 handle.SetText = function(first, second)
@@ -2021,13 +2029,20 @@ function Nexora.CreateMain(config)
                     v = tostring(v or "")
                     handle._text = v
                     local updated = false
-                    if paragraphLabel then
-                        if type(paragraphLabel.SetTitle) == "function" then
-                            updated = pcall(paragraphLabel.SetTitle, paragraphLabel, v)
+                    local paragraph = handle.Paragraph or (type(paragraphLabel) == "table" and paragraphLabel) or nil
+                    if paragraph then
+                        if type(paragraph.SetTitle) == "function" then
+                            updated = pcall(paragraph.SetTitle, paragraph, v)
                         end
-                        if type(paragraphLabel.SetDesc) == "function" then
-                            pcall(paragraphLabel.SetDesc, paragraphLabel, "")
+                        if type(paragraph.SetDesc) == "function" then
+                            pcall(paragraph.SetDesc, paragraph, "")
                         end
+                        if type(paragraph.SetText) == "function" and not updated then
+                            updated = pcall(paragraph.SetText, paragraph, v)
+                        end
+                    end
+                    if not updated and paragraphLabel and type(paragraphLabel) ~= "table" then
+                        pcall(function() if paragraphLabel:IsA("TextLabel") then paragraphLabel.Text = v; updated = true end end)
                     end
                     if not updated and frame then
                         pcall(function()
