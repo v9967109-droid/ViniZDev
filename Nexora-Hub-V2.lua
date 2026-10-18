@@ -24884,6 +24884,122 @@ SettingsAimbotSection.CreateToggle(
 		SaveSettings("Auto Aimbot", b)
 	end
 )
+-- Auto Fly Player: mantém o personagem flutuando e usa MoveDirection para
+-- continuar aceitando o analógico/controles padrão do Roblox.
+SettingsAimbotSection.CreateToggle(
+	{ Title = "Auto Fly Player", Desc = "Flutua e permite movimentar pelo analógico (velocidade 220).", Default = Settings["Auto Fly Player"] or false },
+	function(enabled)
+		SaveSettings("Auto Fly Player", enabled)
+		getgenv().__NexoraFlyGeneration = (getgenv().__NexoraFlyGeneration or 0) + 1
+		local generation = getgenv().__NexoraFlyGeneration
+		local function cleanupFly()
+			local character = game:GetService("Players").LocalPlayer.Character
+			local root = character and character:FindFirstChild("HumanoidRootPart")
+			if root then
+				local mover = root:FindFirstChild("NexoraAutoFlyVelocity")
+				if mover then mover:Destroy() end
+			end
+		end
+		if not enabled then
+			cleanupFly()
+			return
+		end
+		task.spawn(function()
+			local player = game:GetService("Players").LocalPlayer
+			local root, humanoid, velocity, targetY
+			while Settings["Auto Fly Player"] and generation == getgenv().__NexoraFlyGeneration do
+				local character = player.Character
+				local newRoot = character and character:FindFirstChild("HumanoidRootPart")
+				local newHumanoid = character and character:FindFirstChildOfClass("Humanoid")
+				if newRoot and newHumanoid and newHumanoid.Health > 0 then
+					if root ~= newRoot then
+						if velocity then pcall(function() velocity:Destroy() end) end
+						root, humanoid = newRoot, newHumanoid
+						targetY = root.Position.Y
+						velocity = Instance.new("BodyVelocity")
+						velocity.Name = "NexoraAutoFlyVelocity"
+						velocity.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+						velocity.P = 1e5
+						velocity.Velocity = Vector3.zero
+						velocity.Parent = root
+					end
+					-- Recalcula a direção todo ciclo: o analógico continua funcionando.
+					local direction = humanoid.MoveDirection
+					local vertical = math.clamp((targetY - root.Position.Y) * 5, -35, 35)
+					velocity.Velocity = Vector3.new(direction.X * 220, vertical, direction.Z * 220)
+				else
+					root, humanoid = nil, nil
+					if velocity then pcall(function() velocity:Destroy() end); velocity = nil end
+				end
+				task.wait(0.03)
+			end
+			if velocity then pcall(function() velocity:Destroy() end) end
+			cleanupFly()
+		end)
+	end
+)
+
+-- Auto Esquiva: mantém distância do jogador-alvo e troca o sentido da órbita
+-- periodicamente. Usa MoveTo em vez de prender a câmera ou os controles.
+SettingsAimbotSection.CreateToggle(
+	{ Title = "Auto Esquiva", Desc = "Circula o alvo a longa distância e muda de direção.", Default = Settings["Auto Esquiva"] or false },
+	function(enabled)
+		SaveSettings("Auto Esquiva", enabled)
+		getgenv().__NexoraDodgeGeneration = (getgenv().__NexoraDodgeGeneration or 0) + 1
+		local generation = getgenv().__NexoraDodgeGeneration
+		if not enabled then return end
+		task.spawn(function()
+			local Players = game:GetService("Players")
+			local player = Players.LocalPlayer
+			local angle = 0
+			local directionSign = 1
+			local nextTurn = 0
+			while Settings["Auto Esquiva"] and generation == getgenv().__NexoraDodgeGeneration do
+				pcall(function()
+					local character = player.Character
+					local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+					local root = character and character:FindFirstChild("HumanoidRootPart")
+					local targetPlayer = nil
+					if Settings["Select Player PVP"] and Settings["Select Player PVP"] ~= "" then
+						targetPlayer = Players:FindFirstChild(Settings["Select Player PVP"])
+					end
+					-- Sem alvo selecionado, acompanha o jogador vivo mais próximo.
+					if not targetPlayer and root then
+						local nearestDistance = math.huge
+						for _, candidate in ipairs(Players:GetPlayers()) do
+							if candidate ~= player and candidate.Character then
+								local candidateRoot = candidate.Character:FindFirstChild("HumanoidRootPart")
+								local candidateHumanoid = candidate.Character:FindFirstChildOfClass("Humanoid")
+								if candidateRoot and candidateHumanoid and candidateHumanoid.Health > 0 then
+									local distance = (candidateRoot.Position - root.Position).Magnitude
+									if distance < nearestDistance then
+										nearestDistance, targetPlayer = distance, candidate
+									end
+								end
+							end
+						end
+					end
+					local targetCharacter = targetPlayer and (targetPlayer.Character or (workspace:FindFirstChild("Characters") and workspace.Characters:FindFirstChild(targetPlayer.Name)))
+					local targetRoot = targetCharacter and targetCharacter:FindFirstChild("HumanoidRootPart")
+					local targetHumanoid = targetCharacter and targetCharacter:FindFirstChildOfClass("Humanoid")
+					if root and humanoid and humanoid.Health > 0 and targetRoot and (not targetHumanoid or targetHumanoid.Health > 0) then
+						local now = os.clock()
+						if now >= nextTurn then
+							directionSign = -directionSign
+							nextTurn = now + math.random(2, 4)
+						end
+						angle = angle + directionSign * 0.16
+						local radius = 85 + math.sin(now * 1.7) * 12
+						local destination = targetRoot.Position + Vector3.new(math.cos(angle) * radius, 12 + math.sin(now * 2) * 5, math.sin(angle) * radius)
+						humanoid:MoveTo(destination)
+					end
+				end)
+				task.wait(0.12)
+			end
+		end)
+	end
+)
+
 SettingsAimbotSection.CreateToggle(
 	{ Title = "Auto Aimbot Gun", Desc = nil, Default = Settings["Auto Aimbot Gun"] or false },
 	function(b)
