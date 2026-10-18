@@ -4895,16 +4895,8 @@ function DetectEliteHunter()
 		end
 		-- Fallback para estruturas aninhadas.
 		for _, mob in ipairs(enemies:GetDescendants()) do
-			if mob:IsA("Model") and IsMobAlive(mob) then
-				local modelName = string.lower(tostring(mob.Name))
-				local displayName = ""
-				pcall(function() displayName = string.lower(tostring(mob:GetAttribute("DisplayName") or "")) end)
-				for _, eliteName in ipairs(K) do
-					local wantedName = string.lower(eliteName)
-					if string.find(modelName, wantedName, 1, true) or string.find(displayName, wantedName, 1, true) then
-						return mob
-					end
-				end
+			if mob:IsA("Model") and table.find(K, mob.Name) and IsMobAlive(mob) then
+				return mob
 			end
 		end
 	end
@@ -5021,6 +5013,101 @@ spawn(function()
 		end)
 	end
 end)
+-- Status And Server resilient updater: each label is isolated so one failed remote/helper
+-- cannot stop all status values from refreshing.
+task.spawn(function()
+    local Players = game:GetService("Players")
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local Workspace = game:GetService("Workspace")
+    local Lighting = game:GetService("Lighting")
+    local function safeSet(label, value)
+        pcall(function() if label and label.SetText then label.SetText(tostring(value)) end end)
+    end
+    local function hasPath(root, path)
+        local obj = root
+        for _, part in ipairs(path) do
+            if not obj then return false end
+            obj = obj:FindFirstChild(part)
+        end
+        return obj ~= nil
+    end
+    while task.wait(1) do
+        pcall(function()
+            safeSet(TimerLabel, string.format("Timer: %.0fh %.0fm %.0fs", math.floor(Workspace.DistributedGameTime/3600), math.floor(Workspace.DistributedGameTime/60)%60, math.floor(Workspace.DistributedGameTime)%60))
+        end)
+        pcall(function()
+            local found = DetectEliteHunter()
+            safeSet(StatusEliteHunter, "Elite Hunter: " .. (found and "🟢" or "🔴"))
+        end)
+        pcall(function()
+            local count = 0
+            local map = Workspace:FindFirstChild("Map")
+            local tiki = map and map:FindFirstChild("TikiOutpost")
+            local island = tiki and tiki:FindFirstChild("IslandModel")
+            if island then
+                for i=1,4 do
+                    local eye = island:FindFirstChild("Eye"..i, true)
+                    if eye and eye.Transparency == 1 then count += 1 end
+                end
+            end
+            safeSet(StatusTyrant, "Tyrant Eyes: "..count.." Eyes")
+        end)
+        pcall(function()
+            local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+            local comm = remotes and remotes:FindFirstChild("CommF_")
+            if comm then
+                local result = comm:InvokeServer("CakePrinceSpawner", true)
+                if type(result) ~= "string" then result = tostring(result or "") end
+                safeSet(StatusKatakuri, "Cake Prince: " .. string.gsub(result, "%D", "") .. " Mobs")
+            end
+        end)
+        pcall(function() safeSet(Statusspy, "Leviathan: " .. tostring(StatusCheckLeviathan())) end)
+        pcall(function()
+            local map = Workspace:FindFirstChild("Map")
+            local world = Workspace:FindFirstChild("_WorldOrigin")
+            local locations = world and world:FindFirstChild("Locations")
+            local on = (map and (map:FindFirstChild("MysticIsland") or map:FindFirstChild("MirageIsland"))) or (locations and locations:FindFirstChild("Mirage Island"))
+            safeSet(StatusMirage, "Mirage Island: " .. (on and "🟢" or "🔴"))
+        end)
+        pcall(function()
+            local map = Workspace:FindFirstChild("Map")
+            local world = Workspace:FindFirstChild("_WorldOrigin")
+            local locations = world and world:FindFirstChild("Locations")
+            local on = (map and (map:FindFirstChild("KitsuneIsland") or map:FindFirstChild("Kitsune Island"))) or (locations and locations:FindFirstChild("Kitsune Island"))
+            safeSet(StatusKitsuneIsland, "Kitsune Island: " .. (on and "🟢" or "🔴"))
+        end)
+        pcall(function()
+            local map = Workspace:FindFirstChild("Map")
+            local on = map and (map:FindFirstChild("PrehistoricIsland") or map:FindFirstChild("Prehistoric Island"))
+            safeSet(StatusPrehistoricIsland, "Prehistoric Island: " .. (on and "🟢" or "🔴"))
+        end)
+        pcall(function()
+            local world = Workspace:FindFirstChild("_WorldOrigin")
+            local locations = world and world:FindFirstChild("Locations")
+            local on = locations and locations:FindFirstChild("Frozen Dimension")
+            safeSet(StatusFrozenDimension, "Frozen Dimension: " .. (on and "🟢" or "🔴"))
+        end)
+        pcall(function()
+            safeSet(StatusMoon, "Moon Phase: " .. tostring(CheckMoon()) .. " | " .. tostring(function8()))
+        end)
+        pcall(function() safeSet(StatusGear, "Ancient One: " .. tostring(CheckAcientOneStatus())) end)
+        pcall(function()
+            local locations = Workspace:FindFirstChild("_WorldOrigin") and Workspace._WorldOrigin:FindFirstChild("Locations")
+            local oldest = nil
+            if type(GetOldestLocation) == "function" then oldest = GetOldestLocation() end
+            if oldest then
+                local timeIn = oldest:GetAttribute("TimeIn")
+                if type(timeIn) == "number" then
+                    local elapsed = math.max(0, tick() - 25200 - timeIn)
+                    local nextSpawn = 14400 - (elapsed % 14400)
+                    safeSet(TimerServerLabel, string.format("Server Timer: %.0fh %.0fm %.0fs", math.floor(elapsed/3600), math.floor(elapsed/60)%60, math.floor(elapsed)%60))
+                    safeSet(NextTimerServerLabel, string.format("Next Time Spawn Fist of Darkness or God's Chalice: %.0fh %.0fm %.0fs", math.floor(nextSpawn/3600), math.floor(nextSpawn/60)%60, math.floor(nextSpawn)%60))
+                end
+            end
+        end)
+    end
+end)
+
 LocalPlayerMain = Main.CreatePage({ Page_Name = "LocalPlayer", Page_Title = "LocalPlayer" })
 SectionLocalPlayerMain = LocalPlayerMain.CreateSection("Local Player")
 SectionLocalPlayerMain.CreateToggle(
@@ -11098,41 +11185,26 @@ task.spawn(function()
 				end
 
 				local function FindElite(name)
-					-- Primeiro tenta os métodos originais para preservar o comportamento existente.
 					local target = name and DetectMob(name) or DetectMob(EliteNames)
 					if target and IsMobAlive(target) then return target end
 					target = DetectEliteHunter()
-					if target and IsMobAlive(target) then return target end
-					-- Alguns servidores acrescentam nível/sufixo ao nome do modelo; compara sem exigir igualdade exata.
+					if target then return target end
+					-- Longe: procura em qualquer lugar (ReplicatedStorage, workspace, instâncias fora da árvore).
 					local wanted = name and { name } or EliteNames
-					local function matches(inst)
-						local labels = { tostring(inst.Name or "") }
-						pcall(function()
-							local d = inst:GetAttribute("DisplayName")
-							if d then table.insert(labels, tostring(d)) end
-						end)
-						for _, label in ipairs(labels) do
-							local lower = string.lower(label)
-							for _, eliteName in ipairs(wanted) do
-								if string.find(lower, string.lower(eliteName), 1, true) then return true end
-							end
-						end
-						return false
-					end
-					local function scan(root, requireAlive)
+					local function scan(root)
 						if not root then return nil end
-						for _, inst in ipairs(root:GetDescendants()) do
-							if inst:IsA("Model") and matches(inst) and (not requireAlive or IsMobAlive(inst)) then
-								return inst
-							end
+					-- Evita parar numa cópia morta/descarregada do mesmo Elite.
+					for _, inst in ipairs(root:GetDescendants()) do
+						if inst:IsA("Model") and table.find(wanted, inst.Name) and IsMobAlive(inst) then
+							return inst
 						end
 					end
-					-- Prioriza modelos vivos no Workspace; não usa modelos-template como alvo de combate.
-					local found = scan(workspace:FindFirstChild("Enemies"), true) or scan(workspace, true)
+					end
+					local found = scan(game:GetService("ReplicatedStorage")) or scan(workspace)
 					if found then return found end
 					pcall(function()
 						for _, inst in ipairs(getnilinstances and getnilinstances() or {}) do
-							if inst:IsA("Model") and matches(inst) and IsMobAlive(inst) then found = inst; break end
+							if inst:IsA("Model") and table.find(wanted, inst.Name) and IsMobAlive(inst) then found = inst; break end
 						end
 					end)
 					return found
