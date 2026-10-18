@@ -4882,32 +4882,34 @@ function EliteQuestOK(name)
 	end)
 	return false
 end
-local K = { "Deandre", "Urban", "Diablo" }
+local EliteHunterNames = { "Deandre", "Urban", "Diablo" }
 function DetectEliteHunter()
-	local enemies = game:GetService("Workspace"):FindFirstChild("Enemies")
-	if enemies then
-		-- Caminho mais rápido: os Elites normalmente ficam diretamente em Workspace.Enemies.
-		for _, name in ipairs(K) do
-			local mob = enemies:FindFirstChild(name)
-			if mob and mob:IsA("Model") and IsMobAlive(mob) then
-				return mob
-			end
-		end
-		-- Fallback para estruturas aninhadas.
-		for _, mob in ipairs(enemies:GetDescendants()) do
-			if mob:IsA("Model") and table.find(K, mob.Name) and IsMobAlive(mob) then
-				return mob
-			end
-		end
-	end
-	local replicated = game:GetService("ReplicatedStorage")
-	for _, name in ipairs(K) do
-		local mob = replicated:FindFirstChild(name, true)
-		if mob and mob:IsA("Model") and IsMobAlive(mob) then
-			return mob
-		end
-	end
+    -- Só considera NPCs vivos realmente carregados no Workspace; modelos em
+    -- ReplicatedStorage costumam ser templates e causavam falso positivo.
+    local enemies = workspace:FindFirstChild("Enemies")
+    if not enemies then return nil end
+    local function isEliteModel(model)
+        if not model or not model:IsA("Model") or not IsMobAlive(model) then return false end
+        local name = string.lower(tostring(model.Name))
+        local display = ""
+        pcall(function() display = string.lower(tostring(model:GetAttribute("DisplayName") or "")) end)
+        for _, eliteName in ipairs(EliteHunterNames) do
+            local wanted = string.lower(eliteName)
+            if name == wanted or string.find(name, wanted, 1, true) or string.find(display, wanted, 1, true) then
+                return true
+            end
+        end
+        return false
+    end
+    for _, model in ipairs(enemies:GetChildren()) do
+        if isEliteModel(model) then return model end
+    end
+    for _, model in ipairs(enemies:GetDescendants()) do
+        if isEliteModel(model) then return model end
+    end
+    return nil
 end
+
 local K = 0
 lastCheckTime = tick()
 function GetOldestLocation()
@@ -4948,9 +4950,9 @@ spawn(function()
 				end
 			end
 			if DetectEliteHunter() then
-				StatusEliteHunter.SetText("Elite Hunter: \226\156\133")
+				StatusEliteHunter.SetText("Elite Hunter: 🟢")
 			else
-				StatusEliteHunter.SetText("Elite Hunter: \226\157\140")
+				StatusEliteHunter.SetText("Elite Hunter: 🔴")
 			end
 			if game.PlaceId == getgenv().CheckPlaceId then
 				K = 0
