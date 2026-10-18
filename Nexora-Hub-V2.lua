@@ -11074,20 +11074,20 @@ task.spawn(function()
                     if enemies then
                         -- Primeiro os NPCs ativos diretamente dentro de Workspace.Enemies.
                         for _, mob in ipairs(enemies:GetChildren()) do
-                            if mob:IsA("Model") and ((function() for _, eliteName in ipairs(wanted) do if string.find(string.lower(mob.Name), string.lower(eliteName), 1, true) then return true end end return false end)()) and IsMobAlive(mob) then
+                            if mob:IsA("Model") and table.find(wanted, mob.Name) and IsMobAlive(mob) then
                                 return mob
                             end
                         end
                         -- Alguns servidores colocam os modelos dentro de subpastas.
                         for _, mob in ipairs(enemies:GetDescendants()) do
-                            if mob:IsA("Model") and ((function() for _, eliteName in ipairs(wanted) do if string.find(string.lower(mob.Name), string.lower(eliteName), 1, true) then return true end end return false end)()) and IsMobAlive(mob) then
+                            if mob:IsA("Model") and table.find(wanted, mob.Name) and IsMobAlive(mob) then
                                 return mob
                             end
                         end
                     end
                     -- Fallback limitado ao Workspace: nunca seleciona templates do ReplicatedStorage.
                     for _, mob in ipairs(workspace:GetDescendants()) do
-                        if mob:IsA("Model") and ((function() for _, eliteName in ipairs(wanted) do if string.find(string.lower(mob.Name), string.lower(eliteName), 1, true) then return true end end return false end)())
+                        if mob:IsA("Model") and table.find(wanted, mob.Name)
                             and mob:IsDescendantOf(workspace) and IsMobAlive(mob) then
                             return mob
                         end
@@ -11130,17 +11130,27 @@ task.spawn(function()
 
                 local target = FindElite(questName)
                 local lastSpawnMove = 0
+                local elitePatrolIndex = 0
+                -- Elite Hunters podem aparecer em Hydra Island, Great Tree ou Floating Turtle.
+                -- Quando o NPC não está replicado no Workspace, patrulha esses locais em vez de ficar parado.
+                local elitePatrolPoints = {
+                    CFrame.new(5288.6216, 1011.6528, 392.4297), -- Hydra Island / Hydra Town
+                    CFrame.new(4345.0938, 575.0524, -6159.0044), -- Great Tree
+                    CFrame.new(-10016, 332, -8326), -- Floating Turtle
+                }
                 while not target and Settings["Auto Elite Hunter"] do
                     task.wait(0.25)
                     questName = GetEliteQuestName() or questName
                     target = FindElite(questName) or FindElite()
-                    if not target and tick() - lastSpawnMove >= 2 then
+                    if not target and tick() - lastSpawnMove >= 8 then
                         local spawnPart = FindEliteSpawn(questName) or FindEliteSpawn()
                         if spawnPart then
-                            -- Mantém o personagem se deslocando até o spawn; não fica parado com a arma na mão.
                             toTarget(spawnPart.CFrame * CFrame.new(0, 8, 0))
-                            lastSpawnMove = tick()
+                        else
+                            elitePatrolIndex = (elitePatrolIndex % #elitePatrolPoints) + 1
+                            toTarget(elitePatrolPoints[elitePatrolIndex])
                         end
+                        lastSpawnMove = tick()
                     end
                 end
 
@@ -11154,7 +11164,7 @@ task.spawn(function()
                             target = FindElite(targetName) or FindElite()
                         end
                         if target and IsMobAlive(target) and target:IsDescendantOf(workspace) then
-                            local hrp = target:FindFirstChild("HumanoidRootPart") or target:FindFirstChild("UpperTorso") or target:FindFirstChild("Torso") or target.PrimaryPart
+                            local hrp = target:FindFirstChild("HumanoidRootPart")
                             if hrp then
                                 -- Equipar a categoria selecionada evita ficar apenas com o estilo anterior na mão.
                                 local weaponCategory = Settings["Select Weapon"] or "Melee"
