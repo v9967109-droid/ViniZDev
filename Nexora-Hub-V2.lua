@@ -11285,18 +11285,10 @@ task.spawn(function()
 						getgenv().__LastFruitScan = 0
 						-- NÃO dá return, continua procurando próxima fruta
 					else
-						-- Vai até a fruta mesmo se estiver longe - SEM LAG
-						-- Se muito longe, teleporta direto em etapas
-						if dist > 1500 then
-							-- Teleporta direto pra perto da fruta (sem tween lento)
-							pcall(function()
-								getgenv().noclip = true
-								root.CFrame = handle.CFrame * CFrame.new(0, 10, 0)
-							end)
-							task.wait(0.3)
-						else
-							toTarget(handle.CFrame * CFrame.new(0, 3, 0))
-						end
+						-- Sempre usa o movimento existente (toTarget), mesmo a longa distância.
+						-- Não altera o CFrame do personagem para dar TP direto na fruta.
+						getgenv().noclip = true
+						toTarget(handle.CFrame * CFrame.new(0, 3, 0))
 					end
 				else
 					-- Nenhuma fruta encontrada, espera um pouco
@@ -14038,193 +14030,67 @@ end
 
 
 function RandomFruit()
-	local Players = game:GetService("Players")
-	local LocalPlayer = Players.LocalPlayer
-	local ReplicatedStorage = game:GetService("ReplicatedStorage")
-	local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
-	local CommF = Remotes and Remotes:FindFirstChild("CommF_")
-	if not CommF or not LocalPlayer then return false end
-	if not Settings["Random Devil Fruit"] then return false end
-	if Settings["Auto Find Leviathan"] or Settings["Multi Find Leviathan"] then return false end
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
+    local CommF = Remotes and Remotes:FindFirstChild("CommF_")
+    if not CommF or not LocalPlayer or not Settings["Random Devil Fruit"] then return false end
+    if Settings["Auto Find Leviathan"] or Settings["Multi Find Leviathan"] then return false end
+    if (getgenv().__RandomFruitNext or 0) > tick() or getgenv().__RandomFruitBusy then return false end
+    getgenv().__RandomFruitBusy = true
 
-	-- Verifica se já está girando ou em cooldown
-	if (getgenv().__RandomFruitNext or 0) > tick() or getgenv().__RandomFruitBusy then
-		return false
-	end
-	getgenv().__RandomFruitBusy = true
+    local function getBeli()
+        local ok, value = pcall(function() return LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("Beli") and LocalPlayer.Data.Beli.Value end)
+        return ok and value or nil
+    end
+    local function spinnerOpen()
+        local gui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+        local spinner = gui and gui:FindFirstChild("SpinnerWindow")
+        return spinner and spinner.Enabled == true
+    end
 
-	local function GetBeli()
-		local ok, v = pcall(function() return LocalPlayer.Data.Beli.Value end)
-		return ok and v or nil
-	end
-	local before = GetBeli()
-	local success = false
-	local responses = {}
+    local before = getBeli()
+    local ok, result = pcall(function()
+        -- Use the standard Cousin purchase request first; avoid firing many guessed remotes.
+        return CommF:InvokeServer("Cousin", "Buy")
+    end)
+    task.wait(0.6)
+    local after = getBeli()
+    local success = spinnerOpen() or (before ~= nil and after ~= nil and after < before)
+    if ok and result ~= nil and result ~= false then
+        local textResult = string.lower(tostring(result))
+        if textResult ~= "false" and not string.find(textResult, "not enough", 1, true)
+            and not string.find(textResult, "wait", 1, true)
+            and not string.find(textResult, "error", 1, true) then
+            success = success or (type(result) == "string" and result ~= "") or result == true or result == 1
+        end
+    end
 
-	local function TryRemote(label, fn)
-		local ok, res = pcall(fn)
-		responses[#responses+1] = label..":"..tostring(res)
-		-- Verifica se beli diminuiu = comprou
-		task.wait(0.3)
-		local now = GetBeli()
-		if before and now and now < before then
-			success = true
-		end
-		if ok and (res == true or res == 1) then
-			success = true
-		end
-		-- Se janela abriu também é sucesso
-		local gui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-		local win = gui and gui:FindFirstChild("SpinnerWindow")
-		if win and win.Enabled then
-			success = true
-		end
-	end
+    -- If the server opened the spinner, let the UI controller handle the roll once.
+    if spinnerOpen() then
+        pcall(function()
+            local controllers = ReplicatedStorage:FindFirstChild("Controllers")
+            local ui = controllers and controllers:FindFirstChild("UI")
+            local module = ui and ui:FindFirstChild("Spinner")
+            if module then
+                local Spinner = require(module)
+                if Spinner and type(Spinner.Spin) == "function" then Spinner:Spin() end
+            end
+        end)
+        success = true
+    end
 
-	pcall(function()
-		-- 1) Tenta comprar direto SEM ir até o NPC - inclui Zioles BloxFruitsGacha
-		TryRemote("Cousin-Buy", function() return CommF:InvokeServer("Cousin", "Buy") end)
-		TryRemote("Zioles-Buy", function() return CommF:InvokeServer("Zioles", "Buy") end)
-		TryRemote("BloxFruitsGacha-Buy", function() return CommF:InvokeServer("BloxFruitsGacha", "Buy") end)
-		TryRemote("BloxFruitsGacha", function() return CommF:InvokeServer("BloxFruitsGacha") end)
-		TryRemote("Gacha-Buy", function() return CommF:InvokeServer("Gacha", "Buy") end)
-		TryRemote("Gacha", function() return CommF:InvokeServer("Gacha") end)
-		TryRemote("Cousin-Buy2", function() return CommF:InvokeServer("Cousin", "Buy", true) end)
-		TryRemote("BloxFruitDealer-Buy", function() return CommF:InvokeServer("BloxFruitDealer", "Buy") end)
-		TryRemote("Shop-Buy", function() return CommF:InvokeServer("Shop", "BuyRandomFruit") end)
-		TryRemote("RandomFruit", function() return CommF:InvokeServer("RandomFruit") end)
-		TryRemote("Zioless-Buy", function() return CommF:InvokeServer("Zioless", "Buy") end)
-		-- Tenta todos os Comm (CommF_, CommE_ etc)
-		pcall(function()
-			local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
-			if Remotes then
-				for _, remote in ipairs(Remotes:GetChildren()) do
-					if remote.Name:find("Comm") then
-						pcall(function() remote:InvokeServer("Cousin", "Buy") end)
-						pcall(function() remote:InvokeServer("Zioles", "Buy") end)
-						pcall(function() remote:InvokeServer("BloxFruitsGacha", "Buy") end)
-					end
-				end
-			end
-		end)
-		-- 2) Fallbacks de caixa/banner
-		if not success then
-			local boxName = GetBoxName()
-			pcall(function()
-				local checkOk, avail = pcall(function() return CommF:InvokeServer("Cousin", "CheckTime", boxName) end)
-				if checkOk then
-					TryRemote("Cousin-Box", function() return CommF:InvokeServer("Cousin", boxName) end)
-				end
-			end)
-			pcall(function()
-				TryRemote("Zioles-Check", function() return CommF:InvokeServer("Zioles", "CheckTime", boxName) end)
-				TryRemote("Zioles-Box", function() return CommF:InvokeServer("Zioles", boxName) end)
-			end)
-		end
-		-- 3) Tenta girar direto sem interface - tenta vários remotos possíveis
-		local gui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-		local win = gui and gui:FindFirstChild("SpinnerWindow")
-		if win and win.Enabled then
-			-- NOVO: Detecta Zioles Gacha Box UI ($444,850) e clica direto
-		pcall(function()
-			local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-			if playerGui then
-				for _, gui in ipairs(playerGui:GetDescendants()) do
-					if gui:IsA("TextButton") or gui:IsA("ImageButton") then
-						local txt = tostring(gui.Text or "") .. tostring(gui.Name or "")
-						if string.find(txt, "444,850") or string.find(txt, "444850") or (gui.Parent and string.find(tostring(gui.Parent.Name), "Gacha")) then
-							pcall(function()
-								for _, conn in ipairs(getconnections(gui.MouseButton1Click)) do
-									conn:Fire()
-								end
-								gui:Activate()
-							end)
-						end
-					end
-				end
-			end
-		end)
-		pcall(function()
-			local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-			local gachaBox = playerGui:FindFirstChild("Zioles' Gacha Box", true) or playerGui:FindFirstChild("Zioles", true)
-			if gachaBox then
-				for _, btn in ipairs(gachaBox:GetDescendants()) do
-					if btn:IsA("TextButton") and (string.find(btn.Text, "%$") or btn.Text == "444,850" or string.find(btn.Text, "444")) then
-						pcall(function()
-							for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do conn:Fire() end
-							btn:Activate()
-						end)
-					end
-				end
-			end
-		end)
-
-		-- Tenta girar via módulos internos sem clicar na UI
-		pcall(function()
-			local Spinner = nil
-			pcall(function() Spinner = require(ReplicatedStorage.Controllers.UI.Spinner) end)
-			if Spinner then
-				-- Tenta métodos comuns
-				if Spinner.Spin then pcall(function() Spinner:Spin() end) end
-				if Spinner.Roll then pcall(function() Spinner:Roll() end) end
-				if Spinner.Open then pcall(function() Spinner:Open() end) end
-			end
-		end)
-			-- Tenta remotos de giro direto
-			pcall(function() CommF:InvokeServer("Cousin", "Spin") end)
-			pcall(function() CommF:InvokeServer("Zioles", "Spin") end)
-			pcall(function() CommF:InvokeServer("Zioles", "Buy") end)
-			pcall(function() CommF:InvokeServer("Cousin", "Roll") end)
-			pcall(function() CommF:InvokeServer("Cousin", "Gacha") end)
-			pcall(function() CommF:InvokeServer("Cousin", "Buy", true) end)
-			-- Fallback: se remoto não funcionou, tenta interagir com NPC Zioles / Cousin / BloxFruitsGacha no mapa (sem teleportar longe)
-		if not success then
-			pcall(function()
-				local NPCs = {"Zioles", "Cousin", "Blox Fruit Dealer Cousin", "BloxFruitsGacha", "Gacha", "Cousin"}
-				for _, npcName in ipairs(NPCs) do
-					local npc = workspace:FindFirstChild(npcName, true) or game:GetService("Workspace").NPCs:FindFirstChild(npcName, true)
-					if npc then
-						for _, pp in ipairs(npc:GetDescendants()) do
-							if pp:IsA("ProximityPrompt") or pp:IsA("ClickDetector") then
-								pcall(function()
-									if pp:IsA("ProximityPrompt") then fireproximityprompt(pp) else fireclickdetector(pp) end
-								end)
-								task.wait(0.3)
-							end
-						end
-					end
-				end
-			end)
-		end
-
-		-- Se ainda não girou, força clique invisível no botão (sem precisar ir até NPC)
-			pcall(function()
-				local above = win:FindFirstChild("AboveSpinner")
-				if above then
-					for _, btn in ipairs(above:GetDescendants()) do
-						if btn:IsA("TextButton") then
-							local txt = string.lower(btn.Text or ""..btn.Name)
-							if string.find(txt, "spin") or string.find(txt, "roll") or string.find(txt, "buy") then
-								for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do
-									pcall(function() conn:Fire() end)
-								end
-								pcall(function() btn:Activate() end)
-							end
-						end
-					end
-				end
-			end)
-		end
-	end)
-
-	getgenv().__RandomFruitBusy = false
-	if success then
-		getgenv().__RandomFruitNext = tick() + 1.5
-		return true
-	end
-	getgenv().__RandomFruitNext = tick() + 3
-	return false
+    getgenv().__RandomFruitBusy = false
+    getgenv().__RandomFruitNext = tick() + (success and 4 or 8)
+    if not success and ok then
+        warn("[Nexora Hub] Random Devil Fruit: o servidor não confirmou a compra. Verifique requisitos/saldo e teste perto do NPC Cousin.")
+    elseif not ok then
+        warn("[Nexora Hub] Random Devil Fruit falhou: " .. tostring(result))
+    end
+    return success
 end
+
 local FruitInfoModule = nil
 
 
@@ -14283,76 +14149,76 @@ end
 --  3) se não sumiu, tenta só com o nome;
 --  4) se ainda não guardou, não tenta de novo por 30s e não manda webhook falso.
 function StoreFruit(container)
-	if not container or not container.GetChildren then
-		return
-	end
-	local Players = game:GetService("Players")
-	local LocalPlayer = Players.LocalPlayer
-	local CommF = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
-	CommF = CommF and CommF:FindFirstChild("CommF_")
-	if not CommF or not LocalPlayer then
-		return
-	end
+    if not container or not container.GetChildren then return end
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
+    local CommF = Remotes and Remotes:FindFirstChild("CommF_")
+    if not CommF or not LocalPlayer then return end
 
-	for _, tool in ipairs(container:GetChildren()) do
-		if IsFruitTool(tool) then
-			local failedAt = tool:GetAttribute("__StoreFail")
-			if not (typeof(failedAt) == "number" and tick() - failedAt < 30) then
-				local fruitName = GetFruitOriginalName(tool)
-				if fruitName then
-					-- 1) tira da mão
-					if tool.Parent == LocalPlayer.Character then
-						local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-						if hum then
-							pcall(function()
-								hum:UnequipTools()
-							end)
-							task.wait(0.15)
-						end
-					end
-					local toolName = tool.Name
-					local function Gone()
-						return not tool.Parent
-							or (tool.Parent ~= LocalPlayer.Backpack and tool.Parent ~= LocalPlayer.Character)
-					end
-					-- 2) (nome, tool)
-					pcall(function()
-						CommF:InvokeServer("StoreFruit", fruitName, tool)
-					end)
-					task.wait(0.3)
-					-- 3) só o nome
-					if not Gone() then
-						pcall(function()
-							CommF:InvokeServer("StoreFruit", fruitName)
-						end)
-						task.wait(0.3)
-					end
-					if Gone() then
-						if Settings["Webhook Store Fruit"] and Settings["Select Rarity Fruit"] then
-							local rarityName
-							pcall(function()
-								local info = FruitInfoModule.List[fruitName]
-								if info and info.Rarity then
-									rarityName = info.Rarity.Name
-								end
-							end)
-							if (rarityName and Settings["Select Rarity Fruit"][rarityName]) or SkinFruit[toolName] then
-								pcall(function()
-									getgenv().WebhookStoreFruit(toolName)
-								end)
-							end
-						end
-					else
-						-- 4) não guardou (inventário cheio?): espera 30s
-						pcall(function()
-							tool:SetAttribute("__StoreFail", tick())
-						end)
-					end
-					task.wait(0.4)
-				end
-			end
-		end
-	end
+    local Backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
+    local Character = LocalPlayer.Character
+    local function isStored(fruitName)
+        local ok, inventory = pcall(function() return CommF:InvokeServer("getInventory") end)
+        if not ok or type(inventory) ~= "table" then return nil end
+        for _, item in ipairs(inventory) do
+            if type(item) == "table" then
+                local name = tostring(item.Name or item.name or item.ItemName or "")
+                if name == fruitName then return true end
+            end
+        end
+        return false
+    end
+
+    for _, tool in ipairs(container:GetChildren()) do
+        if IsFruitTool(tool) then
+            local failedAt = tool:GetAttribute("__StoreFail")
+            if not (typeof(failedAt) == "number" and tick() - failedAt < 20) then
+                local fruitName = GetFruitOriginalName(tool)
+                if fruitName then
+                    if tool.Parent == Character and Character then
+                        local hum = Character:FindFirstChildOfClass("Humanoid")
+                        if hum then pcall(function() hum:UnequipTools() end); task.wait(0.15) end
+                    end
+                    local toolName = tool.Name
+                    local function toolStillHeld()
+                        return tool.Parent == Backpack or tool.Parent == Character
+                    end
+                    local storedBefore = isStored(fruitName)
+                    -- Server normally expects the internal fruit identifier, not the display label.
+                    pcall(function() CommF:InvokeServer("StoreFruit", fruitName) end)
+                    task.wait(0.45)
+                    local storedAfter = isStored(fruitName)
+                    local stored = not toolStillHeld() or storedAfter == true
+                    -- Some builds identify the fruit using the Tool's displayed name.
+                    if not stored and toolStillHeld() and toolName ~= fruitName then
+                        pcall(function() CommF:InvokeServer("StoreFruit", toolName) end)
+                        task.wait(0.45)
+                        storedAfter = isStored(fruitName)
+                        stored = not toolStillHeld() or storedAfter == true
+                    end
+                    -- If inventory endpoint is unavailable, only trust the tool moving out of the player's containers.
+                    if storedBefore == nil and not toolStillHeld() then stored = true end
+                    if stored then
+                        if Settings["Webhook Store Fruit"] and Settings["Select Rarity Fruit"] then
+                            local rarityName
+                            pcall(function()
+                                local info = FruitInfoModule and FruitInfoModule.List and FruitInfoModule.List[fruitName]
+                                if info and info.Rarity then rarityName = info.Rarity.Name end
+                            end)
+                            if (rarityName and Settings["Select Rarity Fruit"][rarityName]) or SkinFruit[toolName] then
+                                pcall(function() getgenv().WebhookStoreFruit(toolName) end)
+                            end
+                        end
+                    else
+                        pcall(function() tool:SetAttribute("__StoreFail", tick()) end)
+                    end
+                    task.wait(0.25)
+                end
+            end
+        end
+    end
 end
 
 function DetectFruitShop()
