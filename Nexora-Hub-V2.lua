@@ -4992,20 +4992,20 @@ spawn(function()
 						or workspace._WorldOrigin.Locations:FindFirstChild("Kitsune Island") ~= nil
 				end)
 				if kitsuneOn then
-					StatusKitsuneIsland.SetText("Kitsune Island: \240\159\159\162")
+					StatusKitsuneIsland.SetText("Kitsune Island: 🟢")
 				else
-					StatusKitsuneIsland.SetText("Kitsune Island: \240\159\148\180")
+					StatusKitsuneIsland.SetText("Kitsune Island: 🔴")
 				end
 			end
 			if not workspace.Map:FindFirstChild("PrehistoricIsland") then
-				StatusPrehistoricIsland.SetText("Prehistoric Island: \240\159\148\180")
+				StatusPrehistoricIsland.SetText("Prehistoric Island: 🔴")
 			else
-				StatusPrehistoricIsland.SetText("Prehistoric Island: \240\159\159\162")
+				StatusPrehistoricIsland.SetText("Prehistoric Island: 🟢")
 			end
 			if not workspace._WorldOrigin.Locations:FindFirstChild("Frozen Dimension") then
-				StatusFrozenDimension.SetText("Frozen Dimension: \240\159\148\180")
+				StatusFrozenDimension.SetText("Frozen Dimension: 🔴")
 			else
-				StatusFrozenDimension.SetText("Frozen Dimension: \240\159\159\162")
+				StatusFrozenDimension.SetText("Frozen Dimension: 🟢")
 			end
 			StatusGear.SetText("Ancient One: " .. CheckAcientOneStatus())
 			if getgenv().StatusGearDraco then
@@ -5075,18 +5075,18 @@ task.spawn(function()
             local map = Workspace:FindFirstChild("Map")
             local world = Workspace:FindFirstChild("_WorldOrigin")
             local locations = world and world:FindFirstChild("Locations")
-            local on = (map and (map:FindFirstChild("KitsuneIsland") or map:FindFirstChild("Kitsune Island"))) or (locations and locations:FindFirstChild("Kitsune Island"))
+            local on = (map and (map:FindFirstChild("KitsuneIsland", true) or map:FindFirstChild("Kitsune Island", true))) or (locations and (locations:FindFirstChild("Kitsune Island", true) or locations:FindFirstChild("KitsuneIsland", true)))
             safeSet(StatusKitsuneIsland, "Kitsune Island: " .. (on and "🟢" or "🔴"))
         end)
         pcall(function()
             local map = Workspace:FindFirstChild("Map")
-            local on = map and (map:FindFirstChild("PrehistoricIsland") or map:FindFirstChild("Prehistoric Island"))
+            local on = (map and (map:FindFirstChild("PrehistoricIsland", true) or map:FindFirstChild("Prehistoric Island", true))) or (Workspace:FindFirstChild("_WorldOrigin") and Workspace._WorldOrigin:FindFirstChild("Locations") and (Workspace._WorldOrigin.Locations:FindFirstChild("Prehistoric Island", true) or Workspace._WorldOrigin.Locations:FindFirstChild("PrehistoricIsland", true)))
             safeSet(StatusPrehistoricIsland, "Prehistoric Island: " .. (on and "🟢" or "🔴"))
         end)
         pcall(function()
             local world = Workspace:FindFirstChild("_WorldOrigin")
             local locations = world and world:FindFirstChild("Locations")
-            local on = locations and locations:FindFirstChild("Frozen Dimension")
+            local on = locations and (locations:FindFirstChild("Frozen Dimension", true) or locations:FindFirstChild("FrozenDimension", true))
             safeSet(StatusFrozenDimension, "Frozen Dimension: " .. (on and "🟢" or "🔴"))
         end)
         pcall(function()
@@ -8127,65 +8127,72 @@ SettingFarmMainSection.CreateToggle(
 		SaveSettings("Auto Dodge Skill Mobs", I)
 	end
 )
--- Auto Dodge Skill Mobs: mantem o nome da toggle por compatibilidade, mas reage somente a bosses.
--- Dispara apenas quando um novo objeto de skill aparece no HumanoidRootPart do boss.
+local I
+game:GetService("Workspace").Enemies.DescendantAdded:Connect(function(_)
+	if
+		Settings["Auto Dodge Skill Mobs"]
+		and I
+		and I.Parent
+		and not Doding
+		and (_.Name == "BodyGyro" or _.Name == "BodyPosition" or _.Name == "KiBlastFireShort")
+		and _.Parent.Parent.Name == I.Name
+	then
+		getgenv().Doding = true
+		getgenv().ReadyToDodge = true
+		local I = tick()
+		repeat
+			wait()
+		until not _ or not _.Parent or tick() - I > 14
+		if tick() - I < 2 then
+			wait(0.5)
+		end
+		getgenv().Doding = false
+		getgenv().ReadyToDodge = false
+	end
+end)
+
+
+-- Auto Dodge Skill Mobs - FIX DEFINITIVO: não sobe, só desvia quando mob realmente usa skill perto
 getgenv().Doding = false
 getgenv().ReadyToDodge = false
-if getgenv().DodgeConnection then pcall(function() getgenv().DodgeConnection:Disconnect() end) end
-local DodgeWorkspace = game:GetService("Workspace")
-local DodgePlayers = game:GetService("Players")
-local function IsDodgeBoss(model)
-    if not model or not model:IsA("Model") then return false end
-    local name = string.lower(model.Name)
-    local hum = model:FindFirstChildOfClass("Humanoid")
-    local root = model:FindFirstChild("HumanoidRootPart")
-    if not hum or hum.Health <= 0 or not root then return false end
-    -- Bosses conhecidos no Blox Fruits; exclui mobs comuns mesmo que tenham skills.
-    local known = {
-        "boss", "tyrant of the skies", "cake prince", "dough king", "rip_indra",
-        "rip indra", "darkbeard", "longma", "soul reaper", "captain elephant",
-        "beautiful pirate", "stone", "island empress", "kilo admiral", "awakened ice admiral",
-        "tide keeper", "don swan", "diamond", "fajita", "jeremy", "urban", "deandre", "diablo",
-        "cursed captain", "order", "law", "greybeard", "mob leader", "cake queen",
-        "hydra leader", "sea beast", "leviathan"
-    }
-    for _, token in ipairs(known) do
-        if name == token or string.find(name, token, 1, true) then return true end
-    end
-    if model:GetAttribute("IsBoss") == true or model:GetAttribute("Boss") == true then return true end
-    return false
-end
-getgenv().DodgeConnection = DodgeWorkspace.Enemies.DescendantAdded:Connect(function(skill)
-    task.spawn(function()
-        pcall(function()
-            if not Settings["Auto Dodge Skill Mobs"] or getgenv().Doding then return end
-            if skill.Name ~= "BodyGyro" and skill.Name ~= "BodyPosition" and skill.Name ~= "BodyVelocity" and skill.Name ~= "LinearVelocity" and skill.Name ~= "VectorForce" then return end
-            local part = skill.Parent
-            if not part or part.Name ~= "HumanoidRootPart" then return end
-            local boss = part.Parent
-            if not IsDodgeBoss(boss) or boss.HumanoidRootPart ~= part then return end
-            local char = DodgePlayers.LocalPlayer.Character
-            local playerRoot = char and char:FindFirstChild("HumanoidRootPart")
-            if not playerRoot then return end
-            -- Confirma que é um ataque efetivo próximo, não só um boss carregado no mapa.
-            if (playerRoot.Position - part.Position).Magnitude > 65 then return end
-            if skill:IsA("BodyGyro") and skill.P and skill.P < 500 then return end
-            getgenv().Doding = true
-            getgenv().ReadyToDodge = true
-            local delta = playerRoot.Position - part.Position
-            delta = Vector3.new(delta.X, 0, delta.Z)
-            if delta.Magnitude < 1 then delta = Vector3.new(1, 0, 0) end
-            local destination = playerRoot.Position + delta.Unit * 22
-            -- Mantem o personagem no mesmo nivel; não lança para cima.
-            playerRoot.CFrame = CFrame.new(destination.X, playerRoot.Position.Y, destination.Z)
-            playerRoot.AssemblyLinearVelocity = Vector3.zero
-            local started = tick()
-            repeat task.wait(0.1) until not skill.Parent or not part.Parent or tick() - started > 1.2
-            task.wait(0.15)
-            getgenv().Doding = false
-            getgenv().ReadyToDodge = false
-        end)
-    end)
+if getgenv().DodgeConnection then getgenv().DodgeConnection:Disconnect() end
+getgenv().DodgeConnection = game:GetService("Workspace").Enemies.DescendantAdded:Connect(function(skill)
+	pcall(function()
+		if not Settings["Auto Dodge Skill Mobs"] then return end
+		if getgenv().Doding then return end
+		if skill.Name ~= "BodyGyro" and skill.Name ~= "BodyPosition" and skill.Name ~= "BodyVelocity" then return end
+		local parent = skill.Parent
+		if not parent or parent.Name ~= "HumanoidRootPart" then return end
+		local mob = parent.Parent
+		if not mob or not mob:FindFirstChild("Humanoid") or not mob:FindFirstChild("HumanoidRootPart") then return end
+		-- Só se for o mob que tá atacando você
+		local attacking = getgenv().AttackingMob
+		if attacking and mob.Name ~= attacking.Name then return end
+		local char = game:GetService("Players").LocalPlayer.Character
+		local root = char and char:FindFirstChild("HumanoidRootPart")
+		if not root then return end
+		local dist = (root.Position - mob.HumanoidRootPart.Position).Magnitude
+		if dist > 55 then return end
+		-- Skill com P alto = skill real de ataque
+		if skill:IsA("BodyGyro") and skill.P and skill.P < 500 then return end
+		getgenv().Doding = true
+		getgenv().ReadyToDodge = true
+		local oldPos = root.Position
+		local away = (root.Position - mob.HumanoidRootPart.Position)
+		away = Vector3.new(away.X, 0, away.Z)
+		if away.Magnitude < 1 then away = Vector3.new(math.random(-1,1), 0, math.random(-1,1)) end
+		away = away.Unit * 20
+		local targetPos = Vector3.new(oldPos.X + away.X, oldPos.Y, oldPos.Z + away.Z)
+		pcall(function()
+			root.CFrame = CFrame.new(targetPos.X, oldPos.Y, targetPos.Z)
+			root.AssemblyLinearVelocity = Vector3.new(0,0,0)
+		end)
+		local start = tick()
+		repeat task.wait(0.1) until not skill.Parent or tick()-start > 1.8
+		task.wait(0.2)
+		getgenv().Doding = false
+		getgenv().ReadyToDodge = false
+	end)
 end)
 
 SettingFarmMainSection.CreateToggle(
