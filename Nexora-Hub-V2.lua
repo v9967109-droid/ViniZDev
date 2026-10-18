@@ -24884,29 +24884,24 @@ SettingsAimbotSection.CreateToggle(
 		SaveSettings("Auto Aimbot", b)
 	end
 )
--- Auto Fly Player: mantém o personagem flutuando e usa MoveDirection para
--- continuar aceitando o analógico/controles padrão do Roblox.
+-- Auto Fly Player: voo em 3D orientado pela câmera, compatível com o analógico Roblox.
 SettingsAimbotSection.CreateToggle(
-	{ Title = "Auto Fly Player", Desc = "Flutua e permite movimentar pelo analógico (velocidade 220).", Default = Settings["Auto Fly Player"] or false },
+	{ Title = "Auto Fly Player", Desc = "Voo em todas as direções com controles padrão (velocidade 220).", Default = Settings["Auto Fly Player"] or false },
 	function(enabled)
 		SaveSettings("Auto Fly Player", enabled)
 		getgenv().__NexoraFlyGeneration = (getgenv().__NexoraFlyGeneration or 0) + 1
 		local generation = getgenv().__NexoraFlyGeneration
+		local Players = game:GetService("Players")
 		local function cleanupFly()
-			local character = game:GetService("Players").LocalPlayer.Character
+			local character = Players.LocalPlayer.Character
 			local root = character and character:FindFirstChild("HumanoidRootPart")
-			if root then
-				local mover = root:FindFirstChild("NexoraAutoFlyVelocity")
-				if mover then mover:Destroy() end
-			end
+			local mover = root and root:FindFirstChild("NexoraAutoFlyVelocity")
+			if mover then mover:Destroy() end
 		end
-		if not enabled then
-			cleanupFly()
-			return
-		end
+		if not enabled then cleanupFly(); return end
 		task.spawn(function()
-			local player = game:GetService("Players").LocalPlayer
-			local root, humanoid, velocity, targetY
+			local player = Players.LocalPlayer
+			local root, humanoid, velocity
 			while Settings["Auto Fly Player"] and generation == getgenv().__NexoraFlyGeneration do
 				local character = player.Character
 				local newRoot = character and character:FindFirstChild("HumanoidRootPart")
@@ -24915,7 +24910,6 @@ SettingsAimbotSection.CreateToggle(
 					if root ~= newRoot then
 						if velocity then pcall(function() velocity:Destroy() end) end
 						root, humanoid = newRoot, newHumanoid
-						targetY = root.Position.Y
 						velocity = Instance.new("BodyVelocity")
 						velocity.Name = "NexoraAutoFlyVelocity"
 						velocity.MaxForce = Vector3.new(1e9, 1e9, 1e9)
@@ -24923,10 +24917,20 @@ SettingsAimbotSection.CreateToggle(
 						velocity.Velocity = Vector3.zero
 						velocity.Parent = root
 					end
-					-- Recalcula a direção todo ciclo: o analógico continua funcionando.
-					local direction = humanoid.MoveDirection
-					local vertical = math.clamp((targetY - root.Position.Y) * 5, -35, 35)
-					velocity.Velocity = Vector3.new(direction.X * 220, vertical, direction.Z * 220)
+					local camera = workspace.CurrentCamera
+					local move = humanoid.MoveDirection
+					local desired = Vector3.zero
+					if camera and move.Magnitude > 0.05 then
+						-- Converte o movimento do analógico para os eixos da câmera.
+						local forwardInput = move:Dot(Vector3.new(camera.CFrame.LookVector.X, 0, camera.CFrame.LookVector.Z).Unit)
+						local rightInput = move:Dot(Vector3.new(camera.CFrame.RightVector.X, 0, camera.CFrame.RightVector.Z).Unit)
+						local forward = camera.CFrame.LookVector * forwardInput
+						local right = Vector3.new(camera.CFrame.RightVector.X, 0, camera.CFrame.RightVector.Z).Unit * rightInput
+						desired = forward + right
+						if desired.Magnitude > 1 then desired = desired.Unit end
+						desired = desired * 220
+					end
+					velocity.Velocity = desired
 				else
 					root, humanoid = nil, nil
 					if velocity then pcall(function() velocity:Destroy() end); velocity = nil end
@@ -24939,10 +24943,10 @@ SettingsAimbotSection.CreateToggle(
 	end
 )
 
--- Auto Esquiva: mantém distância do jogador-alvo e troca o sentido da órbita
--- periodicamente. Usa MoveTo em vez de prender a câmera ou os controles.
+-- Auto Esquiva: aproximações em saltos longos, alternando altitude e direção;
+-- evita uma órbita circular contínua ao redor do alvo.
 SettingsAimbotSection.CreateToggle(
-	{ Title = "Auto Esquiva", Desc = "Circula o alvo a longa distância e muda de direção.", Default = Settings["Auto Esquiva"] or false },
+	{ Title = "Auto Esquiva", Desc = "Desvia em 3D, alterna altura e reposiciona a longa distância.", Default = Settings["Auto Esquiva"] or false },
 	function(enabled)
 		SaveSettings("Auto Esquiva", enabled)
 		getgenv().__NexoraDodgeGeneration = (getgenv().__NexoraDodgeGeneration or 0) + 1
@@ -24951,30 +24955,28 @@ SettingsAimbotSection.CreateToggle(
 		task.spawn(function()
 			local Players = game:GetService("Players")
 			local player = Players.LocalPlayer
-			local angle = 0
-			local directionSign = 1
-			local nextTurn = 0
+			local nextReposition = 0
+			local destination = nil
+			local lastTargetName = nil
 			while Settings["Auto Esquiva"] and generation == getgenv().__NexoraDodgeGeneration do
 				pcall(function()
 					local character = player.Character
 					local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 					local root = character and character:FindFirstChild("HumanoidRootPart")
-					local targetPlayer = nil
-					if Settings["Select Player PVP"] and Settings["Select Player PVP"] ~= "" then
-						targetPlayer = Players:FindFirstChild(Settings["Select Player PVP"])
+					local targetPlayer
+					local selectedName = Settings["Select Player PVP"]
+					if selectedName and selectedName ~= "" then
+						targetPlayer = Players:FindFirstChild(selectedName)
 					end
-					-- Sem alvo selecionado, acompanha o jogador vivo mais próximo.
 					if not targetPlayer and root then
-						local nearestDistance = math.huge
+						local nearest = math.huge
 						for _, candidate in ipairs(Players:GetPlayers()) do
 							if candidate ~= player and candidate.Character then
-								local candidateRoot = candidate.Character:FindFirstChild("HumanoidRootPart")
-								local candidateHumanoid = candidate.Character:FindFirstChildOfClass("Humanoid")
-								if candidateRoot and candidateHumanoid and candidateHumanoid.Health > 0 then
-									local distance = (candidateRoot.Position - root.Position).Magnitude
-									if distance < nearestDistance then
-										nearestDistance, targetPlayer = distance, candidate
-									end
+								local cr = candidate.Character:FindFirstChild("HumanoidRootPart")
+								local ch = candidate.Character:FindFirstChildOfClass("Humanoid")
+								if cr and ch and ch.Health > 0 then
+									local distance = (cr.Position - root.Position).Magnitude
+									if distance < nearest then nearest, targetPlayer = distance, candidate end
 								end
 							end
 						end
@@ -24984,17 +24986,27 @@ SettingsAimbotSection.CreateToggle(
 					local targetHumanoid = targetCharacter and targetCharacter:FindFirstChildOfClass("Humanoid")
 					if root and humanoid and humanoid.Health > 0 and targetRoot and (not targetHumanoid or targetHumanoid.Health > 0) then
 						local now = os.clock()
-						if now >= nextTurn then
-							directionSign = -directionSign
-							nextTurn = now + math.random(2, 4)
-						end
-						angle = angle + directionSign * 0.16
-						local radius = 85 + math.sin(now * 1.7) * 12
-						local destination = targetRoot.Position + Vector3.new(math.cos(angle) * radius, 12 + math.sin(now * 2) * 5, math.sin(angle) * radius)
-						humanoid:MoveTo(destination)
+						if now >= nextReposition or lastTargetName ~= targetPlayer.Name or not destination then
+						lastTargetName = targetPlayer.Name
+						-- Escolhe um novo ponto bem afastado e alterna entre baixo e alto.
+						local away = Vector3.new(math.random(-100, 100), 0, math.random(-100, 100))
+						if away.Magnitude < 1 then away = Vector3.new(1, 0, 0) end
+						away = away.Unit
+						local distance = math.random(150, 230)
+						local altitude = (math.random(0, 1) == 0 and -1 or 1) * math.random(35, 95)
+						destination = targetRoot.Position + away * distance + Vector3.new(0, altitude, 0)
+						-- Reposiciona em saltos curtos; não mantém uma órbita completa.
+						root.CFrame = CFrame.new(destination, targetRoot.Position)
+						nextReposition = now + math.random(1, 2)
+						if humanoid then humanoid:ChangeState(Enum.HumanoidStateType.Freefall) end
+					else
+						-- Pequeno movimento variável entre reposicionamentos.
+						local side = Vector3.new(math.random(-1, 1), math.random(-1, 1), math.random(-1, 1))
+						if side.Magnitude > 0 then humanoid:MoveTo(root.Position + side.Unit * math.random(25, 55)) end
 					end
+				end
 				end)
-				task.wait(0.12)
+				task.wait(0.18)
 			end
 		end)
 	end
