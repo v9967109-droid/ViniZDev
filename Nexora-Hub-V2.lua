@@ -11077,10 +11077,12 @@ task.spawn(function()
 					local wanted = name and { name } or EliteNames
 					local function scan(root)
 						if not root then return nil end
-						for _, n in ipairs(wanted) do
-							local m = root:FindFirstChild(n, true)
-							if m and m:IsA("Model") and IsMobAlive(m) then return m end
+					-- Evita parar numa cópia morta/descarregada do mesmo Elite.
+					for _, inst in ipairs(root:GetDescendants()) do
+						if inst:IsA("Model") and table.find(wanted, inst.Name) and IsMobAlive(inst) then
+							return inst
 						end
+					end
 					end
 					local found = scan(game:GetService("ReplicatedStorage")) or scan(workspace)
 					if found then return found end
@@ -12523,12 +12525,13 @@ function AutoDragonHunterQuestLoop()
 
         -- Se não tem quest, pega quest no Dragon Hunter
         local npc = GetDragonHunterNPC()
-        if not npc then
+        if not npc or not npc:FindFirstChild("HumanoidRootPart") then
+            -- O NPC pode não estar replicado enquanto o jogador está longe.
             toTarget(DOJO_CFRAME)
             return
         end
 
-        -- DETECTA DE LONGE: se está longe, vai até o NPC
+        -- DETECTA DE LONGE: se está longe, vai até o NPC/Dragon Dojo
         local distToNPC = t:DistanceFromCharacter(npc.HumanoidRootPart.Position)
         if distToNPC > 1500 then
             -- Longe: usa tween até Hydra/Dojo
@@ -14237,14 +14240,14 @@ local function GetFruitOriginalName(tool)
 end
 
 local function IsFruitTool(tool)
-	if not tool or not tool:IsA("Tool") then
-		return false
-	end
-	if tool:FindFirstChild("Ignored") then
-		return false
-	end
+	if not tool or not tool:IsA("Tool") or tool:FindFirstChild("Ignored") then return false end
 	local original = tool:GetAttribute("OriginalName")
-	return (typeof(original) == "string" and original ~= "") or string.find(tool.Name, "Fruit", 1, true) ~= nil
+	if typeof(original) == "string" and original ~= "" then return true end
+	local name = tostring(tool.Name or "")
+	if string.find(name, "Fruit", 1, true) then return true end
+	-- Algumas versões usam o identificador interno (ex.: Rocket-Rocket) no nome da Tool.
+	local list = FruitInfoModule and FruitInfoModule.List
+	return type(list) == "table" and list[name] ~= nil
 end
 
 -- NOVO MÉTODO de guardar fruta:
@@ -23908,6 +23911,16 @@ FarmingVolcanoSection.CreateToggle(
 	end
 )
 function FullyEventVolcano()
+	-- Usa o ciclo dedicado do Dragon Hunter para continuar solicitando missões após cada conclusão.
+	-- O NPC pode não estar replicado à distância; o helper encaminha primeiro para Hydra/Dojo.
+	if not game:GetService("Workspace").Map:FindFirstChild("PrehistoricIsland")
+		and not CheckItemInventory("Volcanic Magnet")
+		and not Settings["Ignore Craft Volcanic Magnet"]
+		and CheckCountItem("Scrap Metal", 10)
+		and not CheckCountItem("Blaze Ember", 15) then
+		pcall(AutoDragonHunterQuestLoop)
+		return
+	end
 	if not game:GetService("Workspace").Map:FindFirstChild("PrehistoricIsland") then
 		getgenv().RespawnVolcano = true
 		getgenv().turnoffnoclipBoatt = true
@@ -25891,10 +25904,15 @@ do
 		end
 	end)
 	task.spawn(function()
-		while task.wait(1) and getgenv().__FruitGen == FruitGen do
+		while task.wait(0.75) and getgenv().__FruitGen == FruitGen do
 			if Settings["Auto Store Fruit"] then
-				pcall(StoreFruit, t.Backpack)
-				pcall(StoreFruit, t.Character)
+				local player = game:GetService("Players").LocalPlayer
+				if player then
+					local backpack = player:FindFirstChildOfClass("Backpack")
+					local character = player.Character
+					if backpack then pcall(StoreFruit, backpack) end
+					if character then pcall(StoreFruit, character) end
+				end
 			end
 		end
 	end)
