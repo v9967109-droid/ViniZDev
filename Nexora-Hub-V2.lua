@@ -24943,71 +24943,110 @@ SettingsAimbotSection.CreateToggle(
 	end
 )
 
--- Auto Esquiva: aproximações em saltos longos, alternando altitude e direção;
--- evita uma órbita circular contínua ao redor do alvo.
+-- Auto Esquiva: só ativa o movimento quando há outro jogador vivo por perto.
+-- Mantém voo contínuo em órbita ampla; não usa teleporte.
 SettingsAimbotSection.CreateToggle(
-	{ Title = "Auto Esquiva", Desc = "Desvia em 3D, alterna altura e reposiciona a longa distância.", Default = Settings["Auto Esquiva"] or false },
+	{ Title = "Auto Esquiva", Desc = "Só voa quando há jogadores vivos a até 250 studs; circula no ar a cerca de 100 studs, sem teleporte.", Default = Settings["Auto Esquiva"] or false },
 	function(enabled)
 		SaveSettings("Auto Esquiva", enabled)
 		getgenv().__NexoraDodgeGeneration = (getgenv().__NexoraDodgeGeneration or 0) + 1
 		local generation = getgenv().__NexoraDodgeGeneration
-		if not enabled then return end
+		local Players = game:GetService("Players")
+		local player = Players.LocalPlayer
+		local function removeMovers(root)
+			if root then
+				for _, name in ipairs({"NexoraDodgeVelocity", "NexoraDodgeGyro"}) do
+					local obj = root:FindFirstChild(name)
+					if obj then pcall(function() obj:Destroy() end) end
+				end
+			end
+		end
+		if not enabled then
+			local character = player.Character
+			removeMovers(character and character:FindFirstChild("HumanoidRootPart"))
+			return
+		end
 		task.spawn(function()
-			local Players = game:GetService("Players")
-			local player = Players.LocalPlayer
-			local nextReposition = 0
-			local destination = nil
-			local lastTargetName = nil
+			local orbitAngle = math.random() * math.pi * 2
+			local orbitDirection = (math.random(0, 1) == 0) and -1 or 1
+			local targetName, moversRoot
+			local velocity, gyro
+			local function cleanup()
+				if velocity then pcall(function() velocity:Destroy() end); velocity = nil end
+				if gyro then pcall(function() gyro:Destroy() end); gyro = nil end
+				moversRoot = nil
+			end
 			while Settings["Auto Esquiva"] and generation == getgenv().__NexoraDodgeGeneration do
-				pcall(function()
+				local ok = pcall(function()
 					local character = player.Character
 					local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 					local root = character and character:FindFirstChild("HumanoidRootPart")
+					if not (root and humanoid and humanoid.Health > 0) then cleanup(); return end
+					-- Apenas jogadores vivos dentro do raio de proximidade podem ativar a esquiva.
+					local nearbyRadius, nearest = 250, math.huge
 					local targetPlayer
 					local selectedName = Settings["Select Player PVP"]
-					if selectedName and selectedName ~= "" then
-						targetPlayer = Players:FindFirstChild(selectedName)
+					local selected = selectedName and selectedName ~= "" and Players:FindFirstChild(selectedName)
+					local function validTarget(candidate)
+						if not candidate or candidate == player then return nil end
+						local c = candidate.Character
+						local r = c and c:FindFirstChild("HumanoidRootPart")
+						local h = c and c:FindFirstChildOfClass("Humanoid")
+						if not (r and h and h.Health > 0) then return nil end
+						local d = (r.Position - root.Position).Magnitude
+						if d <= nearbyRadius then return r, d end
+						return nil
 					end
-					if not targetPlayer and root then
-						local nearest = math.huge
+					local selectedRoot = validTarget(selected)
+					if selectedRoot then targetPlayer = selected end
+					if not targetPlayer then
 						for _, candidate in ipairs(Players:GetPlayers()) do
-							if candidate ~= player and candidate.Character then
-								local cr = candidate.Character:FindFirstChild("HumanoidRootPart")
-								local ch = candidate.Character:FindFirstChildOfClass("Humanoid")
-								if cr and ch and ch.Health > 0 then
-									local distance = (cr.Position - root.Position).Magnitude
-									if distance < nearest then nearest, targetPlayer = distance, candidate end
-								end
-							end
+							local candidateRoot, distance = validTarget(candidate)
+							if candidateRoot and distance < nearest then nearest, targetPlayer = distance, candidate end
 						end
 					end
-					local targetCharacter = targetPlayer and (targetPlayer.Character or (workspace:FindFirstChild("Characters") and workspace.Characters:FindFirstChild(targetPlayer.Name)))
+					local targetCharacter = targetPlayer and targetPlayer.Character
 					local targetRoot = targetCharacter and targetCharacter:FindFirstChild("HumanoidRootPart")
 					local targetHumanoid = targetCharacter and targetCharacter:FindFirstChildOfClass("Humanoid")
-					if root and humanoid and humanoid.Health > 0 and targetRoot and (not targetHumanoid or targetHumanoid.Health > 0) then
-						local now = os.clock()
-						if now >= nextReposition or lastTargetName ~= targetPlayer.Name or not destination then
-						lastTargetName = targetPlayer.Name
-						-- Escolhe um novo ponto bem afastado e alterna entre baixo e alto.
-						local away = Vector3.new(math.random(-100, 100), 0, math.random(-100, 100))
-						if away.Magnitude < 1 then away = Vector3.new(1, 0, 0) end
-						away = away.Unit
-						local distance = math.random(150, 230)
-						local altitude = (math.random(0, 1) == 0 and -1 or 1) * math.random(35, 95)
-						destination = targetRoot.Position + away * distance + Vector3.new(0, altitude, 0)
-						-- Reposiciona em saltos curtos; não mantém uma órbita completa.
-						root.CFrame = CFrame.new(destination, targetRoot.Position)
-						nextReposition = now + math.random(1, 2)
-						if humanoid then humanoid:ChangeState(Enum.HumanoidStateType.Freefall) end
-					else
-						-- Pequeno movimento variável entre reposicionamentos.
-						local side = Vector3.new(math.random(-1, 1), math.random(-1, 1), math.random(-1, 1))
-						if side.Magnitude > 0 then humanoid:MoveTo(root.Position + side.Unit * math.random(25, 55)) end
+					if not (targetRoot and targetHumanoid and targetHumanoid.Health > 0 and (targetRoot.Position - root.Position).Magnitude <= nearbyRadius) then
+						cleanup() -- sem adversários próximos: não fica voando nem persegue alvos distantes
+						return
 					end
-				end
+					if moversRoot ~= root then
+						cleanup(); moversRoot = root
+						velocity = Instance.new("BodyVelocity")
+						velocity.Name = "NexoraDodgeVelocity"
+						velocity.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+						velocity.P = 6e4
+						velocity.Velocity = Vector3.zero
+						velocity.Parent = root
+						gyro = Instance.new("BodyGyro")
+						gyro.Name = "NexoraDodgeGyro"
+						gyro.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
+						gyro.P = 5e4; gyro.D = 1e3; gyro.Parent = root
+					end
+					if targetName ~= targetPlayer.Name then
+						targetName = targetPlayer.Name
+						orbitAngle = math.atan2(root.Position.Z - targetRoot.Position.Z, root.Position.X - targetRoot.Position.X)
+					end
+					local dt = 0.18
+					orbitAngle = orbitAngle + orbitDirection * dt * 0.75
+					if math.random(1, 100) <= 2 then orbitDirection = -orbitDirection end
+					local radius = 100
+					local altitude = 35 + math.sin(os.clock() * 1.25) * 20
+					local desiredPosition = targetRoot.Position + Vector3.new(math.cos(orbitAngle) * radius, altitude, math.sin(orbitAngle) * radius)
+					local offset = desiredPosition - root.Position
+					if offset.Magnitude > 0.1 then
+						velocity.Velocity = offset.Unit * math.min(220, math.max(45, offset.Magnitude * 2.0))
+					else
+						velocity.Velocity = Vector3.zero
+					end
+					gyro.CFrame = CFrame.lookAt(root.Position, targetRoot.Position)
 				end)
+				if not ok then cleanup() end
 				task.wait(0.18)
 			end
+			cleanup()
 		end)
 	end
 )
