@@ -9282,11 +9282,16 @@ function FarmMethod()
 									game:GetService("ReplicatedStorage").Remotes.CommF_
 										:InvokeServer(unpack({ [1] = "LoadItem", [2] = "Skull Guitar" }))
 								else
-									equiptool(NameWeapon("Gun"))
-									getgenv().SpamGunSkullGuitar(V.WorldPivot)
-									-- Remote click only (no screen click).
-									RealClickM1()
-									ClickM1(V, true)
+									equiptool("Skull Guitar")
+									-- A árvore/vasos são modelos; apontar para uma peça física melhora o hit do M1.
+									local hitPart = V:IsA("BasePart") and V or V:FindFirstChildWhichIsA("BasePart", true)
+									if hitPart then
+										getgenv().AimPos = CFrame.new(hitPart.Position)
+										getgenv().SpamGunSkullGuitar(hitPart)
+										-- Usa M1 repetidamente enquanto a peça destrutível existir.
+										RealClickM1()
+										ClickM1(hitPart, true)
+									end
 								end
 							else
 								getgenv().AimPos = V.WorldPivot
@@ -14229,12 +14234,24 @@ local function GetFruitOriginalName(tool)
 		if list[clean .. "-" .. clean] then
 			return clean .. "-" .. clean
 		end
+		-- Só aceita correspondência inequívoca: escolher a primeira chave com o mesmo
+		-- prefixo podia armazenar outra fruta (ex.: versões variantes do mesmo nome).
+		local matchKey = nil
 		for key in pairs(list) do
-			local short = string.match(tostring(key), "^(.-)%-")
-			if short and short == clean then
-				return key
+			local keyText = tostring(key)
+			if keyText == clean .. "-" .. clean then
+				return keyText
+			end
+			local short = string.match(keyText, "^(.-)%-")
+			if short and string.lower(short) == string.lower(clean) then
+				if matchKey then
+					matchKey = nil
+					break
+				end
+				matchKey = keyText
 			end
 		end
+		if matchKey then return matchKey end
 	end
 	return clean .. "-" .. clean
 end
@@ -14301,7 +14318,15 @@ function StoreFruit(container)
 						task.wait(0.3)
 					end
 					if Gone() then
-						if Settings["Webhook Store Fruit"] and Settings["Select Rarity Fruit"] then
+						-- Confirma que a fruta realmente entrou no inventário armazenado, quando o servidor expõe a lista.
+						local storedConfirmed = false
+						pcall(function()
+							local data = LocalPlayer:FindFirstChild("Data")
+							local stored = data and data:FindFirstChild("DevilFruit")
+							if stored and tostring(stored.Value) == tostring(fruitName) then storedConfirmed = true end
+						end)
+						-- Tool removida é o sinal primário do StoreFruit; webhook só se confirmado ou sem valor de inventário exposto.
+						if Settings["Webhook Store Fruit"] and Settings["Select Rarity Fruit"] and (storedConfirmed or not LocalPlayer:FindFirstChild("Data") or not LocalPlayer.Data:FindFirstChild("DevilFruit")) then
 							local rarityName
 							pcall(function()
 								local info = FruitInfoModule.List[fruitName]
