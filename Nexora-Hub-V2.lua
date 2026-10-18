@@ -11046,163 +11046,126 @@ task.spawn(function()
 				end
 			end
             if Settings["Auto Elite Hunter"] then
-                -- Elite Hunter: só considera NPCs realmente ativos no Workspace.
-                -- Modelos de ReplicatedStorage podem ser templates e deixar o farm parado.
-                local EliteNames = { "Deandre", "Urban", "Diablo" }
+				-- Mantém a solicitação original da missão e a detecção original dos Elites.
+				-- Se o NPC ainda não estiver carregado, vai ao marcador de spawn e procura novamente.
+				local EliteNames = { "Deandre", "Urban", "Diablo" }
 
-                local function GetEliteQuestName()
-                    local found
-                    pcall(function()
-                        local quest = t.PlayerGui.Main.Quest
-                        if quest and quest.Visible then
-                            local titleObj = quest.Container.QuestTitle.Title
-                            local title = titleObj and tostring(titleObj.Text) or ""
-                            for _, name in ipairs(EliteNames) do
-                                if string.find(title, name, 1, true) then
-                                    found = name
-                                    break
-                                end
-                            end
-                        end
-                    end)
-                    return found
-                end
+				local function GetEliteQuestName()
+					local found
+					pcall(function()
+						local quest = t.PlayerGui.Main.Quest
+						if quest and quest.Visible then
+							local titleObj = quest.Container.QuestTitle.Title
+						local title = titleObj and tostring(titleObj.Text) or ""
+						for _, name in ipairs(EliteNames) do
+							if string.find(title, name, 1, true) then
+								found = name
+								break
+							end
+						end
+					end
+					end)
+					return found
+				end
 
-                local function FindElite(name)
-                    local wanted = name and { name } or EliteNames
-                    local enemies = workspace:FindFirstChild("Enemies")
-                    if enemies then
-                        -- Primeiro os NPCs ativos diretamente dentro de Workspace.Enemies.
-                        for _, mob in ipairs(enemies:GetChildren()) do
-                            if mob:IsA("Model") and table.find(wanted, mob.Name) and IsMobAlive(mob) then
-                                return mob
-                            end
-                        end
-                        -- Alguns servidores colocam os modelos dentro de subpastas.
-                        for _, mob in ipairs(enemies:GetDescendants()) do
-                            if mob:IsA("Model") and table.find(wanted, mob.Name) and IsMobAlive(mob) then
-                                return mob
-                            end
-                        end
-                    end
-                    -- Fallback limitado ao Workspace: nunca seleciona templates do ReplicatedStorage.
-                    for _, mob in ipairs(workspace:GetDescendants()) do
-                        if mob:IsA("Model") and table.find(wanted, mob.Name)
-                            and mob:IsDescendantOf(workspace) and IsMobAlive(mob) then
-                            return mob
-                        end
-                    end
-                    return nil
-                end
+				local function FindElite(name)
+					local target = name and DetectMob(name) or DetectMob(EliteNames)
+					if target and IsMobAlive(target) then return target end
+					target = DetectEliteHunter()
+					if target then return target end
+					-- Longe: procura em qualquer lugar (ReplicatedStorage, workspace, instâncias fora da árvore).
+					local wanted = name and { name } or EliteNames
+					local function scan(root)
+						if not root then return nil end
+					-- Evita parar numa cópia morta/descarregada do mesmo Elite.
+					for _, inst in ipairs(root:GetDescendants()) do
+						if inst:IsA("Model") and table.find(wanted, inst.Name) and IsMobAlive(inst) then
+							return inst
+						end
+					end
+					end
+					local found = scan(game:GetService("ReplicatedStorage")) or scan(workspace)
+					if found then return found end
+					pcall(function()
+						for _, inst in ipairs(getnilinstances and getnilinstances() or {}) do
+							if inst:IsA("Model") and table.find(wanted, inst.Name) and IsMobAlive(inst) then found = inst; break end
+						end
+					end)
+					return found
+				end
 
-                local function FindEliteSpawn(name)
-                    local worldOrigin = workspace:FindFirstChild("_WorldOrigin")
-                    local spawns = worldOrigin and worldOrigin:FindFirstChild("EnemySpawns")
-                    if not spawns then return nil end
-                    local wanted = name and { name } or EliteNames
-                    for _, inst in ipairs(spawns:GetDescendants()) do
-                        local label = inst.Name
-                        pcall(function()
-                            local display = inst:GetAttribute("DisplayName")
-                            if display then label = label .. " " .. tostring(display) end
-                        end)
-                        for _, eliteName in ipairs(wanted) do
-                            if string.find(label, eliteName, 1, true) then
-                                if inst:IsA("BasePart") then return inst end
-                                local part = inst:FindFirstChildWhichIsA("BasePart", true)
-                                if part then return part end
-                            end
-                        end
-                    end
-                    return nil
-                end
 
-                local questName = GetEliteQuestName()
-                if not questName then
-                    EliteRequest()
-                    local questDeadline = tick() + 12
-                    repeat
-                        task.wait(0.25)
-                        questName = GetEliteQuestName()
-                    until questName or tick() >= questDeadline or not Settings["Auto Elite Hunter"]
-                end
-                if not Settings["Auto Elite Hunter"] then return end
+				local questName = GetEliteQuestName()
+				if not questName then
+					EliteRequest()
+					local questDeadline = tick() + 10
+					repeat
+						task.wait(0.25)
+						questName = GetEliteQuestName()
+					until questName or tick() >= questDeadline or not Settings["Auto Elite Hunter"]
+				end
+				if not Settings["Auto Elite Hunter"] then return end
 
-                local target = FindElite(questName)
-                local lastSpawnMove = 0
-                local elitePatrolIndex = 0
-                -- Elite Hunters podem aparecer em Hydra Island, Great Tree ou Floating Turtle.
-                -- Quando o NPC não está replicado no Workspace, patrulha esses locais em vez de ficar parado.
-                local elitePatrolPoints = {
-                    CFrame.new(5288.6216, 1011.6528, 392.4297), -- Hydra Island / Hydra Town
-                    CFrame.new(4345.0938, 575.0524, -6159.0044), -- Great Tree
-                    CFrame.new(-10016, 332, -8326), -- Floating Turtle
-                }
-                while not target and Settings["Auto Elite Hunter"] do
-                    task.wait(0.25)
-                    questName = GetEliteQuestName() or questName
-                    target = FindElite(questName) or FindElite()
-                    if not target and tick() - lastSpawnMove >= 8 then
-                        local spawnPart = FindEliteSpawn(questName) or FindEliteSpawn()
-                        if spawnPart then
-                            toTarget(spawnPart.CFrame * CFrame.new(0, 8, 0))
-                        else
-                            elitePatrolIndex = (elitePatrolIndex % #elitePatrolPoints) + 1
-                            toTarget(elitePatrolPoints[elitePatrolIndex])
-                        end
-                        lastSpawnMove = tick()
-                    end
-                end
+				-- Usa somente o deslocamento original do hub (toTarget no HRP do Elite).
+				-- Aqui apenas procura/revalida o NPC; não cria deslocamento separado para spawn.
+				local target = FindElite(questName)
+				while not target and Settings["Auto Elite Hunter"] do
+					task.wait(0.5)
+					questName = GetEliteQuestName() or questName
+					target = FindElite(questName) or DetectEliteHunter()
+					if not target then
+						-- Sem modelo carregado: vai até o ponto de spawn do Elite (toTarget cuida da longa distância).
+						local spawnPart
+						pcall(function()
+							local spawns = workspace._WorldOrigin.EnemySpawns
+							for _, n in ipairs(questName and { questName } or EliteNames) do
+								local sp = spawns:FindFirstChild(n, true)
+								if sp then
+									spawnPart = sp:IsA("BasePart") and sp or sp:FindFirstChildWhichIsA("BasePart", true)
+									if spawnPart then break end
+								end
+							end
+						end)
+						if spawnPart then toTarget(spawnPart.CFrame * CFrame.new(0, 40, 0)) end
+					end
+				end
 
-                if target and IsMobAlive(target) then
-                    StackFarm = false
-                    StackFarmOther = false
-                    local targetName = target.Name
-                    repeat
-                        task.wait(0.08)
-                        if not IsMobAlive(target) or not target:IsDescendantOf(workspace) then
-                            target = FindElite(targetName) or FindElite()
-                        end
-                        if target and IsMobAlive(target) and target:IsDescendantOf(workspace) then
-                            local hrp = target:FindFirstChild("HumanoidRootPart")
-                            if hrp then
-                                -- Equipar a categoria selecionada evita ficar apenas com o estilo anterior na mão.
-                                local weaponCategory = Settings["Select Weapon"] or "Melee"
-                                if weaponCategory == "Blox Fruit" then
-                                    equiptool(NameWeapon("Blox Fruit"))
-                                else
-                                    equiptool(NameWeapon(weaponCategory) or NameWeapon("Melee"))
-                                end
-                                pcall(sizepart, target)
-                                local offset = weaponCategory == "Blox Fruit"
-                                    and CFrame.new(-7, getgenv().YPosFruit or 20, 0)
-                                    or CFrame.new(7, 8, 0)
-                                -- Recalcula o destino continuamente para perseguir o Elite em movimento.
-                                toTarget(hrp.CFrame * offset)
-                                ClickM1(target)
-                                UsedualFlock()
-                            end
-                        else
-                            target = FindElite(targetName) or FindElite()
-                            if not target then
-                                local spawnPart = FindEliteSpawn(targetName) or FindEliteSpawn()
-                                if spawnPart then toTarget(spawnPart.CFrame * CFrame.new(0, 8, 0)) end
-                            end
-                        end
-                    until not Settings["Auto Elite Hunter"] or (not target and not FindElite())
-                    return
-                end
+				if target and IsMobAlive(target) then
+					StackFarm = false
+					StackFarmOther = false
+					local targetName = target.Name
+					repeat
+						task.wait(0.05)
+						if not IsMobAlive(target) then target = FindElite(targetName) or DetectEliteHunter() end
+						if target and IsMobAlive(target) then
+							local hrp = target:FindFirstChild("HumanoidRootPart")
+							if hrp then
+								pcall(sizepart, target)
+								local offset = Settings["Select Weapon"] == "Blox Fruit"
+									and CFrame.new(-7, getgenv().YPosFruit or 20, 0)
+									or CFrame.new(7, 20, 0)
+								toTarget(hrp.CFrame * offset)
+								ClickM1(target)
+								UsedualFlock()
+							end
+						else
+							-- O alvo pode ter sido descarregado; volta a procurar o modelo real.
+							target = FindElite(targetName) or DetectEliteHunter()
+						end
+					until not Settings["Auto Elite Hunter"] or not target or not IsMobAlive(target)
+					return
+				end
 
-                if Settings["Auto Elite Hunter"] then
-                    if Settings["Hop Server Elite Hunter"] and not DetectItemPlr("God's Chalice") then
-                        HopServer()
-                    elseif DetectItemPlr("God's Chalice") then
-                        toTarget(CFrame.new(-12463.8740234375, 374.9144592285156, -7523.77392578125))
-                    else
-                        A.CreateNoti({ Title = "Nexora Hub", Desc = "Procurando Elite Hunter e pontos de spawn...", ShowTime = 5 })
-                    end
-                end
-            end
+				if Settings["Auto Elite Hunter"] then
+					if Settings["Hop Server Elite Hunter"] and not DetectItemPlr("God's Chalice") then
+						HopServer()
+					elseif DetectItemPlr("God's Chalice") then
+						toTarget(CFrame.new(-12463.8740234375, 374.9144592285156, -7523.77392578125))
+					else
+						A.CreateNoti({ Title = "Nexora Hub", Desc = "Searching Elite spawn", ShowTime = 5 })
+					end
+				end
+			end
 
 			if Settings["Auto Factory"] then
 				CoreBoss = CheckNameBoss("Core")
@@ -11295,10 +11258,18 @@ task.spawn(function()
 						getgenv().__LastFruitScan = 0
 						-- NÃO dá return, continua procurando próxima fruta
 					else
-						-- Sempre usa o movimento existente (toTarget), mesmo a longa distância.
-						-- Não altera o CFrame do personagem para dar TP direto na fruta.
-						getgenv().noclip = true
-						toTarget(handle.CFrame * CFrame.new(0, 3, 0))
+						-- Vai até a fruta mesmo se estiver longe - SEM LAG
+						-- Se muito longe, teleporta direto em etapas
+						if dist > 1500 then
+							-- Teleporta direto pra perto da fruta (sem tween lento)
+							pcall(function()
+								getgenv().noclip = true
+								root.CFrame = handle.CFrame * CFrame.new(0, 10, 0)
+							end)
+							task.wait(0.3)
+						else
+							toTarget(handle.CFrame * CFrame.new(0, 3, 0))
+						end
 					end
 				else
 					-- Nenhuma fruta encontrada, espera um pouco
@@ -14040,67 +14011,193 @@ end
 
 
 function RandomFruit()
-    local Players = game:GetService("Players")
-    local LocalPlayer = Players.LocalPlayer
-    local ReplicatedStorage = game:GetService("ReplicatedStorage")
-    local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
-    local CommF = Remotes and Remotes:FindFirstChild("CommF_")
-    if not CommF or not LocalPlayer or not Settings["Random Devil Fruit"] then return false end
-    if Settings["Auto Find Leviathan"] or Settings["Multi Find Leviathan"] then return false end
-    if (getgenv().__RandomFruitNext or 0) > tick() or getgenv().__RandomFruitBusy then return false end
-    getgenv().__RandomFruitBusy = true
+	local Players = game:GetService("Players")
+	local LocalPlayer = Players.LocalPlayer
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
+	local CommF = Remotes and Remotes:FindFirstChild("CommF_")
+	if not CommF or not LocalPlayer then return false end
+	if not Settings["Random Devil Fruit"] then return false end
+	if Settings["Auto Find Leviathan"] or Settings["Multi Find Leviathan"] then return false end
 
-    local function getBeli()
-        local ok, value = pcall(function() return LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("Beli") and LocalPlayer.Data.Beli.Value end)
-        return ok and value or nil
-    end
-    local function spinnerOpen()
-        local gui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-        local spinner = gui and gui:FindFirstChild("SpinnerWindow")
-        return spinner and spinner.Enabled == true
-    end
+	-- Verifica se já está girando ou em cooldown
+	if (getgenv().__RandomFruitNext or 0) > tick() or getgenv().__RandomFruitBusy then
+		return false
+	end
+	getgenv().__RandomFruitBusy = true
 
-    local before = getBeli()
-    local ok, result = pcall(function()
-        -- Use the standard Cousin purchase request first; avoid firing many guessed remotes.
-        return CommF:InvokeServer("Cousin", "Buy")
-    end)
-    task.wait(0.6)
-    local after = getBeli()
-    local success = spinnerOpen() or (before ~= nil and after ~= nil and after < before)
-    if ok and result ~= nil and result ~= false then
-        local textResult = string.lower(tostring(result))
-        if textResult ~= "false" and not string.find(textResult, "not enough", 1, true)
-            and not string.find(textResult, "wait", 1, true)
-            and not string.find(textResult, "error", 1, true) then
-            success = success or (type(result) == "string" and result ~= "") or result == true or result == 1
-        end
-    end
+	local function GetBeli()
+		local ok, v = pcall(function() return LocalPlayer.Data.Beli.Value end)
+		return ok and v or nil
+	end
+	local before = GetBeli()
+	local success = false
+	local responses = {}
 
-    -- If the server opened the spinner, let the UI controller handle the roll once.
-    if spinnerOpen() then
-        pcall(function()
-            local controllers = ReplicatedStorage:FindFirstChild("Controllers")
-            local ui = controllers and controllers:FindFirstChild("UI")
-            local module = ui and ui:FindFirstChild("Spinner")
-            if module then
-                local Spinner = require(module)
-                if Spinner and type(Spinner.Spin) == "function" then Spinner:Spin() end
-            end
-        end)
-        success = true
-    end
+	local function TryRemote(label, fn)
+		local ok, res = pcall(fn)
+		responses[#responses+1] = label..":"..tostring(res)
+		-- Verifica se beli diminuiu = comprou
+		task.wait(0.3)
+		local now = GetBeli()
+		if before and now and now < before then
+			success = true
+		end
+		if ok and (res == true or res == 1) then
+			success = true
+		end
+		-- Se janela abriu também é sucesso
+		local gui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+		local win = gui and gui:FindFirstChild("SpinnerWindow")
+		if win and win.Enabled then
+			success = true
+		end
+	end
 
-    getgenv().__RandomFruitBusy = false
-    getgenv().__RandomFruitNext = tick() + (success and 4 or 8)
-    if not success and ok then
-        warn("[Nexora Hub] Random Devil Fruit: o servidor não confirmou a compra. Verifique requisitos/saldo e teste perto do NPC Cousin.")
-    elseif not ok then
-        warn("[Nexora Hub] Random Devil Fruit falhou: " .. tostring(result))
-    end
-    return success
+	pcall(function()
+		-- 1) Tenta comprar direto SEM ir até o NPC - inclui Zioles BloxFruitsGacha
+		TryRemote("Cousin-Buy", function() return CommF:InvokeServer("Cousin", "Buy") end)
+		TryRemote("Zioles-Buy", function() return CommF:InvokeServer("Zioles", "Buy") end)
+		TryRemote("BloxFruitsGacha-Buy", function() return CommF:InvokeServer("BloxFruitsGacha", "Buy") end)
+		TryRemote("BloxFruitsGacha", function() return CommF:InvokeServer("BloxFruitsGacha") end)
+		TryRemote("Gacha-Buy", function() return CommF:InvokeServer("Gacha", "Buy") end)
+		TryRemote("Gacha", function() return CommF:InvokeServer("Gacha") end)
+		TryRemote("Cousin-Buy2", function() return CommF:InvokeServer("Cousin", "Buy", true) end)
+		TryRemote("BloxFruitDealer-Buy", function() return CommF:InvokeServer("BloxFruitDealer", "Buy") end)
+		TryRemote("Shop-Buy", function() return CommF:InvokeServer("Shop", "BuyRandomFruit") end)
+		TryRemote("RandomFruit", function() return CommF:InvokeServer("RandomFruit") end)
+		TryRemote("Zioless-Buy", function() return CommF:InvokeServer("Zioless", "Buy") end)
+		-- Tenta todos os Comm (CommF_, CommE_ etc)
+		pcall(function()
+			local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
+			if Remotes then
+				for _, remote in ipairs(Remotes:GetChildren()) do
+					if remote.Name:find("Comm") then
+						pcall(function() remote:InvokeServer("Cousin", "Buy") end)
+						pcall(function() remote:InvokeServer("Zioles", "Buy") end)
+						pcall(function() remote:InvokeServer("BloxFruitsGacha", "Buy") end)
+					end
+				end
+			end
+		end)
+		-- 2) Fallbacks de caixa/banner
+		if not success then
+			local boxName = GetBoxName()
+			pcall(function()
+				local checkOk, avail = pcall(function() return CommF:InvokeServer("Cousin", "CheckTime", boxName) end)
+				if checkOk then
+					TryRemote("Cousin-Box", function() return CommF:InvokeServer("Cousin", boxName) end)
+				end
+			end)
+			pcall(function()
+				TryRemote("Zioles-Check", function() return CommF:InvokeServer("Zioles", "CheckTime", boxName) end)
+				TryRemote("Zioles-Box", function() return CommF:InvokeServer("Zioles", boxName) end)
+			end)
+		end
+		-- 3) Tenta girar direto sem interface - tenta vários remotos possíveis
+		local gui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+		local win = gui and gui:FindFirstChild("SpinnerWindow")
+		if win and win.Enabled then
+			-- NOVO: Detecta Zioles Gacha Box UI ($444,850) e clica direto
+		pcall(function()
+			local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+			if playerGui then
+				for _, gui in ipairs(playerGui:GetDescendants()) do
+					if gui:IsA("TextButton") or gui:IsA("ImageButton") then
+						local txt = tostring(gui.Text or "") .. tostring(gui.Name or "")
+						if string.find(txt, "444,850") or string.find(txt, "444850") or (gui.Parent and string.find(tostring(gui.Parent.Name), "Gacha")) then
+							pcall(function()
+								for _, conn in ipairs(getconnections(gui.MouseButton1Click)) do
+									conn:Fire()
+								end
+								gui:Activate()
+							end)
+						end
+					end
+				end
+			end
+		end)
+		pcall(function()
+			local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+			local gachaBox = playerGui:FindFirstChild("Zioles' Gacha Box", true) or playerGui:FindFirstChild("Zioles", true)
+			if gachaBox then
+				for _, btn in ipairs(gachaBox:GetDescendants()) do
+					if btn:IsA("TextButton") and (string.find(btn.Text, "%$") or btn.Text == "444,850" or string.find(btn.Text, "444")) then
+						pcall(function()
+							for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do conn:Fire() end
+							btn:Activate()
+						end)
+					end
+				end
+			end
+		end)
+
+		-- Tenta girar via módulos internos sem clicar na UI
+		pcall(function()
+			local Spinner = nil
+			pcall(function() Spinner = require(ReplicatedStorage.Controllers.UI.Spinner) end)
+			if Spinner then
+				-- Tenta métodos comuns
+				if Spinner.Spin then pcall(function() Spinner:Spin() end) end
+				if Spinner.Roll then pcall(function() Spinner:Roll() end) end
+				if Spinner.Open then pcall(function() Spinner:Open() end) end
+			end
+		end)
+			-- Tenta remotos de giro direto
+			pcall(function() CommF:InvokeServer("Cousin", "Spin") end)
+			pcall(function() CommF:InvokeServer("Zioles", "Spin") end)
+			pcall(function() CommF:InvokeServer("Zioles", "Buy") end)
+			pcall(function() CommF:InvokeServer("Cousin", "Roll") end)
+			pcall(function() CommF:InvokeServer("Cousin", "Gacha") end)
+			pcall(function() CommF:InvokeServer("Cousin", "Buy", true) end)
+			-- Fallback: se remoto não funcionou, tenta interagir com NPC Zioles / Cousin / BloxFruitsGacha no mapa (sem teleportar longe)
+		if not success then
+			pcall(function()
+				local NPCs = {"Zioles", "Cousin", "Blox Fruit Dealer Cousin", "BloxFruitsGacha", "Gacha", "Cousin"}
+				for _, npcName in ipairs(NPCs) do
+					local npc = workspace:FindFirstChild(npcName, true) or game:GetService("Workspace").NPCs:FindFirstChild(npcName, true)
+					if npc then
+						for _, pp in ipairs(npc:GetDescendants()) do
+							if pp:IsA("ProximityPrompt") or pp:IsA("ClickDetector") then
+								pcall(function()
+									if pp:IsA("ProximityPrompt") then fireproximityprompt(pp) else fireclickdetector(pp) end
+								end)
+								task.wait(0.3)
+							end
+						end
+					end
+				end
+			end)
+		end
+
+		-- Se ainda não girou, força clique invisível no botão (sem precisar ir até NPC)
+			pcall(function()
+				local above = win:FindFirstChild("AboveSpinner")
+				if above then
+					for _, btn in ipairs(above:GetDescendants()) do
+						if btn:IsA("TextButton") then
+							local txt = string.lower(btn.Text or ""..btn.Name)
+							if string.find(txt, "spin") or string.find(txt, "roll") or string.find(txt, "buy") then
+								for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do
+									pcall(function() conn:Fire() end)
+								end
+								pcall(function() btn:Activate() end)
+							end
+						end
+					end
+				end
+			end)
+		end
+	end)
+
+	getgenv().__RandomFruitBusy = false
+	if success then
+		getgenv().__RandomFruitNext = tick() + 1.5
+		return true
+	end
+	getgenv().__RandomFruitNext = tick() + 3
+	return false
 end
-
 local FruitInfoModule = nil
 
 
@@ -14159,76 +14256,76 @@ end
 --  3) se não sumiu, tenta só com o nome;
 --  4) se ainda não guardou, não tenta de novo por 30s e não manda webhook falso.
 function StoreFruit(container)
-    if not container or not container.GetChildren then return end
-    local Players = game:GetService("Players")
-    local LocalPlayer = Players.LocalPlayer
-    local ReplicatedStorage = game:GetService("ReplicatedStorage")
-    local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
-    local CommF = Remotes and Remotes:FindFirstChild("CommF_")
-    if not CommF or not LocalPlayer then return end
+	if not container or not container.GetChildren then
+		return
+	end
+	local Players = game:GetService("Players")
+	local LocalPlayer = Players.LocalPlayer
+	local CommF = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
+	CommF = CommF and CommF:FindFirstChild("CommF_")
+	if not CommF or not LocalPlayer then
+		return
+	end
 
-    local Backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
-    local Character = LocalPlayer.Character
-    local function isStored(fruitName)
-        local ok, inventory = pcall(function() return CommF:InvokeServer("getInventory") end)
-        if not ok or type(inventory) ~= "table" then return nil end
-        for _, item in ipairs(inventory) do
-            if type(item) == "table" then
-                local name = tostring(item.Name or item.name or item.ItemName or "")
-                if name == fruitName then return true end
-            end
-        end
-        return false
-    end
-
-    for _, tool in ipairs(container:GetChildren()) do
-        if IsFruitTool(tool) then
-            local failedAt = tool:GetAttribute("__StoreFail")
-            if not (typeof(failedAt) == "number" and tick() - failedAt < 20) then
-                local fruitName = GetFruitOriginalName(tool)
-                if fruitName then
-                    if tool.Parent == Character and Character then
-                        local hum = Character:FindFirstChildOfClass("Humanoid")
-                        if hum then pcall(function() hum:UnequipTools() end); task.wait(0.15) end
-                    end
-                    local toolName = tool.Name
-                    local function toolStillHeld()
-                        return tool.Parent == Backpack or tool.Parent == Character
-                    end
-                    local storedBefore = isStored(fruitName)
-                    -- Server normally expects the internal fruit identifier, not the display label.
-                    pcall(function() CommF:InvokeServer("StoreFruit", fruitName) end)
-                    task.wait(0.45)
-                    local storedAfter = isStored(fruitName)
-                    local stored = not toolStillHeld() or storedAfter == true
-                    -- Some builds identify the fruit using the Tool's displayed name.
-                    if not stored and toolStillHeld() and toolName ~= fruitName then
-                        pcall(function() CommF:InvokeServer("StoreFruit", toolName) end)
-                        task.wait(0.45)
-                        storedAfter = isStored(fruitName)
-                        stored = not toolStillHeld() or storedAfter == true
-                    end
-                    -- If inventory endpoint is unavailable, only trust the tool moving out of the player's containers.
-                    if storedBefore == nil and not toolStillHeld() then stored = true end
-                    if stored then
-                        if Settings["Webhook Store Fruit"] and Settings["Select Rarity Fruit"] then
-                            local rarityName
-                            pcall(function()
-                                local info = FruitInfoModule and FruitInfoModule.List and FruitInfoModule.List[fruitName]
-                                if info and info.Rarity then rarityName = info.Rarity.Name end
-                            end)
-                            if (rarityName and Settings["Select Rarity Fruit"][rarityName]) or SkinFruit[toolName] then
-                                pcall(function() getgenv().WebhookStoreFruit(toolName) end)
-                            end
-                        end
-                    else
-                        pcall(function() tool:SetAttribute("__StoreFail", tick()) end)
-                    end
-                    task.wait(0.25)
-                end
-            end
-        end
-    end
+	for _, tool in ipairs(container:GetChildren()) do
+		if IsFruitTool(tool) then
+			local failedAt = tool:GetAttribute("__StoreFail")
+			if not (typeof(failedAt) == "number" and tick() - failedAt < 30) then
+				local fruitName = GetFruitOriginalName(tool)
+				if fruitName then
+					-- 1) tira da mão
+					if tool.Parent == LocalPlayer.Character then
+						local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+						if hum then
+							pcall(function()
+								hum:UnequipTools()
+							end)
+							task.wait(0.15)
+						end
+					end
+					local toolName = tool.Name
+					local function Gone()
+						return not tool.Parent
+							or (tool.Parent ~= LocalPlayer.Backpack and tool.Parent ~= LocalPlayer.Character)
+					end
+					-- 2) (nome, tool)
+					pcall(function()
+						CommF:InvokeServer("StoreFruit", fruitName, tool)
+					end)
+					task.wait(0.3)
+					-- 3) só o nome
+					if not Gone() then
+						pcall(function()
+							CommF:InvokeServer("StoreFruit", fruitName)
+						end)
+						task.wait(0.3)
+					end
+					if Gone() then
+						if Settings["Webhook Store Fruit"] and Settings["Select Rarity Fruit"] then
+							local rarityName
+							pcall(function()
+								local info = FruitInfoModule.List[fruitName]
+								if info and info.Rarity then
+									rarityName = info.Rarity.Name
+								end
+							end)
+							if (rarityName and Settings["Select Rarity Fruit"][rarityName]) or SkinFruit[toolName] then
+								pcall(function()
+									getgenv().WebhookStoreFruit(toolName)
+								end)
+							end
+						end
+					else
+						-- 4) não guardou (inventário cheio?): espera 30s
+						pcall(function()
+							tool:SetAttribute("__StoreFail", tick())
+						end)
+					end
+					task.wait(0.4)
+				end
+			end
+		end
+	end
 end
 
 function DetectFruitShop()
@@ -24846,11 +24943,13 @@ SettingsAimbotSection.CreateToggle(
 	end
 )
 
--- Auto Esquiva: só ativa o movimento quando há outro jogador vivo por perto.
--- Mantém voo contínuo em órbita ampla; não usa teleporte.
+-- Auto Esquiva: ativa quando um jogador vivo está a até 250 studs.
+-- Faz uma volta tridimensional completa, subindo e descendo; não usa teleporte.
 SettingsAimbotSection.CreateToggle(
-	{ Title = "Auto Esquiva", Desc = "Ativa perto de outro jogador e voa em círculos no ar, começando a 150 studs e abrindo a órbita progressivamente, sem teleporte.", Default = Settings["Auto Esquiva"] or false },
+	{ Title = "Auto Esquiva", Desc = "Ativa quando há jogador vivo a até 250 studs; órbita 3D completa para cima e para baixo, velocidade 300, sem limite fixo de órbita.", Default = Settings["Auto Esquiva"] or false },
 	function(enabled)
+		-- Atualiza o estado imediatamente; a rotina de voo consulta este valor.
+		Settings["Auto Esquiva"] = enabled
 		SaveSettings("Auto Esquiva", enabled)
 		getgenv().__NexoraDodgeGeneration = (getgenv().__NexoraDodgeGeneration or 0) + 1
 		local generation = getgenv().__NexoraDodgeGeneration
@@ -24865,6 +24964,7 @@ SettingsAimbotSection.CreateToggle(
 			end
 		end
 		if not enabled then
+			-- Limpa também raízes antigas se o personagem acabou de renascer.
 			local character = player.Character
 			removeMovers(character and character:FindFirstChild("HumanoidRootPart"))
 			return
@@ -24873,6 +24973,7 @@ SettingsAimbotSection.CreateToggle(
 			local orbitAngle = math.random() * math.pi * 2
 			local orbitDirection = (math.random(0, 1) == 0) and -1 or 1
 			local orbitRadius = 150
+			local verticalAngle = 0
 			local targetName, moversRoot
 			local velocity, gyro
 			local function cleanup()
@@ -24880,14 +24981,15 @@ SettingsAimbotSection.CreateToggle(
 				if gyro then pcall(function() gyro:Destroy() end); gyro = nil end
 				moversRoot = nil
 			end
-			while Settings["Auto Esquiva"] and generation == getgenv().__NexoraDodgeGeneration do
+			while Settings["Auto Esquiva"] == true and generation == getgenv().__NexoraDodgeGeneration do
 				local ok = pcall(function()
 					local character = player.Character
 					local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 					local root = character and character:FindFirstChild("HumanoidRootPart")
 					if not (root and humanoid and humanoid.Health > 0) then cleanup(); return end
-					-- Apenas jogadores vivos dentro do raio de proximidade podem ativar a esquiva.
-					local nearbyRadius, nearest = 250, math.huge
+					-- Detecta jogadores vivos a qualquer distância; os 300 studs continuam sendo
+					-- o limite máximo da órbita, não um limite para encontrar o jogador.
+					local nearest = math.huge
 					local targetPlayer
 					local selectedName = Settings["Select Player PVP"]
 					local selected = selectedName and selectedName ~= "" and Players:FindFirstChild(selectedName)
@@ -24898,8 +25000,8 @@ SettingsAimbotSection.CreateToggle(
 						local h = c and c:FindFirstChildOfClass("Humanoid")
 						if not (r and h and h.Health > 0) then return nil end
 						local d = (r.Position - root.Position).Magnitude
-						if d <= nearbyRadius then return r, d end
-						return nil
+						if d > 250 then return nil, d end
+						return r, d
 					end
 					local selectedRoot = validTarget(selected)
 					if selectedRoot then targetPlayer = selected end
@@ -24932,28 +25034,37 @@ SettingsAimbotSection.CreateToggle(
 					if targetName ~= targetPlayer.Name then
 						targetName = targetPlayer.Name
 						orbitAngle = math.atan2(root.Position.Z - targetRoot.Position.Z, root.Position.X - targetRoot.Position.X)
-						orbitRadius = 150
+						verticalAngle = 0
+						orbitRadius = math.max(150, (root.Position - targetRoot.Position).Magnitude)
 					end
 					local dt = 0.18
-					-- Aumenta gradualmente o raio durante o voo, até 300 studs.
-					orbitRadius = math.min(300, orbitRadius + dt * 2.8)
+					-- Raio da órbita não tem limite artificial; o alvo só é adquirido a até 250 studs.
 					orbitAngle = orbitAngle + orbitDirection * dt * 1.25
-					if math.random(1, 100) <= 2 then orbitDirection = -orbitDirection end
+					-- Ângulo vertical sincronizado para completar uma volta 3D, passando por cima e por baixo.
+					verticalAngle = verticalAngle + dt * 1.25
 					local radius = orbitRadius
-					local altitude = 45 + math.sin(os.clock() * 1.6) * 28
-					local desiredPosition = targetRoot.Position + Vector3.new(math.cos(orbitAngle) * radius, altitude, math.sin(orbitAngle) * radius)
+					local verticalRadius = radius * math.sin(verticalAngle)
+					local horizontalRadius = radius * math.cos(verticalAngle)
+					local desiredPosition = targetRoot.Position + Vector3.new(math.cos(orbitAngle) * horizontalRadius, verticalRadius, math.sin(orbitAngle) * horizontalRadius)
 					local offset = desiredPosition - root.Position
 					if offset.Magnitude > 0.1 then
-						velocity.Velocity = offset.Unit * math.min(280, math.max(65, offset.Magnitude * 2.6))
+						velocity.Velocity = offset.Unit * 300
 					else
 						velocity.Velocity = Vector3.zero
 					end
 					gyro.CFrame = CFrame.lookAt(root.Position, targetRoot.Position)
 				end)
 				if not ok then cleanup() end
+				-- Se foi desligado ou reiniciado, não mantenha velocidade residual.
+				if Settings["Auto Esquiva"] ~= true or generation ~= getgenv().__NexoraDodgeGeneration then
+					if velocity then pcall(function() velocity.Velocity = Vector3.zero end) end
+					cleanup()
+					break
+				end
 				task.wait(0.18)
 			end
 			cleanup()
+			removeMovers(player.Character and player.Character:FindFirstChild("HumanoidRootPart"))
 		end)
 	end
 )
