@@ -7454,28 +7454,29 @@ function EquipOnlyIfNeeded(toolName, interval)
 	hum:EquipTool(bp)
 	return false -- vai atirar no próximo ciclo
 end
-function DragonstormPhysicalClick(force)
+function DragonstormPhysicalClick(force, toolName)
+	toolName = toolName or "Dragonstorm"
 	local now = os.clock()
-	if not force and now - (getgenv().__DSClickLast or 0) < (getgenv().DSClickInterval or 0.5) then
+	local lastKey = "__PhysicalClickLast_" .. tostring(toolName)
+	local interval = getgenv().PhysicalGunClickInterval or getgenv().DSClickInterval or 0.5
+	if not force and now - (getgenv()[lastKey] or 0) < interval then
 		return false
 	end
-	getgenv().__DSClickLast = now
+	getgenv()[lastKey] = now
 	task.spawn(function()
 		pcall(function()
 			local Camera = workspace.CurrentCamera
-			if not Camera then
-				return
-			end
+			if not Camera then return end
 			local vp = Camera.ViewportSize
-			-- Mouse reto para o TOPO da tela (centro horizontal) antes de clicar.
 			local x, y = math.floor(vp.X / 2), 2
 			local VIM = game:GetService("VirtualInputManager")
+			-- Mesma sequência física da Dragonstorm: mover o mouse e clicar com botão esquerdo.
 			VIM:SendMouseMoveEvent(x, y, game)
 			task.wait(0.03)
 			VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
 			task.wait(0.05)
 			VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
-			-- Celular: o clique de mouse não vale, então manda também um toque (fora da barra do topo) e Activate na tool.
+			-- Fallback para executores mobile que ignoram eventos de mouse.
 			pcall(function()
 				local tx, ty = x, math.max(64, math.floor(vp.Y * 0.12))
 				VIM:SendTouchEvent(1, 0, tx, ty)
@@ -7483,7 +7484,7 @@ function DragonstormPhysicalClick(force)
 				VIM:SendTouchEvent(1, 2, tx, ty)
 			end)
 			pcall(function()
-				local tool = t.Character and t.Character:FindFirstChild("Dragonstorm")
+				local tool = t.Character and t.Character:FindFirstChild(toolName)
 				if tool then tool:Activate() end
 			end)
 			pcall(function()
@@ -7619,6 +7620,10 @@ getgenv().SpamGunSkullGuitar = function(E)
 	if now - (getgenv().__SkullGuitarM1Last or 0) < 0.12 then return true end
 	getgenv().__SkullGuitarM1Last = now
 	getgenv().AimPos = CFrame.new(targetPosition)
+	-- Reutiliza o clique físico da Dragonstorm, ativando a Skull Guitar.
+	if DragonstormPhysicalClick then
+		DragonstormPhysicalClick(false, "Skull Guitar")
+	end
 	local stun = character:FindFirstChild("Stun")
 	if stun and stun.Value ~= 0 then return true end
 	-- Send the regular M1 shot first, with the destructible part as hit target.
