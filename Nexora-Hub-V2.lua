@@ -11241,10 +11241,11 @@ task.spawn(function()
 					local dist = (handle.Position - root.Position).Magnitude
 					if dist <= 15 then
 						getgenv().noclip = false
-						-- Pega a fruta sem lag
-						pcall(function()
-							root.CFrame = handle.CFrame
-						end)
+						-- Só aproxima suavemente; não posiciona o personagem diretamente na fruta.
+						if dist > 5 then
+							toTarget(handle.CFrame * CFrame.new(0, 2, 0))
+							task.wait(0.15)
+						end
 						task.wait(0.15)
 						pcall(function()
 							firetouchinterest(root, handle, 0)
@@ -11268,18 +11269,12 @@ task.spawn(function()
 						getgenv().__LastFruitScan = 0
 						-- NÃO dá return, continua procurando próxima fruta
 					else
-						-- Vai até a fruta mesmo se estiver longe - SEM LAG
-						-- Se muito longe, teleporta direto em etapas
-						if dist > 1500 then
-							-- Teleporta direto pra perto da fruta (sem tween lento)
-							pcall(function()
-								getgenv().noclip = true
-								root.CFrame = handle.CFrame * CFrame.new(0, 10, 0)
-							end)
-							task.wait(0.3)
-						else
+						-- Aproximação sempre via toTarget, inclusive acima de 1500 studs.
+						-- Não usa CFrame direto nem teleporte em etapas quando a fruta está longe.
+						getgenv().noclip = true
+						pcall(function()
 							toTarget(handle.CFrame * CFrame.new(0, 3, 0))
-						end
+						end)
 					end
 				else
 					-- Nenhuma fruta encontrada, espera um pouco
