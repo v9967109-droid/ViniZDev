@@ -11046,126 +11046,153 @@ task.spawn(function()
 				end
 			end
             if Settings["Auto Elite Hunter"] then
-				-- Mantém a solicitação original da missão e a detecção original dos Elites.
-				-- Se o NPC ainda não estiver carregado, vai ao marcador de spawn e procura novamente.
-				local EliteNames = { "Deandre", "Urban", "Diablo" }
+                -- Elite Hunter: só considera NPCs realmente ativos no Workspace.
+                -- Modelos de ReplicatedStorage podem ser templates e deixar o farm parado.
+                local EliteNames = { "Deandre", "Urban", "Diablo" }
 
-				local function GetEliteQuestName()
-					local found
-					pcall(function()
-						local quest = t.PlayerGui.Main.Quest
-						if quest and quest.Visible then
-							local titleObj = quest.Container.QuestTitle.Title
-						local title = titleObj and tostring(titleObj.Text) or ""
-						for _, name in ipairs(EliteNames) do
-							if string.find(title, name, 1, true) then
-								found = name
-								break
-							end
-						end
-					end
-					end)
-					return found
-				end
+                local function GetEliteQuestName()
+                    local found
+                    pcall(function()
+                        local quest = t.PlayerGui.Main.Quest
+                        if quest and quest.Visible then
+                            local titleObj = quest.Container.QuestTitle.Title
+                            local title = titleObj and tostring(titleObj.Text) or ""
+                            for _, name in ipairs(EliteNames) do
+                                if string.find(title, name, 1, true) then
+                                    found = name
+                                    break
+                                end
+                            end
+                        end
+                    end)
+                    return found
+                end
 
-				local function FindElite(name)
-					local target = name and DetectMob(name) or DetectMob(EliteNames)
-					if target and IsMobAlive(target) then return target end
-					target = DetectEliteHunter()
-					if target then return target end
-					-- Longe: procura em qualquer lugar (ReplicatedStorage, workspace, instâncias fora da árvore).
-					local wanted = name and { name } or EliteNames
-					local function scan(root)
-						if not root then return nil end
-					-- Evita parar numa cópia morta/descarregada do mesmo Elite.
-					for _, inst in ipairs(root:GetDescendants()) do
-						if inst:IsA("Model") and table.find(wanted, inst.Name) and IsMobAlive(inst) then
-							return inst
-						end
-					end
-					end
-					local found = scan(game:GetService("ReplicatedStorage")) or scan(workspace)
-					if found then return found end
-					pcall(function()
-						for _, inst in ipairs(getnilinstances and getnilinstances() or {}) do
-							if inst:IsA("Model") and table.find(wanted, inst.Name) and IsMobAlive(inst) then found = inst; break end
-						end
-					end)
-					return found
-				end
+                local function FindElite(name)
+                    local wanted = name and { name } or EliteNames
+                    local enemies = workspace:FindFirstChild("Enemies")
+                    if enemies then
+                        -- Primeiro os NPCs ativos diretamente dentro de Workspace.Enemies.
+                        for _, mob in ipairs(enemies:GetChildren()) do
+                            if mob:IsA("Model") and table.find(wanted, mob.Name) and IsMobAlive(mob) then
+                                return mob
+                            end
+                        end
+                        -- Alguns servidores colocam os modelos dentro de subpastas.
+                        for _, mob in ipairs(enemies:GetDescendants()) do
+                            if mob:IsA("Model") and table.find(wanted, mob.Name) and IsMobAlive(mob) then
+                                return mob
+                            end
+                        end
+                    end
+                    -- Fallback limitado ao Workspace: nunca seleciona templates do ReplicatedStorage.
+                    for _, mob in ipairs(workspace:GetDescendants()) do
+                        if mob:IsA("Model") and table.find(wanted, mob.Name)
+                            and mob:IsDescendantOf(workspace) and IsMobAlive(mob) then
+                            return mob
+                        end
+                    end
+                    return nil
+                end
 
+                local function FindEliteSpawn(name)
+                    local worldOrigin = workspace:FindFirstChild("_WorldOrigin")
+                    local spawns = worldOrigin and worldOrigin:FindFirstChild("EnemySpawns")
+                    if not spawns then return nil end
+                    local wanted = name and { name } or EliteNames
+                    for _, inst in ipairs(spawns:GetDescendants()) do
+                        local label = inst.Name
+                        pcall(function()
+                            local display = inst:GetAttribute("DisplayName")
+                            if display then label = label .. " " .. tostring(display) end
+                        end)
+                        for _, eliteName in ipairs(wanted) do
+                            if string.find(label, eliteName, 1, true) then
+                                if inst:IsA("BasePart") then return inst end
+                                local part = inst:FindFirstChildWhichIsA("BasePart", true)
+                                if part then return part end
+                            end
+                        end
+                    end
+                    return nil
+                end
 
-				local questName = GetEliteQuestName()
-				if not questName then
-					EliteRequest()
-					local questDeadline = tick() + 10
-					repeat
-						task.wait(0.25)
-						questName = GetEliteQuestName()
-					until questName or tick() >= questDeadline or not Settings["Auto Elite Hunter"]
-				end
-				if not Settings["Auto Elite Hunter"] then return end
+                local questName = GetEliteQuestName()
+                if not questName then
+                    EliteRequest()
+                    local questDeadline = tick() + 12
+                    repeat
+                        task.wait(0.25)
+                        questName = GetEliteQuestName()
+                    until questName or tick() >= questDeadline or not Settings["Auto Elite Hunter"]
+                end
+                if not Settings["Auto Elite Hunter"] then return end
 
-				-- Usa somente o deslocamento original do hub (toTarget no HRP do Elite).
-				-- Aqui apenas procura/revalida o NPC; não cria deslocamento separado para spawn.
-				local target = FindElite(questName)
-				while not target and Settings["Auto Elite Hunter"] do
-					task.wait(0.5)
-					questName = GetEliteQuestName() or questName
-					target = FindElite(questName) or DetectEliteHunter()
-					if not target then
-						-- Sem modelo carregado: vai até o ponto de spawn do Elite (toTarget cuida da longa distância).
-						local spawnPart
-						pcall(function()
-							local spawns = workspace._WorldOrigin.EnemySpawns
-							for _, n in ipairs(questName and { questName } or EliteNames) do
-								local sp = spawns:FindFirstChild(n, true)
-								if sp then
-									spawnPart = sp:IsA("BasePart") and sp or sp:FindFirstChildWhichIsA("BasePart", true)
-									if spawnPart then break end
-								end
-							end
-						end)
-						if spawnPart then toTarget(spawnPart.CFrame * CFrame.new(0, 40, 0)) end
-					end
-				end
+                local target = FindElite(questName)
+                local lastSpawnMove = 0
+                while not target and Settings["Auto Elite Hunter"] do
+                    task.wait(0.25)
+                    questName = GetEliteQuestName() or questName
+                    target = FindElite(questName) or FindElite()
+                    if not target and tick() - lastSpawnMove >= 2 then
+                        local spawnPart = FindEliteSpawn(questName) or FindEliteSpawn()
+                        if spawnPart then
+                            -- Mantém o personagem se deslocando até o spawn; não fica parado com a arma na mão.
+                            toTarget(spawnPart.CFrame * CFrame.new(0, 8, 0))
+                            lastSpawnMove = tick()
+                        end
+                    end
+                end
 
-				if target and IsMobAlive(target) then
-					StackFarm = false
-					StackFarmOther = false
-					local targetName = target.Name
-					repeat
-						task.wait(0.05)
-						if not IsMobAlive(target) then target = FindElite(targetName) or DetectEliteHunter() end
-						if target and IsMobAlive(target) then
-							local hrp = target:FindFirstChild("HumanoidRootPart")
-							if hrp then
-								pcall(sizepart, target)
-								local offset = Settings["Select Weapon"] == "Blox Fruit"
-									and CFrame.new(-7, getgenv().YPosFruit or 20, 0)
-									or CFrame.new(7, 20, 0)
-								toTarget(hrp.CFrame * offset)
-								ClickM1(target)
-								UsedualFlock()
-							end
-						else
-							-- O alvo pode ter sido descarregado; volta a procurar o modelo real.
-							target = FindElite(targetName) or DetectEliteHunter()
-						end
-					until not Settings["Auto Elite Hunter"] or not target or not IsMobAlive(target)
-					return
-				end
+                if target and IsMobAlive(target) then
+                    StackFarm = false
+                    StackFarmOther = false
+                    local targetName = target.Name
+                    repeat
+                        task.wait(0.08)
+                        if not IsMobAlive(target) or not target:IsDescendantOf(workspace) then
+                            target = FindElite(targetName) or FindElite()
+                        end
+                        if target and IsMobAlive(target) and target:IsDescendantOf(workspace) then
+                            local hrp = target:FindFirstChild("HumanoidRootPart")
+                            if hrp then
+                                -- Equipar a categoria selecionada evita ficar apenas com o estilo anterior na mão.
+                                local weaponCategory = Settings["Select Weapon"] or "Melee"
+                                if weaponCategory == "Blox Fruit" then
+                                    equiptool(NameWeapon("Blox Fruit"))
+                                else
+                                    equiptool(NameWeapon(weaponCategory) or NameWeapon("Melee"))
+                                end
+                                pcall(sizepart, target)
+                                local offset = weaponCategory == "Blox Fruit"
+                                    and CFrame.new(-7, getgenv().YPosFruit or 20, 0)
+                                    or CFrame.new(7, 8, 0)
+                                -- Recalcula o destino continuamente para perseguir o Elite em movimento.
+                                toTarget(hrp.CFrame * offset)
+                                ClickM1(target)
+                                UsedualFlock()
+                            end
+                        else
+                            target = FindElite(targetName) or FindElite()
+                            if not target then
+                                local spawnPart = FindEliteSpawn(targetName) or FindEliteSpawn()
+                                if spawnPart then toTarget(spawnPart.CFrame * CFrame.new(0, 8, 0)) end
+                            end
+                        end
+                    until not Settings["Auto Elite Hunter"] or (not target and not FindElite())
+                    return
+                end
 
-				if Settings["Auto Elite Hunter"] then
-					if Settings["Hop Server Elite Hunter"] and not DetectItemPlr("God's Chalice") then
-						HopServer()
-					elseif DetectItemPlr("God's Chalice") then
-						toTarget(CFrame.new(-12463.8740234375, 374.9144592285156, -7523.77392578125))
-					else
-						A.CreateNoti({ Title = "Nexora Hub", Desc = "Searching Elite spawn", ShowTime = 5 })
-					end
-				end
-			end
+                if Settings["Auto Elite Hunter"] then
+                    if Settings["Hop Server Elite Hunter"] and not DetectItemPlr("God's Chalice") then
+                        HopServer()
+                    elseif DetectItemPlr("God's Chalice") then
+                        toTarget(CFrame.new(-12463.8740234375, 374.9144592285156, -7523.77392578125))
+                    else
+                        A.CreateNoti({ Title = "Nexora Hub", Desc = "Procurando Elite Hunter e pontos de spawn...", ShowTime = 5 })
+                    end
+                end
+            end
 
 			if Settings["Auto Factory"] then
 				CoreBoss = CheckNameBoss("Core")
