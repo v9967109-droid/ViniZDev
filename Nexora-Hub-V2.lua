@@ -24946,7 +24946,7 @@ SettingsAimbotSection.CreateToggle(
 -- Auto Esquiva: só ativa o movimento quando há outro jogador vivo por perto.
 -- Mantém voo contínuo em órbita ampla; não usa teleporte.
 SettingsAimbotSection.CreateToggle(
-	{ Title = "Auto Esquiva", Desc = "Só voa quando há jogadores vivos a até 300 studs; circula no ar a cerca de 300 studs, em alta velocidade e sem teleporte.", Default = Settings["Auto Esquiva"] or false },
+	{ Title = "Auto Esquiva", Desc = "Ativa perto de outro jogador e voa em círculos no ar, começando a 150 studs e abrindo a órbita progressivamente, sem teleporte.", Default = Settings["Auto Esquiva"] or false },
 	function(enabled)
 		SaveSettings("Auto Esquiva", enabled)
 		getgenv().__NexoraDodgeGeneration = (getgenv().__NexoraDodgeGeneration or 0) + 1
@@ -24969,6 +24969,7 @@ SettingsAimbotSection.CreateToggle(
 		task.spawn(function()
 			local orbitAngle = math.random() * math.pi * 2
 			local orbitDirection = (math.random(0, 1) == 0) and -1 or 1
+			local orbitRadius = 150
 			local targetName, moversRoot
 			local velocity, gyro
 			local function cleanup()
@@ -24983,7 +24984,7 @@ SettingsAimbotSection.CreateToggle(
 					local root = character and character:FindFirstChild("HumanoidRootPart")
 					if not (root and humanoid and humanoid.Health > 0) then cleanup(); return end
 					-- Apenas jogadores vivos dentro do raio de proximidade podem ativar a esquiva.
-					local nearbyRadius, nearest = 300, math.huge
+					local nearbyRadius, nearest = 250, math.huge
 					local targetPlayer
 					local selectedName = Settings["Select Player PVP"]
 					local selected = selectedName and selectedName ~= "" and Players:FindFirstChild(selectedName)
@@ -25008,8 +25009,8 @@ SettingsAimbotSection.CreateToggle(
 					local targetCharacter = targetPlayer and targetPlayer.Character
 					local targetRoot = targetCharacter and targetCharacter:FindFirstChild("HumanoidRootPart")
 					local targetHumanoid = targetCharacter and targetCharacter:FindFirstChildOfClass("Humanoid")
-					if not (targetRoot and targetHumanoid and targetHumanoid.Health > 0 and (targetRoot.Position - root.Position).Magnitude <= nearbyRadius) then
-						cleanup() -- sem adversários próximos: não fica voando nem persegue alvos distantes
+					if not (targetRoot and targetHumanoid and targetHumanoid.Health > 0) then
+						cleanup() -- para se o alvo morrer, sair ou perder o personagem
 						return
 					end
 					if moversRoot ~= root then
@@ -25028,16 +25029,19 @@ SettingsAimbotSection.CreateToggle(
 					if targetName ~= targetPlayer.Name then
 						targetName = targetPlayer.Name
 						orbitAngle = math.atan2(root.Position.Z - targetRoot.Position.Z, root.Position.X - targetRoot.Position.X)
+						orbitRadius = 150
 					end
 					local dt = 0.18
-					orbitAngle = orbitAngle + orbitDirection * dt * 0.75
+					-- Aumenta gradualmente o raio durante o voo, até 300 studs.
+					orbitRadius = math.min(300, orbitRadius + dt * 2.8)
+					orbitAngle = orbitAngle + orbitDirection * dt * 1.25
 					if math.random(1, 100) <= 2 then orbitDirection = -orbitDirection end
-					local radius = 300
-					local altitude = 35 + math.sin(os.clock() * 1.25) * 20
+					local radius = orbitRadius
+					local altitude = 45 + math.sin(os.clock() * 1.6) * 28
 					local desiredPosition = targetRoot.Position + Vector3.new(math.cos(orbitAngle) * radius, altitude, math.sin(orbitAngle) * radius)
 					local offset = desiredPosition - root.Position
 					if offset.Magnitude > 0.1 then
-						velocity.Velocity = offset.Unit * math.min(1200, math.max(250, offset.Magnitude * 8.0))
+						velocity.Velocity = offset.Unit * math.min(280, math.max(65, offset.Magnitude * 2.6))
 					else
 						velocity.Velocity = Vector3.zero
 					end
