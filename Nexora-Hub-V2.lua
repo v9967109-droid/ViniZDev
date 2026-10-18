@@ -4580,24 +4580,35 @@ SectionServer.CreateButton({ Title = "Hop Server" }, function()
 	HopServer()
 end)
 SectionServer.CreateButton({ Title = "Rejoin Server" }, function()
-	-- Volta para o MESMO servidor (mesmo JobId).
+	local Players = game:GetService("Players")
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	local TeleportService = game:GetService("TeleportService")
+	local player = Players.LocalPlayer
+	local placeId = game.PlaceId
+	local jobId = game.JobId
 	pcall(function()
-		require(game:GetService("ReplicatedStorage").Notification)
-			.new("<Color=Red>Nexora Hub : Rejoin Server<Color=/>")
+		require(ReplicatedStorage.Notification)
+			.new("<Color=Red>Nexora Hub : Rejoining current server...<Color=/>")
 			:Display()
 	end)
-	local ok = pcall(function()
-		game:GetService("TeleportService"):TeleportToPlaceInstance(
-			game.PlaceId,
-			game.JobId,
-			game:GetService("Players").LocalPlayer
-		)
-	end)
-	if not ok then
-		pcall(function()
-			game:GetService("TeleportService"):Teleport(game.PlaceId, game:GetService("Players").LocalPlayer)
+	-- Prioriza o browser remoto do próprio jogo, já utilizado pelo botão Join JobId.
+	-- Isso evita alguns erros de "Local restricted" gerados pelo teleport local do executor.
+	local remote = ReplicatedStorage:FindFirstChild("__ServerBrowser")
+	if remote then
+		local ok = pcall(function()
+			remote:InvokeServer("teleport", jobId)
 		end)
+		if ok then return end
 	end
+	-- Fallback: solicita o retorno ao mesmo JobId pela API oficial.
+	local ok = pcall(function()
+		TeleportService:TeleportToPlaceInstance(placeId, jobId, player)
+	end)
+	if ok then return end
+	-- Último recurso: tenta reentrar no place; Roblox pode escolher outro servidor.
+	pcall(function()
+		TeleportService:Teleport(placeId, player)
+	end)
 end)
 function HopLessAll()
 	require(game:GetService("ReplicatedStorage").Notification)
