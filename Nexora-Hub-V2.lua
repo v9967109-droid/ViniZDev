@@ -4884,29 +4884,34 @@ function EliteQuestOK(name)
 end
 local K = { "Deandre", "Urban", "Diablo" }
 function DetectEliteHunter()
-	local enemies = game:GetService("Workspace"):FindFirstChild("Enemies")
-	if enemies then
-		-- Caminho mais rápido: os Elites normalmente ficam diretamente em Workspace.Enemies.
+	-- Procura NPCs reais carregados no Workspace, sem limite de distância.
+	-- Não usa modelos do ReplicatedStorage, pois normalmente são templates e não alvos vivos.
+	local world = game:GetService("Workspace")
+	local enemies = world:FindFirstChild("Enemies")
+	local function isEliteModel(mob)
+		if not mob or not mob:IsA("Model") or not IsMobAlive(mob) then return false end
+		local n = string.lower(tostring(mob.Name))
 		for _, name in ipairs(K) do
-			local mob = enemies:FindFirstChild(name)
-			if mob and mob:IsA("Model") and IsMobAlive(mob) then
-				return mob
+			if n == string.lower(name) or string.find(n, string.lower(name), 1, true) then
+				local hum = mob:FindFirstChildOfClass("Humanoid")
+				local root = mob:FindFirstChild("HumanoidRootPart") or mob.PrimaryPart
+				return hum ~= nil and root ~= nil
 			end
 		end
-		-- Fallback para estruturas aninhadas.
+		return false
+	end
+	if enemies then
 		for _, mob in ipairs(enemies:GetDescendants()) do
-			if mob:IsA("Model") and table.find(K, mob.Name) and IsMobAlive(mob) then
-				return mob
-			end
+			if isEliteModel(mob) then return mob end
 		end
 	end
-	local replicated = game:GetService("ReplicatedStorage")
-	for _, name in ipairs(K) do
-		local mob = replicated:FindFirstChild(name, true)
-		if mob and mob:IsA("Model") and IsMobAlive(mob) then
+	-- Alguns servidores colocam NPCs em pastas diferentes dentro do Workspace.
+	for _, mob in ipairs(world:GetDescendants()) do
+		if (not enemies or not mob:IsDescendantOf(enemies)) and isEliteModel(mob) then
 			return mob
 		end
 	end
+	return nil
 end
 local K = 0
 lastCheckTime = tick()
@@ -11093,28 +11098,25 @@ task.spawn(function()
 					local target = name and DetectMob(name) or DetectMob(EliteNames)
 					if target and IsMobAlive(target) then return target end
 					target = DetectEliteHunter()
-					if target then return target end
-					-- Longe: procura em qualquer lugar (ReplicatedStorage, workspace, instâncias fora da árvore).
+					if target and (not name or string.find(string.lower(target.Name), string.lower(name), 1, true)) then
+						return target
+					end
+					-- Busca global no Workspace, sem filtro por distância e aceitando sufixos no nome.
 					local wanted = name and { name } or EliteNames
-					local function scan(root)
-						if not root then return nil end
-					-- Evita parar numa cópia morta/descarregada do mesmo Elite.
-					for _, inst in ipairs(root:GetDescendants()) do
-						if inst:IsA("Model") and table.find(wanted, inst.Name) and IsMobAlive(inst) then
-							return inst
+					for _, inst in ipairs(workspace:GetDescendants()) do
+						if inst:IsA("Model") and IsMobAlive(inst) then
+							local modelName = string.lower(inst.Name)
+							local matches = false
+							for _, eliteName in ipairs(wanted) do
+								if string.find(modelName, string.lower(eliteName), 1, true) then matches = true; break end
+							end
+							if matches and (inst:FindFirstChild("HumanoidRootPart") or inst.PrimaryPart) then
+								return inst
+							end
 						end
 					end
-					end
-					local found = scan(game:GetService("ReplicatedStorage")) or scan(workspace)
-					if found then return found end
-					pcall(function()
-						for _, inst in ipairs(getnilinstances and getnilinstances() or {}) do
-							if inst:IsA("Model") and table.find(wanted, inst.Name) and IsMobAlive(inst) then found = inst; break end
-						end
-					end)
-					return found
+					return nil
 				end
-
 
 				local questName = GetEliteQuestName()
 				if not questName then
