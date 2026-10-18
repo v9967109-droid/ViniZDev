@@ -4992,20 +4992,20 @@ spawn(function()
 						or workspace._WorldOrigin.Locations:FindFirstChild("Kitsune Island") ~= nil
 				end)
 				if kitsuneOn then
-					StatusKitsuneIsland.SetText("Kitsune Island: 🟢")
+					StatusKitsuneIsland.SetText("Kitsune Island: \240\159\159\162")
 				else
-					StatusKitsuneIsland.SetText("Kitsune Island: 🔴")
+					StatusKitsuneIsland.SetText("Kitsune Island: \226\157\140")
 				end
 			end
 			if not workspace.Map:FindFirstChild("PrehistoricIsland") then
-				StatusPrehistoricIsland.SetText("Prehistoric Island: 🔴")
+				StatusPrehistoricIsland.SetText("Prehistoric Island: \226\157\140")
 			else
-				StatusPrehistoricIsland.SetText("Prehistoric Island: 🟢")
+				StatusPrehistoricIsland.SetText("Prehistoric Island: \226\156\133")
 			end
 			if not workspace._WorldOrigin.Locations:FindFirstChild("Frozen Dimension") then
-				StatusFrozenDimension.SetText("Frozen Dimension: 🔴")
+				StatusFrozenDimension.SetText("Frozen Dimension: \226\157\140")
 			else
-				StatusFrozenDimension.SetText("Frozen Dimension: 🟢")
+				StatusFrozenDimension.SetText("Frozen Dimension: \226\156\133")
 			end
 			StatusGear.SetText("Ancient One: " .. CheckAcientOneStatus())
 			if getgenv().StatusGearDraco then
@@ -5075,18 +5075,18 @@ task.spawn(function()
             local map = Workspace:FindFirstChild("Map")
             local world = Workspace:FindFirstChild("_WorldOrigin")
             local locations = world and world:FindFirstChild("Locations")
-            local on = (map and (map:FindFirstChild("KitsuneIsland", true) or map:FindFirstChild("Kitsune Island", true))) or (locations and (locations:FindFirstChild("Kitsune Island", true) or locations:FindFirstChild("KitsuneIsland", true)))
+            local on = (map and (map:FindFirstChild("KitsuneIsland") or map:FindFirstChild("Kitsune Island"))) or (locations and locations:FindFirstChild("Kitsune Island"))
             safeSet(StatusKitsuneIsland, "Kitsune Island: " .. (on and "🟢" or "🔴"))
         end)
         pcall(function()
             local map = Workspace:FindFirstChild("Map")
-            local on = (map and (map:FindFirstChild("PrehistoricIsland", true) or map:FindFirstChild("Prehistoric Island", true))) or (Workspace:FindFirstChild("_WorldOrigin") and Workspace._WorldOrigin:FindFirstChild("Locations") and (Workspace._WorldOrigin.Locations:FindFirstChild("Prehistoric Island", true) or Workspace._WorldOrigin.Locations:FindFirstChild("PrehistoricIsland", true)))
+            local on = map and (map:FindFirstChild("PrehistoricIsland") or map:FindFirstChild("Prehistoric Island"))
             safeSet(StatusPrehistoricIsland, "Prehistoric Island: " .. (on and "🟢" or "🔴"))
         end)
         pcall(function()
             local world = Workspace:FindFirstChild("_WorldOrigin")
             local locations = world and world:FindFirstChild("Locations")
-            local on = locations and (locations:FindFirstChild("Frozen Dimension", true) or locations:FindFirstChild("FrozenDimension", true))
+            local on = locations and locations:FindFirstChild("Frozen Dimension")
             safeSet(StatusFrozenDimension, "Frozen Dimension: " .. (on and "🟢" or "🔴"))
         end)
         pcall(function()
