@@ -6770,10 +6770,21 @@ function toTarget(P, e)
 	end
 	
     k.LastCall = tick()
-    if getgenv().NexoraUsingPortal and tick() - (getgenv().NexoraPortalTime or 0) < 20 then
-        return
+    -- Reseta flag se travou
+    if getgenv().NexoraUsingPortal then
+        if tick() - (getgenv().NexoraPortalTime or 0) > 10 then
+            getgenv().NexoraUsingPortal = false
+            warn("[Nexora Portal] Reset flag travada")
+        else
+            -- Se ja ta no portal, nao tenta outro
+            if H and (H.Position - Vector3.new(-16545, 430, -210)).Magnitude < 50 then
+                -- Ja esta no portal de Tiki, deixa tentar entrar
+                getgenv().NexoraUsingPortal = false
+            else
+                return
+            end
+        end
     end
-    getgenv().NexoraUsingPortal = false
     pcall(function()
         if Settings and Settings["Use Portals"] == false then return end
         if not P or typeof(P) ~= "CFrame" then return end
@@ -6810,7 +6821,11 @@ function toTarget(P, e)
         local myIsland, myDist = GetIsland(myPos)
         local targetIsland, targetDist = GetIsland(targetPos)
 
-        -- FORCA TIKI->CASTLE se estiver em Tiki
+        -- DEBUG PRA TIKI
+        if myIsland == "Tiki" then
+            warn("[Nexora Portal] ESTOU EM TIKI! destino="..targetIsland.." direto="..math.floor(direct))
+        end
+
         local portals = {
             CastleToMansion = {Name="Castle->Mansion", Entry=CFrame.new(-5084, 314, -3150), ExitPos=Vector3.new(-12462, 375, -7524)},
             CastleToHydra = {Name="Castle->Hydra", Entry=CFrame.new(-5144, 314, -3151), ExitPos=Vector3.new(5541, 668, 195)},
@@ -6822,11 +6837,9 @@ function toTarget(P, e)
 
         local best = nil
 
-        if myIsland == "Tiki" then
-            -- Se esta em Tiki e destino NAO e Tiki, TEM que voltar pro castelo
-            if targetIsland ~= "Tiki" then
-                best = portals.TikiToCastle
-            end
+        -- SE ESTIVER EM TIKI, SEMPRE VOLTA PRO CASTELO SE DESTINO NAO FOR TIKI
+        if myIsland == "Tiki" and targetIsland ~= "Tiki" then
+            best = portals.TikiToCastle
         elseif myIsland == "Mansion" and targetIsland ~= "Mansion" then
             best = portals.MansionToCastle
         elseif myIsland == "Hydra" and targetIsland ~= "Hydra" then
@@ -6840,7 +6853,7 @@ function toTarget(P, e)
 
         if not best then return end
 
-        warn("[Nexora Portal] "..myIsland.."("..math.floor(myDist)..") -> "..targetIsland.."("..math.floor(targetDist)..") DESTINO: "..best.Name.." direto="..math.floor(direct))
+        warn("[Nexora Portal] USANDO "..best.Name.." | "..myIsland.." -> "..targetIsland)
 
         local realPortalPart = nil
         local realPortalPos = best.Entry.Position
@@ -6862,15 +6875,17 @@ function toTarget(P, e)
         getgenv().NexoraPortalTime = tick()
         pcall(function() TweenManager.CancelCurrent() end)
 
-        local entryCF = CFrame.new(realPortalPos + Vector3.new(0,5,0))
-        B(H, entryCF, 400, 8)
-        local t0 = tick()
-        repeat task.wait() until (H.Position - realPortalPos).Magnitude < 30 or tick()-t0 > 15
+        -- VAI DIRETO PRA DENTRO DO PORTAL (sem B pra nao bugar)
+        warn("[Nexora Portal] Entrando no portal de "..myIsland.."...")
+        for i=1,3 do
+            H.CFrame = CFrame.new(realPortalPos + Vector3.new(0,5,0))
+            task.wait(0.15)
+        end
 
-        warn("[Nexora Portal] Dentro do portal "..best.Name.." flutuando 3s")
+        -- Flutua 3s dentro
         local floatStart = tick()
         local oldPos = H.Position
-        while tick() - floatStart < 3 do
+        while tick() - floatStart < 3.5 do
             if realPortalPart then
                 H.CFrame = realPortalPart.CFrame + Vector3.new(0,3,0)
                 H.AssemblyLinearVelocity = Vector3.new(0,0,0)
@@ -6881,22 +6896,36 @@ function toTarget(P, e)
                 end)
             else
                 H.CFrame = best.Entry + Vector3.new(0,3,0)
+                H.AssemblyLinearVelocity = Vector3.new(0,0,0)
+                -- Tenta tocar em qualquer TouchTransmitter perto
+                pcall(function()
+                    for _, v in pairs(workspace:GetDescendants()) do
+                        if v:IsA("BasePart") and v:FindFirstChildOfClass("TouchTransmitter") then
+                            if (v.Position - realPortalPos).Magnitude < 200 then
+                                firetouchinterest(H, v, 0)
+                                task.wait(0.05)
+                                firetouchinterest(H, v, 1)
+                            end
+                        end
+                    end
+                end)
             end
             task.wait(0.1)
             if (H.Position - oldPos).Magnitude > 400 then break end
         end
 
         local t1 = tick()
-        repeat task.wait(0.1) until (H.Position - oldPos).Magnitude > 400 or tick()-t1 > 7
+        repeat task.wait(0.1) until (H.Position - oldPos).Magnitude > 400 or tick()-t1 > 8
 
         if (H.Position - oldPos).Magnitude > 400 then
-            warn("[Nexora Portal] Sucesso "..best.Name)
+            warn("[Nexora Portal] Teleportou de "..myIsland.."!")
         else
-            warn("[Nexora Portal] Forcando "..best.Name)
+            warn("[Nexora Portal] Forcando saida de "..myIsland)
             H.CFrame = CFrame.new(best.ExitPos + Vector3.new(0,15,0))
             task.wait(0.5)
         end
         getgenv().NexoraUsingPortal = false
+        getgenv().NexoraPortalTime = 0
     end)
     getgenv().NexoraUsingPortal = false
 
