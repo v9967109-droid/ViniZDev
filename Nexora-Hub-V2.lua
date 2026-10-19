@@ -1983,8 +1983,17 @@ function Nexora.CreateMain(config)
         pcall(function() if getgenv then getgenv().__NEXORA_WINDOW_SIZE = data end end)
         pcall(function() if writefile then writefile(SIZE_FILE, game:GetService("HttpService"):JSONEncode(data)) end end)
     end
-    local shell = make("Frame", {Name="Window", AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.new(0, persistedW, 0, persistedH), BackgroundColor3=C.bg, BorderSizePixel=0}, gui)
+    local shell = make("Frame", {Name="Window", AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.new(0, persistedW, 0, persistedH), BackgroundColor3=C.bg, BorderSizePixel=0, ClipsDescendants=true}, gui)
     corner(shell, 14); stroke(shell, Color3.fromRGB(255,255,255), 0.88)
+    
+    -- FUNDO ANIME IGUAL QUANTUM ONYX PROJECT (menina com sakura)
+    local bgImage = make("ImageLabel", {Name="AnimeBG", Size=UDim2.new(1,0,1,0), Position=UDim2.new(0,0,0,0), BackgroundTransparency=1, Image="rbxassetid://17336164180", ImageTransparency=0.15, ScaleType=Enum.ScaleType.Crop, ZIndex=0}, shell)
+    corner(bgImage, 14)
+    
+    -- OVERLAY ESCURO PRA TEXTO FICAR LEGIVEL
+    local overlay = make("Frame", {Name="DarkOverlay", Size=UDim2.new(1,0,1,0), BackgroundColor3=Color3.fromRGB(0,0,0), BackgroundTransparency=0.55, BorderSizePixel=0, ZIndex=1}, shell)
+    corner(overlay, 14)
+
     make("UIGradient", {Rotation = 135, Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
         ColorSequenceKeypoint.new(0.52, Color3.fromRGB(0, 0, 0)),
@@ -2006,8 +2015,18 @@ function Nexora.CreateMain(config)
     if workspace.CurrentCamera then workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(resize) end
 
     local HEADER_H, SIDEBAR_W = 64, 190
+    
+    -- ICONE REDONDO ROXO COM VINIZDEV
+    local iconBtn = make("ImageButton", {Name="ViniZDevIcon", Size=UDim2.new(0,52,0,52), Position=UDim2.new(0,12,0,6), BackgroundColor3=Color3.fromRGB(25,10,40), BorderSizePixel=0, Image="rbxassetid://13339471102", ZIndex=10}, shell)
+    corner(iconBtn, 26)
+    stroke(iconBtn, Color3.fromRGB(168,85,255), 2)
+    
+    -- TEXTO ViniZDev DO LADO DO ICONE
+    local viniLabel = make("TextLabel", {Name="ViniZDevText", Size=UDim2.new(0,100,0,52), Position=UDim2.new(0,70,0,6), BackgroundTransparency=1, Text="ViniZDev", TextColor3=Color3.fromRGB(168,85,255), TextSize=16, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=10}, shell)
+
+
     local GOLD, GOLD_L, GRAY = Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255), Color3.fromRGB(165,165,174)
-    local top = make("Frame", {Size=UDim2.new(1,0,0,HEADER_H), BackgroundColor3=Color3.fromRGB(10,10,14), BorderSizePixel=0}, shell)
+    local top = make("Frame", {Size=UDim2.new(1,0,0,HEADER_H), BackgroundColor3=Color3.fromRGB(10,10,14), BackgroundTransparency=0.3, BorderSizePixel=0, ZIndex=2}, shell)
     corner(top, 12)
     make("UIGradient", {Rotation=0, Color=ColorSequence.new({
         ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 15, 40)),
