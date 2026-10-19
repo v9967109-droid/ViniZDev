@@ -6756,118 +6756,6 @@ local function B(Z, C, J, F)
 	return r
 end
 
-
--- [[ Use Portals System - Nexora Hub ]] --
--- Portais físicos do Rip Indra no Sea 3 (Castle <-> Mansion/Hydra/Tiki)
-getgenv().NexoraPortals = getgenv().NexoraPortals or {
-    -- Castle on Sea (3 portais na casinha azul)
-    {Name="Castle->Mansion", Entry=CFrame.new(-5084, 314, -3150), ExitPos=Vector3.new(-12462, 375, -7524), Island="Mansion"},
-    {Name="Castle->Hydra", Entry=CFrame.new(-5144, 314, -3151), ExitPos=Vector3.new(5541, 668, 195), Island="Hydra"},
-    {Name="Castle->Tiki", Entry=CFrame.new(-5008, 314, -3151), ExitPos=Vector3.new(-16545, 430, -210), Island="Tiki"},
-    -- Volta
-    {Name="Mansion->Castle", Entry=CFrame.new(-12462, 375, -7524), ExitPos=Vector3.new(-5084, 314, -3150), Island="Castle"},
-    {Name="Hydra->Castle", Entry=CFrame.new(5541, 668, 195), ExitPos=Vector3.new(-5144, 314, -3151), Island="Castle"},
-    {Name="Tiki->Castle", Entry=CFrame.new(-16545, 430, -210), ExitPos=Vector3.new(-5008, 314, -3151), Island="Castle"},
-}
-
--- Define regiões das ilhas pra decidir quando usar portal
-local function GetIslandFromPos(pos)
-    if (pos - Vector3.new(-5084, 314, -3150)).Magnitude < 3000 then return "Castle"
-    elseif (pos - Vector3.new(-12462, 375, -7524)).Magnitude < 3000 then return "Mansion"
-    elseif (pos - Vector3.new(5541, 668, 195)).Magnitude < 3500 then return "Hydra"
-    elseif (pos - Vector3.new(-16545, 430, -210)).Magnitude < 3500 then return "Tiki"
-    elseif (pos - Vector3.new(-2892, 6, -1936)).Magnitude < 4000 then return "Port"
-    elseif (pos - Vector3.new(-4500, 200, -2000)).Magnitude < 5000 then return "GreatTree"
-    else return "Other" end
-end
-
-local function ShouldUsePortalSystem(targetPos, myPos)
-    if Settings["Use Portals"] == false then return false end
-    if not targetPos or not myPos then return false end
-    -- Só no Sea 3
-    if game.PlaceId ~= 7449423635 and getgenv().CheckPlaceId ~= 7449423635 then
-        -- tenta detectar pelo mapa do Sea3
-        if not workspace.Map:FindFirstChild("Mansion") and not workspace.Map:FindFirstChild("HydraIsland") then
-            -- não está no sea3, não usa
-            -- mas deixa passar se distância for muito grande (mapa grande)
-        end
-    end
-    local distDirect = (targetPos - myPos).Magnitude
-    if distDirect < 3500 then return false end -- perto não precisa
-    local myIsland = GetIslandFromPos(myPos)
-    local targetIsland = GetIslandFromPos(targetPos)
-    if myIsland == targetIsland then return false end
-    if myIsland == "Other" and targetIsland == "Other" and distDirect < 6000 then return false end
-    return true, myIsland, targetIsland
-end
-
-local function FindBestPortal(myPos, targetPos)
-    local best, bestScore = nil, math.huge
-    for _, portal in ipairs(getgenv().NexoraPortals) do
-        local distToPortal = (portal.Entry.Position - myPos).Magnitude
-        local distExitToTarget = (portal.ExitPos - targetPos).Magnitude
-        local total = distToPortal + distExitToTarget
-        -- Dá preferência pra portal que sai mais perto do alvo
-        if total < bestScore then
-            bestScore = total
-            best = portal
-        end
-    end
-    return best, bestScore
-end
-
-getgenv().TryUsePortal = function(targetCFrame)
-    if Settings["Use Portals"] == false then return false end
-    local char = game.Players.LocalPlayer.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return false end
-    local hrp = char.HumanoidRootPart
-    local targetPos = targetCFrame.Position
-    local myPos = hrp.Position
-    local should, myIsland, targetIsland = ShouldUsePortalSystem(targetPos, myPos)
-    if not should then return false end
-    local portal, score = FindBestPortal(myPos, targetPos)
-    if not portal then return false end
-    local direct = (targetPos - myPos).Magnitude
-    if score > direct * 0.85 then return false end -- se portal não economiza muito, não usa
-    
-    -- Usa o portal
-    pcall(function()
-        -- Avisa
-        -- print("[Use Portals] Indo via "..portal.Name.." | "..myIsland.." -> "..targetIsland)
-        local entryCF = portal.Entry + Vector3.new(0,5,0)
-        -- Vai até o portal usando B (tween do hub)
-        if B then
-            B(hrp, entryCF, math.clamp(tonumber(Settings["Speed Tween "] or 220),0,220), 8)
-            -- espera chegar perto
-            local t0 = tick()
-            repeat task.wait() until (hrp.Position - entryCF.Position).Magnitude < 25 or tick()-t0 > 12 or not Settings["Use Portals"]
-            -- tenta tocar no portal físico
-            task.wait(0.2)
-            -- fire touchinterest se existir
-            pcall(function()
-                for _, v in pairs(workspace:GetDescendants()) do
-                    if v:IsA("TouchTransmitter") and v.Parent and v.Parent.Name:lower():find("portal") then
-                        if (v.Parent.Position - portal.Entry.Position).Magnitude < 25 then
-                            firetouchinterest(hrp, v.Parent, 0)
-                            task.wait()
-                            firetouchinterest(hrp, v.Parent, 1)
-                        end
-                    end
-                end
-            end)
-            -- espera teleporte
-            local oldPos = hrp.Position
-            local t1 = tick()
-            repeat task.wait() until (hrp.Position - oldPos).Magnitude > 1000 or tick()-t1 > 5
-            task.wait(0.5)
-            TweenManager.CancelTweenOnly()
-        end
-    end)
-    return true
-end
--- [[ Fim Use Portals System ]] --
-
-
 function toTarget(P, e)
 	if typeof(P) ~= "CFrame" then
 		return
@@ -6919,18 +6807,6 @@ function toTarget(P, e)
 		H.CFrame = P
 		return
 	end
-
-	-- Use Portals Check (Nexora)
-	if Settings["Use Portals"] ~= false then
-		pcall(function()
-			if getgenv().TryUsePortal and (P.Position - H.Position).Magnitude > 3500 then
-				if getgenv().TryUsePortal(P) then
-					-- portal usado, já estamos mais perto, continua o toTarget normal
-				end
-			end
-		end)
-	end
-	
 	if game.PlaceId ~= 122478697296975 then
 		e = CFrame.new(28609.392578125, 14896.533203125, 106.4216537475586)
 		if
@@ -8398,7 +8274,7 @@ SettingFarmMainSection.CreateToggle(
 	end
 )
 SettingFarmMainSection.CreateToggle(
-	{ Title = "Use Portals", Desc = "Usa os 3 portais físicos do Rip Indra no Sea 3", Default = Settings["Use Portals"] == nil and true or Settings["Use Portals"] },
+	{ Title = "Use Portals", Desc = "Usa portais fisicos Rip Indra Sea 3", Default = Settings["Use Portals"] == nil and true or Settings["Use Portals"] },
 	function(I)
 		SaveSettings("Use Portals", I)
 	end
@@ -29565,3 +29441,86 @@ task.spawn(function()
     if A and A.RestoreSavedToggles then A.RestoreSavedToggles() end
     pcall(function() if getgenv().NexoraLoadingFinish then getgenv().NexoraLoadingFinish() end end)
 end)
+
+
+-- [[ NEXORA USE PORTALS - SAFE HOOK NO FINAL ]] --
+task.spawn(function()
+    task.wait(3)
+    pcall(function()
+        if getgenv().NexoraPortalHooked then return end
+        getgenv().NexoraPortalHooked = true
+        
+        getgenv().NexoraPortals = {
+            {Name="Castle->Mansion", Entry=CFrame.new(-5084, 314, -3150), ExitPos=Vector3.new(-12462, 375, -7524)},
+            {Name="Castle->Hydra", Entry=CFrame.new(-5144, 314, -3151), ExitPos=Vector3.new(5541, 668, 195)},
+            {Name="Castle->Tiki", Entry=CFrame.new(-5008, 314, -3151), ExitPos=Vector3.new(-16545, 430, -210)},
+            {Name="Mansion->Castle", Entry=CFrame.new(-12462, 375, -7524), ExitPos=Vector3.new(-5084, 314, -3150)},
+            {Name="Hydra->Castle", Entry=CFrame.new(5541, 668, 195), ExitPos=Vector3.new(-5144, 314, -3151)},
+            {Name="Tiki->Castle", Entry=CFrame.new(-16545, 430, -210), ExitPos=Vector3.new(-5008, 314, -3151)},
+        }
+        
+        local function ShouldUse(targetPos, myPos)
+            if Settings and Settings["Use Portals"] == false then return false end
+            if not targetPos or not myPos then return false end
+            if (targetPos - myPos).Magnitude < 3500 then return false end
+            return true
+        end
+        
+        local function FindBest(myPos, targetPos)
+            local best, bestScore = nil, 9e9
+            for _, p in ipairs(getgenv().NexoraPortals) do
+                local total = (p.Entry.Position - myPos).Magnitude + (p.ExitPos - targetPos).Magnitude
+                if total < bestScore then bestScore = total; best = p end
+            end
+            return best, bestScore
+        end
+        
+        if toTarget and not getgenv().OldToTarget then
+            getgenv().OldToTarget = toTarget
+            function toTarget(P, e)
+                if P and typeof(P) == "CFrame" and Settings and Settings["Use Portals"] ~= false then
+                    pcall(function()
+                        local char = game.Players.LocalPlayer.Character
+                        if char and char:FindFirstChild("HumanoidRootPart") then
+                            local hrp = char.HumanoidRootPart
+                            local targetPos = P.Position
+                            local myPos = hrp.Position
+                            if ShouldUse(targetPos, myPos) then
+                                local portal, score = FindBest(myPos, targetPos)
+                                local direct = (targetPos - myPos).Magnitude
+                                if portal and score < direct * 0.80 then
+                                    local entryCF = portal.Entry + Vector3.new(0,5,0)
+                                    if B then
+                                        B(hrp, entryCF, 300, 8)
+                                        local t0 = tick()
+                                        repeat task.wait() until (hrp.Position - entryCF.Position).Magnitude < 40 or tick()-t0 > 10
+                                        task.wait(0.3)
+                                        pcall(function()
+                                            for _, v in pairs(workspace:GetDescendants()) do
+                                                if v:IsA("TouchTransmitter") and v.Parent and v.Parent:IsA("BasePart") then
+                                                    if (v.Parent.Position - portal.Entry.Position).Magnitude < 40 then
+                                                        firetouchinterest(hrp, v.Parent, 0)
+                                                        task.wait(0.1)
+                                                        firetouchinterest(hrp, v.Parent, 1)
+                                                    end
+                                                end
+                                            end
+                                        end)
+                                        local oldPos = hrp.Position
+                                        local t1 = tick()
+                                        repeat task.wait() until (hrp.Position - oldPos).Magnitude > 500 or tick()-t1 > 5
+                                        task.wait(0.5)
+                                    end
+                                end
+                            end
+                        end
+                    end)
+                end
+                return getgenv().OldToTarget(P, e)
+            end
+            getgenv().BackupTween = toTarget
+            print("[Nexora] Use Portals ATIVO - abaixo de Bring Mob em Setting Farm")
+        end
+    end)
+end)
+-- [[ FIM USE PORTALS ]] --
