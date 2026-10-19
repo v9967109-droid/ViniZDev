@@ -6770,6 +6770,10 @@ function toTarget(P, e)
 	end
 	
     k.LastCall = tick()
+    -- Se ja ta usando portal, nao tenta outro
+    if getgenv().NexoraUsingPortal then
+        return
+    end
     pcall(function()
         if Settings and Settings["Use Portals"] == false then return end
         if not P or typeof(P) ~= "CFrame" then return end
@@ -6788,7 +6792,6 @@ function toTarget(P, e)
             {Name="Tiki->Castle", Entry=CFrame.new(-16545, 430, -210), ExitPos=Vector3.new(-5008, 314, -3151)},
         }
 
-        -- Pega portal cuja saida deixa mais perto do destino
         local best = nil
         local bestScore = 9e9
         for _, portal in ipairs(portals) do
@@ -6802,52 +6805,79 @@ function toTarget(P, e)
         end
 
         if not best then return end
-        warn("[Nexora Portal] "..best.Name.." | direto "..math.floor(direct).." | via portal "..math.floor(bestScore))
+        getgenv().NexoraUsingPortal = true
+        warn("[Nexora Portal] Indo pro portal "..best.Name.." AGORA")
 
-        -- 1. Vai ate a porta
-        local entryPos = best.Entry.Position + Vector3.new(0,5,0)
-        B(H, CFrame.new(entryPos), 400, 8)
+        -- Cancela tween atual pra nao brigar
+        pcall(function() TweenManager.CancelCurrent() end)
+
+        -- Vai ate o portal ENTRANDO DENTRO
+        local entryPos = best.Entry.Position
+        local targetCF = CFrame.new(entryPos + Vector3.new(0,5,0))
+        
+        -- Tenta chegar no portal com CFrame direto (mais confiavel que B)
         local t0 = tick()
-        repeat task.wait() until (H.Position - entryPos).Magnitude < 35 or tick()-t0 > 12
+        repeat
+            H.CFrame = targetCF
+            H.AssemblyLinearVelocity = Vector3.new(0,0,0)
+            task.wait(0.1)
+            -- Se tiver longe ainda, usa B tambem
+            if (H.Position - entryPos).Magnitude > 100 then
+                B(H, targetCF, 500, 8)
+            end
+            task.wait(0.2)
+        until (H.Position - entryPos).Magnitude < 15 or tick()-t0 > 15
 
-        -- 2. ENTRA DENTRO DE VERDADE - mexe dentro do portal
-        for i=1,3 do
-            H.CFrame = best.Entry + Vector3.new(0,5,0)
-            task.wait(0.12)
-            H.CFrame = best.Entry * CFrame.new(0,5,-4)
-            task.wait(0.12)
-            H.CFrame = best.Entry * CFrame.new(0,5,4)
-            task.wait(0.12)
-        end
-
-        -- 3. Toca no portal fisico varias vezes
-        pcall(function()
-            for _, v in pairs(workspace:GetDescendants()) do
-                if v:IsA("TouchTransmitter") and v.Parent and v.Parent:IsA("BasePart") then
-                    if (v.Parent.Position - best.Entry.Position).Magnitude < 100 then
-                        for j=1,6 do
+        warn("[Nexora Portal] Chegou no portal, entrando...")
+        -- Fica dentro do portal mexendo pra ativar
+        for i=1,8 do
+            H.CFrame = best.Entry + Vector3.new(0,3,0)
+            task.wait(0.08)
+            H.CFrame = best.Entry * CFrame.new(math.random(-2,2),3,math.random(-2,2))
+            task.wait(0.08)
+            -- Toca
+            pcall(function()
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v:IsA("TouchTransmitter") and v.Parent and v.Parent:IsA("BasePart") then
+                        if (v.Parent.Position - entryPos).Magnitude < 120 then
                             firetouchinterest(H, v.Parent, 0)
-                            task.wait(0.1)
+                            task.wait(0.05)
                             firetouchinterest(H, v.Parent, 1)
-                            task.wait(0.1)
                         end
                     end
                 end
-            end
-        end)
+            end)
+        end
 
-        task.wait(0.4)
+        -- Espera ser teleportado
         local oldPos = H.Position
         local t1 = tick()
-        repeat task.wait() until (H.Position - oldPos).Magnitude > 400 or tick()-t1 > 5
+        repeat
+            task.wait(0.1)
+            -- Continua tentando tocar enquanto espera
+            if tick()%0.5 < 0.1 then
+                pcall(function()
+                    for _, v in pairs(workspace:GetDescendants()) do
+                        if v:IsA("TouchTransmitter") and v.Parent and v.Parent:IsA("BasePart") then
+                            if (v.Parent.Position - entryPos).Magnitude < 120 then
+                                firetouchinterest(H, v.Parent, 0)
+                                task.wait(0.05)
+                                firetouchinterest(H, v.Parent, 1)
+                            end
+                        end
+                    end
+                end)
+            end
+        until (H.Position - oldPos).Magnitude > 500 or tick()-t1 > 8
 
-        if (H.Position - oldPos).Magnitude < 400 then
-            warn("[Nexora Portal] Falhou touch, forcando saida "..best.Name)
+        if (H.Position - oldPos).Magnitude > 500 then
+            warn("[Nexora Portal] Teleportado com sucesso via portal!")
+        else
+            warn("[Nexora Portal] Nao teleportou, forcando saida")
             H.CFrame = CFrame.new(best.ExitPos + Vector3.new(0,15,0))
             task.wait(0.5)
-        else
-            warn("[Nexora Portal] Entrou no portal!")
         end
+        getgenv().NexoraUsingPortal = false
     end)
 
 	if Z and Z.Sit then
