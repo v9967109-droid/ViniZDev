@@ -6774,6 +6774,7 @@ function toTarget(P, e)
         local direct = (targetPos - myPos).Magnitude
         if direct < 2500 then return end
 
+        -- POSICOES REAIS PESQUISADAS
         local islandExit = {
             Castle = Vector3.new(-5084, 314, -3150),
             Mansion = Vector3.new(-12462, 375, -7524),
@@ -6781,26 +6782,28 @@ function toTarget(P, e)
             Tiki = Vector3.new(-16545, 430, -210),
         }
 
-        local function GetMyIsland(pos)
+        local function GetIsland(pos)
             local best = "Sea"
             local bestDist = 9e9
             for name, ipos in pairs(islandExit) do
                 local d = (pos - ipos).Magnitude
-                if d < bestDist then
-                    bestDist = d
-                    best = name
-                end
+                if d < bestDist then bestDist = d best = name end
             end
             if bestDist < 6000 then return best, bestDist else return "Sea", bestDist end
         end
 
-        local myIsland, myDist = GetMyIsland(myPos)
-        local targetIsland, targetDist = GetMyIsland(targetPos)
+        local myIsland, myDist = GetIsland(myPos)
+        local targetIsland, targetDist = GetIsland(targetPos)
 
-        -- SE JA ESTIVER PERTO DA ILHA DO DESTINO, NAO USA PORTAL
-        if myIsland ~= "Sea" and targetIsland ~= "Sea" and myIsland == targetIsland then
-            return
-        end
+        -- JA PERTO: NAO USA PORTAL
+        if myIsland ~= "Sea" and targetIsland ~= "Sea" and myIsland == targetIsland then return end
+
+        -- PORTAIS OFICIAIS DO WIKI:
+        -- Castle: 3 portais na casa de telhado azul a esquerda do castelo principal
+        --   Esquerda LARANJA = Tiki, Meio = Mansion, Direita = Hydra
+        -- Mansion: Lado esquerdo da varanda interior, quase na parede frontal
+        -- Tiki: Na frente do porto, oposto ao spawn/safe zone
+        -- Hydra: Topo da montanha no centro da ilha, esquerda do predio do Hydra Leader
 
         local portals = {
             CastleToMansion = {Name="Castle->Mansion", EntryPos=Vector3.new(-5084, 314, -3150), ExitPos=Vector3.new(-12462, 375, -7524), Dest="Mansion"},
@@ -6811,13 +6814,11 @@ function toTarget(P, e)
             TikiToCastle = {Name="Tiki->Castle", EntryPos=Vector3.new(-16545, 430, -210), ExitPos=Vector3.new(-5008, 314, -3151), Dest="Castle"},
         }
 
-        if myIsland == "Tiki" and targetIsland ~= "Tiki" then
-            bestPortal = portals.TikiToCastle
-        elseif myIsland == "Mansion" and targetIsland ~= "Mansion" then
-            bestPortal = portals.MansionToCastle
-        elseif myIsland == "Hydra" and targetIsland ~= "Hydra" then
-            bestPortal = portals.HydraToCastle
+        if myIsland == "Tiki" and targetIsland ~= "Tiki" then bestPortal = portals.TikiToCastle
+        elseif myIsland == "Mansion" and targetIsland ~= "Mansion" then bestPortal = portals.MansionToCastle
+        elseif myIsland == "Hydra" and targetIsland ~= "Hydra" then bestPortal = portals.HydraToCastle
         elseif myIsland == "Castle" then
+            -- Escolhe pelo destino mais proximo
             local distMansion = (targetPos - islandExit.Mansion).Magnitude
             local distHydra = (targetPos - islandExit.Hydra).Magnitude
             local distTiki = (targetPos - islandExit.Tiki).Magnitude
@@ -6827,21 +6828,16 @@ function toTarget(P, e)
             elseif minDist == distHydra then bestPortal = portals.CastleToHydra
             elseif minDist == distTiki then bestPortal = portals.CastleToTiki
             end
-        elseif myIsland == "Sea" then
-            -- Se ta no mar e destino e ilha, vai direto voando, nao precisa portal
-            return
         end
 
         if bestPortal then
             shouldUsePortal = true
-            warn("[Nexora Portal] "..myIsland.." -> "..bestPortal.Dest.." = "..bestPortal.Name.." direto "..math.floor(direct))
+            warn("[Nexora Portal] "..myIsland.." -> "..bestPortal.Dest.." = "..bestPortal.Name)
         end
     end)
 
     if shouldUsePortal and bestPortal then
-        warn("[Nexora Portal] INDO ATE O PORTAL "..bestPortal.Name)
         pcall(function() TweenManager.CancelCurrent() end)
-        
         local realPart = nil
         local realPos = bestPortal.EntryPos
         pcall(function()
@@ -6849,45 +6845,26 @@ function toTarget(P, e)
             for _, v in pairs(workspace:GetDescendants()) do
                 if v:IsA("BasePart") and v:FindFirstChildOfClass("TouchTransmitter") then
                     local d = (v.Position - bestPortal.EntryPos).Magnitude
-                    if d < 300 and d < closest then
-                        closest = d
-                        realPart = v
-                        realPos = v.Position
-                    end
+                    if d < 300 and d < closest then closest = d realPart = v realPos = v.Position end
                 end
             end
         end)
 
         local t0 = tick()
-        repeat
-            H.CFrame = CFrame.new(realPos + Vector3.new(0,5,0))
-            H.AssemblyLinearVelocity = Vector3.new(0,0,0)
-            task.wait(0.15)
-        until (H.Position - realPos).Magnitude < 15 or tick()-t0 > 10
+        repeat H.CFrame = CFrame.new(realPos + Vector3.new(0,5,0)) H.AssemblyLinearVelocity = Vector3.new(0,0,0) task.wait(0.15) until (H.Position - realPos).Magnitude < 15 or tick()-t0 > 10
 
         local oldPos = H.Position
         local start = tick()
-        while tick() - start < 3.5 do
-            H.CFrame = CFrame.new(realPos + Vector3.new(0,3,0))
-            H.AssemblyLinearVelocity = Vector3.new(0,0,0)
-            if realPart then
-                pcall(function()
-                    firetouchinterest(H, realPart, 0)
-                    task.wait(0.05)
-                    firetouchinterest(H, realPart, 1)
-                end)
-            end
+        while tick() - start < 3 do
+            H.CFrame = CFrame.new(realPos + Vector3.new(0,3,0)) H.AssemblyLinearVelocity = Vector3.new(0,0,0)
+            if realPart then pcall(function() firetouchinterest(H, realPart, 0) task.wait(0.05) firetouchinterest(H, realPart, 1) end) end
             task.wait(0.1)
             if (H.Position - oldPos).Magnitude > 500 then break end
         end
 
         local t1 = tick()
         repeat task.wait(0.1) until (H.Position - oldPos).Magnitude > 500 or tick()-t1 > 8
-
-        if (H.Position - oldPos).Magnitude < 500 then
-            H.CFrame = CFrame.new(bestPortal.ExitPos + Vector3.new(0,15,0))
-            task.wait(0.5)
-        end
+        if (H.Position - oldPos).Magnitude < 500 then H.CFrame = CFrame.new(bestPortal.ExitPos + Vector3.new(0,15,0)) task.wait(0.5) end
         return
     end
 
