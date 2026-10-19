@@ -6755,59 +6755,23 @@ local function B(Z, C, J, F)
 	end
 	return r
 end
+getgenv().NexoraB = B
+getgenv().NexoraToTargetOriginal = nil
 
 
+function toTarget(P, e)
+	if typeof(P) ~= "CFrame" then
+		return
+	end
+	local Y = t.Character
+	if not Y or not Y:FindFirstChild("HumanoidRootPart") then
+		return
+	end
+	local H, Z = Y.HumanoidRootPart, Y:FindFirstChildOfClass("Humanoid")
+	if not Z then
+		return
+	end
 	k.LastCall = tick()
-	-- [[ NEXORA USE PORTALS - DENTRO DO TOTARGET (B está no escopo) ]] --
-	pcall(function()
-		if Settings and Settings["Use Portals"] == false then return end
-		if not P or typeof(P) ~= "CFrame" then return end
-		if not H then return end
-		local myPos = H.Position
-		local targetPos = P.Position
-		local distDirect = (targetPos - myPos).Magnitude
-		if distDirect < 3500 then return end
-		-- Portais físicos Sea 3
-		local portals = {
-			{Entry=CFrame.new(-5084, 314, -3150), ExitPos=Vector3.new(-12462, 375, -7524)},
-			{Entry=CFrame.new(-5144, 314, -3151), ExitPos=Vector3.new(5541, 668, 195)},
-			{Entry=CFrame.new(-5008, 314, -3151), ExitPos=Vector3.new(-16545, 430, -210)},
-			{Entry=CFrame.new(-12462, 375, -7524), ExitPos=Vector3.new(-5084, 314, -3150)},
-			{Entry=CFrame.new(5541, 668, 195), ExitPos=Vector3.new(-5144, 314, -3151)},
-			{Entry=CFrame.new(-16545, 430, -210), ExitPos=Vector3.new(-5008, 314, -3151)},
-		}
-		local best, bestScore = nil, 9e9
-		for _, portal in ipairs(portals) do
-			local total = (portal.Entry.Position - myPos).Magnitude + (portal.ExitPos - targetPos).Magnitude
-			if total < bestScore then bestScore = total; best = portal end
-		end
-		if best and bestScore < distDirect * 0.80 then
-			-- Vai pro portal
-			local entryCF = best.Entry + Vector3.new(0,5,0)
-			-- Usa B que está no escopo local
-			B(H, entryCF, 350, 8)
-			local t0 = tick()
-			repeat task.wait() until (H.Position - entryCF.Position).Magnitude < 35 or tick()-t0 > 10 or not Settings["Use Portals"]
-			task.wait(0.2)
-			pcall(function()
-				for _, v in pairs(workspace:GetDescendants()) do
-					if v:IsA("TouchTransmitter") and v.Parent and v.Parent:IsA("BasePart") then
-						if (v.Parent.Position - best.Entry.Position).Magnitude < 35 then
-							firetouchinterest(H, v.Parent, 0)
-							task.wait(0.1)
-							firetouchinterest(H, v.Parent, 1)
-						end
-					end
-				end
-			end)
-			local oldPos = H.Position
-			local t1 = tick()
-			repeat task.wait() until (H.Position - oldPos).Magnitude > 500 or tick()-t1 > 5
-			task.wait(0.5)
-		end
-	end)
-	-- [[ FIM PORTAL CHECK ]] --
-
 	if Z and Z.Sit then
 		TweenManager.CancelCurrent()
 		task.wait(0.1)
@@ -29480,4 +29444,71 @@ task.spawn(function()
     task.wait()
     if A and A.RestoreSavedToggles then A.RestoreSavedToggles() end
     pcall(function() if getgenv().NexoraLoadingFinish then getgenv().NexoraLoadingFinish() end end)
+end)
+
+
+-- [[ NEXORA USE PORTALS - FINAL SAFE COM B GLOBAL ]] --
+task.spawn(function()
+    task.wait(3)
+    pcall(function()
+        if getgenv().NexoraPortalHooked then return end
+        getgenv().NexoraPortalHooked = true
+        getgenv().NexoraPortals = {
+            {Name="Castle->Mansion", Entry=CFrame.new(-5084, 314, -3150), ExitPos=Vector3.new(-12462, 375, -7524)},
+            {Name="Castle->Hydra", Entry=CFrame.new(-5144, 314, -3151), ExitPos=Vector3.new(5541, 668, 195)},
+            {Name="Castle->Tiki", Entry=CFrame.new(-5008, 314, -3151), ExitPos=Vector3.new(-16545, 430, -210)},
+            {Name="Mansion->Castle", Entry=CFrame.new(-12462, 375, -7524), ExitPos=Vector3.new(-5084, 314, -3150)},
+            {Name="Hydra->Castle", Entry=CFrame.new(5541, 668, 195), ExitPos=Vector3.new(-5144, 314, -3151)},
+            {Name="Tiki->Castle", Entry=CFrame.new(-16545, 430, -210), ExitPos=Vector3.new(-5008, 314, -3151)},
+        }
+        if toTarget and not getgenv().OldToTarget then
+            getgenv().OldToTarget = toTarget
+            function toTarget(P,e)
+                if P and typeof(P)=="CFrame" and Settings and Settings["Use Portals"]~=false then
+                    local ok = pcall(function()
+                        local char = game.Players.LocalPlayer.Character
+                        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+                        local hrp = char.HumanoidRootPart
+                        local myPos = hrp.Position
+                        local targetPos = P.Position
+                        local direct = (targetPos - myPos).Magnitude
+                        if direct < 3000 then return end
+                        local best, bestScore = nil, 9e9
+                        for _, portal in ipairs(getgenv().NexoraPortals) do
+                            local total = (portal.Entry.Position - myPos).Magnitude + (portal.ExitPos - targetPos).Magnitude
+                            if total < bestScore then bestScore = total; best = portal end
+                        end
+                        if best and bestScore < direct * 0.85 then
+                            local entryCF = best.Entry + Vector3.new(0,5,0)
+                            local Bfunc = getgenv().NexoraB or B
+                            if Bfunc then
+                                Bfunc(hrp, entryCF, 350, 8)
+                                local t0 = tick()
+                                repeat task.wait() until (hrp.Position - entryCF.Position).Magnitude < 40 or tick()-t0 > 10
+                                task.wait(0.2)
+                                pcall(function()
+                                    for _, v in pairs(workspace:GetDescendants()) do
+                                        if v:IsA("TouchTransmitter") and v.Parent and v.Parent:IsA("BasePart") then
+                                            if (v.Parent.Position - best.Entry.Position).Magnitude < 40 then
+                                                firetouchinterest(hrp, v.Parent, 0)
+                                                task.wait(0.1)
+                                                firetouchinterest(hrp, v.Parent, 1)
+                                            end
+                                        end
+                                    end
+                                end)
+                                local oldPos = hrp.Position
+                                local t1 = tick()
+                                repeat task.wait() until (hrp.Position - oldPos).Magnitude > 500 or tick()-t1 > 5
+                                task.wait(0.5)
+                            end
+                        end
+                    end)
+                end
+                return getgenv().OldToTarget(P,e)
+            end
+            getgenv().BackupTween = toTarget
+            print("[Nexora] Use Portals com B global ATIVO")
+        end
+    end)
 end)
