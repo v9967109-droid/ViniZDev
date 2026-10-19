@@ -6777,56 +6777,111 @@ function toTarget(P, e)
         local myPos = H.Position
         local targetPos = P.Position
         local direct = (targetPos - myPos).Magnitude
-        if direct < 2000 then return end
+        if direct < 3000 then return end
+
+        local function GetIsland(pos)
+            if (pos - Vector3.new(-5084, 314, -3150)).Magnitude < 3000 then return "Castle" end
+            if (pos - Vector3.new(-12462, 375, -7524)).Magnitude < 3000 then return "Mansion" end
+            if (pos - Vector3.new(5541, 668, 195)).Magnitude < 3000 then return "Hydra" end
+            if (pos - Vector3.new(-16545, 430, -210)).Magnitude < 3000 then return "Tiki" end
+            return "Sea"
+        end
+
+        local myIsland = GetIsland(myPos)
+        local targetIsland = GetIsland(targetPos)
+
+        -- Se mesma ilha ou ambos no mar, nao usa portal
+        if myIsland == targetIsland then return end
+        if myIsland == "Sea" and targetIsland == "Sea" and direct < 5000 then return end
+
         local portals = {
-            {Name="Castle->Mansion", Entry=CFrame.new(-5084, 314, -3150), ExitPos=Vector3.new(-12462, 375, -7524)},
-            {Name="Castle->Hydra", Entry=CFrame.new(-5144, 314, -3151), ExitPos=Vector3.new(5541, 668, 195)},
-            {Name="Castle->Tiki", Entry=CFrame.new(-5008, 314, -3151), ExitPos=Vector3.new(-16545, 430, -210)},
-            {Name="Mansion->Castle", Entry=CFrame.new(-12462, 375, -7524), ExitPos=Vector3.new(-5084, 314, -3150)},
-            {Name="Hydra->Castle", Entry=CFrame.new(5541, 668, 195), ExitPos=Vector3.new(-5144, 314, -3151)},
-            {Name="Tiki->Castle", Entry=CFrame.new(-16545, 430, -210), ExitPos=Vector3.new(-5008, 314, -3151)},
+            ["Castle->Mansion"] = {Name="Castle->Mansion", Entry=CFrame.new(-5084, 314, -3150), ExitPos=Vector3.new(-12462, 375, -7524)},
+            ["Castle->Hydra"] = {Name="Castle->Hydra", Entry=CFrame.new(-5144, 314, -3151), ExitPos=Vector3.new(5541, 668, 195)},
+            ["Castle->Tiki"] = {Name="Castle->Tiki", Entry=CFrame.new(-5008, 314, -3151), ExitPos=Vector3.new(-16545, 430, -210)},
+            ["Mansion->Castle"] = {Name="Mansion->Castle", Entry=CFrame.new(-12462, 375, -7524), ExitPos=Vector3.new(-5084, 314, -3150)},
+            ["Hydra->Castle"] = {Name="Hydra->Castle", Entry=CFrame.new(5541, 668, 195), ExitPos=Vector3.new(-5144, 314, -3151)},
+            ["Tiki->Castle"] = {Name="Tiki->Castle", Entry=CFrame.new(-16545, 430, -210), ExitPos=Vector3.new(-5008, 314, -3151)},
         }
-        -- ACHA O PORTAL CERTO: saída mais perto do destino + entrada não muito longe
-        local best = nil
-        local bestScore = 9e9
-        for _, portal in ipairs(portals) do
-            local distEntry = (portal.Entry.Position - myPos).Magnitude
-            local distExitToTarget = (portal.ExitPos - targetPos).Magnitude
-            local total = distEntry + distExitToTarget
-            -- Só considera se a saída realmente aproxima do destino
-            if distExitToTarget < direct and total < bestScore then
-                bestScore = total
-                best = portal
+
+        local needPortal = nil
+
+        -- LOGICA TOP QUE VOCE QUER:
+        -- Se ta no Castle e quer ir pra Tiki/Mansion/Hydra -> usa portal direto do Castle
+        if myIsland == "Castle" then
+            if targetIsland == "Mansion" then needPortal = portals["Castle->Mansion"]
+            elseif targetIsland == "Hydra" then needPortal = portals["Castle->Hydra"]
+            elseif targetIsland == "Tiki" then needPortal = portals["Castle->Tiki"]
+            end
+        -- Se ta em Tiki/Mansion/Hydra e quer ir pra outra ilha diferente (ex: Tiki->Mansion) -> volta pro Castle primeiro
+        elseif myIsland == "Tiki" and targetIsland ~= "Castle" then
+            needPortal = portals["Tiki->Castle"]
+        elseif myIsland == "Mansion" and targetIsland ~= "Castle" then
+            needPortal = portals["Mansion->Castle"]
+        elseif myIsland == "Hydra" and targetIsland ~= "Castle" then
+            needPortal = portals["Hydra->Castle"]
+        -- Se ta em Tiki/Mansion/Hydra e quer ir pro Castle -> usa portal direto
+        elseif targetIsland == "Castle" then
+            if myIsland == "Tiki" then needPortal = portals["Tiki->Castle"]
+            elseif myIsland == "Mansion" then needPortal = portals["Mansion->Castle"]
+            elseif myIsland == "Hydra" then needPortal = portals["Hydra->Castle"]
             end
         end
-        if not best then return end
-        warn("[Nexora Portal] Usando "..best.Name.." | destino a "..math.floor(direct).." studs | via portal total "..math.floor(bestScore))
-        local entryCF = best.Entry + Vector3.new(0,5,0)
-        B(H, entryCF, 400, 8)
+
+        -- Se ta no mar (Sea) longe, usa o portal mais proximo que leva pra ilha do destino
+        if not needPortal and targetIsland ~= "Sea" and targetIsland ~= "Castle" then
+            if targetIsland == "Tiki" then needPortal = portals["Castle->Tiki"]
+            elseif targetIsland == "Mansion" then needPortal = portals["Castle->Mansion"]
+            elseif targetIsland == "Hydra" then needPortal = portals["Castle->Hydra"]
+            end
+            -- Mas primeiro tem que ir pro Castle se nao estiver la
+            if myIsland ~= "Castle" and myIsland ~= targetIsland then
+                if myIsland == "Tiki" then needPortal = portals["Tiki->Castle"]
+                elseif myIsland == "Mansion" then needPortal = portals["Mansion->Castle"]
+                elseif myIsland == "Hydra" then needPortal = portals["Hydra->Castle"]
+                end
+            end
+        end
+
+        if not needPortal then return end
+
+        warn("[Nexora Portal] "..myIsland.." -> "..targetIsland.." usando "..needPortal.Name)
+
+        -- ENTRA DENTRO DO PORTAL DE VERDADE
+        local entryPos = needPortal.Entry.Position + Vector3.new(0,3,0)
+        B(H, CFrame.new(entryPos), 400, 8)
         local t0 = tick()
-        repeat task.wait() until (H.Position - entryCF.Position).Magnitude < 50 or tick()-t0 > 12
-        task.wait(0.3)
-        -- Toca no portal fisico
-        for i=1,4 do
-            pcall(function()
-                for _, v in pairs(workspace:GetDescendants()) do
-                    if v:IsA("TouchTransmitter") and v.Parent and v.Parent:IsA("BasePart") then
-                        if (v.Parent.Position - best.Entry.Position).Magnitude < 70 then
+        repeat task.wait() until (H.Position - entryPos).Magnitude < 30 or tick()-t0 > 12
+
+        -- Entra dentro
+        for i=1,2 do
+            H.CFrame = needPortal.Entry + Vector3.new(0,3,0)
+            task.wait(0.1)
+            H.CFrame = needPortal.Entry * CFrame.new(0,3,-3)
+            task.wait(0.1)
+        end
+
+        -- Toca
+        pcall(function()
+            for _, v in pairs(workspace:GetDescendants()) do
+                if v:IsA("TouchTransmitter") and v.Parent and v.Parent:IsA("BasePart") then
+                    if (v.Parent.Position - needPortal.Entry.Position).Magnitude < 80 then
+                        for j=1,4 do
                             firetouchinterest(H, v.Parent, 0)
-                            task.wait(0.12)
+                            task.wait(0.1)
                             firetouchinterest(H, v.Parent, 1)
+                            task.wait(0.1)
                         end
                     end
                 end
-            end)
-            task.wait(0.2)
-            if (H.Position - best.Entry.Position).Magnitude > 200 then break end
-        end
-        task.wait(0.5)
-        -- Se não teleportou via portal fisico, força pra saída do portal correto
-        if (H.Position - best.ExitPos).Magnitude > 500 then
-            warn("[Nexora Portal] Portal fisico falhou, forçando saida "..best.Name)
-            H.CFrame = CFrame.new(best.ExitPos + Vector3.new(0,10,0))
+            end
+        end)
+
+        task.wait(0.3)
+        local oldPos = H.Position
+        local t1 = tick()
+        repeat task.wait() until (H.Position - oldPos).Magnitude > 300 or tick()-t1 > 5
+        if (H.Position - oldPos).Magnitude < 300 then
+            H.CFrame = CFrame.new(needPortal.ExitPos + Vector3.new(0,10,0))
             task.wait(0.5)
         end
     end)
