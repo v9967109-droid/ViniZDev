@@ -6779,54 +6779,56 @@ function toTarget(P, e)
         local direct = (targetPos - myPos).Magnitude
         if direct < 2000 then return end
         local portals = {
-            {Name="Castle-Mansion", Entry=CFrame.new(-5084, 314, -3150), ExitPos=Vector3.new(-12462, 375, -7524)},
-            {Name="Castle-Hydra", Entry=CFrame.new(-5144, 314, -3151), ExitPos=Vector3.new(5541, 668, 195)},
-            {Name="Castle-Tiki", Entry=CFrame.new(-5008, 314, -3151), ExitPos=Vector3.new(-16545, 430, -210)},
-            {Name="Mansion-Castle", Entry=CFrame.new(-12462, 375, -7524), ExitPos=Vector3.new(-5084, 314, -3150)},
-            {Name="Hydra-Castle", Entry=CFrame.new(5541, 668, 195), ExitPos=Vector3.new(-5144, 314, -3151)},
-            {Name="Tiki-Castle", Entry=CFrame.new(-16545, 430, -210), ExitPos=Vector3.new(-5008, 314, -3151)},
+            {Name="Castle->Mansion", Entry=CFrame.new(-5084, 314, -3150), ExitPos=Vector3.new(-12462, 375, -7524)},
+            {Name="Castle->Hydra", Entry=CFrame.new(-5144, 314, -3151), ExitPos=Vector3.new(5541, 668, 195)},
+            {Name="Castle->Tiki", Entry=CFrame.new(-5008, 314, -3151), ExitPos=Vector3.new(-16545, 430, -210)},
+            {Name="Mansion->Castle", Entry=CFrame.new(-12462, 375, -7524), ExitPos=Vector3.new(-5084, 314, -3150)},
+            {Name="Hydra->Castle", Entry=CFrame.new(5541, 668, 195), ExitPos=Vector3.new(-5144, 314, -3151)},
+            {Name="Tiki->Castle", Entry=CFrame.new(-16545, 430, -210), ExitPos=Vector3.new(-5008, 314, -3151)},
         }
+        -- ACHA O PORTAL CERTO: saída mais perto do destino + entrada não muito longe
         local best = nil
-        local bestDistToEntry = 9e9
+        local bestScore = 9e9
         for _, portal in ipairs(portals) do
-            local d = (portal.Entry.Position - myPos).Magnitude
-            if d < bestDistToEntry then bestDistToEntry = d; best = portal end
+            local distEntry = (portal.Entry.Position - myPos).Magnitude
+            local distExitToTarget = (portal.ExitPos - targetPos).Magnitude
+            local total = distEntry + distExitToTarget
+            -- Só considera se a saída realmente aproxima do destino
+            if distExitToTarget < direct and total < bestScore then
+                bestScore = total
+                best = portal
+            end
         end
         if not best then return end
-        if bestDistToEntry > direct then return end
-        warn("[Nexora Portal] Tentando usar portal "..best.Name.." | dist direta "..math.floor(direct).." | ate portal "..math.floor(bestDistToEntry))
+        warn("[Nexora Portal] Usando "..best.Name.." | destino a "..math.floor(direct).." studs | via portal total "..math.floor(bestScore))
         local entryCF = best.Entry + Vector3.new(0,5,0)
-        B(H, entryCF, 350, 8)
+        B(H, entryCF, 400, 8)
         local t0 = tick()
         repeat task.wait() until (H.Position - entryCF.Position).Magnitude < 50 or tick()-t0 > 12
         task.wait(0.3)
-        -- tenta tocar portal de 3 jeitos
-        for i=1,3 do
+        -- Toca no portal fisico
+        for i=1,4 do
             pcall(function()
                 for _, v in pairs(workspace:GetDescendants()) do
                     if v:IsA("TouchTransmitter") and v.Parent and v.Parent:IsA("BasePart") then
-                        if (v.Parent.Position - best.Entry.Position).Magnitude < 60 then
+                        if (v.Parent.Position - best.Entry.Position).Magnitude < 70 then
                             firetouchinterest(H, v.Parent, 0)
-                            task.wait(0.15)
+                            task.wait(0.12)
                             firetouchinterest(H, v.Parent, 1)
-                            task.wait(0.15)
                         end
                     end
                 end
             end)
             task.wait(0.2)
-            if (H.Position - best.Entry.Position).Magnitude > 100 then break end
+            if (H.Position - best.Entry.Position).Magnitude > 200 then break end
         end
-        task.wait(0.3)
-        local oldPos = H.Position
-        local t1 = tick()
-        repeat task.wait() until (H.Position - oldPos).Magnitude > 300 or tick()-t1 > 4
-        if (H.Position - oldPos).Magnitude < 300 then
-            warn("[Nexora Portal] FireTouch falhou, forçando ExitPos")
+        task.wait(0.5)
+        -- Se não teleportou via portal fisico, força pra saída do portal correto
+        if (H.Position - best.ExitPos).Magnitude > 500 then
+            warn("[Nexora Portal] Portal fisico falhou, forçando saida "..best.Name)
             H.CFrame = CFrame.new(best.ExitPos + Vector3.new(0,10,0))
             task.wait(0.5)
         end
-        warn("[Nexora Portal] Portal usado, indo pro destino final")
     end)
 
 	if Z and Z.Sit then
