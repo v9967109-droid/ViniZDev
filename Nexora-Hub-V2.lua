@@ -8279,6 +8279,7 @@ SettingFarmMainSection.CreateToggle(
 		SaveSettings("Use Portals", I)
 	end
 )
+
 SaveSettings("Speed Tween ", 220)
 SettingFarmMainSection.CreateLabel({
 	Title = "Speed Tween: 220",
@@ -29443,13 +29444,12 @@ task.spawn(function()
 end)
 
 
--- [[ NEXORA USE PORTALS - SAFE HOOK NO FINAL ]] --
+-- [[ NEXORA USE PORTALS SAFE ]] --
 task.spawn(function()
-    task.wait(3)
     pcall(function()
+        task.wait(2)
         if getgenv().NexoraPortalHooked then return end
         getgenv().NexoraPortalHooked = true
-        
         getgenv().NexoraPortals = {
             {Name="Castle->Mansion", Entry=CFrame.new(-5084, 314, -3150), ExitPos=Vector3.new(-12462, 375, -7524)},
             {Name="Castle->Hydra", Entry=CFrame.new(-5144, 314, -3151), ExitPos=Vector3.new(5541, 668, 195)},
@@ -29458,57 +29458,52 @@ task.spawn(function()
             {Name="Hydra->Castle", Entry=CFrame.new(5541, 668, 195), ExitPos=Vector3.new(-5144, 314, -3151)},
             {Name="Tiki->Castle", Entry=CFrame.new(-16545, 430, -210), ExitPos=Vector3.new(-5008, 314, -3151)},
         }
-        
-        local function ShouldUse(targetPos, myPos)
+        local function ShouldUse(tp, mp) 
             if Settings and Settings["Use Portals"] == false then return false end
-            if not targetPos or not myPos then return false end
-            if (targetPos - myPos).Magnitude < 3500 then return false end
-            return true
+            if not tp or not mp then return false end
+            return (tp-mp).Magnitude > 3500
         end
-        
-        local function FindBest(myPos, targetPos)
-            local best, bestScore = nil, 9e9
-            for _, p in ipairs(getgenv().NexoraPortals) do
-                local total = (p.Entry.Position - myPos).Magnitude + (p.ExitPos - targetPos).Magnitude
-                if total < bestScore then bestScore = total; best = p end
+        local function FindBest(mp,tp)
+            local b,s=nil,9e9
+            for _,p in ipairs(getgenv().NexoraPortals) do
+                local t=(p.Entry.Position-mp).Magnitude + (p.ExitPos-tp).Magnitude
+                if t<s then s=t; b=p end
             end
-            return best, bestScore
+            return b,s
         end
-        
         if toTarget and not getgenv().OldToTarget then
             getgenv().OldToTarget = toTarget
-            function toTarget(P, e)
-                if P and typeof(P) == "CFrame" and Settings and Settings["Use Portals"] ~= false then
+            function toTarget(P,e)
+                if P and typeof(P)=="CFrame" and Settings and Settings["Use Portals"]~=false then
                     pcall(function()
-                        local char = game.Players.LocalPlayer.Character
-                        if char and char:FindFirstChild("HumanoidRootPart") then
-                            local hrp = char.HumanoidRootPart
-                            local targetPos = P.Position
-                            local myPos = hrp.Position
-                            if ShouldUse(targetPos, myPos) then
-                                local portal, score = FindBest(myPos, targetPos)
-                                local direct = (targetPos - myPos).Magnitude
-                                if portal and score < direct * 0.80 then
-                                    local entryCF = portal.Entry + Vector3.new(0,5,0)
+                        local c=game.Players.LocalPlayer.Character
+                        if c and c:FindFirstChild("HumanoidRootPart") then
+                            local hrp=c.HumanoidRootPart
+                            local tp=P.Position
+                            local mp=hrp.Position
+                            if ShouldUse(tp,mp) then
+                                local portal,score=FindBest(mp,tp)
+                                if portal and score < (tp-mp).Magnitude*0.80 then
+                                    local entryCF=portal.Entry+Vector3.new(0,5,0)
                                     if B then
-                                        B(hrp, entryCF, 300, 8)
-                                        local t0 = tick()
-                                        repeat task.wait() until (hrp.Position - entryCF.Position).Magnitude < 40 or tick()-t0 > 10
-                                        task.wait(0.3)
+                                        B(hrp,entryCF,300,8)
+                                        local t0=tick()
+                                        repeat task.wait() until (hrp.Position-entryCF.Position).Magnitude<40 or tick()-t0>10
+                                        task.wait(0.2)
                                         pcall(function()
-                                            for _, v in pairs(workspace:GetDescendants()) do
+                                            for _,v in pairs(workspace:GetDescendants()) do
                                                 if v:IsA("TouchTransmitter") and v.Parent and v.Parent:IsA("BasePart") then
-                                                    if (v.Parent.Position - portal.Entry.Position).Magnitude < 40 then
-                                                        firetouchinterest(hrp, v.Parent, 0)
+                                                    if (v.Parent.Position-portal.Entry.Position).Magnitude<40 then
+                                                        firetouchinterest(hrp,v.Parent,0)
                                                         task.wait(0.1)
-                                                        firetouchinterest(hrp, v.Parent, 1)
+                                                        firetouchinterest(hrp,v.Parent,1)
                                                     end
                                                 end
                                             end
                                         end)
-                                        local oldPos = hrp.Position
-                                        local t1 = tick()
-                                        repeat task.wait() until (hrp.Position - oldPos).Magnitude > 500 or tick()-t1 > 5
+                                        local old=hrp.Position
+                                        local t1=tick()
+                                        repeat task.wait() until (hrp.Position-old).Magnitude>500 or tick()-t1>5
                                         task.wait(0.5)
                                     end
                                 end
@@ -29516,11 +29511,10 @@ task.spawn(function()
                         end
                     end)
                 end
-                return getgenv().OldToTarget(P, e)
+                return getgenv().OldToTarget(P,e)
             end
-            getgenv().BackupTween = toTarget
-            print("[Nexora] Use Portals ATIVO - abaixo de Bring Mob em Setting Farm")
+            getgenv().BackupTween=toTarget
+            print("[Nexora] Use Portals ativo")
         end
     end)
 end)
--- [[ FIM USE PORTALS ]] --
