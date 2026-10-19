@@ -8274,7 +8274,7 @@ SettingFarmMainSection.CreateToggle(
 	end
 )
 SettingFarmMainSection.CreateToggle(
-	{ Title = "Use Portals", Desc = "Usa portais fisicos Rip Indra Sea 3", Default = Settings["Use Portals"] == nil and true or Settings["Use Portals"] },
+	{ Title = "Use Portals", Desc = "", Default = true },
 	function(I)
 		SaveSettings("Use Portals", I)
 	end
@@ -29441,82 +29441,4 @@ task.spawn(function()
     task.wait()
     if A and A.RestoreSavedToggles then A.RestoreSavedToggles() end
     pcall(function() if getgenv().NexoraLoadingFinish then getgenv().NexoraLoadingFinish() end end)
-end)
-
-
--- [[ NEXORA USE PORTALS MINIMAL - SEM DEPENDER DE B ]] --
-task.spawn(function()
-    task.wait(2)
-    pcall(function()
-        getgenv().NexoraPortals = {
-            {Entry=CFrame.new(-5084, 314, -3150), ExitPos=Vector3.new(-12462, 375, -7524)},
-            {Entry=CFrame.new(-5144, 314, -3151), ExitPos=Vector3.new(5541, 668, 195)},
-            {Entry=CFrame.new(-5008, 314, -3151), ExitPos=Vector3.new(-16545, 430, -210)},
-            {Entry=CFrame.new(-12462, 375, -7524), ExitPos=Vector3.new(-5084, 314, -3150)},
-            {Entry=CFrame.new(5541, 668, 195), ExitPos=Vector3.new(-5144, 314, -3151)},
-            {Entry=CFrame.new(-16545, 430, -210), ExitPos=Vector3.new(-5008, 314, -3151)},
-        }
-        
-        local TS = game:GetService("TweenService")
-        local function TweenTo(hrp, cf, speed)
-            speed = speed or 300
-            local dist = (hrp.Position - cf.Position).Magnitude
-            local time = dist / speed
-            local tween = TS:Create(hrp, TweenInfo.new(math.clamp(time,0.5,10), Enum.EasingStyle.Linear), {CFrame = cf})
-            tween:Play()
-            return tween
-        end
-        
-        if toTarget and not getgenv().OldToTargetPortal then
-            getgenv().OldToTargetPortal = toTarget
-            function toTarget(P,e)
-                if P and typeof(P)=="CFrame" and Settings and Settings["Use Portals"]~=false then
-                    pcall(function()
-                        local char = game.Players.LocalPlayer.Character
-                        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-                        local hrp = char.HumanoidRootPart
-                        local myPos = hrp.Position
-                        local targetPos = P.Position
-                        local direct = (targetPos - myPos).Magnitude
-                        if direct < 2500 then return end
-                        local best, bestScore = nil, 9e9
-                        for _, portal in ipairs(getgenv().NexoraPortals) do
-                            local total = (portal.Entry.Position - myPos).Magnitude + (portal.ExitPos - targetPos).Magnitude
-                            if total < bestScore then bestScore = total; best = portal end
-                        end
-                        if best and bestScore < direct * 0.90 then
-                            -- Vai pro portal com tween proprio
-                            local entryCF = best.Entry + Vector3.new(0,5,0)
-                            local tw = TweenTo(hrp, entryCF, 300)
-                            local t0 = tick()
-                            repeat task.wait() until (hrp.Position - entryCF.Position).Magnitude < 40 or tick()-t0 > 12 or not Settings["Use Portals"]
-                            pcall(function() tw:Cancel() end)
-                            task.wait(0.2)
-                            -- Tenta tocar portal de 3 jeitos
-                            pcall(function()
-                                for _, v in pairs(workspace:GetDescendants()) do
-                                    if v:IsA("TouchTransmitter") and v.Parent and v.Parent:IsA("BasePart") then
-                                        if (v.Parent.Position - best.Entry.Position).Magnitude < 50 then
-                                            firetouchinterest(hrp, v.Parent, 0)
-                                            task.wait(0.1)
-                                            firetouchinterest(hrp, v.Parent, 1)
-                                        end
-                                    end
-                                end
-                                -- fallback: CFrame direto no portal
-                                hrp.CFrame = best.Entry
-                                task.wait(0.2)
-                            end)
-                            local oldPos = hrp.Position
-                            local t1 = tick()
-                            repeat task.wait() until (hrp.Position - oldPos).Magnitude > 400 or tick()-t1 > 6
-                            task.wait(0.5)
-                        end
-                    end)
-                end
-                return getgenv().OldToTargetPortal(P,e)
-            end
-            print("[Nexora] Use Portals MINIMAL ativo - Setting Farm")
-        end
-    end)
 end)
