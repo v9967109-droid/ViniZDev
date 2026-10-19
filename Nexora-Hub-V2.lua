@@ -6764,18 +6764,15 @@ function toTarget(P, e)
     local H, Z = Y.HumanoidRootPart, Y:FindFirstChildOfClass("Humanoid")
     if not Z then return end
 
-    -- PORTAL LOGICA - FORCA IR ATE O PORTAL
     local shouldUsePortal = false
     local bestPortal = nil
-    local myIslandName = ""
-    local targetIslandName = ""
 
     pcall(function()
         if Settings and Settings["Use Portals"] == false then return end
         local myPos = H.Position
         local targetPos = P.Position
         local direct = (targetPos - myPos).Magnitude
-        if direct < 2000 then return end
+        if direct < 3000 then return end
 
         local islandPos = {
             Castle = Vector3.new(-5084, 314, -3150),
@@ -6794,13 +6791,20 @@ function toTarget(P, e)
                     bestName = name
                 end
             end
-            if bestDist < 12000 then return bestName, bestDist else return "Sea", bestDist end
+            -- SO CONSIDERA ILHA SE ESTIVER PERTO (6000), SENAO E MAR
+            if bestDist < 6000 then
+                return bestName, bestDist
+            else
+                return "Sea", bestDist
+            end
         end
 
         local myIsland, myDist = GetIsland(myPos)
         local targetIsland, targetDist = GetIsland(targetPos)
-        myIslandName = myIsland
-        targetIslandName = targetIsland
+
+        if myIsland ~= "Sea" and targetIsland ~= "Sea" and myIsland == targetIsland then
+            return
+        end
 
         local portals = {
             CastleToMansion = {Name="Castle->Mansion", EntryPos=Vector3.new(-5084, 314, -3150), ExitPos=Vector3.new(-12462, 375, -7524)},
@@ -6811,28 +6815,33 @@ function toTarget(P, e)
             TikiToCastle = {Name="Tiki->Castle", EntryPos=Vector3.new(-16545, 430, -210), ExitPos=Vector3.new(-5008, 314, -3151)},
         }
 
-        if myIsland == "Tiki" and targetIsland ~= "Tiki" then bestPortal = portals.TikiToCastle
-        elseif myIsland == "Mansion" and targetIsland ~= "Mansion" then bestPortal = portals.MansionToCastle
-        elseif myIsland == "Hydra" and targetIsland ~= "Hydra" then bestPortal = portals.HydraToCastle
+        -- LOGICA NOVA: so usa portal se destino for ilha diferente e estiver longe
+        if myIsland == "Tiki" and targetIsland ~= "Tiki" and targetIsland ~= "Sea" then
+            bestPortal = portals.TikiToCastle
+        elseif myIsland == "Mansion" and targetIsland ~= "Mansion" and targetIsland ~= "Sea" then
+            bestPortal = portals.MansionToCastle
+        elseif myIsland == "Hydra" and targetIsland ~= "Hydra" and targetIsland ~= "Sea" then
+            bestPortal = portals.HydraToCastle
         elseif myIsland == "Castle" then
             if targetIsland == "Mansion" then bestPortal = portals.CastleToMansion
             elseif targetIsland == "Hydra" then bestPortal = portals.CastleToHydra
             elseif targetIsland == "Tiki" then bestPortal = portals.CastleToTiki
             end
+        elseif myIsland == "Sea" then
+            -- Se ta no mar e destino e ilha, nao precisa portal, vai voando
+            return
         end
 
         if bestPortal then
             shouldUsePortal = true
-            warn("[Nexora Portal] "..myIsland.." -> "..targetIsland.." = "..bestPortal.Name.." direto "..math.floor(direct))
+            warn("[Nexora Portal] "..myIsland.."("..math.floor(myDist)..") -> "..targetIsland.."("..math.floor(targetDist)..") = "..bestPortal.Name.." direto "..math.floor(direct))
         end
     end)
 
     if shouldUsePortal and bestPortal then
-        -- VAI ATE O PORTAL DE VERDADE - SEM BUG
         warn("[Nexora Portal] INDO ATE O PORTAL "..bestPortal.Name)
         pcall(function() TweenManager.CancelCurrent() end)
         
-        -- Acha portal real
         local realPart = nil
         local realPos = bestPortal.EntryPos
         pcall(function()
@@ -6849,15 +6858,13 @@ function toTarget(P, e)
             end
         end)
 
-        -- Vai ate o portal andando com CFrame direto
         local t0 = tick()
         repeat
             H.CFrame = CFrame.new(realPos + Vector3.new(0,5,0))
             H.AssemblyLinearVelocity = Vector3.new(0,0,0)
             task.wait(0.15)
-        until (H.Position - realPos).Magnitude < 10 or tick()-t0 > 10
+        until (H.Position - realPos).Magnitude < 15 or tick()-t0 > 10
 
-        warn("[Nexora Portal] Cheguei no portal, entrando e flutuando 3s")
         local oldPos = H.Position
         local start = tick()
         while tick() - start < 3.5 do
@@ -6877,10 +6884,7 @@ function toTarget(P, e)
         local t1 = tick()
         repeat task.wait(0.1) until (H.Position - oldPos).Magnitude > 500 or tick()-t1 > 8
 
-        if (H.Position - oldPos).Magnitude > 500 then
-            warn("[Nexora Portal] Teleportou!")
-        else
-            warn("[Nexora Portal] Forcando teleport "..bestPortal.Name)
+        if (H.Position - oldPos).Magnitude < 500 then
             H.CFrame = CFrame.new(bestPortal.ExitPos + Vector3.new(0,15,0))
             task.wait(0.5)
         end
