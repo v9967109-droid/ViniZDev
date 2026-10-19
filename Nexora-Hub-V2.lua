@@ -4992,20 +4992,20 @@ spawn(function()
 						or workspace._WorldOrigin.Locations:FindFirstChild("Kitsune Island") ~= nil
 				end)
 				if kitsuneOn then
-					StatusKitsuneIsland.SetText("Kitsune Island: \240\159\159\162")
+					StatusKitsuneIsland.SetText("Kitsune Island: 🟢")
 				else
-					StatusKitsuneIsland.SetText("Kitsune Island: \226\157\140")
+					StatusKitsuneIsland.SetText("Kitsune Island: 🔴")
 				end
 			end
 			if not workspace.Map:FindFirstChild("PrehistoricIsland") then
-				StatusPrehistoricIsland.SetText("Prehistoric Island: \226\157\140")
+				StatusPrehistoricIsland.SetText("Prehistoric Island: 🔴")
 			else
-				StatusPrehistoricIsland.SetText("Prehistoric Island: \226\156\133")
+				StatusPrehistoricIsland.SetText("Prehistoric Island: 🟢")
 			end
 			if not workspace._WorldOrigin.Locations:FindFirstChild("Frozen Dimension") then
-				StatusFrozenDimension.SetText("Frozen Dimension: \226\157\140")
+				StatusFrozenDimension.SetText("Frozen Dimension: 🔴")
 			else
-				StatusFrozenDimension.SetText("Frozen Dimension: \226\156\133")
+				StatusFrozenDimension.SetText("Frozen Dimension: 🟢")
 			end
 			StatusGear.SetText("Ancient One: " .. CheckAcientOneStatus())
 			if getgenv().StatusGearDraco then
@@ -5075,18 +5075,24 @@ task.spawn(function()
             local map = Workspace:FindFirstChild("Map")
             local world = Workspace:FindFirstChild("_WorldOrigin")
             local locations = world and world:FindFirstChild("Locations")
-            local on = (map and (map:FindFirstChild("KitsuneIsland") or map:FindFirstChild("Kitsune Island"))) or (locations and locations:FindFirstChild("Kitsune Island"))
+            local on = (map and (map:FindFirstChild("KitsuneIsland", true) or map:FindFirstChild("Kitsune Island", true)))
+                or (locations and (locations:FindFirstChild("Kitsune Island", true) or locations:FindFirstChild("KitsuneIsland", true)))
             safeSet(StatusKitsuneIsland, "Kitsune Island: " .. (on and "🟢" or "🔴"))
         end)
         pcall(function()
             local map = Workspace:FindFirstChild("Map")
-            local on = map and (map:FindFirstChild("PrehistoricIsland") or map:FindFirstChild("Prehistoric Island"))
+            local world = Workspace:FindFirstChild("_WorldOrigin")
+            local locations = world and world:FindFirstChild("Locations")
+            local on = (map and (map:FindFirstChild("PrehistoricIsland", true) or map:FindFirstChild("Prehistoric Island", true)))
+                or (locations and (locations:FindFirstChild("Prehistoric Island", true) or locations:FindFirstChild("PrehistoricIsland", true)))
             safeSet(StatusPrehistoricIsland, "Prehistoric Island: " .. (on and "🟢" or "🔴"))
         end)
         pcall(function()
             local world = Workspace:FindFirstChild("_WorldOrigin")
             local locations = world and world:FindFirstChild("Locations")
-            local on = locations and locations:FindFirstChild("Frozen Dimension")
+            local map = Workspace:FindFirstChild("Map")
+            local on = (locations and (locations:FindFirstChild("Frozen Dimension", true) or locations:FindFirstChild("FrozenDimension", true)))
+                or (map and (map:FindFirstChild("Frozen Dimension", true) or map:FindFirstChild("FrozenDimension", true)))
             safeSet(StatusFrozenDimension, "Frozen Dimension: " .. (on and "🟢" or "🔴"))
         end)
         pcall(function()
@@ -6750,6 +6756,118 @@ local function B(Z, C, J, F)
 	return r
 end
 
+
+-- [[ Use Portals System - Nexora Hub ]] --
+-- Portais físicos do Rip Indra no Sea 3 (Castle <-> Mansion/Hydra/Tiki)
+getgenv().NexoraPortals = getgenv().NexoraPortals or {
+    -- Castle on Sea (3 portais na casinha azul)
+    {Name="Castle->Mansion", Entry=CFrame.new(-5084, 314, -3150), ExitPos=Vector3.new(-12462, 375, -7524), Island="Mansion"},
+    {Name="Castle->Hydra", Entry=CFrame.new(-5144, 314, -3151), ExitPos=Vector3.new(5541, 668, 195), Island="Hydra"},
+    {Name="Castle->Tiki", Entry=CFrame.new(-5008, 314, -3151), ExitPos=Vector3.new(-16545, 430, -210), Island="Tiki"},
+    -- Volta
+    {Name="Mansion->Castle", Entry=CFrame.new(-12462, 375, -7524), ExitPos=Vector3.new(-5084, 314, -3150), Island="Castle"},
+    {Name="Hydra->Castle", Entry=CFrame.new(5541, 668, 195), ExitPos=Vector3.new(-5144, 314, -3151), Island="Castle"},
+    {Name="Tiki->Castle", Entry=CFrame.new(-16545, 430, -210), ExitPos=Vector3.new(-5008, 314, -3151), Island="Castle"},
+}
+
+-- Define regiões das ilhas pra decidir quando usar portal
+local function GetIslandFromPos(pos)
+    if (pos - Vector3.new(-5084, 314, -3150)).Magnitude < 3000 then return "Castle"
+    elseif (pos - Vector3.new(-12462, 375, -7524)).Magnitude < 3000 then return "Mansion"
+    elseif (pos - Vector3.new(5541, 668, 195)).Magnitude < 3500 then return "Hydra"
+    elseif (pos - Vector3.new(-16545, 430, -210)).Magnitude < 3500 then return "Tiki"
+    elseif (pos - Vector3.new(-2892, 6, -1936)).Magnitude < 4000 then return "Port"
+    elseif (pos - Vector3.new(-4500, 200, -2000)).Magnitude < 5000 then return "GreatTree"
+    else return "Other" end
+end
+
+local function ShouldUsePortalSystem(targetPos, myPos)
+    if Settings["Use Portals"] == false then return false end
+    if not targetPos or not myPos then return false end
+    -- Só no Sea 3
+    if game.PlaceId ~= 7449423635 and getgenv().CheckPlaceId ~= 7449423635 then
+        -- tenta detectar pelo mapa do Sea3
+        if not workspace.Map:FindFirstChild("Mansion") and not workspace.Map:FindFirstChild("HydraIsland") then
+            -- não está no sea3, não usa
+            -- mas deixa passar se distância for muito grande (mapa grande)
+        end
+    end
+    local distDirect = (targetPos - myPos).Magnitude
+    if distDirect < 3500 then return false end -- perto não precisa
+    local myIsland = GetIslandFromPos(myPos)
+    local targetIsland = GetIslandFromPos(targetPos)
+    if myIsland == targetIsland then return false end
+    if myIsland == "Other" and targetIsland == "Other" and distDirect < 6000 then return false end
+    return true, myIsland, targetIsland
+end
+
+local function FindBestPortal(myPos, targetPos)
+    local best, bestScore = nil, math.huge
+    for _, portal in ipairs(getgenv().NexoraPortals) do
+        local distToPortal = (portal.Entry.Position - myPos).Magnitude
+        local distExitToTarget = (portal.ExitPos - targetPos).Magnitude
+        local total = distToPortal + distExitToTarget
+        -- Dá preferência pra portal que sai mais perto do alvo
+        if total < bestScore then
+            bestScore = total
+            best = portal
+        end
+    end
+    return best, bestScore
+end
+
+getgenv().TryUsePortal = function(targetCFrame)
+    if Settings["Use Portals"] == false then return false end
+    local char = game.Players.LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return false end
+    local hrp = char.HumanoidRootPart
+    local targetPos = targetCFrame.Position
+    local myPos = hrp.Position
+    local should, myIsland, targetIsland = ShouldUsePortalSystem(targetPos, myPos)
+    if not should then return false end
+    local portal, score = FindBestPortal(myPos, targetPos)
+    if not portal then return false end
+    local direct = (targetPos - myPos).Magnitude
+    if score > direct * 0.85 then return false end -- se portal não economiza muito, não usa
+    
+    -- Usa o portal
+    pcall(function()
+        -- Avisa
+        -- print("[Use Portals] Indo via "..portal.Name.." | "..myIsland.." -> "..targetIsland)
+        local entryCF = portal.Entry + Vector3.new(0,5,0)
+        -- Vai até o portal usando B (tween do hub)
+        if B then
+            B(hrp, entryCF, math.clamp(tonumber(Settings["Speed Tween "] or 220),0,220), 8)
+            -- espera chegar perto
+            local t0 = tick()
+            repeat task.wait() until (hrp.Position - entryCF.Position).Magnitude < 25 or tick()-t0 > 12 or not Settings["Use Portals"]
+            -- tenta tocar no portal físico
+            task.wait(0.2)
+            -- fire touchinterest se existir
+            pcall(function()
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v:IsA("TouchTransmitter") and v.Parent and v.Parent.Name:lower():find("portal") then
+                        if (v.Parent.Position - portal.Entry.Position).Magnitude < 25 then
+                            firetouchinterest(hrp, v.Parent, 0)
+                            task.wait()
+                            firetouchinterest(hrp, v.Parent, 1)
+                        end
+                    end
+                end
+            end)
+            -- espera teleporte
+            local oldPos = hrp.Position
+            local t1 = tick()
+            repeat task.wait() until (hrp.Position - oldPos).Magnitude > 1000 or tick()-t1 > 5
+            task.wait(0.5)
+            TweenManager.CancelTweenOnly()
+        end
+    end)
+    return true
+end
+-- [[ Fim Use Portals System ]] --
+
+
 function toTarget(P, e)
 	if typeof(P) ~= "CFrame" then
 		return
@@ -6801,6 +6919,18 @@ function toTarget(P, e)
 		H.CFrame = P
 		return
 	end
+
+	-- Use Portals Check (Nexora)
+	if Settings["Use Portals"] ~= false then
+		pcall(function()
+			if getgenv().TryUsePortal and (P.Position - H.Position).Magnitude > 3500 then
+				if getgenv().TryUsePortal(P) then
+					-- portal usado, já estamos mais perto, continua o toTarget normal
+				end
+			end
+		end)
+	end
+	
 	if game.PlaceId ~= 122478697296975 then
 		e = CFrame.new(28609.392578125, 14896.533203125, 106.4216537475586)
 		if
@@ -8265,6 +8395,12 @@ SettingFarmMainSection.CreateToggle(
 	{ Title = "Bring Mob", Desc = nil, Default = Settings["Bring Mob"] or true },
 	function(I)
 		SaveSettings("Bring Mob", I)
+	end
+)
+SettingFarmMainSection.CreateToggle(
+	{ Title = "Use Portals", Desc = "Usa os 3 portais físicos do Rip Indra no Sea 3", Default = Settings["Use Portals"] == nil and true or Settings["Use Portals"] },
+	function(I)
+		SaveSettings("Use Portals", I)
 	end
 )
 SaveSettings("Speed Tween ", 220)
