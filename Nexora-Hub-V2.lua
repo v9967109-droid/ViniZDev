@@ -6801,14 +6801,9 @@ function toTarget(P, e)
         }
 
         local best = nil
-
-        -- SE TA NA ILHA, VOLTA PRO CASTELO (prioridade maxima)
-        if myIsland == "Tiki" and targetIsland ~= "Tiki" then
-            best = portals.TikiToCastle
-        elseif myIsland == "Mansion" and targetIsland ~= "Mansion" then
-            best = portals.MansionToCastle
-        elseif myIsland == "Hydra" and targetIsland ~= "Hydra" then
-            best = portals.HydraToCastle
+        if myIsland == "Tiki" and targetIsland ~= "Tiki" then best = portals.TikiToCastle
+        elseif myIsland == "Mansion" and targetIsland ~= "Mansion" then best = portals.MansionToCastle
+        elseif myIsland == "Hydra" and targetIsland ~= "Hydra" then best = portals.HydraToCastle
         elseif myIsland == "Castle" then
             if targetIsland == "Mansion" then best = portals.CastleToMansion
             elseif targetIsland == "Hydra" then best = portals.CastleToHydra
@@ -6817,6 +6812,7 @@ function toTarget(P, e)
         end
 
         if not best then return end
+        if myIsland == targetIsland then return end
 
         local realPortalPart = nil
         local realPortalPos = best.Entry.Position
@@ -6844,27 +6840,41 @@ function toTarget(P, e)
         local t0 = tick()
         repeat task.wait() until (H.Position - realPortalPos).Magnitude < 25 or tick()-t0 > 15
 
-        for i=1,10 do
+        -- ENTRA E FICA 3 SEGUNDOS FLUTUANDO DENTRO (igual voce pediu)
+        warn("[Nexora Portal] Entrou no portal, flutuando 3s...")
+        local floatStart = tick()
+        local oldPos = H.Position
+        
+        -- Fica flutuando dentro do portal por 3 segundos
+        while tick() - floatStart < 3 do
             if realPortalPart then
                 H.CFrame = realPortalPart.CFrame + Vector3.new(0,3,0)
-                task.wait(0.08)
-                H.CFrame = realPortalPart.CFrame * CFrame.new(0,0,-1)
-                task.wait(0.08)
-                firetouchinterest(H, realPortalPart, 0)
-                task.wait(0.08)
-                firetouchinterest(H, realPortalPart, 1)
-                task.wait(0.08)
+                H.AssemblyLinearVelocity = Vector3.new(0,0,0)
+                pcall(function()
+                    firetouchinterest(H, realPortalPart, 0)
+                    task.wait(0.05)
+                    firetouchinterest(H, realPortalPart, 1)
+                end)
             else
                 H.CFrame = best.Entry + Vector3.new(0,3,0)
-                task.wait(0.1)
+                H.AssemblyLinearVelocity = Vector3.new(0,0,0)
+            end
+            task.wait(0.1)
+            -- Se ja teleportou, para de flutuar
+            if (H.Position - oldPos).Magnitude > 400 then
+                break
             end
         end
 
-        local oldPos = H.Position
+        -- Espera mais um pouco pra garantir teleport
         local t1 = tick()
-        repeat task.wait(0.1) until (H.Position - oldPos).Magnitude > 400 or tick()-t1 > 10
+        repeat task.wait(0.1) until (H.Position - oldPos).Magnitude > 400 or tick()-t1 > 7
 
-        if (H.Position - oldPos).Magnitude < 400 then
+        if (H.Position - oldPos).Magnitude > 400 then
+            warn("[Nexora Portal] Teleportado! "..best.Name)
+            task.wait(0.5)
+        else
+            warn("[Nexora Portal] Nao teleportou automatico, forcando")
             H.CFrame = CFrame.new(best.ExitPos + Vector3.new(0,15,0))
             task.wait(0.5)
         end
