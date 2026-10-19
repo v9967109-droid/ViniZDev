@@ -6768,7 +6768,55 @@ function toTarget(P, e)
 	if not Z then
 		return
 	end
-	k.LastCall = tick()
+	
+    k.LastCall = tick()
+    pcall(function()
+        if Settings and Settings["Use Portals"] == false then return end
+        if not P or typeof(P) ~= "CFrame" then return end
+        if not H then return end
+        local myPos = H.Position
+        local targetPos = P.Position
+        local direct = (targetPos - myPos).Magnitude
+        if direct < 2500 then return end
+        local portals = {
+            {Entry=CFrame.new(-5084, 314, -3150), ExitPos=Vector3.new(-12462, 375, -7524)},
+            {Entry=CFrame.new(-5144, 314, -3151), ExitPos=Vector3.new(5541, 668, 195)},
+            {Entry=CFrame.new(-5008, 314, -3151), ExitPos=Vector3.new(-16545, 430, -210)},
+            {Entry=CFrame.new(-12462, 375, -7524), ExitPos=Vector3.new(-5084, 314, -3150)},
+            {Entry=CFrame.new(5541, 668, 195), ExitPos=Vector3.new(-5144, 314, -3151)},
+            {Entry=CFrame.new(-16545, 430, -210), ExitPos=Vector3.new(-5008, 314, -3151)},
+        }
+        local best = nil
+        local bestScore = 9e9
+        for _, portal in ipairs(portals) do
+            local total = (portal.Entry.Position - myPos).Magnitude + (portal.ExitPos - targetPos).Magnitude
+            if total < bestScore then bestScore = total; best = portal end
+        end
+        if best and bestScore < direct * 0.85 then
+            local entryCF = best.Entry + Vector3.new(0,5,0)
+            B(H, entryCF, 350, 8)
+            local t0 = tick()
+            repeat task.wait() until (H.Position - entryCF.Position).Magnitude < 35 or tick()-t0 > 10
+            task.wait(0.2)
+            pcall(function()
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v:IsA("TouchTransmitter") and v.Parent and v.Parent:IsA("BasePart") then
+                        if (v.Parent.Position - best.Entry.Position).Magnitude < 40 then
+                            firetouchinterest(H, v.Parent, 0)
+                            task.wait(0.1)
+                            firetouchinterest(H, v.Parent, 1)
+                        end
+                    end
+                end
+                H.CFrame = best.Entry
+            end)
+            local oldPos = H.Position
+            local t1 = tick()
+            repeat task.wait() until (H.Position - oldPos).Magnitude > 400 or tick()-t1 > 6
+            task.wait(0.5)
+        end
+    end)
+
 	if Z and Z.Sit then
 		TweenManager.CancelCurrent()
 		task.wait(0.1)
