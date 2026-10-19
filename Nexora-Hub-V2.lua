@@ -6772,69 +6772,69 @@ function toTarget(P, e)
         local myPos = H.Position
         local targetPos = P.Position
         local direct = (targetPos - myPos).Magnitude
-        if direct < 3000 then return end
+        if direct < 2500 then return end
 
-        local islandPos = {
+        local islandExit = {
             Castle = Vector3.new(-5084, 314, -3150),
             Mansion = Vector3.new(-12462, 375, -7524),
             Hydra = Vector3.new(5541, 668, 195),
             Tiki = Vector3.new(-16545, 430, -210),
         }
 
-        local function GetIsland(pos)
-            local bestName = "Sea"
+        local function GetMyIsland(pos)
+            local best = "Sea"
             local bestDist = 9e9
-            for name, ipos in pairs(islandPos) do
+            for name, ipos in pairs(islandExit) do
                 local d = (pos - ipos).Magnitude
                 if d < bestDist then
                     bestDist = d
-                    bestName = name
+                    best = name
                 end
             end
-            -- SO CONSIDERA ILHA SE ESTIVER PERTO (6000), SENAO E MAR
-            if bestDist < 6000 then
-                return bestName, bestDist
-            else
-                return "Sea", bestDist
-            end
+            if bestDist < 6000 then return best, bestDist else return "Sea", bestDist end
         end
 
-        local myIsland, myDist = GetIsland(myPos)
-        local targetIsland, targetDist = GetIsland(targetPos)
+        local myIsland, myDist = GetMyIsland(myPos)
+        local targetIsland, targetDist = GetMyIsland(targetPos)
 
+        -- SE JA ESTIVER PERTO DA ILHA DO DESTINO, NAO USA PORTAL
         if myIsland ~= "Sea" and targetIsland ~= "Sea" and myIsland == targetIsland then
             return
         end
 
         local portals = {
-            CastleToMansion = {Name="Castle->Mansion", EntryPos=Vector3.new(-5084, 314, -3150), ExitPos=Vector3.new(-12462, 375, -7524)},
-            CastleToHydra = {Name="Castle->Hydra", EntryPos=Vector3.new(-5144, 314, -3151), ExitPos=Vector3.new(5541, 668, 195)},
-            CastleToTiki = {Name="Castle->Tiki", EntryPos=Vector3.new(-5008, 314, -3151), ExitPos=Vector3.new(-16545, 430, -210)},
-            MansionToCastle = {Name="Mansion->Castle", EntryPos=Vector3.new(-12462, 375, -7524), ExitPos=Vector3.new(-5084, 314, -3150)},
-            HydraToCastle = {Name="Hydra->Castle", EntryPos=Vector3.new(5541, 668, 195), ExitPos=Vector3.new(-5144, 314, -3151)},
-            TikiToCastle = {Name="Tiki->Castle", EntryPos=Vector3.new(-16545, 430, -210), ExitPos=Vector3.new(-5008, 314, -3151)},
+            CastleToMansion = {Name="Castle->Mansion", EntryPos=Vector3.new(-5084, 314, -3150), ExitPos=Vector3.new(-12462, 375, -7524), Dest="Mansion"},
+            CastleToHydra = {Name="Castle->Hydra", EntryPos=Vector3.new(-5144, 314, -3151), ExitPos=Vector3.new(5541, 668, 195), Dest="Hydra"},
+            CastleToTiki = {Name="Castle->Tiki", EntryPos=Vector3.new(-5008, 314, -3151), ExitPos=Vector3.new(-16545, 430, -210), Dest="Tiki"},
+            MansionToCastle = {Name="Mansion->Castle", EntryPos=Vector3.new(-12462, 375, -7524), ExitPos=Vector3.new(-5084, 314, -3150), Dest="Castle"},
+            HydraToCastle = {Name="Hydra->Castle", EntryPos=Vector3.new(5541, 668, 195), ExitPos=Vector3.new(-5144, 314, -3151), Dest="Castle"},
+            TikiToCastle = {Name="Tiki->Castle", EntryPos=Vector3.new(-16545, 430, -210), ExitPos=Vector3.new(-5008, 314, -3151), Dest="Castle"},
         }
 
-        -- LOGICA NOVA: so usa portal se destino for ilha diferente e estiver longe
-        if myIsland == "Tiki" and targetIsland ~= "Tiki" and targetIsland ~= "Sea" then
+        if myIsland == "Tiki" and targetIsland ~= "Tiki" then
             bestPortal = portals.TikiToCastle
-        elseif myIsland == "Mansion" and targetIsland ~= "Mansion" and targetIsland ~= "Sea" then
+        elseif myIsland == "Mansion" and targetIsland ~= "Mansion" then
             bestPortal = portals.MansionToCastle
-        elseif myIsland == "Hydra" and targetIsland ~= "Hydra" and targetIsland ~= "Sea" then
+        elseif myIsland == "Hydra" and targetIsland ~= "Hydra" then
             bestPortal = portals.HydraToCastle
         elseif myIsland == "Castle" then
-            if targetIsland == "Mansion" then bestPortal = portals.CastleToMansion
-            elseif targetIsland == "Hydra" then bestPortal = portals.CastleToHydra
-            elseif targetIsland == "Tiki" then bestPortal = portals.CastleToTiki
+            local distMansion = (targetPos - islandExit.Mansion).Magnitude
+            local distHydra = (targetPos - islandExit.Hydra).Magnitude
+            local distTiki = (targetPos - islandExit.Tiki).Magnitude
+            local minDist = math.min(distMansion, distHydra, distTiki)
+            if minDist > 6500 then return end
+            if minDist == distMansion then bestPortal = portals.CastleToMansion
+            elseif minDist == distHydra then bestPortal = portals.CastleToHydra
+            elseif minDist == distTiki then bestPortal = portals.CastleToTiki
             end
         elseif myIsland == "Sea" then
-            -- Se ta no mar e destino e ilha, nao precisa portal, vai voando
+            -- Se ta no mar e destino e ilha, vai direto voando, nao precisa portal
             return
         end
 
         if bestPortal then
             shouldUsePortal = true
-            warn("[Nexora Portal] "..myIsland.."("..math.floor(myDist)..") -> "..targetIsland.."("..math.floor(targetDist)..") = "..bestPortal.Name.." direto "..math.floor(direct))
+            warn("[Nexora Portal] "..myIsland.." -> "..bestPortal.Dest.." = "..bestPortal.Name.." direto "..math.floor(direct))
         end
     end)
 
