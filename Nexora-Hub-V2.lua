@@ -1965,6 +1965,23 @@ end
 function Nexora.CreateMain(config)
     config = config or {}
     local gui = make("ScreenGui", {Name = "NexoraUI", ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
+    
+    -- BOTAO EXTERNO ViniZDev QUE ABRE E FECHA A UI (igual na sua print)
+    local toggleBtn = make("TextButton", {Name="ViniZDevToggle", Size=UDim2.new(0,130,0,32), Position=UDim2.new(0,20,0,50), BackgroundColor3=Color3.fromRGB(20,20,25), Text="", BorderSizePixel=0, ZIndex=20, AutoButtonColor=false}, gui)
+    corner(toggleBtn, 16)
+    stroke(toggleBtn, Color3.fromRGB(0,140,255), 1)
+    
+    local toggleIcon = make("Frame", {Name="Icon", Size=UDim2.new(0,22,0,22), Position=UDim2.new(0,6,0.5,-11), BackgroundColor3=Color3.fromRGB(0,140,255), BorderSizePixel=0, ZIndex=21}, toggleBtn)
+    corner(toggleIcon, 6)
+    local nText = make("TextLabel", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Text="N", TextColor3=Color3.white, TextSize=12, Font=Enum.Font.GothamBold, ZIndex=22}, toggleIcon)
+    
+    local toggleText = make("TextLabel", {Name="ViniZDevLabel", Size=UDim2.new(1,-36,1,0), Position=UDim2.new(0,32,0,0), BackgroundTransparency=1, Text="ViniZDev", TextColor3=Color3.white, TextSize=13, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=21}, toggleBtn)
+    
+    local dot = make("Frame", {Size=UDim2.new(0,8,0,8), Position=UDim2.new(1,-16,0.5,-4), BackgroundColor3=Color3.fromRGB(0,255,100), BorderSizePixel=0, ZIndex=21}, toggleBtn)
+    corner(dot, 4)
+    
+    make("TextLabel", {Size=UDim2.new(0,0,0,0), Position=UDim2.new(0,0,0,0), BackgroundTransparency=1, Text="", ZIndex=1}, gui) -- dummy to keep make working
+
     local SIZE_FILE = "NexoraHubWindowSize.json"
     local persistedW, persistedH = 690, 440
     -- Salva o tamanho em arquivo do executor para sobreviver a reinícios do jogo.
@@ -1987,11 +2004,11 @@ function Nexora.CreateMain(config)
     corner(shell, 14); stroke(shell, Color3.fromRGB(255,255,255), 0.88)
     
     -- FUNDO ANIME IGUAL QUANTUM ONYX PROJECT (menina com sakura)
-    local bgImage = make("ImageLabel", {Name="AnimeBG", Size=UDim2.new(1,0,1,0), Position=UDim2.new(0,0,0,0), BackgroundTransparency=1, Image="rbxassetid://17336164180", ImageTransparency=0.15, ScaleType=Enum.ScaleType.Crop, ZIndex=0}, shell)
+    local bgImage = make("ImageLabel", {Name="AnimeBG", Size=UDim2.new(1,0,1,0), Position=UDim2.new(0,0,0,0), BackgroundTransparency=1, Image="rbxassetid://17336164180", ImageTransparency=0.25, ScaleType=Enum.ScaleType.Crop, ZIndex=0}, shell)
     corner(bgImage, 14)
     
     -- OVERLAY ESCURO PRA TEXTO FICAR LEGIVEL
-    local overlay = make("Frame", {Name="DarkOverlay", Size=UDim2.new(1,0,1,0), BackgroundColor3=Color3.fromRGB(0,0,0), BackgroundTransparency=0.55, BorderSizePixel=0, ZIndex=1}, shell)
+    local overlay = make("Frame", {Name="DarkOverlay", Size=UDim2.new(1,0,1,0), BackgroundColor3=Color3.fromRGB(0,0,0), BackgroundTransparency=0.45, BorderSizePixel=0, ZIndex=1}, shell)
     corner(overlay, 14)
 
     make("UIGradient", {Rotation = 135, Color = ColorSequence.new({
@@ -2015,6 +2032,41 @@ function Nexora.CreateMain(config)
     if workspace.CurrentCamera then workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(resize) end
 
     local HEADER_H, SIDEBAR_W = 64, 190
+    
+    -- LOGICA DO BOTAO ABRIR/FECHAR
+    local isOpen = true
+    toggleBtn.MouseButton1Click:Connect(function()
+        isOpen = not isOpen
+        shell.Visible = isOpen
+        if isOpen then
+            dot.BackgroundColor3 = Color3.fromRGB(0,255,100)
+        else
+            dot.BackgroundColor3 = Color3.fromRGB(255,50,50)
+        end
+    end)
+    
+    -- Deixa o botao arrastavel
+    local dragging, dragInput, dragStart, startPos
+    toggleBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = toggleBtn.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
+    end)
+    toggleBtn.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
+    end)
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            toggleBtn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+
     
     -- ICONE REDONDO ROXO COM VINIZDEV
     local iconBtn = make("ImageButton", {Name="ViniZDevIcon", Size=UDim2.new(0,52,0,52), Position=UDim2.new(0,12,0,6), BackgroundColor3=Color3.fromRGB(25,10,40), BorderSizePixel=0, Image="rbxassetid://13339471102", ZIndex=10}, shell)
