@@ -6781,10 +6781,10 @@ function toTarget(P, e)
         if direct < 2500 then return end
 
         local function GetIsland(pos)
-            if (pos - Vector3.new(-5084, 314, -3150)).Magnitude < 3500 then return "Castle" end
-            if (pos - Vector3.new(-12462, 375, -7524)).Magnitude < 3500 then return "Mansion" end
-            if (pos - Vector3.new(5541, 668, 195)).Magnitude < 3500 then return "Hydra" end
-            if (pos - Vector3.new(-16545, 430, -210)).Magnitude < 3500 then return "Tiki" end
+            if (pos - Vector3.new(-5084, 314, -3150)).Magnitude < 8000 then return "Castle" end
+            if (pos - Vector3.new(-12462, 375, -7524)).Magnitude < 8000 then return "Mansion" end
+            if (pos - Vector3.new(5541, 668, 195)).Magnitude < 8000 then return "Hydra" end
+            if (pos - Vector3.new(-16545, 430, -210)).Magnitude < 8000 then return "Tiki" end
             return "Sea"
         end
 
@@ -6802,37 +6802,22 @@ function toTarget(P, e)
 
         local best = nil
 
-        -- SE TA NA ILHA, USA O PORTAL PRA VOLTAR PRO CASTELO (igual voce falou)
+        -- SE TA NA ILHA, VOLTA PRO CASTELO (prioridade maxima)
         if myIsland == "Tiki" and targetIsland ~= "Tiki" then
             best = portals.TikiToCastle
         elseif myIsland == "Mansion" and targetIsland ~= "Mansion" then
             best = portals.MansionToCastle
         elseif myIsland == "Hydra" and targetIsland ~= "Hydra" then
             best = portals.HydraToCastle
-        -- SE TA NO CASTLE, USA O PORTAL CERTO PRA ILHA
         elseif myIsland == "Castle" then
             if targetIsland == "Mansion" then best = portals.CastleToMansion
             elseif targetIsland == "Hydra" then best = portals.CastleToHydra
             elseif targetIsland == "Tiki" then best = portals.CastleToTiki
-            -- Se destino eh no mar mas perto de uma ilha, descobre pela posicao do alvo
-            else
-                local distMansion = (targetPos - portals.CastleToMansion.ExitPos).Magnitude
-                local distHydra = (targetPos - portals.CastleToHydra.ExitPos).Magnitude
-                local distTiki = (targetPos - portals.CastleToTiki.ExitPos).Magnitude
-                if distMansion < distHydra and distMansion < distTiki and distMansion < 5000 then
-                    best = portals.CastleToMansion
-                elseif distHydra < distMansion and distHydra < distTiki and distHydra < 5000 then
-                    best = portals.CastleToHydra
-                elseif distTiki < distMansion and distTiki < distHydra and distTiki < 5000 then
-                    best = portals.CastleToTiki
-                end
             end
         end
 
         if not best then return end
-        if myIsland == targetIsland then return end
 
-        -- Acha portal real
         local realPortalPart = nil
         local realPortalPos = best.Entry.Position
         pcall(function()
@@ -6850,7 +6835,7 @@ function toTarget(P, e)
         end)
 
         getgenv().NexoraUsingPortal = true
-        warn("[Nexora Portal] "..myIsland.." ("..math.floor(direct).." studs) -> "..targetIsland.." usando "..best.Name)
+        warn("[Nexora Portal] "..myIsland.." -> "..targetIsland.." usando "..best.Name)
 
         pcall(function() TweenManager.CancelCurrent() end)
 
@@ -6859,7 +6844,6 @@ function toTarget(P, e)
         local t0 = tick()
         repeat task.wait() until (H.Position - realPortalPos).Magnitude < 25 or tick()-t0 > 15
 
-        warn("[Nexora Portal] Entrando no portal...")
         for i=1,10 do
             if realPortalPart then
                 H.CFrame = realPortalPart.CFrame + Vector3.new(0,3,0)
@@ -6880,10 +6864,7 @@ function toTarget(P, e)
         local t1 = tick()
         repeat task.wait(0.1) until (H.Position - oldPos).Magnitude > 400 or tick()-t1 > 10
 
-        if (H.Position - oldPos).Magnitude > 400 then
-            warn("[Nexora Portal] Portal usado com sucesso!")
-        else
-            warn("[Nexora Portal] Forcando saida")
+        if (H.Position - oldPos).Magnitude < 400 then
             H.CFrame = CFrame.new(best.ExitPos + Vector3.new(0,15,0))
             task.wait(0.5)
         end
