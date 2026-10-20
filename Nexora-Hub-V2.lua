@@ -1,100 +1,3 @@
-
--- FIX ESPECIFICO PARA ARCEUS X
-local function getParent()
-    local parent = nil
-    -- Arceus X usa gethui() ou game.CoreGui
-    if gethui then
-        local ok,res = pcall(gethui)
-        if ok and res then parent = res end
-    end
-    if not parent and pcall(function() return game.CoreGui end) then
-        pcall(function() parent = game.CoreGui end)
-    end
-    if not parent then
-        parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-    end
-    return parent
-end
-
--- Desativa file system no Arceus X se der erro
-local isArceus = false
-pcall(function()
-    local exec = ""
-    if identifyexecutor then exec = identifyexecutor() end
-    if exec:lower():find("arceus") or exec:lower():find("ax") then
-        isArceus = true
-    end
-    -- Arceus tem global _G.ArceusX
-    if _G.ArceusX or _G.AX then isArceus = true end
-end)
-
-if isArceus then
-    -- No Arceus, desativa writefile pra nao crashar
-    writefile = nil
-    isfile = nil
-    readfile = nil
-    print("[NexoraHub] Arceus X detectado - file system desativado")
-end
-
-
-
--- COMPATIBILIDADE UNIVERSAL PARA TODOS EXECUTORES MOBILE E PC
--- Delta, Fluxus, Arceus X, Codex, Trigon, KRNL, Synapse, Wave, Vega X, Evon, etc.
-
--- Detecta executor
-local ExecutorName = "Unknown"
-pcall(function()
-    if identifyexecutor then ExecutorName = identifyexecutor() 
-    elseif getexecutorname then ExecutorName = getexecutorname()
-    elseif is_sirhurt_closure then ExecutorName = "SirHurt"
-    elseif pebc_execute then ExecutorName = "ProtoSmasher"
-    end
-end)
-
--- File functions universal
-local function safeIsFile(f) 
-    if isfile then 
-        local ok,res = pcall(isfile,f) 
-        if ok then return res end 
-    end 
-    return false 
-end
-
-local function safeReadFile(f)
-    if readfile and safeIsFile(f) then
-        local ok,res = pcall(readfile,f)
-        if ok then return res end
-    end
-    return nil
-end
-
-local function safeWriteFile(f,c)
-    if writefile then
-        pcall(writefile,f,c)
-        return true
-    end
-    return false
-end
-
--- getcustomasset para imagens (Delta, Fluxus, Codex suportam)
-local function getAsset(path)
-    if getcustomasset then
-        local ok,res = pcall(getcustomasset, path)
-        if ok and res then return res end
-    end
-    -- Fallback para rbxassetid publico
-    return "rbxassetid://17336164180"
-end
-
--- Verifica se é mobile
-local UserInputService = game:GetService("UserInputService")
-local IsMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled and not UserInputService.MouseEnabled
--- Alguns PCs com touch, entao verifica tamanho da tela tambem
-local IsSmallScreen = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize.Y < 600
-
-print("[NexoraHub] Executor: "..tostring(ExecutorName).." | Mobile: "..tostring(IsMobile))
-
-
 -- Tela de carregamento (Nexora Hub): pequena e rápida. O resto do script só roda depois dela terminar.
 do
 	pcall(function()
@@ -2061,32 +1964,9 @@ end
 
 function Nexora.CreateMain(config)
     config = config or {}
-    local parentGui = getParent()
     local gui = make("ScreenGui", {Name = "NexoraUI", ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
-    
-    -- BOTAO EXTERNO ViniZDev QUE ABRE E FECHA A UI (igual na sua print)
-    local btnW, btnH = IsMobile and 150 or 130, IsMobile and 40 or 32
-    local toggleBtn = make("TextButton", {Name="ViniZDevToggle", Size=UDim2.new(0,btnW,0,btnH), Position=UDim2.new(0,20,0,50), BackgroundColor3=Color3.fromRGB(20,20,25), Text="", BorderSizePixel=0, ZIndex=20, AutoButtonColor=false}, gui)
-    corner(toggleBtn, 16)
-    stroke(toggleBtn, Color3.fromRGB(0,140,255), 1)
-    
-    local toggleIcon = make("Frame", {Name="Icon", Size=UDim2.new(0,22,0,22), Position=UDim2.new(0,6,0.5,-11), BackgroundColor3=Color3.fromRGB(0,140,255), BorderSizePixel=0, ZIndex=21}, toggleBtn)
-    corner(toggleIcon, 6)
-    local nText = make("TextLabel", {Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Text="N", TextColor3=Color3.white, TextSize=12, Font=Enum.Font.GothamBold, ZIndex=22}, toggleIcon)
-    
-    local toggleText = make("TextLabel", {Name="ViniZDevLabel", Size=UDim2.new(1,-36,1,0), Position=UDim2.new(0,32,0,0), BackgroundTransparency=1, Text="ViniZDev", TextColor3=Color3.white, TextSize=13, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=21}, toggleBtn)
-    
-    local dot = make("Frame", {Size=UDim2.new(0,8,0,8), Position=UDim2.new(1,-16,0.5,-4), BackgroundColor3=Color3.fromRGB(0,255,100), BorderSizePixel=0, ZIndex=21}, toggleBtn)
-    corner(dot, 4)
-    
-    make("TextLabel", {Size=UDim2.new(0,0,0,0), Position=UDim2.new(0,0,0,0), BackgroundTransparency=1, Text="", ZIndex=1}, gui) -- dummy to keep make working
-
     local SIZE_FILE = "NexoraHubWindowSize.json"
     local persistedW, persistedH = 690, 440
-    -- Ajuste automatico para mobile
-    if IsMobile or IsSmallScreen then
-        persistedW, persistedH = 520, 380
-    end
     -- Salva o tamanho em arquivo do executor para sobreviver a reinícios do jogo.
     pcall(function()
         if readfile and isfile and isfile(SIZE_FILE) then
@@ -2103,17 +1983,8 @@ function Nexora.CreateMain(config)
         pcall(function() if getgenv then getgenv().__NEXORA_WINDOW_SIZE = data end end)
         pcall(function() if writefile then writefile(SIZE_FILE, game:GetService("HttpService"):JSONEncode(data)) end end)
     end
-    local shell = make("Frame", {Name="Window", AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.new(0, persistedW, 0, persistedH), BackgroundColor3=C.bg, BorderSizePixel=0, ClipsDescendants=true}, gui)
+    local shell = make("Frame", {Name="Window", AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.new(0, persistedW, 0, persistedH), BackgroundColor3=C.bg, BorderSizePixel=0}, gui)
     corner(shell, 14); stroke(shell, Color3.fromRGB(255,255,255), 0.88)
-    
-    -- FUNDO ANIME IGUAL QUANTUM ONYX PROJECT (menina com sakura)
-    local bgImage = make("ImageLabel", {Name="AnimeBG", Size=UDim2.new(1,0,1,0), Position=UDim2.new(0,0,0,0), BackgroundTransparency=1, Image="rbxassetid://17336164180", ImageTransparency=0.25, ScaleType=Enum.ScaleType.Crop, ZIndex=0}, shell)
-    corner(bgImage, 14)
-    
-    -- OVERLAY ESCURO PRA TEXTO FICAR LEGIVEL
-    local overlay = make("Frame", {Name="DarkOverlay", Size=UDim2.new(1,0,1,0), BackgroundColor3=Color3.fromRGB(0,0,0), BackgroundTransparency=0.45, BorderSizePixel=0, ZIndex=1}, shell)
-    corner(overlay, 14)
-
     make("UIGradient", {Rotation = 135, Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
         ColorSequenceKeypoint.new(0.52, Color3.fromRGB(0, 0, 0)),
@@ -2135,53 +2006,8 @@ function Nexora.CreateMain(config)
     if workspace.CurrentCamera then workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(resize) end
 
     local HEADER_H, SIDEBAR_W = 64, 190
-    
-    -- LOGICA DO BOTAO ABRIR/FECHAR
-    local isOpen = true
-    toggleBtn.MouseButton1Click:Connect(function()
-        isOpen = not isOpen
-        shell.Visible = isOpen
-        if isOpen then
-            dot.BackgroundColor3 = Color3.fromRGB(0,255,100)
-        else
-            dot.BackgroundColor3 = Color3.fromRGB(255,50,50)
-        end
-    end)
-    
-    -- Deixa o botao arrastavel
-    local dragging, dragInput, dragStart, startPos
-    toggleBtn.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = toggleBtn.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then dragging = false end
-            end)
-        end
-    end)
-    toggleBtn.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
-    end)
-    game:GetService("UserInputService").InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            local delta = input.Position - dragStart
-            toggleBtn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
-
-    
-    -- ICONE REDONDO ROXO COM VINIZDEV
-    local iconBtn = make("ImageButton", {Name="ViniZDevIcon", Size=UDim2.new(0,52,0,52), Position=UDim2.new(0,12,0,6), BackgroundColor3=Color3.fromRGB(25,10,40), BorderSizePixel=0, Image="rbxassetid://13339471102", ZIndex=10}, shell)
-    corner(iconBtn, 26)
-    stroke(iconBtn, Color3.fromRGB(168,85,255), 2)
-    
-    -- TEXTO ViniZDev DO LADO DO ICONE
-    local viniLabel = make("TextLabel", {Name="ViniZDevText", Size=UDim2.new(0,100,0,52), Position=UDim2.new(0,70,0,6), BackgroundTransparency=1, Text="ViniZDev", TextColor3=Color3.fromRGB(168,85,255), TextSize=16, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=10}, shell)
-
-
     local GOLD, GOLD_L, GRAY = Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255), Color3.fromRGB(165,165,174)
-    local top = make("Frame", {Size=UDim2.new(1,0,0,HEADER_H), BackgroundColor3=Color3.fromRGB(10,10,14), BackgroundTransparency=0.3, BorderSizePixel=0, ZIndex=2}, shell)
+    local top = make("Frame", {Size=UDim2.new(1,0,0,HEADER_H), BackgroundColor3=Color3.fromRGB(10,10,14), BorderSizePixel=0}, shell)
     corner(top, 12)
     make("UIGradient", {Rotation=0, Color=ColorSequence.new({
         ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 15, 40)),
