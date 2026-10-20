@@ -1730,7 +1730,7 @@ game:GetService("Players").LocalPlayer.Idled:connect(function()
 end)
 local A =
 	loadstring(game:HttpGet("https://raw.githubusercontent.com/obiiyeuem/vthangsitink/refs/heads/main/zzzz.lua"))()
-Main = A.CreateMain({ Title = "Nexora Hub - Blox Fruits", Desc = "Nexora Hub - Blox Fruits" })
+Main = A.CreateMain({ Title = "Nexora Hub - Blox Fruits", Desc = "-- Blox Fruits" })
 
 PageShop = Main.CreatePage({ Page_Name = "Shop", Page_Title = "Shop" })
 getgenv().Options = A.Options
@@ -14039,6 +14039,22 @@ ToggleFindMirage = FarmingSeaEventSection.CreateToggle(
 		SaveSettings("Auto Find Mirage", y)
 	end
 )
+
+-- RAISE BOAT MANUAL DRIVE - ADICIONADO (SEM REMOVER NADA DA SOURCE)
+SettingSeaEventSection.CreateToggle(
+	{ Title = "Raise Boat Manual Drive", Desc = "Sobe o barco no eixo Y - mesma funcao do Nexora", Default = Settings["Raise Boat Manual Drive"] or false },
+	function(v)
+		SaveSettings("Raise Boat Manual Drive", v)
+	end
+)
+SettingSeaEventSection.CreateSlider(
+	{ Title = "Boat Height", Min = 5, Max = 175, Default = Settings["Boat Height"] or 175, Precise = false },
+	function(v)
+		SaveSettings("Boat Height", v)
+	end
+)
+
+
 KitsuneEventMain = Main.CreatePage({ Page_Name = "Kitsune Event", Page_Title = "Kitsune Event" })
 KitsuneEventSection = KitsuneEventMain.CreateSection("Kitsune Event")
 KitsuneEventSection.CreateToggle(
