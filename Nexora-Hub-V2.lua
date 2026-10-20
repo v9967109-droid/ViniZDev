@@ -26675,50 +26675,68 @@ do
 				end
 				if Settings["Auto Awake Fruit"] then
 					pcall(function()
-						-- Verifica fragmento e tenta despertar todas habilidades possiveis
-						local awakenData = L.Remotes.CommF_:InvokeServer("Awakener", "Check")
-						if awakenData then
-							-- Tenta despertar na ordem Z, X, C, V, F
-							local skillsOrder = {"Z", "X", "C", "V", "F", "Z", "X", "C", "V"}
-							for _, skill in ipairs(skillsOrder) do
-								pcall(function()
-									L.Remotes.CommF_:InvokeServer("Awakener", "Awaken", skill)
-									-- Fallback sem parametro (algumas frutas)
-									L.Remotes.CommF_:InvokeServer("Awakener", "Awaken")
-								end)
-								task.wait(0.3)
-							end
-							-- Tenta comprar todas habilidades de todas frutas que tem fragmento
-							local fruitsToAwaken = {"Flame", "Ice", "Sand", "Dark", "Light", "Magma", "Quake", "Buddha", "Spider", "Phoenix", "Rumble", "Dough"}
-							for _, fruitName in ipairs(fruitsToAwaken) do
-								pcall(function()
-									local check = L.Remotes.CommF_:InvokeServer("Awakener", "Check", fruitName)
-									if check and type(check) == "table" then
-										for abilityName, data in pairs(check) do
-											if type(data) == "table" and data.CanAwaken then
-												L.Remotes.CommF_:InvokeServer("Awakener", "Awaken", fruitName, abilityName)
-												task.wait(0.5)
-											end
-										end
-									end
-								end)
-								-- Fallback simples por fruta
-								pcall(function()
-									L.Remotes.CommF_:InvokeServer("Awakener", "Awaken", fruitName)
-								end)
-							end
+						-- So compra SE NAO estiver em Raid (espera sair)
+						local function IsInRaid()
+							local ok, result = pcall(function()
+								return game.Players.LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible
+							end)
+							return ok and result
 						end
-						-- TP pro NPC do despertar se tiver fragmento suficiente
-						pcall(function()
-							local fragments = game.Players.LocalPlayer.Data.Fragments.Value
-							if fragments >= 500 then
-								-- Se estiver em Sea 2/3, tenta ir pro NPC de despertar
-								local awakenNPCPos = CFrame.new(-1283, 7, -7486) -- Hot and Cold - Awakener
-								if game.PlaceId == 4442272183 or game.PlaceId == 7449423635 then -- Sea 2/3 check
-									-- So teleporta se Auto Awake Fruit tiver ligado e nao estiver em Raid
-									if not game.Players.LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible then
-										-- Nao forca TP, so tenta despertar onde estiver
+						
+						-- Se ainda ta na Raid, nao compra agora, espera proximo ciclo
+						if IsInRaid() then
+							return
+						end
+
+						local fragments = 0
+						pcall(function() fragments = game.Players.LocalPlayer.Data.Fragments.Value end)
+						if fragments < 500 then return end -- sem fragmento nao tenta
+
+						-- Tenta despertar QUALQUER skill de QUALQUER fruta (independente)
+						local allFruits = {"Flame", "Ice", "Sand", "Dark", "Light", "Magma", "Quake", "Buddha", "Spider", "Phoenix", "Rumble", "Dough", "Shadow", "Venom", "Blizzard", "Mammoth", "Gravity"}
+						local allSkills = {"Z", "X", "C", "V", "F"}
+
+						-- 1. Tenta metodo simples sem parametro (desperta a fruta equipada)
+						for _, skill in ipairs(allSkills) do
+							pcall(function()
+								local res = L.Remotes.CommF_:InvokeServer("Awakener", "Awaken", skill)
+								if res and res ~= false then
+									print("[Nexora Awaken] Comprou skill: "..skill)
+								end
+							end)
+							task.wait(0.15)
+							pcall(function() L.Remotes.CommF_:InvokeServer("Awakener", "Awaken") end)
+							task.wait(0.15)
+						end
+
+						-- 2. Tenta com nome da fruta + skill
+						for _, fruit in ipairs(allFruits) do
+							for _, skill in ipairs(allSkills) do
+								pcall(function()
+									local res = L.Remotes.CommF_:InvokeServer("Awakener", "Awaken", fruit, skill)
+									if res and res == true then
+										print("[Nexora Awaken] Comprou "..fruit.." "..skill)
+										Main.Notify({ Title = "Awaken", Content = fruit.." "..skill.." despertado!", Duration = 3 })
 									end
+								end)
+								task.wait(0.1)
+							end
+							-- Tenta so fruta
+							pcall(function() L.Remotes.CommF_:InvokeServer("Awakener", "Awaken", fruit) end)
+							task.wait(0.2)
+						end
+
+						-- 3. Tenta metodo antigo Check retorna tabela
+						pcall(function()
+							local checkData = L.Remotes.CommF_:InvokeServer("Awakener", "Check")
+							if checkData and type(checkData) == "table" then
+								for k,v in pairs(checkData) do
+									if type(v) == "boolean" and v == true then
+										L.Remotes.CommF_:InvokeServer("Awakener", "Awaken", k)
+									elseif type(v) == "table" and v.CanAwaken then
+										L.Remotes.CommF_:InvokeServer("Awakener", "Awaken", k)
+									end
+									task.wait(0.2)
 								end
 							end
 						end)
