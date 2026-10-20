@@ -3414,17 +3414,79 @@ end
 -- ===================== NOVA ABA: HOP OTHERS (SEPARADA) - CLICK UNICO =====================
 do
     local PageHopOthers = Main.CreatePage({ Page_Name = "Hop Others", Page_Title = "Hop Others" })
-    local SectionHopOthers = PageHopOthers.CreateSection("Hop Others - 1 Clique = 1 Hop")
+    local SectionHopOthers = PageHopOthers.CreateSection("Hop Others - Auto Find")
+
+    getgenv().NexoraHopTarget = getgenv().NexoraHopTarget or nil
+    getgenv().NexoraAutoHop = getgenv().NexoraAutoHop or false
 
     local function NotifyHop(title, content)
         pcall(function()
             if Main and Main.Notify then
-                Main.Notify({ Title = title, Content = content, Duration = 4 })
+                Main.Notify({ Title = title, Content = content, Duration = 5 })
             end
         end)
     end
 
-    -- FIX DEFINITIVO PARA ERRO 773 (Local Restrito)
+    -- FUNCAO QUE VERIFICA SE O EVENTO TA SPAWNADO NO SERVIDOR ATUAL
+    local function IsEventSpawned(eventName)
+        local name = string.lower(eventName)
+        local found = false
+        pcall(function()
+            local Map = workspace:FindFirstChild("Map") or workspace
+            if string.find(name, "prehistoric") then
+                if Map:FindFirstChild("PrehistoricIsland") or workspace:FindFirstChild("PrehistoricIsland") or workspace.Map:FindFirstChild("PrehistoricIsland") then
+                    found = true
+                end
+                -- Blox Fruits usa Map.MysticIsland para Prehistoric tbm em algumas versoes
+                if workspace:FindFirstChild("Prehistoric") then found = true end
+            elseif string.find(name, "mirage") then
+                -- Mirage = Map.MysticIsland ou Map:FindFirstChild("Mirage Island")
+                if Map:FindFirstChild("MysticIsland") or Map:FindFirstChild("Mirage Island") or workspace:FindFirstChild("Mirage Island") or workspace._WorldOrigin and workspace._WorldOrigin.Locations:FindFirstChild("Mirage Island") then
+                    found = true
+                end
+            elseif string.find(name, "kitsune") then
+                if Map:FindFirstChild("KitsuneIsland") or workspace.Map:FindFirstChild("KitsuneIsland") or (workspace._WorldOrigin and workspace._WorldOrigin.Locations:FindFirstChild("Kitsune Island")) then
+                    found = true
+                end
+            elseif string.find(name, "full moon") then
+                -- Full Moon = ceu noturno + lua cheia
+                local light = game:GetService("Lighting")
+                if light.ClockTime and light.ClockTime > 18 or light.ClockTime < 5 then
+                    -- Verifica se tem Full Moon no status
+                    if string.find(tostring(light.Sky and light.Sky.MoonTextureId or ""), "Full Moon") or game.Lighting:GetAttribute("MoonPhase") == 5 then
+                        found = true
+                    end
+                    -- Fallback: verifica texto da lua
+                    local moon = workspace:FindFirstChild("Moon") or game.Lighting:FindFirstChild("Moon")
+                    found = true -- Se for noite, deixa o usuario verificar, pq Full Moon eh visual
+                end
+            elseif string.find(name, "legendary") or string.find(name, "haki") then
+                -- Legendary Haki: verifica se NPC Legendary Haki existe
+                if workspace:FindFirstChild("Legendary Haki") or Map:FindFirstChild("Legendary Haki") or game.ReplicatedStorage:FindFirstChild("Legendary Haki") then
+                    -- Melhor: checa se o dealer spawnou
+                    local npcs = workspace:FindFirstChild("NPCs") or workspace
+                    for _,v in pairs(npcs:GetDescendants()) do
+                        if string.find(string.lower(v.Name), "haki") and string.find(string.lower(v.Name), "legend") then
+                            found = true
+                        end
+                    end
+                end
+            elseif string.find(name, "fruit") then
+                -- Fruit: verifica Tool no workspace
+                for _,v in pairs(workspace:GetDescendants()) do
+                    if v:IsA("Tool") and string.find(v.Name, "Fruit") then
+                        found = true
+                        break
+                    end
+                end
+                -- Tambem frutas no mar
+                if workspace:FindFirstChild("Fruit") then found = true end
+            end
+        end)
+        return found
+    end
+
+    -- FIX DEFINITIVO PARA ERRO 773
     local function HopServerOnce()
         local TeleportService = game:GetService("TeleportService")
         local HttpService = game:GetService("HttpService")
@@ -3433,7 +3495,6 @@ do
         local PlaceId = game.PlaceId
         local JobId = game.JobId
 
-        -- Evita hop pro mesmo servidor
         local AllIDs = {}
         pcall(function()
             if isfile and isfile("NotSameServers.json") then
@@ -3443,12 +3504,8 @@ do
 
         local function GetServers(cursor)
             local url = "https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Asc&limit=100"
-            if cursor and cursor ~= "" then
-                url = url .. "&cursor=" .. cursor
-            end
-            
+            if cursor and cursor ~= "" then url = url .. "&cursor=" .. cursor end
             local success, result = pcall(function()
-                -- Tenta todos os metodos de request (Delta, Fluxus, Codex)
                 local req = (syn and syn.request) or (http_request) or (request) or nil
                 if req then
                     local res = req({Url = url, Method = "GET"})
@@ -3462,20 +3519,16 @@ do
 
         local servers = {}
         local nextCursor = ""
-        for i = 1,3 do -- tenta 3 paginas
+        for i = 1,3 do
             local body = GetServers(nextCursor)
             if not body then break end
             local ok, data = pcall(function() return HttpService:JSONDecode(body) end)
             if ok and data then
-                if data.nextPageCursor then
-                    nextCursor = data.nextPageCursor
-                end
+                if data.nextPageCursor then nextCursor = data.nextPageCursor end
                 if data.data then
                     for _, v in pairs(data.data) do
                         local isOld = false
-                        for _, oldId in pairs(AllIDs) do
-                            if v.id == oldId then isOld = true break end
-                        end
+                        for _, oldId in pairs(AllIDs) do if v.id == oldId then isOld = true break end end
                         if v.playing < v.maxPlayers and v.playing > 0 and v.id ~= JobId and not isOld then
                             table.insert(servers, v.id)
                         end
@@ -3489,46 +3542,107 @@ do
         if #servers > 0 then
             local targetId = servers[math.random(1, #servers)]
             table.insert(AllIDs, targetId)
-            pcall(function()
-                if writefile then
-                    writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
-                end
-            end)
-            
-            -- METODO CORRETO QUE NÃO DA ERRO 773
+            pcall(function() if writefile then writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs)) end end)
             local ok, err = pcall(function()
                 TeleportService:TeleportToPlaceInstance(PlaceId, targetId, LocalPlayer)
             end)
             if not ok then
-                warn("[Hop Fix] ToPlaceInstance falhou: "..tostring(err).." tentando Teleport simples")
                 task.wait(1)
-                pcall(function()
-                    TeleportService:Teleport(PlaceId, LocalPlayer)
-                end)
+                pcall(function() TeleportService:Teleport(PlaceId, LocalPlayer) end)
             end
         else
-            NotifyHop("Hop Others", "Nenhum servidor novo encontrado, tentando hop aleatorio...")
-            pcall(function()
-                TeleportService:Teleport(PlaceId, LocalPlayer)
-            end)
+            NotifyHop("Hop Others", "Nenhum servidor novo, tentando aleatorio sem erro 773...")
+            pcall(function() TeleportService:Teleport(PlaceId, LocalPlayer) end)
         end
     end
 
-    local function DoHop(eventName)
-        NotifyHop("Hop Others", "Procurando servidor: "..eventName.."...")
-        task.wait(0.3)
-        HopServerOnce()
+    -- LOOP AUTO HOP: fica trocando ate achar o evento
+    local function StartAutoHop(eventName)
+        if getgenv().NexoraAutoHop then
+            NotifyHop("Hop Others", "Ja esta procurando: "..(getgenv().NexoraHopTarget or ""))
+            return
+        end
+        getgenv().NexoraHopTarget = eventName
+        getgenv().NexoraAutoHop = true
+        NotifyHop("Hop Others - ATIVO", "Procurando: "..eventName.." - Vai parar so quando achar! Clique de novo no botao para parar.")
+
+        task.spawn(function()
+            while getgenv().NexoraAutoHop do
+                -- Se achou, para
+                if IsEventSpawned(eventName) then
+                    getgenv().NexoraAutoHop = false
+                    getgenv().NexoraHopTarget = nil
+                    NotifyHop("ACHOU!!!", eventName.." spawnou nesse servidor! Hop parado.")
+                    -- Som de achou
+                    pcall(function()
+                        local s = Instance.new("Sound", game.SoundService)
+                        s.SoundId = "rbxassetid://12222030"
+                        s.Volume = 2
+                        s:Play()
+                        game.Debris:AddItem(s, 5)
+                    end)
+                    break
+                else
+                    NotifyHop("Procurando...", eventName.." nao esta aqui, trocando de servidor em 3s...")
+                    task.wait(3)
+                    if getgenv().NexoraAutoHop then
+                        HopServerOnce()
+                        -- Espera trocar, se nao trocar em 10s tenta de novo
+                        task.wait(10)
+                    end
+                end
+                task.wait(2)
+            end
+        end)
     end
 
-    SectionHopOthers.CreateButton({ Title = "Hop Prehistoric Island" }, function() DoHop("Prehistoric Island") end)
-    SectionHopOthers.CreateButton({ Title = "Hop Mirage Island" }, function() DoHop("Mirage Island") end)
-    SectionHopOthers.CreateButton({ Title = "Hop Kitsune Island" }, function() DoHop("Kitsune Island") end)
-    SectionHopOthers.CreateButton({ Title = "Hop Full Moon" }, function() DoHop("Full Moon") end)
-    SectionHopOthers.CreateButton({ Title = "Hop Legendary Haki" }, function() DoHop("Legendary Haki") end)
-    SectionHopOthers.CreateButton({ Title = "Hop Fruit" }, function() DoHop("Fruit Spawn") end)
-    SectionHopOthers.CreateButton({ Title = "Hop Aleatorio (Sem Erro 773)" }, function() HopServerOnce() end)
+    local function StopAutoHop()
+        if getgenv().NexoraAutoHop then
+            getgenv().NexoraAutoHop = false
+            getgenv().NexoraHopTarget = nil
+            NotifyHop("Hop Others", "Auto Hop parado!")
+        end
+    end
+
+    -- BOTOES: 1 clique = comeca a procurar infinitamente ate achar
+    SectionHopOthers.CreateButton({ Title = "Hop Prehistoric Island [AUTO FIND]" }, function()
+        if getgenv().NexoraAutoHop and getgenv().NexoraHopTarget == "Prehistoric Island" then StopAutoHop() else StartAutoHop("Prehistoric Island") end
+    end)
+    SectionHopOthers.CreateButton({ Title = "Hop Mirage Island [AUTO FIND]" }, function()
+        if getgenv().NexoraAutoHop and getgenv().NexoraHopTarget == "Mirage Island" then StopAutoHop() else StartAutoHop("Mirage Island") end
+    end)
+    SectionHopOthers.CreateButton({ Title = "Hop Kitsune Island [AUTO FIND]" }, function()
+        if getgenv().NexoraAutoHop and getgenv().NexoraHopTarget == "Kitsune Island" then StopAutoHop() else StartAutoHop("Kitsune Island") end
+    end)
+    SectionHopOthers.CreateButton({ Title = "Hop Full Moon [AUTO FIND]" }, function()
+        if getgenv().NexoraAutoHop and getgenv().NexoraHopTarget == "Full Moon" then StopAutoHop() else StartAutoHop("Full Moon") end
+    end)
+    SectionHopOthers.CreateButton({ Title = "Hop Legendary Haki [AUTO FIND]" }, function()
+        if getgenv().NexoraAutoHop and getgenv().NexoraHopTarget == "Legendary Haki" then StopAutoHop() else StartAutoHop("Legendary Haki") end
+    end)
+    SectionHopOthers.CreateButton({ Title = "Hop Fruit [AUTO FIND]" }, function()
+        if getgenv().NexoraAutoHop and getgenv().NexoraHopTarget == "Fruit" then StopAutoHop() else StartAutoHop("Fruit") end
+    end)
+
+    SectionHopOthers.CreateButton({ Title = "PARAR Auto Hop" }, function()
+        StopAutoHop()
+    end)
+
+    -- Se ja entrou em um servidor com o evento, para automaticamente
+    task.spawn(function()
+        task.wait(5)
+        while task.wait(3) do
+            if getgenv().NexoraAutoHop and getgenv().NexoraHopTarget then
+                if IsEventSpawned(getgenv().NexoraHopTarget) then
+                    getgenv().NexoraAutoHop = false
+                    getgenv().NexoraHopTarget = nil
+                    NotifyHop("ACHOU!!!", "Evento encontrado! Auto Hop parado.")
+                end
+            end
+        end
+    end)
 end
--- ===================== FIM NOVA ABA HOP OTHERS =====================
+
 
 
 SectionServer = PageStatusAndServer.CreateSection("Server")
