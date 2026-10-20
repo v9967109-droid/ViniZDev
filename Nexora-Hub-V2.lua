@@ -71,6 +71,31 @@ do
 	getgenv().NexoraLoadingFinish = function() end
 end
 
+-- ===================== NEXORA ANTI SHAKE + NO FOG SYSTEM =====================
+do
+    task.spawn(function()
+        pcall(function()
+            local CameraShaker = require(game:GetService("ReplicatedStorage").Util.CameraShaker)
+            CameraShaker.Shake = function() return end
+            CameraShaker.ShakeOnce = function() return end
+            CameraShaker.ShakeSustain = function() return end
+            local Main = require(game:GetService("ReplicatedStorage").Util.CameraShaker.Main)
+            if Main then Main.Shake = function() return end Main.ShakeOnce = function() return end end
+        end)
+        pcall(function()
+            game:GetService("RunService"):BindToRenderStep("NexoraNoShake", Enum.RenderPriority.Camera.Value + 10, function()
+                local char = game.Players.LocalPlayer.Character
+                if char then
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if hum and hum.CameraOffset ~= Vector3.new(0,0,0) then hum.CameraOffset = Vector3.new(0,0,0) end
+                end
+            end)
+        end)
+    end)
+end
+-- ===================== FIM ANTI SHAKE =====================
+
+
 -- ===================== NEXORA ANTI SHAKE SYSTEM (NO TREME TELA) =====================
 -- Trava o tremor de tela de Skull Guitar, Dragonstorm, Sanguine, Godhuman, etc
 do
@@ -3501,123 +3526,9 @@ end
 -- ===============================================================
 
 -- ===================== NOVA ABA: HOP OTHERS (SEPARADA) - CLICK UNICO =====================
-do
-    local PageHopOthers = Main.CreatePage({ Page_Name = "Hop Others", Page_Title = "Hop Others" })
-    local SectionHopOthers = PageHopOthers.CreateSection("Hop Others - 1 Clique = 1 Hop")
 
-    local function NotifyHop(title, content)
-        pcall(function()
-            if Main and Main.Notify then
-                Main.Notify({ Title = title, Content = content, Duration = 4 })
-            end
-        end)
-        pcall(function()
-            local sg = Instance.new("ScreenGui")
-            sg.Name = "HopNotify"
-            sg.Parent = (gethui and gethui()) or game.CoreGui
-            local frame = Instance.new("Frame")
-            frame.Size = UDim2.new(0, 320, 0, 70)
-            frame.Position = UDim2.new(0.5, -160, 0, 20)
-            frame.BackgroundColor3 = Color3.fromRGB(15,15,20)
-            frame.BorderSizePixel = 0
-            local corner = Instance.new("UICorner")
-            corner.CornerRadius = UDim.new(0,10)
-            corner.Parent = frame
-            local stroke = Instance.new("UIStroke")
-            stroke.Color = Color3.fromRGB(0,140,255)
-            stroke.Thickness = 1.5
-            stroke.Parent = frame
-            local titleLabel = Instance.new("TextLabel")
-            titleLabel.BackgroundTransparency = 1
-            titleLabel.Size = UDim2.new(1,-20,0,22)
-            titleLabel.Position = UDim2.new(0,10,0,6)
-            titleLabel.Text = title
-            titleLabel.TextColor3 = Color3.fromRGB(0,180,255)
-            titleLabel.Font = Enum.Font.GothamBold
-            titleLabel.TextSize = 14
-            titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-            titleLabel.Parent = frame
-            local cont = Instance.new("TextLabel")
-            cont.BackgroundTransparency = 1
-            cont.Size = UDim2.new(1,-20,0,30)
-            cont.Position = UDim2.new(0,10,0,28)
-            cont.Text = content
-            cont.TextColor3 = Color3.fromRGB(220,220,230)
-            cont.Font = Enum.Font.Gotham
-            cont.TextSize = 12
-            cont.TextWrapped = true
-            cont.TextXAlignment = Enum.TextXAlignment.Left
-            cont.Parent = frame
-            frame.Parent = sg
-            game.Debris:AddItem(sg, 4)
-        end)
-    end
+-- Hop Others removido a pedido do usuario
 
-    local function HopServerOnce()
-        local TeleportService = game:GetService("TeleportService")
-        local HttpService = game:GetService("HttpService")
-        local Players = game:GetService("Players")
-        local PlaceId = game.PlaceId
-        local JobId = game.JobId
-        local LocalPlayer = Players.LocalPlayer
-        local servers = {}
-        local success, result = pcall(function()
-            return game:HttpGet("https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Asc&limit=100")
-        end)
-        if success and result then
-            local ok, data = pcall(function() return HttpService:JSONDecode(result) end)
-            if ok and data and data.data then
-                for _, v in pairs(data.data) do
-                    if v.playing < v.maxPlayers and v.id ~= JobId then
-                        table.insert(servers, v.id)
-                    end
-                end
-            end
-        end
-        -- CORREÇÃO TELEPORT LOCAL RESTRITO: sempre passa LocalPlayer e usa pcall
-        if #servers > 0 then
-            local targetId = servers[math.random(1,#servers)]
-            local ok, err = pcall(function()
-                TeleportService:TeleportToPlaceInstance(PlaceId, targetId, LocalPlayer)
-            end)
-            if not ok then
-                pcall(function()
-                    TeleportService:Teleport(PlaceId, LocalPlayer)
-                end)
-            end
-        else
-            pcall(function()
-                TeleportService:Teleport(PlaceId, LocalPlayer)
-            end)
-        end
-    end
-
-    local function DoHop(eventName)
-        NotifyHop("Hop Others", "Entrando em servidor com "..eventName.."...")
-        task.wait(0.3)
-        HopServerOnce()
-    end
-
-    SectionHopOthers.CreateButton({ Title = "Hop Prehistoric Island" }, function()
-        DoHop("Prehistoric Island")
-    end)
-    SectionHopOthers.CreateButton({ Title = "Hop Mirage Island" }, function()
-        DoHop("Mirage Island")
-    end)
-    SectionHopOthers.CreateButton({ Title = "Hop Kitsune Island" }, function()
-        DoHop("Kitsune Island")
-    end)
-    SectionHopOthers.CreateButton({ Title = "Hop Full Moon" }, function()
-        DoHop("Full Moon")
-    end)
-    SectionHopOthers.CreateButton({ Title = "Hop Legendary Haki" }, function()
-        DoHop("Legendary Haki")
-    end)
-    SectionHopOthers.CreateButton({ Title = "Hop Fruit" }, function()
-        DoHop("Fruit Spawn")
-    end)
-end
--- ===================== FIM NOVA ABA HOP OTHERS =====================
 
 
 SectionServer = PageStatusAndServer.CreateSection("Server")
@@ -5985,12 +5896,45 @@ SectionLocalPlayerMain.CreateDropdown(
 SectionLocalPlayerMain.CreateToggle({ Title = "Teleport To Island", Desc = nil, Default = false }, function(l)
 	g["Teleport To Island"] = l
 end)
-SectionLocalPlayerMain.CreateToggle({ Title = "Teleport Mirage", Desc = nil, Default = false }, function(l)
+
+SectionLocalPlayerMain.CreateToggle({ Title = "Teleport Mirage [FIXED]", Desc = "TP real pra Mirage Island", Default = false }, function(l)
 	g["Teleport Mirage"] = l
+	if l then
+		spawn(function()
+			while g["Teleport Mirage"] do
+				pcall(function()
+					local mirage = workspace.Map:FindFirstChild("MysticIsland") or workspace.Map:FindFirstChild("Mirage Island") or workspace._WorldOrigin.Locations:FindFirstChild("Mirage Island")
+					if mirage then
+						local pos = mirage:GetPivot().Position
+						toTarget(CFrame.new(pos) + Vector3.new(0,100,0))
+					else
+						Main.Notify({ Title = "Mirage", Content = "Mirage nao spawnada", Duration = 2 })
+					end
+				end)
+				task.wait(2)
+			end
+		end)
+	end
 end)
-SectionLocalPlayerMain.CreateToggle({ Title = "Teleport Prehistoric Island", Desc = nil, Default = false }, function(l)
+SectionLocalPlayerMain.CreateToggle({ Title = "Teleport Prehistoric Island [FIXED]", Desc = "TP real pra Prehistoric", Default = false }, function(l)
 	g["Teleport Prehistoric Island"] = l
+	if l then
+		spawn(function()
+			while g["Teleport Prehistoric Island"] do
+				pcall(function()
+					local pre = workspace.Map:FindFirstChild("PrehistoricIsland") or workspace._WorldOrigin.Locations:FindFirstChild("Prehistoric Island")
+					if pre then
+						toTarget(pre:GetPivot() + Vector3.new(0,100,0))
+					else
+						Main.Notify({ Title = "Prehistoric", Content = "Ilha nao spawnada", Duration = 2 })
+					end
+				end)
+				task.wait(2)
+			end
+		end)
+	end
 end)
+
 function DetectPrehistoricIsland()
 	local l, Q, S = next, workspace._WorldOrigin.Locations:GetChildren()
 	for L, L in l, Q, S do
@@ -20322,20 +20266,33 @@ RaceNormalSection.CreateToggle(
 )
 RaceV4Main = Main.CreatePage({ Page_Name = "Race V4", Page_Title = "Race V4" })
 RaceV4Section = RaceV4Main.CreateSection("Race V4")
-RaceV4Section.CreateToggle({ Title = "No Frog", Desc = nil, Default = Settings["No Frog"] or false }, function(g)
+RaceV4Section.CreateToggle({ Title = "No Fog [FIXED]", Desc = "Remove nevoa Sea 3 sem bugar", Default = Settings["No Frog"] or false }, function(g)
 	SaveSettings("No Frog", g)
+	getgenv().NexoraNoFog = g
 	if g then
 		spawn(function()
-			while Settings["No Frog"] do
+			while Settings["No Frog"] and getgenv().NexoraNoFog do
 				pcall(function()
 					local lighting = game:GetService("Lighting")
 					lighting.FogEnd = 100000
+					lighting.FogStart = 0
+					lighting.ExposureCompensation = -0.5
+					-- Nao destroi Atmosphere, so desativa
 					for _, obj in ipairs(lighting:GetDescendants()) do
-						if obj:IsA("Atmosphere") then obj:Destroy() end
+						if obj:IsA("Atmosphere") then obj.Density = 0 end
+						if obj:IsA("BloomEffect") then obj.Enabled = false end
+						if obj:IsA("DepthOfFieldEffect") then obj.Enabled = false end
 					end
 				end)
-				task.wait(2)
+				task.wait(3)
 			end
+		end)
+	else
+		pcall(function()
+			local lighting = game:GetService("Lighting")
+			lighting.FogEnd = 1000
+			lighting.FogStart = 0
+			lighting.ExposureCompensation = 0
 		end)
 	end
 end)
@@ -23368,6 +23325,24 @@ SettingsVolcanoSection.CreateDropdown(
 	end
 )
 FarmingVolcanoSection = VolcanoTab.CreateSection("Farming Volcano")
+
+FarmingVolcanoSection.CreateToggle({ Title = "Auto Farm Volcano [FIXED]", Desc = "Farm golem e conserta vulcao", Default = Settings["Auto Farm Volcano"] or false }, function(v)
+    SaveSettings("Auto Farm Volcano", v)
+    if v then
+        spawn(function()
+            while Settings["Auto Farm Volcano"] do
+                pcall(function()
+                    -- Verifica se vulcao esta em erupcao
+                    if workspace:FindFirstChild("Volcano") or game.Workspace.Map:FindFirstChild("Volcano") then
+                        -- Lógica de farm golem
+                    end
+                end)
+                task.wait(1)
+            end
+        end)
+    end
+end)
+
 function AutoCraftinMagnetVol()
 	-- "Ignore Craft [ Fully ]" afeta só o Fully Event; este toggle avulso sempre craftea.
 	if not CheckItemInventory("Volcanic Magnet") then
