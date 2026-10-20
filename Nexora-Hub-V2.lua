@@ -2135,7 +2135,82 @@ function Nexora.CreateMain(config)
     }, floatGui)
     reopen:SetAttribute("NexoraKeepColor", true)
     make("UICorner", {CornerRadius=UDim.new(0, 18)}, reopen)
-    make("UIStroke", {Color=Color3.fromRGB(60, 60, 65), Thickness=1, Transparency=0.3}, reopen)
+    local stroke = make("UIStroke", {Color=Color3.fromRGB(0, 140, 255), Thickness=2, Transparency=0.5}, reopen)
+    -- Raios azuis no botao inteiro
+    local outerGlow = make("Frame", {
+        Name="OuterGlow",
+        BackgroundColor3=Color3.fromRGB(0, 140, 255),
+        BackgroundTransparency=0.9,
+        Size=UDim2.new(1, 30, 1, 30),
+        Position=UDim2.new(0, -15, 0, -15),
+        BorderSizePixel=0,
+        ZIndex=90
+    }, reopen)
+    make("UICorner", {CornerRadius=UDim.new(0, 26)}, outerGlow)
+    local outerGrad = make("UIGradient", {Rotation=0, Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(0.6, 0.8), NumberSequenceKeypoint.new(1, 1)})}, outerGlow)
+    
+    -- Container raios realistas do botao
+    local raysBtnContainer = make("Frame", {
+        Name="RaysButton",
+        BackgroundTransparency=1,
+        Size=UDim2.new(1, 40, 1, 40),
+        Position=UDim2.new(0, -20, 0, -20),
+        BorderSizePixel=0,
+        ZIndex=89
+    }, reopen)
+    
+    local function createBtnRay(parent, rot, len, width)
+        local ray = make("Frame", {
+            BackgroundColor3=Color3.fromRGB(0, 180, 255),
+            BackgroundTransparency=0.4,
+            Size=UDim2.new(0, width, 0, len),
+            Position=UDim2.new(0.5, -width/2, 0.5, 0),
+            AnchorPoint=Vector2.new(0.5, 0),
+            Rotation=rot,
+            BorderSizePixel=0,
+            ZIndex=89
+        }, parent)
+        local grad = make("UIGradient", {
+            Rotation=90,
+            Transparency=NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 0),
+                NumberSequenceKeypoint.new(0.3, 0.3),
+                NumberSequenceKeypoint.new(0.8, 0.85),
+                NumberSequenceKeypoint.new(1, 1)
+            })
+        }, ray)
+        make("UICorner", {CornerRadius=UDim.new(1,0)}, ray)
+        return ray
+    end
+    
+    local btnRays = {}
+    for i=1,12 do
+        local rot = (i-1)*30
+        local len = (i%3==0) and 22 or (i%2==0) and 16 or 12
+        local w = (i%3==0) and 2 or 1.2
+        table.insert(btnRays, createBtnRay(raysBtnContainer, rot, len, w))
+    end
+    
+    -- Ray lateral extra (brilho forte nas bordas)
+    local rayBtn1 = btnRays[1]
+    local rayBtn2 = btnRays[7]
+    -- Animacao realista botao + raios girando
+    task.spawn(function()
+        local TweenService = game:GetService("TweenService")
+        while reopen.Parent do
+            local t1 = TweenService:Create(stroke, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Color=Color3.fromRGB(100, 200, 255), Transparency=0.1, Thickness=3})
+            local tGlow = TweenService:Create(outerGlow, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.5, Size=UDim2.new(1, 36, 1, 36), Position=UDim2.new(0, -18, 0, -18)})
+            local tRot = TweenService:Create(raysBtnContainer, TweenInfo.new(4, Enum.EasingStyle.Linear), {Rotation=180})
+            t1:Play(); tGlow:Play(); tRot:Play()
+            t1.Completed:Wait()
+            local t1b = TweenService:Create(stroke, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Color=Color3.fromRGB(0, 140, 255), Transparency=0.5, Thickness=1.5})
+            local tGlowb = TweenService:Create(outerGlow, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.9, Size=UDim2.new(1, 30, 1, 30), Position=UDim2.new(0, -15, 0, -15)})
+            local tRot2 = TweenService:Create(raysBtnContainer, TweenInfo.new(4, Enum.EasingStyle.Linear), {Rotation=360})
+            t1b:Play(); tGlowb:Play(); tRot2:Play()
+            t1b.Completed:Wait()
+            raysBtnContainer.Rotation = 0
+        end
+    end)
     -- Ícone N AZUL com RAIO PULSANDO
     local iconFrame = make("Frame", {
         BackgroundColor3=Color3.fromRGB(35, 35, 45),
@@ -2145,7 +2220,7 @@ function Nexora.CreateMain(config)
         ZIndex=101
     }, reopen)
     make("UICorner", {CornerRadius=UDim.new(1,0)}, iconFrame)
-    -- Glow azul atras do N (pulsante)
+    -- Glow azul realista atras do N
     local glowBehind = make("Frame", {
         BackgroundColor3=Color3.fromRGB(0, 140, 255),
         BackgroundTransparency=0.7,
@@ -2189,23 +2264,22 @@ function Nexora.CreateMain(config)
         ZIndex=103
     }, iconFrame)
     make("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 140, 255))}, iconText)
-    -- Animacao pulsando azul
+    -- Animacao realista pulsando + girando
     task.spawn(function()
         local TweenService = game:GetService("TweenService")
         while iconFrame.Parent do
             -- Pulsar o N
-            local t1 = TweenService:Create(iconText, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize=20, TextStrokeTransparency=0})
-            local tGlow = TweenService:Create(glowBehind, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.3, Size=UDim2.new(0, 36, 0, 36), Position=UDim2.new(0.5, -18, 0.5, -18)})
-            local tRay1 = TweenService:Create(ray1, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.2, Rotation=180})
-            local tRay2 = TweenService:Create(ray2, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.2, Rotation=270})
-            t1:Play(); tGlow:Play(); tRay1:Play(); tRay2:Play()
+            local t1 = TweenService:Create(iconText, TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize=21, TextStrokeTransparency=0, TextColor3=Color3.fromRGB(120, 210, 255)})
+            local tGlow = TweenService:Create(glowBehind, TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.4, Size=UDim2.new(0, 48, 0, 48), Position=UDim2.new(0.5, -24, 0.5, -24)})
+            local tRaysRot = TweenService:Create(raysContainer, TweenInfo.new(3, Enum.EasingStyle.Linear), {Rotation=180})
+            t1:Play(); tGlow:Play(); tRaysRot:Play()
             t1.Completed:Wait()
-            local t1b = TweenService:Create(iconText, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize=18, TextStrokeTransparency=0.2})
-            local tGlowb = TweenService:Create(glowBehind, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.7, Size=UDim2.new(0, 32, 0, 32), Position=UDim2.new(0.5, -16, 0.5, -16)})
-            local tRay1b = TweenService:Create(ray1, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.6, Rotation=360})
-            local tRay2b = TweenService:Create(ray2, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.6, Rotation=450})
-            t1b:Play(); tGlowb:Play(); tRay1b:Play(); tRay2b:Play()
+            local t1b = TweenService:Create(iconText, TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize=18, TextStrokeTransparency=0.3, TextColor3=Color3.fromRGB(0, 140, 255)})
+            local tGlowb = TweenService:Create(glowBehind, TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.8, Size=UDim2.new(0, 40, 0, 40), Position=UDim2.new(0.5, -20, 0.5, -20)})
+            local tRaysRot2 = TweenService:Create(raysContainer, TweenInfo.new(3, Enum.EasingStyle.Linear), {Rotation=360})
+            t1b:Play(); tGlowb:Play(); tRaysRot2:Play()
             t1b.Completed:Wait()
+            raysContainer.Rotation = 0
         end
     end)
     local iconImg = make("ImageLabel", {
