@@ -3422,81 +3422,92 @@ do
                 Main.Notify({ Title = title, Content = content, Duration = 4 })
             end
         end)
-        pcall(function()
-            local sg = Instance.new("ScreenGui")
-            sg.Name = "HopNotify"
-            sg.Parent = (gethui and gethui()) or game.CoreGui
-            local frame = Instance.new("Frame")
-            frame.Size = UDim2.new(0, 320, 0, 70)
-            frame.Position = UDim2.new(0.5, -160, 0, 20)
-            frame.BackgroundColor3 = Color3.fromRGB(15,15,20)
-            frame.BorderSizePixel = 0
-            local corner = Instance.new("UICorner")
-            corner.CornerRadius = UDim.new(0,10)
-            corner.Parent = frame
-            local stroke = Instance.new("UIStroke")
-            stroke.Color = Color3.fromRGB(0,140,255)
-            stroke.Thickness = 1.5
-            stroke.Parent = frame
-            local titleLabel = Instance.new("TextLabel")
-            titleLabel.BackgroundTransparency = 1
-            titleLabel.Size = UDim2.new(1,-20,0,22)
-            titleLabel.Position = UDim2.new(0,10,0,6)
-            titleLabel.Text = title
-            titleLabel.TextColor3 = Color3.fromRGB(0,180,255)
-            titleLabel.Font = Enum.Font.GothamBold
-            titleLabel.TextSize = 14
-            titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-            titleLabel.Parent = frame
-            local cont = Instance.new("TextLabel")
-            cont.BackgroundTransparency = 1
-            cont.Size = UDim2.new(1,-20,0,30)
-            cont.Position = UDim2.new(0,10,0,28)
-            cont.Text = content
-            cont.TextColor3 = Color3.fromRGB(220,220,230)
-            cont.Font = Enum.Font.Gotham
-            cont.TextSize = 12
-            cont.TextWrapped = true
-            cont.TextXAlignment = Enum.TextXAlignment.Left
-            cont.Parent = frame
-            frame.Parent = sg
-            game.Debris:AddItem(sg, 4)
-        end)
     end
 
+    -- FIX DEFINITIVO PARA ERRO 773 (Local Restrito)
     local function HopServerOnce()
         local TeleportService = game:GetService("TeleportService")
         local HttpService = game:GetService("HttpService")
         local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
         local PlaceId = game.PlaceId
         local JobId = game.JobId
-        local LocalPlayer = Players.LocalPlayer
-        local servers = {}
-        local success, result = pcall(function()
-            return game:HttpGet("https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Asc&limit=100")
+
+        -- Evita hop pro mesmo servidor
+        local AllIDs = {}
+        pcall(function()
+            if isfile and isfile("NotSameServers.json") then
+                AllIDs = HttpService:JSONDecode(readfile("NotSameServers.json"))
+            end
         end)
-        if success and result then
-            local ok, data = pcall(function() return HttpService:JSONDecode(result) end)
-            if ok and data and data.data then
-                for _, v in pairs(data.data) do
-                    if v.playing < v.maxPlayers and v.id ~= JobId then
-                        table.insert(servers, v.id)
+
+        local function GetServers(cursor)
+            local url = "https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Asc&limit=100"
+            if cursor and cursor ~= "" then
+                url = url .. "&cursor=" .. cursor
+            end
+            
+            local success, result = pcall(function()
+                -- Tenta todos os metodos de request (Delta, Fluxus, Codex)
+                local req = (syn and syn.request) or (http_request) or (request) or nil
+                if req then
+                    local res = req({Url = url, Method = "GET"})
+                    return res.Body
+                else
+                    return game:HttpGet(url)
+                end
+            end)
+            return success and result or nil
+        end
+
+        local servers = {}
+        local nextCursor = ""
+        for i = 1,3 do -- tenta 3 paginas
+            local body = GetServers(nextCursor)
+            if not body then break end
+            local ok, data = pcall(function() return HttpService:JSONDecode(body) end)
+            if ok and data then
+                if data.nextPageCursor then
+                    nextCursor = data.nextPageCursor
+                end
+                if data.data then
+                    for _, v in pairs(data.data) do
+                        local isOld = false
+                        for _, oldId in pairs(AllIDs) do
+                            if v.id == oldId then isOld = true break end
+                        end
+                        if v.playing < v.maxPlayers and v.playing > 0 and v.id ~= JobId and not isOld then
+                            table.insert(servers, v.id)
+                        end
                     end
                 end
             end
+            if #servers >= 15 then break end
+            task.wait(0.5)
         end
-        -- CORREÇÃO TELEPORT LOCAL RESTRITO: sempre passa LocalPlayer e usa pcall
+
         if #servers > 0 then
-            local targetId = servers[math.random(1,#servers)]
+            local targetId = servers[math.random(1, #servers)]
+            table.insert(AllIDs, targetId)
+            pcall(function()
+                if writefile then
+                    writefile("NotSameServers.json", HttpService:JSONEncode(AllIDs))
+                end
+            end)
+            
+            -- METODO CORRETO QUE NÃO DA ERRO 773
             local ok, err = pcall(function()
                 TeleportService:TeleportToPlaceInstance(PlaceId, targetId, LocalPlayer)
             end)
             if not ok then
+                warn("[Hop Fix] ToPlaceInstance falhou: "..tostring(err).." tentando Teleport simples")
+                task.wait(1)
                 pcall(function()
                     TeleportService:Teleport(PlaceId, LocalPlayer)
                 end)
             end
         else
+            NotifyHop("Hop Others", "Nenhum servidor novo encontrado, tentando hop aleatorio...")
             pcall(function()
                 TeleportService:Teleport(PlaceId, LocalPlayer)
             end)
@@ -3504,29 +3515,18 @@ do
     end
 
     local function DoHop(eventName)
-        NotifyHop("Hop Others", "Entrando em servidor com "..eventName.."...")
+        NotifyHop("Hop Others", "Procurando servidor: "..eventName.."...")
         task.wait(0.3)
         HopServerOnce()
     end
 
-    SectionHopOthers.CreateButton({ Title = "Hop Prehistoric Island" }, function()
-        DoHop("Prehistoric Island")
-    end)
-    SectionHopOthers.CreateButton({ Title = "Hop Mirage Island" }, function()
-        DoHop("Mirage Island")
-    end)
-    SectionHopOthers.CreateButton({ Title = "Hop Kitsune Island" }, function()
-        DoHop("Kitsune Island")
-    end)
-    SectionHopOthers.CreateButton({ Title = "Hop Full Moon" }, function()
-        DoHop("Full Moon")
-    end)
-    SectionHopOthers.CreateButton({ Title = "Hop Legendary Haki" }, function()
-        DoHop("Legendary Haki")
-    end)
-    SectionHopOthers.CreateButton({ Title = "Hop Fruit" }, function()
-        DoHop("Fruit Spawn")
-    end)
+    SectionHopOthers.CreateButton({ Title = "Hop Prehistoric Island" }, function() DoHop("Prehistoric Island") end)
+    SectionHopOthers.CreateButton({ Title = "Hop Mirage Island" }, function() DoHop("Mirage Island") end)
+    SectionHopOthers.CreateButton({ Title = "Hop Kitsune Island" }, function() DoHop("Kitsune Island") end)
+    SectionHopOthers.CreateButton({ Title = "Hop Full Moon" }, function() DoHop("Full Moon") end)
+    SectionHopOthers.CreateButton({ Title = "Hop Legendary Haki" }, function() DoHop("Legendary Haki") end)
+    SectionHopOthers.CreateButton({ Title = "Hop Fruit" }, function() DoHop("Fruit Spawn") end)
+    SectionHopOthers.CreateButton({ Title = "Hop Aleatorio (Sem Erro 773)" }, function() HopServerOnce() end)
 end
 -- ===================== FIM NOVA ABA HOP OTHERS =====================
 
