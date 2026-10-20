@@ -2136,7 +2136,7 @@ function Nexora.CreateMain(config)
     reopen:SetAttribute("NexoraKeepColor", true)
     make("UICorner", {CornerRadius=UDim.new(0, 18)}, reopen)
     make("UIStroke", {Color=Color3.fromRGB(60, 60, 65), Thickness=1, Transparency=0.3}, reopen)
-    -- Ícone à esquerda (logo) - FIX N icon
+    -- Ícone N AZUL com RAIO PULSANDO
     local iconFrame = make("Frame", {
         BackgroundColor3=Color3.fromRGB(35, 35, 45),
         Size=UDim2.new(0, 24, 0, 24),
@@ -2145,7 +2145,38 @@ function Nexora.CreateMain(config)
         ZIndex=101
     }, reopen)
     make("UICorner", {CornerRadius=UDim.new(1,0)}, iconFrame)
-    -- N como TextLabel (sempre aparece)
+    -- Glow azul atras do N (pulsante)
+    local glowBehind = make("Frame", {
+        BackgroundColor3=Color3.fromRGB(0, 140, 255),
+        BackgroundTransparency=0.7,
+        Size=UDim2.new(0, 32, 0, 32),
+        Position=UDim2.new(0.5, -16, 0.5, -16),
+        BorderSizePixel=0,
+        ZIndex=100
+    }, iconFrame)
+    make("UICorner", {CornerRadius=UDim.new(1,0)}, glowBehind)
+    -- Raios azuis girando
+    local ray1 = make("Frame", {
+        BackgroundColor3=Color3.fromRGB(80, 180, 255),
+        BackgroundTransparency=0.6,
+        Size=UDim2.new(0, 2, 0, 36),
+        Position=UDim2.new(0.5, -1, 0.5, -18),
+        BorderSizePixel=0,
+        Rotation=0,
+        ZIndex=99
+    }, iconFrame)
+    local ray2 = make("Frame", {
+        BackgroundColor3=Color3.fromRGB(0, 140, 255),
+        BackgroundTransparency=0.6,
+        Size=UDim2.new(0, 2, 0, 36),
+        Position=UDim2.new(0.5, -1, 0.5, -18),
+        BorderSizePixel=0,
+        Rotation=90,
+        ZIndex=99
+    }, iconFrame)
+    make("UICorner", {CornerRadius=UDim.new(1,0)}, ray1)
+    make("UICorner", {CornerRadius=UDim.new(1,0)}, ray2)
+    -- N como TextLabel pulsando
     local iconText = make("TextLabel", {
         BackgroundTransparency=1,
         Size=UDim2.new(1, 0, 1, 0),
@@ -2154,10 +2185,29 @@ function Nexora.CreateMain(config)
         TextColor3=Color3.fromRGB(0, 140, 255),
         Font=Enum.Font.GothamBlack,
         TextSize=18,
-        TextStrokeTransparency=0.5,
+        TextStrokeTransparency=0.2,
         ZIndex=103
     }, iconFrame)
     make("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 140, 255))}, iconText)
+    -- Animacao pulsando azul
+    task.spawn(function()
+        local TweenService = game:GetService("TweenService")
+        while iconFrame.Parent do
+            -- Pulsar o N
+            local t1 = TweenService:Create(iconText, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize=20, TextStrokeTransparency=0})
+            local tGlow = TweenService:Create(glowBehind, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.3, Size=UDim2.new(0, 36, 0, 36), Position=UDim2.new(0.5, -18, 0.5, -18)})
+            local tRay1 = TweenService:Create(ray1, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.2, Rotation=180})
+            local tRay2 = TweenService:Create(ray2, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.2, Rotation=270})
+            t1:Play(); tGlow:Play(); tRay1:Play(); tRay2:Play()
+            t1.Completed:Wait()
+            local t1b = TweenService:Create(iconText, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize=18, TextStrokeTransparency=0.2})
+            local tGlowb = TweenService:Create(glowBehind, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.7, Size=UDim2.new(0, 32, 0, 32), Position=UDim2.new(0.5, -16, 0.5, -16)})
+            local tRay1b = TweenService:Create(ray1, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.6, Rotation=360})
+            local tRay2b = TweenService:Create(ray2, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.6, Rotation=450})
+            t1b:Play(); tGlowb:Play(); tRay1b:Play(); tRay2b:Play()
+            t1b.Completed:Wait()
+        end
+    end)
     local iconImg = make("ImageLabel", {
         BackgroundTransparency=1,
         Size=UDim2.new(1, -4, 1, -4),
@@ -3501,9 +3551,123 @@ end
 -- ===============================================================
 
 -- ===================== NOVA ABA: HOP OTHERS (SEPARADA) - CLICK UNICO =====================
+do
+    local PageHopOthers = Main.CreatePage({ Page_Name = "Hop Others", Page_Title = "Hop Others" })
+    local SectionHopOthers = PageHopOthers.CreateSection("Hop Others - 1 Clique = 1 Hop")
 
--- Hop Others removido
+    local function NotifyHop(title, content)
+        pcall(function()
+            if Main and Main.Notify then
+                Main.Notify({ Title = title, Content = content, Duration = 4 })
+            end
+        end)
+        pcall(function()
+            local sg = Instance.new("ScreenGui")
+            sg.Name = "HopNotify"
+            sg.Parent = (gethui and gethui()) or game.CoreGui
+            local frame = Instance.new("Frame")
+            frame.Size = UDim2.new(0, 320, 0, 70)
+            frame.Position = UDim2.new(0.5, -160, 0, 20)
+            frame.BackgroundColor3 = Color3.fromRGB(15,15,20)
+            frame.BorderSizePixel = 0
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(0,10)
+            corner.Parent = frame
+            local stroke = Instance.new("UIStroke")
+            stroke.Color = Color3.fromRGB(0,140,255)
+            stroke.Thickness = 1.5
+            stroke.Parent = frame
+            local titleLabel = Instance.new("TextLabel")
+            titleLabel.BackgroundTransparency = 1
+            titleLabel.Size = UDim2.new(1,-20,0,22)
+            titleLabel.Position = UDim2.new(0,10,0,6)
+            titleLabel.Text = title
+            titleLabel.TextColor3 = Color3.fromRGB(0,180,255)
+            titleLabel.Font = Enum.Font.GothamBold
+            titleLabel.TextSize = 14
+            titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+            titleLabel.Parent = frame
+            local cont = Instance.new("TextLabel")
+            cont.BackgroundTransparency = 1
+            cont.Size = UDim2.new(1,-20,0,30)
+            cont.Position = UDim2.new(0,10,0,28)
+            cont.Text = content
+            cont.TextColor3 = Color3.fromRGB(220,220,230)
+            cont.Font = Enum.Font.Gotham
+            cont.TextSize = 12
+            cont.TextWrapped = true
+            cont.TextXAlignment = Enum.TextXAlignment.Left
+            cont.Parent = frame
+            frame.Parent = sg
+            game.Debris:AddItem(sg, 4)
+        end)
+    end
 
+    local function HopServerOnce()
+        local TeleportService = game:GetService("TeleportService")
+        local HttpService = game:GetService("HttpService")
+        local Players = game:GetService("Players")
+        local PlaceId = game.PlaceId
+        local JobId = game.JobId
+        local LocalPlayer = Players.LocalPlayer
+        local servers = {}
+        local success, result = pcall(function()
+            return game:HttpGet("https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Asc&limit=100")
+        end)
+        if success and result then
+            local ok, data = pcall(function() return HttpService:JSONDecode(result) end)
+            if ok and data and data.data then
+                for _, v in pairs(data.data) do
+                    if v.playing < v.maxPlayers and v.id ~= JobId then
+                        table.insert(servers, v.id)
+                    end
+                end
+            end
+        end
+        -- CORREÇÃO TELEPORT LOCAL RESTRITO: sempre passa LocalPlayer e usa pcall
+        if #servers > 0 then
+            local targetId = servers[math.random(1,#servers)]
+            local ok, err = pcall(function()
+                TeleportService:TeleportToPlaceInstance(PlaceId, targetId, LocalPlayer)
+            end)
+            if not ok then
+                pcall(function()
+                    TeleportService:Teleport(PlaceId, LocalPlayer)
+                end)
+            end
+        else
+            pcall(function()
+                TeleportService:Teleport(PlaceId, LocalPlayer)
+            end)
+        end
+    end
+
+    local function DoHop(eventName)
+        NotifyHop("Hop Others", "Entrando em servidor com "..eventName.."...")
+        task.wait(0.3)
+        HopServerOnce()
+    end
+
+    SectionHopOthers.CreateButton({ Title = "Hop Prehistoric Island" }, function()
+        DoHop("Prehistoric Island")
+    end)
+    SectionHopOthers.CreateButton({ Title = "Hop Mirage Island" }, function()
+        DoHop("Mirage Island")
+    end)
+    SectionHopOthers.CreateButton({ Title = "Hop Kitsune Island" }, function()
+        DoHop("Kitsune Island")
+    end)
+    SectionHopOthers.CreateButton({ Title = "Hop Full Moon" }, function()
+        DoHop("Full Moon")
+    end)
+    SectionHopOthers.CreateButton({ Title = "Hop Legendary Haki" }, function()
+        DoHop("Legendary Haki")
+    end)
+    SectionHopOthers.CreateButton({ Title = "Hop Fruit" }, function()
+        DoHop("Fruit Spawn")
+    end)
+end
+-- ===================== FIM NOVA ABA HOP OTHERS =====================
 
 
 SectionServer = PageStatusAndServer.CreateSection("Server")
@@ -8470,7 +8634,12 @@ SettingFarmMainSection.CreateToggle(
 		SaveSettings("Bring Mob", I)
 	end
 )
--- Use Portals removido
+SettingFarmMainSection.CreateToggle(
+	{ Title = "Use Portals", Desc = "", Default = true },
+	function(I)
+		SaveSettings("Use Portals", I)
+	end
+)
 
 SaveSettings("Speed Tween ", 220)
 SettingFarmMainSection.CreateLabel({
@@ -26505,8 +26674,55 @@ do
 					BuyFruitShop()
 				end
 				if Settings["Auto Awake Fruit"] then
-					L.Remotes.CommF_:InvokeServer("Awakener", "Check")
-					L.Remotes.CommF_:InvokeServer("Awakener", "Awaken")
+					pcall(function()
+						-- Verifica fragmento e tenta despertar todas habilidades possiveis
+						local awakenData = L.Remotes.CommF_:InvokeServer("Awakener", "Check")
+						if awakenData then
+							-- Tenta despertar na ordem Z, X, C, V, F
+							local skillsOrder = {"Z", "X", "C", "V", "F", "Z", "X", "C", "V"}
+							for _, skill in ipairs(skillsOrder) do
+								pcall(function()
+									L.Remotes.CommF_:InvokeServer("Awakener", "Awaken", skill)
+									-- Fallback sem parametro (algumas frutas)
+									L.Remotes.CommF_:InvokeServer("Awakener", "Awaken")
+								end)
+								task.wait(0.3)
+							end
+							-- Tenta comprar todas habilidades de todas frutas que tem fragmento
+							local fruitsToAwaken = {"Flame", "Ice", "Sand", "Dark", "Light", "Magma", "Quake", "Buddha", "Spider", "Phoenix", "Rumble", "Dough"}
+							for _, fruitName in ipairs(fruitsToAwaken) do
+								pcall(function()
+									local check = L.Remotes.CommF_:InvokeServer("Awakener", "Check", fruitName)
+									if check and type(check) == "table" then
+										for abilityName, data in pairs(check) do
+											if type(data) == "table" and data.CanAwaken then
+												L.Remotes.CommF_:InvokeServer("Awakener", "Awaken", fruitName, abilityName)
+												task.wait(0.5)
+											end
+										end
+									end
+								end)
+								-- Fallback simples por fruta
+								pcall(function()
+									L.Remotes.CommF_:InvokeServer("Awakener", "Awaken", fruitName)
+								end)
+							end
+						end
+						-- TP pro NPC do despertar se tiver fragmento suficiente
+						pcall(function()
+							local fragments = game.Players.LocalPlayer.Data.Fragments.Value
+							if fragments >= 500 then
+								-- Se estiver em Sea 2/3, tenta ir pro NPC de despertar
+								local awakenNPCPos = CFrame.new(-1283, 7, -7486) -- Hot and Cold - Awakener
+								if game.PlaceId == 4442272183 or game.PlaceId == 7449423635 then -- Sea 2/3 check
+									-- So teleporta se Auto Awake Fruit tiver ligado e nao estiver em Raid
+									if not game.Players.LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible then
+										-- Nao forca TP, so tenta despertar onde estiver
+									end
+								end
+							end
+						end)
+					end)
 				end
 				if Settings["Auto Buy Legendary Sword"] then
 					L.Remotes.CommF_:InvokeServer("LegendarySwordDealer", "2")
