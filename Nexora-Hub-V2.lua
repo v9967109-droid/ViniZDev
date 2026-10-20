@@ -1730,20 +1730,7 @@ game:GetService("Players").LocalPlayer.Idled:connect(function()
 end)
 local A =
 	loadstring(game:HttpGet("https://raw.githubusercontent.com/obiiyeuem/vthangsitink/refs/heads/main/zzzz.lua"))()
-Main = A.CreateMain({ Title = "Nexora Blox Fruits", Desc = "Nexora Blox Fruits" })
-
--- HOP OTHERS - ADICIONADO
-local HopOthersPage = Main.CreatePage({ Page_Name = "Hop Others", Page_Title = "Hop Others" })
-local HopOthersSection = HopOthersPage.CreateSection("Hop Others - 1 Clique = 1 Hop")
-HopOthersSection.CreateButton({ Title = "Hop Prehistoric Island" }, function() game:GetService("TeleportService"):Teleport(game.PlaceId) end)
-HopOthersSection.CreateButton({ Title = "Hop Mirage Island" }, function() game:GetService("TeleportService"):Teleport(game.PlaceId) end)
-HopOthersSection.CreateButton({ Title = "Hop Kitsune Island" }, function() game:GetService("TeleportService"):Teleport(game.PlaceId) end)
-HopOthersSection.CreateButton({ Title = "Hop Full Moon" }, function() game:GetService("TeleportService"):Teleport(game.PlaceId) end)
-HopOthersSection.CreateButton({ Title = "Hop Legendary Haki" }, function() game:GetService("TeleportService"):Teleport(game.PlaceId) end)
-HopOthersSection.CreateButton({ Title = "Hop Fruit" }, function() game:GetService("TeleportService"):Teleport(game.PlaceId) end)
-
--- RAISE BOAT MANUAL DRIVE - ADICIONADO
-
+Main = A.CreateMain({ Title = "Nexora Hub Blox Fruits", Desc = "Nexora Hub Blox Fruits" })
 
 PageShop = Main.CreatePage({ Page_Name = "Shop", Page_Title = "Shop" })
 getgenv().Options = A.Options
@@ -2300,263 +2287,6 @@ do
 
 end
 -- ===============================================================
-local SectionPlayer = PageStatusAndServer.CreateSection("Player - State")
-    local LabelBeli = SectionPlayer.CreateLabel({ Title = "Beli: Loading..." })
-    local LabelBounty = SectionPlayer.CreateLabel({ Title = "Bounty / Honor: Loading..." })
-    local LabelFragments = SectionPlayer.CreateLabel({ Title = "Fragments: Loading..." })
-    local LabelLevel = SectionPlayer.CreateLabel({ Title = "Level: Loading..." })
-    
-    spawn(function()
-        local function FormatBounty(val)
-            if val >= 1000000 then
-                local mi = val / 1000000
-                -- Formato brasileiro 2,5 mi
-                local s = string.format("%.1f", mi):gsub("%.", ",")
-                return s .. " mi (" .. tostring(val) .. ")"
-            elseif val >= 1000 then
-                return tostring(math.floor(val/1000)) .. "K (" .. tostring(val) .. ")"
-            else
-                return tostring(val)
-            end
-        end
-        
-        while task.wait(1.5) do
-            pcall(function()
-                local data = game.Players.LocalPlayer:FindFirstChild("Data")
-                if data then
-                    if data:FindFirstChild("Beli") then LabelBeli.SetText("Beli: " .. tostring(data.Beli.Value)) end
-                    if data:FindFirstChild("Fragments") then LabelFragments.SetText("Fragments: " .. tostring(data.Fragments.Value)) end
-                    if data:FindFirstChild("Level") then LabelLevel.SetText("Level: " .. tostring(data.Level.Value)) end
-                    
-                    -- Bounty/Honor verifica nas classificacoes detectando seu Nick (igual print)
-                    local bountyVal = 0
-                    local b = data:FindFirstChild("Bounty") or data:FindFirstChild("Honor")
-                    if b then bountyVal = b.Value end
-                    
-                    -- Tenta pegar da Classificacao/Leaderboard tambem
-                    pcall(function()
-                        local leaderboard = game.Players.LocalPlayer:FindFirstChild("leaderstats")
-                        if leaderboard then
-                            local bountyStat = leaderboard:FindFirstChild("Bounty/Honor") or leaderboard:FindFirstChild("Bounty") or leaderboard:FindFirstChild("Honor")
-                            if bountyStat and bountyStat.Value and bountyStat.Value > 0 then
-                                bountyVal = bountyStat.Value
-                            end
-                        end
-                    end)
-                    
-                    if bountyVal > 0 then
-                        LabelBounty.SetText("Bounty / Honor: " .. FormatBounty(bountyVal))
-                    end
-                end
-            end)
-        end
-    end)
-    
-    local SectionNormal = PageStatusAndServer.CreateSection("Normal Fruit Stock - Normal Dealer")
-    SectionNormal.CreateLabel({ Title = "Fruits on sale at the normal dealer" })
-    local NormalLabels = {}
-    NormalLabels[1] = SectionNormal.CreateLabel({ Title = "Ghost-Ghost - $940,000" })
-    NormalLabels[2] = SectionNormal.CreateLabel({ Title = "Light-Light - $650,000" })
-    NormalLabels[3] = SectionNormal.CreateLabel({ Title = "Spin-Spin - $7,500" })
-    NormalLabels[4] = SectionNormal.CreateLabel({ Title = "Rocket-Rocket - $5,000" })
-    NormalLabels[5] = SectionNormal.CreateLabel({ Title = "Loading..." })
-    NormalLabels[6] = SectionNormal.CreateLabel({ Title = "Loading..." })
-    
-    local SectionAdvance = PageStatusAndServer.CreateSection("Advance Fruit Stock - Mirage Island Dealer")
-    SectionAdvance.CreateLabel({ Title = "Fruits on sale at the Mirage Island dealer" })
-    local AdvanceLabels = {}
-    AdvanceLabels[1] = SectionAdvance.CreateLabel({ Title = "Flame-Flame - $250,000" })
-    AdvanceLabels[2] = SectionAdvance.CreateLabel({ Title = "Smoke-Smoke - $100,000" })
-    AdvanceLabels[3] = SectionAdvance.CreateLabel({ Title = "Bomb-Bomb - $80,000" })
-    AdvanceLabels[4] = SectionAdvance.CreateLabel({ Title = "Spin-Spin - $7,500" })
-    AdvanceLabels[5] = SectionAdvance.CreateLabel({ Title = "Rocket-Rocket - $5,000" })
-    
-    -- PATCH FIX: estoque 100% dinamico - usa lista real da loja
-    local function ParseFruit(v)
-        if type(v)=="table" then
-            -- Blox Fruits retorna: {Name, Price, OnSale, InStock, etc}
-            -- Só queremos frutas que dão pra comprar
-            if v.OnSale == false then return nil, nil end
-            if v.InStock == false then return nil, nil end
-            if v.CanBuy == false then return nil, nil end
-            -- Se tem campo Stock ou Amount e é 0, pula
-            if v.Stock == 0 or v.Amount == 0 then return nil, nil end
-            local n = v.Name or v[1] or v.name or v.FruitName
-            local p = v.Price or v[2] or v.price or v.Cost or 0
-            if n then return n, p end
-        elseif type(v)=="string" then
-            return v, 0
-        end
-        return nil, nil
-    end
-    local function FormatPrice(p)
-        if not p or p==0 then return "" end
-        local s = tostring(math.floor(p))
-        return " - $" .. s:reverse():gsub("(%d%d%d)","%1,"):reverse():gsub("^,","")
-    end
-    local function Ensure(section, labels, need)
-        for i=#labels+1, need do
-            labels[i] = section.CreateLabel({ Title = "Slot "..i..": Loading..." })
-        end
-    end
-    local function UpdateStock(section, labels, stock)
-        if not stock or type(stock)~="table" then return end
-        local list = {}
-        if #stock>0 then list=stock else for k,v in pairs(stock) do if type(v)=="table" then table.insert(list,v) elseif type(k)=="string" then table.insert(list,{Name=k, Price=v}) end end end
-        -- FILTRA SÓ AS QUE DÁ PRA COMPRAR
-        local filtered = {}
-        for _, v in ipairs(list) do
-            local name, price = ParseFruit(v)
-            if name then table.insert(filtered, {Name=name, Price=price, _raw=v}) end
-        end
-        if #filtered==0 then
-            if labels[1] then labels[1].SetText("Nenhuma fruta no stock agora") end
-            for i=2, #labels do if labels[i] then labels[i].SetText("Slot "..i..": Empty") end end
-            return
-        end
-        Ensure(section, labels, #filtered)
-        for i, data in ipairs(filtered) do
-            if labels[i] then
-                local disp = data.Name
-                if not disp:find("-") then disp = disp.."-"..disp end
-                labels[i].SetText(disp .. FormatPrice(data.Price))
-            end
-        end
-        for i=#filtered+1, #labels do if labels[i] then labels[i].SetText("Slot "..i..": Empty") end end
-    end
-
-    spawn(function()
-        while task.wait(2) do
-            pcall(function()
-                local normalStock = nil
-                pcall(function() normalStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetFruits", false) end)
-                if not normalStock or type(normalStock)~="table" or #normalStock==0 then
-                    pcall(function() normalStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetFruits") end)
-                end
-                UpdateStock(SectionNormal, NormalLabels, normalStock)
-
-                local mirageStock = nil
-                pcall(function() mirageStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetFruits", true) end)
-                if not mirageStock or type(mirageStock)~="table" or #mirageStock==0 then
-                    pcall(function() mirageStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetStock", "Mirage") end)
-                end
-                if not mirageStock or type(mirageStock)~="table" or #mirageStock==0 then
-                    pcall(function() mirageStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetFruits", "Mirage") end)
-                end
-                UpdateStock(SectionAdvance, AdvanceLabels, mirageStock)
-            end)
-        end
-    end)
-end
-
--- ===================== Status Boss Server =====================
--- Aba: bosses que nascem NORMALMENTE (por tempo). Cada boss mostra só uma bolinha:
---   🟢 = o script detectou o boss spawnado agora (vivo em Enemies ou ReplicatedStorage)
---   🔴 = o script não detectou o boss (não spawnado)
--- Bosses que nascem por ação do jogador (summon, raid etc.) não estão nesta lista.
-do
-	local BossPage = Main.CreatePage({ Page_Name = "Status Boss Server", Page_Title = "Status Boss Server" })
-	local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-	local Seas = {
-		{
-			title = "First Sea",
-			here = function()
-				return game.PlaceId == getgenv().CheckPlaceId3
-			end,
-			bosses = {
-				"Gorilla King", "Bobby", "The Saw", "Yeti", "Mob Leader", "Vice Admiral", "Warden",
-				"Magma Admiral", "Fishman Lord", "Wysper", "Thunder God", "Cyborg", "Ice Admiral", "Greybeard",
-			},
-		},
-		{
-			title = "Second Sea",
-			here = function()
-				return game.PlaceId == getgenv().CheckPlaceId2
-			end,
-			bosses = {
-				"Diamond", "Jeremy", "Fajita", "Don Swan", "Smoke Admiral", "Cursed Captain",
-				"Awakened Ice Admiral", "Tide Keeper",
-			},
-		},
-		{
-			title = "Third Sea",
-			here = function()
-				return game.PlaceId == getgenv().CheckPlaceId
-			end,
-			bosses = { "Stone", "Hydra Leader", "Kilo Admiral", "Captain Elephant", "Longma", "Cake Queen" },
-		},
-	}
-
-	local Known, Order = {}, {}
-	for _, sea in ipairs(Seas) do
-		local section = BossPage.CreateSection(sea.title)
-		for _, name in ipairs(sea.bosses) do
-			local entry = { name = name, here = sea.here, shown = nil }
-			entry.label = section.CreateLabel({ Title = "🔴 " .. name })
-			Known[name] = entry
-			Order[#Order + 1] = entry
-		end
-	end
-
-	local function CleanName(n)
-		n = n:gsub("%s*%[Lv%. [^%]]+%]", "")
-		n = n:gsub("%s*%[Boss%]", "")
-		return n
-	end
-
-	-- Bosses da lista vivos agora (Enemies + ReplicatedStorage). Retorna nome -> onde achou.
-	local function ScanAlive()
-		local alive = {}
-		local function scan(container, where)
-			if not container then
-				return
-			end
-			for _, model in ipairs(container:GetChildren()) do
-				if model:IsA("Model") and not model.Name:find("%[Raid Boss%]") then
-					local e = Known[CleanName(model.Name)]
-					if e then
-						local hum = model:FindFirstChildOfClass("Humanoid")
-						if hum and hum.Health > 0 then
-							alive[e.name] = where
-						end
-					end
-				end
-			end
-		end
-		scan(workspace:FindFirstChild("Enemies"), "mapa")
-		scan(ReplicatedStorage, "ReplicatedStorage")
-		return alive
-	end
-
-	getgenv().__BossStatusGen = (getgenv().__BossStatusGen or 0) + 1
-	local Gen = getgenv().__BossStatusGen
-	task.spawn(function()
-		while task.wait(1) and getgenv().__BossStatusGen == Gen do
-			pcall(function()
-				local alive = ScanAlive()
-				for _, e in ipairs(Order) do
-					local text
-					if alive[e.name] then
-						text = "🟢 " .. e.name
-					elseif e.here() then
-						text = "🔴 " .. e.name
-					else
-						-- Boss de outro mar: o script não consegue ver, então fica vermelho.
-						text = "🔴 " .. e.name .. " (outro mar)"
-					end
-					if text ~= e.shown then
-						e.shown = text
-						e.label.SetText(text)
-					end
-				end
-			end)
-		end
-	end)
-
-end
--- ===============================================================
-
 SectionServer = PageStatusAndServer.CreateSection("Server")
 SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Ping)" }, function()
 	local G = game:GetService("HttpService")
@@ -7096,6 +6826,14 @@ SettingFarmMainSection.CreateToggle(
 	{ Title = "Bring Mob", Desc = nil, Default = Settings["Bring Mob"] or true },
 	function(I)
 		SaveSettings("Bring Mob", I)
+	end
+)
+
+
+SettingFarmMainSection.CreateToggle(
+	{ Title = "Use Portals", Desc = "", Default = Settings["Use Portals"] ~= false },
+	function(v)
+		SaveSettings("Use Portals", v)
 	end
 )
 SaveSettings("Speed Tween ", 220)
@@ -13156,6 +12894,81 @@ local b, E =
 		["Zone 6"] = CFrame.new(-32975.9921875, 0, 25963.7109375),
 	},
 	{ Melee = false, Sword = false, Gun = false, ["Blox Fruit"] = false }
+function ResetAirState()
+	pcall(function()
+		getgenv().noclip = false
+		if TweenManager and TweenManager.CancelCurrent then
+			TweenManager.CancelCurrent()
+		end
+		local Players = game:GetService("Players")
+		local LocalPlayer = Players.LocalPlayer
+		local char = LocalPlayer and LocalPlayer.Character
+		if char then
+			for _, part in ipairs(char:GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.CanCollide = true
+				end
+			end
+			local hum = char:FindFirstChildOfClass("Humanoid")
+			if hum then
+				hum.PlatformStand = false
+				pcall(function() hum:ChangeState(Enum.HumanoidStateType.GettingUp) end)
+			end
+			local root = char:FindFirstChild("HumanoidRootPart")
+			if root then
+				for _, obj in ipairs(root:GetChildren()) do
+					if obj.Name == "FloatForce" or obj:IsA("BodyVelocity") or obj:IsA("BodyForce") or obj:IsA("BodyGyro") or obj:IsA("BodyPosition") then
+						obj:Destroy()
+					end
+				end
+				root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+				root.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+			end
+		end
+		-- Reseta barco também
+		pcall(function()
+			local boat = checkboat()
+			if boat then
+				TurnOffNoclipBoat(boat)
+			end
+		end)
+	end)
+end
+
+
+-- FAILSAFE: Se desativar qualquer toggle e ficar preso no ar, volta ao normal INSTANTANEO
+
+
+function ForceResetAirState()
+	pcall(function()
+		getgenv().noclip = false
+		local char = game:GetService("Players").LocalPlayer.Character
+		if not char then return end
+		local root = char:FindFirstChild("HumanoidRootPart")
+		local hum = char:FindFirstChildOfClass("Humanoid")
+		if root then
+			root.AssemblyLinearVelocity = Vector3.new(0,0,0)
+			root.AssemblyAngularVelocity = Vector3.new(0,0,0)
+			for _, v in ipairs(root:GetChildren()) do
+				if v:IsA("BodyVelocity") or v:IsA("BodyGyro") or v:IsA("BodyPosition") or v.Name == "FloatForce" then
+					v:Destroy()
+				end
+			end
+			for _, v in ipairs(char:GetDescendants()) do
+				if v:IsA("BasePart") then
+					v.CanCollide = true
+				end
+			end
+		end
+		if hum then
+			hum.PlatformStand = false
+			hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+		end
+	end)
+end
+
+
+
 SeaEventTab = Main.CreatePage({ Page_Name = "Sea Event", Page_Title = "Sea Event Tab" })
 SettingSeaEventSection = SeaEventTab.CreateSection("Setting")
 SettingSeaEventSection.CreateDropdown(
@@ -13287,6 +13100,74 @@ SettingSeaEventSection.CreateToggle(
 		SaveSettings("Reset Character Buy Boat", l)
 	end
 )
+
+
+SettingSeaEventSection.CreateToggle(
+	{
+		Title = "Raise Boat Manual Drive",
+		Desc = "The boat rises above the sea and you keep driving it manually. Set the height below (keep it low so the sea danger level still counts).",
+		Default = Settings["Raise Boat Manual Drive"] or false,
+	},
+	function(l)
+		SaveSettings("Raise Boat Manual Drive", l)
+		if not l then
+			-- Desativou: volta ao normal pra não ficar preso no ar
+			ResetAirState()
+		end
+	end
+)
+SettingSeaEventSection.CreateSlider(
+	{ Title = "Boat Height", Min = 5, Max = 175, Default = Settings["Boat Height"] or 175, Precise = false },
+	function(l)
+		SaveSettings("Boat Height", l)
+	end
+)
+-- Sobe o barco (só no eixo Y) enquanto você está sentado nele. X/Z e a direção ficam livres,
+-- então a direção continua manual. Ao desligar a toggle o barco volta a descer sozinho.
+do
+	getgenv().__BoatRaiseGen = (getgenv().__BoatRaiseGen or 0) + 1
+	local gen = getgenv().__BoatRaiseGen
+	pcall(function() if getgenv().__BoatRaiseConn then getgenv().__BoatRaiseConn:Disconnect() end end)
+	getgenv().__BoatRaiseConn = game:GetService("RunService").Heartbeat:Connect(function()
+		if getgenv().__BoatRaiseGen ~= gen then return end
+		if not Settings["Raise Boat Manual Drive"] then
+			-- V13 FIX: Quando desativado, NÃO fica resetando todo frame (isso travava o player)
+			-- O reset já é feito uma vez no toggle callback. Aqui só retorna pra não interferir no sentar/and ar
+			return
+		end
+		-- V13: Raise Boat Manual Drive totalmente independente - não bloqueia nenhuma outra função de barco
+		-- Só trava o Y, mantendo X/Z livre, pode coexistir com Sea Event, Leviathan, Prehistoric, etc.
+		pcall(function()
+			local char = t.Character
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+			local seat = hum and hum.SeatPart
+			if not seat or not seat:IsA("VehicleSeat") then return end
+			local boat = seat:FindFirstAncestorOfClass("Model")
+			local boats = workspace:FindFirstChild("Boats")
+			if not boat or not boats or boat.Parent ~= boats then return end
+			-- Altura "normal" do barco na água, medida na primeira vez que o vemos.
+			local base = boat:GetAttribute("NexoraBaseY")
+			if not base then
+				base = (seat.Position.Y < 30) and seat.Position.Y or 8
+				boat:SetAttribute("NexoraBaseY", base)
+			end
+			local height = math.clamp(tonumber(Settings["Boat Height"]) or 175, 5, 175)
+			local targetY = base + height
+			local pivot = boat:GetPivot()
+			-- trava Y sem interferir na velocidade
+			if math.abs(pivot.Position.Y - targetY) > 0.05 then
+				local pos = pivot.Position
+				local rot = pivot - pos
+				boat:PivotTo(CFrame.new(pos.X, targetY, pos.Z) * rot)
+			end
+			-- só zera Y, mantém X/Z (velocidade do barco)
+			local v = seat.AssemblyLinearVelocity
+			if math.abs(v.Y) > 0.01 then
+				seat.AssemblyLinearVelocity = Vector3.new(v.X, 0, v.Z)
+			end
+		end)
+	end)
+end
 SettingSeaEventSection.CreateToggle(
 	{ Title = "Auto Dodge Skill Terrorshark", Desc = nil, Default = Settings["Auto Dodge Skill Terrorshark"] or false },
 	function(l)
@@ -23125,6 +23006,20 @@ SettingsAimbotSection.CreateToggle(
 		SaveSettings("Auto Aimbot", b)
 	end
 )
+
+
+SettingsAimbotSection.CreateToggle(
+	{ Title = "Auto Esquiva", Desc = "Orbita 3D quando tem player a 250 studs", Default = Settings["Auto Esquiva"] or false },
+	function(v)
+		SaveSettings("Auto Esquiva", v)
+	end
+)
+SettingsAimbotSection.CreateToggle(
+	{ Title = "Auto Fly Player", Desc = "Voo 3D com camera", Default = Settings["Auto Fly Player"] or false },
+	function(v)
+		SaveSettings("Auto Fly Player", v)
+	end
+)
 SettingsAimbotSection.CreateToggle(
 	{ Title = "Auto Aimbot Gun", Desc = nil, Default = Settings["Auto Aimbot Gun"] or false },
 	function(b)
@@ -23786,7 +23681,51 @@ a.CreateToggle(
 		SaveSettings("Auto rejoin Disconnect", T)
 	end
 )
-a.CreateToggle({ Title = "Auto Load Script", Desc = nil, Default = Settings["Auto Load Script"] or false }, function(T)
+
+
+-- HOP OTHERS - NA MESMA POSICAO DO NEXORA (NO FINAL, SEM QUEBRAR ORDEM)
+
+-- HOP OTHERS E REJOIN SERVER CORRIGIDO - SEM LOCAL RESTRITO
+local HopOthersPage = Main.CreatePage({ Page_Name = "Hop Others", Page_Title = "Hop Others" })
+local HopOthersSection = HopOthersPage.CreateSection("Hop Others - Correcao")
+local function GetRequest()
+    if syn and syn.request then return syn.request end
+    if http_request then return http_request end
+    if request then return request end
+    return nil
+end
+local function HopOnce()
+    local TS = game:GetService("TeleportService")
+    local HS = game:GetService("HttpService")
+    local PlaceId = game.PlaceId
+    local JobId = game.JobId
+    local req = GetRequest()
+    local servers = {}
+    if req then
+        local ok, res = pcall(function() return req({ Url = "https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Asc&limit=100", Method = "GET" }) end)
+        if ok and res and res.Body then
+            local ok2, data = pcall(function() return HS:JSONDecode(res.Body) end)
+            if ok2 and data and data.data then
+                for _,v in pairs(data.data) do
+                    if v.playing < v.maxPlayers and v.id ~= JobId then table.insert(servers, v.id) end
+                end
+            end
+        end
+    end
+    if #servers>0 then
+        pcall(function() TS:TeleportToPlaceInstance(PlaceId, servers[math.random(1,#servers)]) end)
+    else
+        pcall(function() TS:Teleport(PlaceId) end)
+    end
+end
+HopOthersSection.CreateButton({ Title = "Hop Prehistoric Island" }, HopOnce)
+HopOthersSection.CreateButton({ Title = "Hop Mirage Island" }, HopOnce)
+HopOthersSection.CreateButton({ Title = "Hop Kitsune Island" }, HopOnce)
+HopOthersSection.CreateButton({ Title = "Hop Full Moon" }, HopOnce)
+HopOthersSection.CreateButton({ Title = "Hop Legendary Haki" }, HopOnce)
+HopOthersSection.CreateButton({ Title = "Hop Fruit" }, HopOnce)
+HopOthersSection.CreateButton({ Title = "Rejoin Server" }, function() pcall(function() game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId) end) end)
+oggle({ Title = "Auto Load Script", Desc = nil, Default = Settings["Auto Load Script"] or false }, function(T)
 	SaveSettings("Auto Load Script", T)
 end)
 a.CreateToggle({ Title = "Boost Fps", Desc = nil, Default = Settings["Boost Fps"] or false }, function(T)
