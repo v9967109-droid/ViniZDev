@@ -338,23 +338,12 @@ function ForceResetSchema(l, Q)
 end
 
 
--- FIX: não bloquear uma nova execução só porque uma execução anterior marcou
--- __BF_LOADED antes de terminar. O script antigo não preenchia __BF_RESULT,
--- então podia retornar nil e deixar o usuário sem interface.
-do
+-- Não confiar apenas na flag: execuções anteriores podem ter falhado depois de marcá-la.
+pcall(function()
     local env = getgenv()
-    local existingGui = nil
-    pcall(function()
-        local parent = getParent()
-        if parent then existingGui = parent:FindFirstChild("NexoraUI") end
-    end)
-    if env.__BF_LOADED and existingGui and env.__BF_RESULT then
-        return env.__BF_RESULT
-    end
-    -- Sem uma UI real e um resultado válido, trata a flag como obsoleta.
     env.__BF_LOADED = nil
     env.__BF_RESULT = nil
-end
+end)
 
 Settings = {}
 HttpService = game:GetService("HttpService")
@@ -2957,10 +2946,6 @@ return Nexora
 
 end)()
 Main = A.CreateMain({ Title = "NEXORA HUB", Desc = "BLOX FRUITS • ViniZDev" })
--- Guarda a instância real para que execuções repetidas possam detectá-la.
-pcall(function()
-    getgenv().__BF_RESULT = Main
-end)
 
 PageShop = Main.CreatePage({ Page_Name = "Shop", Page_Title = "Shop" })
 getgenv().Options = A.Options
@@ -26772,7 +26757,7 @@ BananaCatBF.AutoFarm = AutoFarm
 BananaCatBF.CheckQuest = CheckQuest
 getgenv().CheckQuest = CheckQuest
 
-getgenv().__BF_LOADED = true
+-- __BF_LOADED será marcado somente ao final da inicialização
 
 
 
@@ -29735,3 +29720,10 @@ task.spawn(function()
     if A and A.RestoreSavedToggles then A.RestoreSavedToggles() end
     pcall(function() if getgenv().NexoraLoadingFinish then getgenv().NexoraLoadingFinish() end end)
 end)
+
+pcall(function()
+    local env = getgenv()
+    env.__BF_RESULT = A
+    env.__BF_LOADED = true
+end)
+print("[NexoraHub] Source chegou ao fim da inicialização.")
