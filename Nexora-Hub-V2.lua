@@ -1,3 +1,61 @@
+
+-- COMPATIBILIDADE UNIVERSAL PARA TODOS EXECUTORES MOBILE E PC
+-- Delta, Fluxus, Arceus X, Codex, Trigon, KRNL, Synapse, Wave, Vega X, Evon, etc.
+
+-- Detecta executor
+local ExecutorName = "Unknown"
+pcall(function()
+    if identifyexecutor then ExecutorName = identifyexecutor() 
+    elseif getexecutorname then ExecutorName = getexecutorname()
+    elseif is_sirhurt_closure then ExecutorName = "SirHurt"
+    elseif pebc_execute then ExecutorName = "ProtoSmasher"
+    end
+end)
+
+-- File functions universal
+local function safeIsFile(f) 
+    if isfile then 
+        local ok,res = pcall(isfile,f) 
+        if ok then return res end 
+    end 
+    return false 
+end
+
+local function safeReadFile(f)
+    if readfile and safeIsFile(f) then
+        local ok,res = pcall(readfile,f)
+        if ok then return res end
+    end
+    return nil
+end
+
+local function safeWriteFile(f,c)
+    if writefile then
+        pcall(writefile,f,c)
+        return true
+    end
+    return false
+end
+
+-- getcustomasset para imagens (Delta, Fluxus, Codex suportam)
+local function getAsset(path)
+    if getcustomasset then
+        local ok,res = pcall(getcustomasset, path)
+        if ok and res then return res end
+    end
+    -- Fallback para rbxassetid publico
+    return "rbxassetid://17336164180"
+end
+
+-- Verifica se é mobile
+local UserInputService = game:GetService("UserInputService")
+local IsMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled and not UserInputService.MouseEnabled
+-- Alguns PCs com touch, entao verifica tamanho da tela tambem
+local IsSmallScreen = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize.Y < 600
+
+print("[NexoraHub] Executor: "..tostring(ExecutorName).." | Mobile: "..tostring(IsMobile))
+
+
 -- Tela de carregamento (Nexora Hub): pequena e rápida. O resto do script só roda depois dela terminar.
 do
 	pcall(function()
@@ -1967,7 +2025,8 @@ function Nexora.CreateMain(config)
     local gui = make("ScreenGui", {Name = "NexoraUI", ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
     
     -- BOTAO EXTERNO ViniZDev QUE ABRE E FECHA A UI (igual na sua print)
-    local toggleBtn = make("TextButton", {Name="ViniZDevToggle", Size=UDim2.new(0,130,0,32), Position=UDim2.new(0,20,0,50), BackgroundColor3=Color3.fromRGB(20,20,25), Text="", BorderSizePixel=0, ZIndex=20, AutoButtonColor=false}, gui)
+    local btnW, btnH = IsMobile and 150 or 130, IsMobile and 40 or 32
+    local toggleBtn = make("TextButton", {Name="ViniZDevToggle", Size=UDim2.new(0,btnW,0,btnH), Position=UDim2.new(0,20,0,50), BackgroundColor3=Color3.fromRGB(20,20,25), Text="", BorderSizePixel=0, ZIndex=20, AutoButtonColor=false}, gui)
     corner(toggleBtn, 16)
     stroke(toggleBtn, Color3.fromRGB(0,140,255), 1)
     
@@ -1984,6 +2043,10 @@ function Nexora.CreateMain(config)
 
     local SIZE_FILE = "NexoraHubWindowSize.json"
     local persistedW, persistedH = 690, 440
+    -- Ajuste automatico para mobile
+    if IsMobile or IsSmallScreen then
+        persistedW, persistedH = 520, 380
+    end
     -- Salva o tamanho em arquivo do executor para sobreviver a reinícios do jogo.
     pcall(function()
         if readfile and isfile and isfile(SIZE_FILE) then
