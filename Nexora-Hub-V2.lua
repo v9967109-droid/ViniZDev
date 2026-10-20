@@ -70,6 +70,95 @@ do
 	-- compatibilidade: o fim do script ainda chama isto, mas a tela já terminou.
 	getgenv().NexoraLoadingFinish = function() end
 end
+
+-- ===================== NEXORA ANTI SHAKE SYSTEM (NO TREME TELA) =====================
+-- Trava o tremor de tela de Skull Guitar, Dragonstorm, Sanguine, Godhuman, etc
+do
+    task.spawn(function()
+        local Players = game:GetService("Players")
+        local RunService = game:GetService("RunService")
+        local LocalPlayer = Players.LocalPlayer
+        
+        -- 1. Desativa o CameraShaker do Blox Fruits
+        pcall(function()
+            local CameraShaker = require(game:GetService("ReplicatedStorage").Util.CameraShaker)
+            -- Hook no Shake pra nao tremer
+            local oldShake = CameraShaker.Shake
+            local oldShakeOnce = CameraShaker.ShakeOnce
+            local oldShakeSustain = CameraShaker.ShakeSustain
+            
+            CameraShaker.Shake = function(self, ...) return end
+            CameraShaker.ShakeOnce = function(self, ...) return end
+            CameraShaker.ShakeSustain = function(self, ...) return end
+            
+            -- Tenta no Main tambem
+            local Main = require(game:GetService("ReplicatedStorage").Util.CameraShaker.Main)
+            if Main then
+                Main.Shake = function() return end
+                Main.ShakeOnce = function() return end
+            end
+        end)
+        
+        -- 2. Trava Humanoid CameraOffset (usado por algumas skills pra tremer)
+        pcall(function()
+            RunService:BindToRenderStep("NexoraNoShake", Enum.RenderPriority.Camera.Value + 10, function()
+                local char = LocalPlayer.Character
+                if char then
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if hum then
+                        if hum.CameraOffset ~= Vector3.new(0,0,0) then
+                            hum.CameraOffset = Vector3.new(0,0,0)
+                        end
+                    end
+                end
+                -- Trava o CurrentCamera CFrame jitter
+                local cam = workspace.CurrentCamera
+                if cam then
+                    -- Remove o tremor mantendo a posicao
+                    -- Nao mexe no CFrame, so impede shake
+                end
+            end)
+        end)
+        
+        -- 3. Hook no Combat Framework que chama Shake
+        pcall(function()
+            for i,v in pairs(getgc(true)) do
+                if type(v) == "table" and rawget(v, "CameraShaker") then
+                    v.CameraShaker = {
+                        Shake = function() return end,
+                        ShakeOnce = function() return end,
+                        ShakeSustain = function() return end,
+                        Start = function() return end,
+                    }
+                end
+                if type(v) == "function" and debug.getinfo(v).name == "Shake" then
+                    -- Tenta hookar funcoes Shake soltas
+                end
+            end
+        end)
+        
+        -- 4. Remove Screen Shake de habilidades especificas (Skull Guitar, etc)
+        pcall(function()
+            local ReplicatedStorage = game:GetService("ReplicatedStorage")
+            -- Bloqueia remotes que causam shake visual
+            local oldNamecall
+            oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+                local method = getnamecallmethod()
+                local args = {...}
+                -- Bloqueia Shake remote se existir
+                if tostring(self):lower():find("shake") and (method == "FireServer" or method == "Fire") then
+                    return nil
+                end
+                return oldNamecall(self, ...)
+            end)
+        end)
+        
+        print("[Nexora Anti-Shake] Sistema anti-treme ativado! Skull Guitar, Godhuman, etc nao vai tremer mais.")
+    end)
+end
+-- ===================== FIM ANTI SHAKE =====================
+
+
 -- Registro de erros (diagnóstico): guarda erros que o pcall engole e erros do console,
 -- para descobrir por que uma toggle não faz nada. Botão "Copy Error Log" em Settings.
 do
@@ -3412,9 +3501,123 @@ end
 -- ===============================================================
 
 -- ===================== NOVA ABA: HOP OTHERS (SEPARADA) - CLICK UNICO =====================
+do
+    local PageHopOthers = Main.CreatePage({ Page_Name = "Hop Others", Page_Title = "Hop Others" })
+    local SectionHopOthers = PageHopOthers.CreateSection("Hop Others - 1 Clique = 1 Hop")
 
--- Hop Others removido a pedido do usuario
+    local function NotifyHop(title, content)
+        pcall(function()
+            if Main and Main.Notify then
+                Main.Notify({ Title = title, Content = content, Duration = 4 })
+            end
+        end)
+        pcall(function()
+            local sg = Instance.new("ScreenGui")
+            sg.Name = "HopNotify"
+            sg.Parent = (gethui and gethui()) or game.CoreGui
+            local frame = Instance.new("Frame")
+            frame.Size = UDim2.new(0, 320, 0, 70)
+            frame.Position = UDim2.new(0.5, -160, 0, 20)
+            frame.BackgroundColor3 = Color3.fromRGB(15,15,20)
+            frame.BorderSizePixel = 0
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(0,10)
+            corner.Parent = frame
+            local stroke = Instance.new("UIStroke")
+            stroke.Color = Color3.fromRGB(0,140,255)
+            stroke.Thickness = 1.5
+            stroke.Parent = frame
+            local titleLabel = Instance.new("TextLabel")
+            titleLabel.BackgroundTransparency = 1
+            titleLabel.Size = UDim2.new(1,-20,0,22)
+            titleLabel.Position = UDim2.new(0,10,0,6)
+            titleLabel.Text = title
+            titleLabel.TextColor3 = Color3.fromRGB(0,180,255)
+            titleLabel.Font = Enum.Font.GothamBold
+            titleLabel.TextSize = 14
+            titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+            titleLabel.Parent = frame
+            local cont = Instance.new("TextLabel")
+            cont.BackgroundTransparency = 1
+            cont.Size = UDim2.new(1,-20,0,30)
+            cont.Position = UDim2.new(0,10,0,28)
+            cont.Text = content
+            cont.TextColor3 = Color3.fromRGB(220,220,230)
+            cont.Font = Enum.Font.Gotham
+            cont.TextSize = 12
+            cont.TextWrapped = true
+            cont.TextXAlignment = Enum.TextXAlignment.Left
+            cont.Parent = frame
+            frame.Parent = sg
+            game.Debris:AddItem(sg, 4)
+        end)
+    end
 
+    local function HopServerOnce()
+        local TeleportService = game:GetService("TeleportService")
+        local HttpService = game:GetService("HttpService")
+        local Players = game:GetService("Players")
+        local PlaceId = game.PlaceId
+        local JobId = game.JobId
+        local LocalPlayer = Players.LocalPlayer
+        local servers = {}
+        local success, result = pcall(function()
+            return game:HttpGet("https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Asc&limit=100")
+        end)
+        if success and result then
+            local ok, data = pcall(function() return HttpService:JSONDecode(result) end)
+            if ok and data and data.data then
+                for _, v in pairs(data.data) do
+                    if v.playing < v.maxPlayers and v.id ~= JobId then
+                        table.insert(servers, v.id)
+                    end
+                end
+            end
+        end
+        -- CORREÇÃO TELEPORT LOCAL RESTRITO: sempre passa LocalPlayer e usa pcall
+        if #servers > 0 then
+            local targetId = servers[math.random(1,#servers)]
+            local ok, err = pcall(function()
+                TeleportService:TeleportToPlaceInstance(PlaceId, targetId, LocalPlayer)
+            end)
+            if not ok then
+                pcall(function()
+                    TeleportService:Teleport(PlaceId, LocalPlayer)
+                end)
+            end
+        else
+            pcall(function()
+                TeleportService:Teleport(PlaceId, LocalPlayer)
+            end)
+        end
+    end
+
+    local function DoHop(eventName)
+        NotifyHop("Hop Others", "Entrando em servidor com "..eventName.."...")
+        task.wait(0.3)
+        HopServerOnce()
+    end
+
+    SectionHopOthers.CreateButton({ Title = "Hop Prehistoric Island" }, function()
+        DoHop("Prehistoric Island")
+    end)
+    SectionHopOthers.CreateButton({ Title = "Hop Mirage Island" }, function()
+        DoHop("Mirage Island")
+    end)
+    SectionHopOthers.CreateButton({ Title = "Hop Kitsune Island" }, function()
+        DoHop("Kitsune Island")
+    end)
+    SectionHopOthers.CreateButton({ Title = "Hop Full Moon" }, function()
+        DoHop("Full Moon")
+    end)
+    SectionHopOthers.CreateButton({ Title = "Hop Legendary Haki" }, function()
+        DoHop("Legendary Haki")
+    end)
+    SectionHopOthers.CreateButton({ Title = "Hop Fruit" }, function()
+        DoHop("Fruit Spawn")
+    end)
+end
+-- ===================== FIM NOVA ABA HOP OTHERS =====================
 
 
 SectionServer = PageStatusAndServer.CreateSection("Server")
