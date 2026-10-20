@@ -12886,6 +12886,81 @@ local b, E =
 		["Zone 6"] = CFrame.new(-32975.9921875, 0, 25963.7109375),
 	},
 	{ Melee = false, Sword = false, Gun = false, ["Blox Fruit"] = false }
+function ResetAirState()
+	pcall(function()
+		getgenv().noclip = false
+		if TweenManager and TweenManager.CancelCurrent then
+			TweenManager.CancelCurrent()
+		end
+		local Players = game:GetService("Players")
+		local LocalPlayer = Players.LocalPlayer
+		local char = LocalPlayer and LocalPlayer.Character
+		if char then
+			for _, part in ipairs(char:GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.CanCollide = true
+				end
+			end
+			local hum = char:FindFirstChildOfClass("Humanoid")
+			if hum then
+				hum.PlatformStand = false
+				pcall(function() hum:ChangeState(Enum.HumanoidStateType.GettingUp) end)
+			end
+			local root = char:FindFirstChild("HumanoidRootPart")
+			if root then
+				for _, obj in ipairs(root:GetChildren()) do
+					if obj.Name == "FloatForce" or obj:IsA("BodyVelocity") or obj:IsA("BodyForce") or obj:IsA("BodyGyro") or obj:IsA("BodyPosition") then
+						obj:Destroy()
+					end
+				end
+				root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+				root.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+			end
+		end
+		-- Reseta barco também
+		pcall(function()
+			local boat = checkboat()
+			if boat then
+				TurnOffNoclipBoat(boat)
+			end
+		end)
+	end)
+end
+
+
+-- FAILSAFE: Se desativar qualquer toggle e ficar preso no ar, volta ao normal INSTANTANEO
+
+
+function ForceResetAirState()
+	pcall(function()
+		getgenv().noclip = false
+		local char = game:GetService("Players").LocalPlayer.Character
+		if not char then return end
+		local root = char:FindFirstChild("HumanoidRootPart")
+		local hum = char:FindFirstChildOfClass("Humanoid")
+		if root then
+			root.AssemblyLinearVelocity = Vector3.new(0,0,0)
+			root.AssemblyAngularVelocity = Vector3.new(0,0,0)
+			for _, v in ipairs(root:GetChildren()) do
+				if v:IsA("BodyVelocity") or v:IsA("BodyGyro") or v:IsA("BodyPosition") or v.Name == "FloatForce" then
+					v:Destroy()
+				end
+			end
+			for _, v in ipairs(char:GetDescendants()) do
+				if v:IsA("BasePart") then
+					v.CanCollide = true
+				end
+			end
+		end
+		if hum then
+			hum.PlatformStand = false
+			hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+		end
+	end)
+end
+
+
+
 SeaEventTab = Main.CreatePage({ Page_Name = "Sea Event", Page_Title = "Sea Event Tab" })
 SettingSeaEventSection = SeaEventTab.CreateSection("Setting")
 SettingSeaEventSection.CreateDropdown(
@@ -13101,6 +13176,76 @@ SettingSeaEventSection.CreateToggle(
 		SaveSettings("Auto Dodge Skill Seabeast", l)
 	end
 )
+
+SettingSeaEventSection.CreateToggle(
+	{
+		Title = "Raise Boat Manual Drive",
+		Desc = "The boat rises above the sea and you keep driving it manually. Set the height below (keep it low so the sea danger level still counts).",
+		Default = Settings["Raise Boat Manual Drive"] or false,
+	},
+	function(l)
+		SaveSettings("Raise Boat Manual Drive", l)
+		if not l then
+			-- Desativou: volta ao normal pra não ficar preso no ar
+			ResetAirState()
+		end
+	end
+)
+SettingSeaEventSection.CreateSlider(
+	{ Title = "Boat Height", Min = 5, Max = 175, Default = Settings["Boat Height"] or 175, Precise = false },
+	function(l)
+		SaveSettings("Boat Height", l)
+	end
+)
+-- Sobe o barco (só no eixo Y) enquanto você está sentado nele. X/Z e a direção ficam livres,
+-- então a direção continua manual. Ao desligar a toggle o barco volta a descer sozinho.
+do
+	getgenv().__BoatRaiseGen = (getgenv().__BoatRaiseGen or 0) + 1
+	local gen = getgenv().__BoatRaiseGen
+	pcall(function() if getgenv().__BoatRaiseConn then getgenv().__BoatRaiseConn:Disconnect() end end)
+	getgenv().__BoatRaiseConn = game:GetService("RunService").Heartbeat:Connect(function()
+		if getgenv().__BoatRaiseGen ~= gen then return end
+		if not Settings["Raise Boat Manual Drive"] then
+			-- V13 FIX: Quando desativado, NÃO fica resetando todo frame (isso travava o player)
+			-- O reset já é feito uma vez no toggle callback. Aqui só retorna pra não interferir no sentar/and ar
+			return
+		end
+		-- V13: Raise Boat Manual Drive totalmente independente - não bloqueia nenhuma outra função de barco
+		-- Só trava o Y, mantendo X/Z livre, pode coexistir com Sea Event, Leviathan, Prehistoric, etc.
+		pcall(function()
+			local char = game:GetService("Players").LocalPlayer.Character
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+			local seat = hum and hum.SeatPart
+			if not seat or not seat:IsA("VehicleSeat") then return end
+			local boat = seat:FindFirstAncestorOfClass("Model")
+			local boats = workspace:FindFirstChild("Boats")
+			if not boat or not boats or boat.Parent ~= boats then return end
+			-- Altura "normal" do barco na água, medida na primeira vez que o vemos.
+			local base = boat:GetAttribute("NexoraBaseY")
+			if not base then
+				base = (seat.Position.Y < 30) and seat.Position.Y or 8
+				boat:SetAttribute("NexoraBaseY", base)
+			end
+			local height = math.clamp(tonumber(Settings["Boat Height"]) or 175, 5, 175)
+			local targetY = base + height
+			local pivot = boat:GetPivot()
+			-- trava Y sem interferir na velocidade
+			if math.abs(pivot.Position.Y - targetY) > 0.05 then
+				local pos = pivot.Position
+				local rot = pivot - pos
+				boat:PivotTo(CFrame.new(pos.X, targetY, pos.Z) * rot)
+			end
+			-- só zera Y, mantém X/Z (velocidade do barco)
+			local v = seat.AssemblyLinearVelocity
+			if math.abs(v.Y) > 0.01 then
+				seat.AssemblyLinearVelocity = Vector3.new(v.X, 0, v.Z)
+			end
+		end)
+	end)
+end
+SettingSeaEventSection.CreateToggle(
+	{ 
+
 SettingSeaEventSection.CreateToggle(
 	{
 		Title = "Teleport Boat Other CFrame if Rough Sea",
@@ -14039,22 +14184,6 @@ ToggleFindMirage = FarmingSeaEventSection.CreateToggle(
 		SaveSettings("Auto Find Mirage", y)
 	end
 )
-
--- RAISE BOAT MANUAL DRIVE - ADICIONADO (SEM REMOVER NADA DA SOURCE)
-SettingSeaEventSection.CreateToggle(
-	{ Title = "Raise Boat Manual Drive", Desc = "Sobe o barco no eixo Y - mesma funcao do Nexora", Default = Settings["Raise Boat Manual Drive"] or false },
-	function(v)
-		SaveSettings("Raise Boat Manual Drive", v)
-	end
-)
-SettingSeaEventSection.CreateSlider(
-	{ Title = "Boat Height", Min = 5, Max = 175, Default = Settings["Boat Height"] or 175, Precise = false },
-	function(v)
-		SaveSettings("Boat Height", v)
-	end
-)
-
-
 KitsuneEventMain = Main.CreatePage({ Page_Name = "Kitsune Event", Page_Title = "Kitsune Event" })
 KitsuneEventSection = KitsuneEventMain.CreateSection("Kitsune Event")
 KitsuneEventSection.CreateToggle(
