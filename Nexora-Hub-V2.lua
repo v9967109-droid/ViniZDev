@@ -1,4 +1,43 @@
 
+-- FIX ESPECIFICO PARA ARCEUS X
+local function getParent()
+    local parent = nil
+    -- Arceus X usa gethui() ou game.CoreGui
+    if gethui then
+        local ok,res = pcall(gethui)
+        if ok and res then parent = res end
+    end
+    if not parent and pcall(function() return game.CoreGui end) then
+        pcall(function() parent = game.CoreGui end)
+    end
+    if not parent then
+        parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+    end
+    return parent
+end
+
+-- Desativa file system no Arceus X se der erro
+local isArceus = false
+pcall(function()
+    local exec = ""
+    if identifyexecutor then exec = identifyexecutor() end
+    if exec:lower():find("arceus") or exec:lower():find("ax") then
+        isArceus = true
+    end
+    -- Arceus tem global _G.ArceusX
+    if _G.ArceusX or _G.AX then isArceus = true end
+end)
+
+if isArceus then
+    -- No Arceus, desativa writefile pra nao crashar
+    writefile = nil
+    isfile = nil
+    readfile = nil
+    print("[NexoraHub] Arceus X detectado - file system desativado")
+end
+
+
+
 -- COMPATIBILIDADE UNIVERSAL PARA TODOS EXECUTORES MOBILE E PC
 -- Delta, Fluxus, Arceus X, Codex, Trigon, KRNL, Synapse, Wave, Vega X, Evon, etc.
 
@@ -2022,6 +2061,7 @@ end
 
 function Nexora.CreateMain(config)
     config = config or {}
+    local parentGui = getParent()
     local gui = make("ScreenGui", {Name = "NexoraUI", ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
     
     -- BOTAO EXTERNO ViniZDev QUE ABRE E FECHA A UI (igual na sua print)
