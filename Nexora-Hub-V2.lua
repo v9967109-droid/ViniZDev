@@ -1730,54 +1730,35 @@ game:GetService("Players").LocalPlayer.Idled:connect(function()
 end)
 local A =
 	loadstring(game:HttpGet("https://raw.githubusercontent.com/obiiyeuem/vthangsitink/refs/heads/main/zzzz.lua"))()
-Main = A.CreateMain({ Title = "Nexora Hub Blox Fruits", Desc = "Blox Fruits", Desc = "-- Blox Fruits" })
+Main = A.CreateMain({ Title = "Nexora Hub Blox Fruits", Desc = "Blox Fruits" })
 
-PageShop = Main.CreatePage({ Page_Name = "Shop", Page_Title = "Shop" })
-getgenv().Options = A.
-
--- RECOLOR BANANA ORIGINAL PARA AZUL (SEM DOURADO) + BOTAO FLUTUANTE NEXORA
+-- // INICIO - MOD NEXORA: AZUL + BOTAO FLUTUANTE //
 task.spawn(function()
-    task.wait(1)
+    task.wait(1.5)
     pcall(function()
-        local function RecolorBlue()
-            local parent = (gethui and gethui()) or game:GetService("CoreGui")
+        local parent = (gethui and gethui()) or game:GetService("CoreGui")
+        -- Funcao para pintar de azul
+        local function PaintBlue()
             for _, gui in pairs(parent:GetChildren()) do
-                if gui.Name:find("Banana") or gui.Name:find("CatHub") or gui:FindFirstChild("Main") or gui.Name:find("ScreenGui") then
+                if gui.Name:lower():find("banana") or gui.Name:lower():find("cathub") then
                     for _, obj in pairs(gui:GetDescendants()) do
                         pcall(function()
-                            -- Dourado comum do banana: 255, 215, 0 / 255, 200, 0 / 255, 165, 0 etc
-                            if obj:IsA("Frame") or obj:IsA("TextButton") or obj:IsA("TextLabel") then
-                                if obj.BackgroundColor3 then
-                                    local c = obj.BackgroundColor3
-                                    -- Se for amarelado/dourado
-                                    if c.R > 0.8 and c.G > 0.6 and c.B < 0.3 then
-                                        obj.BackgroundColor3 = Color3.fromRGB(0, 140, 255)
-                                    end
-                                end
-                                if obj:IsA("TextLabel") and obj.TextColor3 then
-                                    local c = obj.TextColor3
-                                    if c.R > 0.8 and c.G > 0.6 and c.B < 0.3 then
-                                        obj.TextColor3 = Color3.fromRGB(0, 140, 255)
-                                    end
+                            if obj:IsA("Frame") or obj:IsA("TextButton") then
+                                local c = obj.BackgroundColor3
+                                if c and c.R > 0.7 and c.G > 0.5 and c.B < 0.4 then
+                                    obj.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
                                 end
                             end
                             if obj:IsA("UIStroke") then
                                 local c = obj.Color
-                                if c.R > 0.8 and c.G > 0.6 and c.B < 0.3 then
-                                    obj.Color = Color3.fromRGB(0, 140, 255)
+                                if c and c.R > 0.7 and c.G > 0.5 and c.B < 0.4 then
+                                    obj.Color = Color3.fromRGB(0, 120, 255)
                                 end
                             end
-                            if obj:IsA("UIGradient") then
-                                -- muda gradiente dourado para azul
-                                if obj.Color then
-                                    for i, kp in pairs(obj.Color.Keypoints) do
-                                        local col = kp.Value
-                                        if col.R > 0.8 and col.G > 0.6 and col.B < 0.3 then
-                                            -- recria gradiente azul
-                                            obj.Color = ColorSequence.new(Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255))
-                                            break
-                                        end
-                                    end
+                            if obj:IsA("TextLabel") then
+                                local c = obj.TextColor3
+                                if c and c.R > 0.7 and c.G > 0.5 and c.B < 0.4 then
+                                    obj.TextColor3 = Color3.fromRGB(0, 140, 255)
                                 end
                             end
                         end)
@@ -1785,15 +1766,10 @@ task.spawn(function()
                 end
             end
         end
-        -- tenta varias vezes porque a UI carrega devagar
-        for i=1,20 do
-            RecolorBlue()
-            task.wait(0.5)
-        end
+        for i=1,15 do PaintBlue() task.wait(0.5) end
     end)
 end)
 
--- Botao flutuante do Nexora para abrir/fechar UI do Banana
 task.spawn(function()
     task.wait(2)
     pcall(function()
@@ -1801,107 +1777,42 @@ task.spawn(function()
         local floatGui = Instance.new("ScreenGui")
         floatGui.Name = "NexoraFloatBanana"
         floatGui.ResetOnSpawn = false
-        floatGui.IgnoreGuiInset = true
-        floatGui.DisplayOrder = 999
         floatGui.Parent = parent
-
-        local reopen = Instance.new("TextButton")
-        reopen.Name = "NexoraFloatingButton"
-        reopen.AutoButtonColor = false
-        reopen.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-        reopen.BorderSizePixel = 0
-        reopen.Size = UDim2.new(0, 155, 0, 36)
-        reopen.Position = UDim2.new(0, 20, 0, 70)
-        reopen.Text = ""
-        reopen.ZIndex = 100
-        reopen.Parent = floatGui
-        Instance.new("UICorner", {CornerRadius=UDim.new(0, 18)}, reopen)
-        local stroke = Instance.new("UIStroke")
-        stroke.Color = Color3.fromRGB(0, 140, 255)
-        stroke.Thickness = 1.2
-        stroke.Parent = reopen
-
-        local iconFrame = Instance.new("Frame")
-        iconFrame.BackgroundColor3 = Color3.fromRGB(0, 140, 255)
-        iconFrame.Size = UDim2.new(0, 24, 0, 24)
-        iconFrame.Position = UDim2.new(0, 6, 0.5, -12)
-        iconFrame.BorderSizePixel = 0
-        iconFrame.ZIndex = 101
-        iconFrame.Parent = reopen
-        Instance.new("UICorner", {CornerRadius=UDim.new(1,0)}, iconFrame)
-
-        local iconText = Instance.new("TextLabel")
-        iconText.BackgroundTransparency = 1
-        iconText.Size = UDim2.new(1, 0, 1, 0)
-        iconText.Text = "N"
-        iconText.TextColor3 = Color3.fromRGB(255,255,255)
-        iconText.Font = Enum.Font.GothamBlack
-        iconText.TextSize = 14
-        iconText.ZIndex = 102
-        iconText.Parent = iconFrame
-
-        local textLabel = Instance.new("TextLabel")
-        textLabel.BackgroundTransparency = 1
-        textLabel.Position = UDim2.new(0, 36, 0, 0)
-        textLabel.Size = UDim2.new(0, 95, 1, 0)
-        textLabel.Text = "Nexora Hub"
-        textLabel.TextColor3 = Color3.fromRGB(255,255,255)
-        textLabel.TextSize = 13
-        textLabel.Font = Enum.Font.GothamMedium
-        textLabel.TextXAlignment = Enum.TextXAlignment.Left
-        textLabel.ZIndex = 101
-        textLabel.Parent = reopen
-
-        local greenDot = Instance.new("Frame")
-        greenDot.BackgroundColor3 = Color3.fromRGB(0, 140, 255)
-        greenDot.Size = UDim2.new(0, 10, 0, 10)
-        greenDot.Position = UDim2.new(1, -18, 0.5, -5)
-        greenDot.BorderSizePixel = 0
-        greenDot.ZIndex = 101
-        greenDot.Parent = reopen
-        Instance.new("UICorner", {CornerRadius=UDim.new(1,0)}, greenDot)
-
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(0,150,0,36)
+        btn.Position = UDim2.new(0,20,0,70)
+        btn.BackgroundColor3 = Color3.fromRGB(15,15,20)
+        btn.Text = "Nexora Hub"
+        btn.TextColor3 = Color3.fromRGB(255,255,255)
+        btn.Font = Enum.Font.GothamBold
+        btn.TextSize = 13
+        btn.Parent = floatGui
+        Instance.new("UICorner", {CornerRadius=UDim.new(0,18)}, btn)
+        local st = Instance.new("UIStroke")
+        st.Color = Color3.fromRGB(0,140,255)
+        st.Thickness = 1.5
+        st.Parent = btn
+        btn.MouseButton1Click:Connect(function()
+            for _, g in pairs(parent:GetChildren()) do
+                if g.Name:lower():find("banana") then
+                    g.Enabled = not g.Enabled
+                end
+            end
+        end)
         -- arrastar
         local UIS = game:GetService("UserInputService")
-        local dragging, startPos, startMouse, moved = false, nil, nil, false
-        reopen.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                dragging = true
-                moved = false
-                startPos = reopen.Position
-                startMouse = input.Position
-            end
-        end)
-        UIS.InputChanged:Connect(function(input)
-            if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                local delta = input.Position - startMouse
-                if delta.Magnitude > 5 then moved = true end
-                reopen.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-            end
-        end)
-        UIS.InputEnded:Connect(function(input)
-            dragging = false
-        end)
-
-        reopen.MouseButton1Click:Connect(function()
-            if moved then moved = false return end
-            pcall(function()
-                local bananaGui
-                for _, g in pairs(parent:GetChildren()) do
-                    if g.Name:find("Banana") or g:FindFirstChild("Main") then
-                        bananaGui = g
-                        break
-                    end
-                end
-                if bananaGui then
-                    bananaGui.Enabled = not bananaGui.Enabled
-                end
-            end)
-        end)
+        local drag, sp, sm
+        btn.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then drag=true sp=btn.Position sm=i.Position end end)
+        UIS.InputChanged:Connect(function(i) if drag and i.UserInputType==Enum.UserInputType.MouseMovement then local d=i.Position-sm btn.Position=UDim2.new(sp.X.Scale, sp.X.Offset+d.X, sp.Y.Scale, sp.Y.Offset+d.Y) end end)
+        UIS.InputEnded:Connect(function() drag=false end)
     end)
 end)
+-- // FIM MOD AZUL //
 
-Options
+
+
+PageShop = Main.CreatePage({ Page_Name = "Shop", Page_Title = "Shop" })
+getgenv().Options = A.Options
 SectionShopMisc = PageShop.CreateSection("Misc Shop")
 function Remote(a, s, X)
 	if not a and X then
@@ -2349,160 +2260,22 @@ StatusFrozenDimension = SectionStatus.CreateLabel({ Title = "Frozen Dimension" }
 StatusMoon = SectionStatus.CreateLabel({ Title = "Moon" })
 StatusGear = SectionStatus.CreateLabel({ Title = "Acient One Status" })
 
--- ============================================
--- Fruit Stock & Player State (English) - Like Hub Vxeze Principal > Estado
--- Added to Status And Server
--- ============================================
 do
     local SectionPlayer = PageStatusAndServer.CreateSection("Player - State")
     local LabelBeli = SectionPlayer.CreateLabel({ Title = "Beli: Loading..." })
-    local LabelBounty = SectionPlayer.CreateLabel({ Title = "Bounty / Honor: Loading..." })
-    local LabelFragments = SectionPlayer.CreateLabel({ Title = "Fragments: Loading..." })
     local LabelLevel = SectionPlayer.CreateLabel({ Title = "Level: Loading..." })
-    
     spawn(function()
-        local function FormatBounty(val)
-            if val >= 1000000 then
-                local mi = val / 1000000
-                -- Formato brasileiro 2,5 mi
-                local s = string.format("%.1f", mi):gsub("%.", ",")
-                return s .. " mi (" .. tostring(val) .. ")"
-            elseif val >= 1000 then
-                return tostring(math.floor(val/1000)) .. "K (" .. tostring(val) .. ")"
-            else
-                return tostring(val)
-            end
-        end
-        
         while task.wait(1.5) do
             pcall(function()
                 local data = game.Players.LocalPlayer:FindFirstChild("Data")
                 if data then
-                    if data:FindFirstChild("Beli") then LabelBeli.SetText("Beli: " .. tostring(data.Beli.Value)) end
-                    if data:FindFirstChild("Fragments") then LabelFragments.SetText("Fragments: " .. tostring(data.Fragments.Value)) end
-                    if data:FindFirstChild("Level") then LabelLevel.SetText("Level: " .. tostring(data.Level.Value)) end
-                    
-                    -- Bounty/Honor verifica nas classificacoes detectando seu Nick (igual print)
-                    local bountyVal = 0
-                    local b = data:FindFirstChild("Bounty") or data:FindFirstChild("Honor")
-                    if b then bountyVal = b.Value end
-                    
-                    -- Tenta pegar da Classificacao/Leaderboard tambem
-                    pcall(function()
-                        local leaderboard = game.Players.LocalPlayer:FindFirstChild("leaderstats")
-                        if leaderboard then
-                            local bountyStat = leaderboard:FindFirstChild("Bounty/Honor") or leaderboard:FindFirstChild("Bounty") or leaderboard:FindFirstChild("Honor")
-                            if bountyStat and bountyStat.Value and bountyStat.Value > 0 then
-                                bountyVal = bountyStat.Value
-                            end
-                        end
-                    end)
-                    
-                    if bountyVal > 0 then
-                        LabelBounty.SetText("Bounty / Honor: " .. FormatBounty(bountyVal))
-                    end
+                    if data:FindFirstChild("Beli") then LabelBeli.SetText("Beli: "..tostring(data.Beli.Value)) end
+                    if data:FindFirstChild("Level") then LabelLevel.SetText("Level: "..tostring(data.Level.Value)) end
                 end
-            end)
-        end
-    end)
-    
-    local SectionNormal = PageStatusAndServer.CreateSection("Normal Fruit Stock - Normal Dealer")
-    SectionNormal.CreateLabel({ Title = "Fruits on sale at the normal dealer" })
-    local NormalLabels = {}
-    NormalLabels[1] = SectionNormal.CreateLabel({ Title = "Ghost-Ghost - $940,000" })
-    NormalLabels[2] = SectionNormal.CreateLabel({ Title = "Light-Light - $650,000" })
-    NormalLabels[3] = SectionNormal.CreateLabel({ Title = "Spin-Spin - $7,500" })
-    NormalLabels[4] = SectionNormal.CreateLabel({ Title = "Rocket-Rocket - $5,000" })
-    NormalLabels[5] = SectionNormal.CreateLabel({ Title = "Loading..." })
-    NormalLabels[6] = SectionNormal.CreateLabel({ Title = "Loading..." })
-    
-    local SectionAdvance = PageStatusAndServer.CreateSection("Advance Fruit Stock - Mirage Island Dealer")
-    SectionAdvance.CreateLabel({ Title = "Fruits on sale at the Mirage Island dealer" })
-    local AdvanceLabels = {}
-    AdvanceLabels[1] = SectionAdvance.CreateLabel({ Title = "Flame-Flame - $250,000" })
-    AdvanceLabels[2] = SectionAdvance.CreateLabel({ Title = "Smoke-Smoke - $100,000" })
-    AdvanceLabels[3] = SectionAdvance.CreateLabel({ Title = "Bomb-Bomb - $80,000" })
-    AdvanceLabels[4] = SectionAdvance.CreateLabel({ Title = "Spin-Spin - $7,500" })
-    AdvanceLabels[5] = SectionAdvance.CreateLabel({ Title = "Rocket-Rocket - $5,000" })
-    
-    -- PATCH FIX: estoque 100% dinamico - usa lista real da loja
-    local function ParseFruit(v)
-        if type(v)=="table" then
-            -- Blox Fruits retorna: {Name, Price, OnSale, InStock, etc}
-            -- Só queremos frutas que dão pra comprar
-            if v.OnSale == false then return nil, nil end
-            if v.InStock == false then return nil, nil end
-            if v.CanBuy == false then return nil, nil end
-            -- Se tem campo Stock ou Amount e é 0, pula
-            if v.Stock == 0 or v.Amount == 0 then return nil, nil end
-            local n = v.Name or v[1] or v.name or v.FruitName
-            local p = v.Price or v[2] or v.price or v.Cost or 0
-            if n then return n, p end
-        elseif type(v)=="string" then
-            return v, 0
-        end
-        return nil, nil
-    end
-    local function FormatPrice(p)
-        if not p or p==0 then return "" end
-        local s = tostring(math.floor(p))
-        return " - $" .. s:reverse():gsub("(%d%d%d)","%1,"):reverse():gsub("^,","")
-    end
-    local function Ensure(section, labels, need)
-        for i=#labels+1, need do
-            labels[i] = section.CreateLabel({ Title = "Slot "..i..": Loading..." })
-        end
-    end
-    local function UpdateStock(section, labels, stock)
-        if not stock or type(stock)~="table" then return end
-        local list = {}
-        if #stock>0 then list=stock else for k,v in pairs(stock) do if type(v)=="table" then table.insert(list,v) elseif type(k)=="string" then table.insert(list,{Name=k, Price=v}) end end end
-        -- FILTRA SÓ AS QUE DÁ PRA COMPRAR
-        local filtered = {}
-        for _, v in ipairs(list) do
-            local name, price = ParseFruit(v)
-            if name then table.insert(filtered, {Name=name, Price=price, _raw=v}) end
-        end
-        if #filtered==0 then
-            if labels[1] then labels[1].SetText("Nenhuma fruta no stock agora") end
-            for i=2, #labels do if labels[i] then labels[i].SetText("Slot "..i..": Empty") end end
-            return
-        end
-        Ensure(section, labels, #filtered)
-        for i, data in ipairs(filtered) do
-            if labels[i] then
-                local disp = data.Name
-                if not disp:find("-") then disp = disp.."-"..disp end
-                labels[i].SetText(disp .. FormatPrice(data.Price))
-            end
-        end
-        for i=#filtered+1, #labels do if labels[i] then labels[i].SetText("Slot "..i..": Empty") end end
-    end
-
-    spawn(function()
-        while task.wait(2) do
-            pcall(function()
-                local normalStock = nil
-                pcall(function() normalStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetFruits", false) end)
-                if not normalStock or type(normalStock)~="table" or #normalStock==0 then
-                    pcall(function() normalStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetFruits") end)
-                end
-                UpdateStock(SectionNormal, NormalLabels, normalStock)
-
-                local mirageStock = nil
-                pcall(function() mirageStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetFruits", true) end)
-                if not mirageStock or type(mirageStock)~="table" or #mirageStock==0 then
-                    pcall(function() mirageStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetStock", "Mirage") end)
-                end
-                if not mirageStock or type(mirageStock)~="table" or #mirageStock==0 then
-                    pcall(function() mirageStock = game.ReplicatedStorage.Remotes.CommF_:InvokeServer("GetFruits", "Mirage") end)
-                end
-                UpdateStock(SectionAdvance, AdvanceLabels, mirageStock)
             end)
         end
     end)
 end
-
 
 -- ===================== Status Boss Server =====================
 -- Aba: bosses que nascem NORMALMENTE (por tempo). Cada boss mostra só uma bolinha:
@@ -3476,51 +3249,33 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 	end)
 end)
 
--- ===================== NOVA ABA: HOP OTHERS (BANANA ORIGINAL) =====================
+-- ===================== HOP OTHERS (1 CLIQUE) =====================
 do
     local PageHopOthers = Main.CreatePage({ Page_Name = "Hop Others", Page_Title = "Hop Others" })
-    local SectionHopOthers = PageHopOthers.CreateSection("Hop Others - 1 Clique = 1 Hop")
-
-    local function HopServerOnce()
-        local TeleportService = game:GetService("TeleportService")
-        local HttpService = game:GetService("HttpService")
+    local SectionHopOthers = PageHopOthers.CreateSection("Hop Others")
+    local function HopOnce()
+        local TS = game:GetService("TeleportService")
+        local HS = game:GetService("HttpService")
         local PlaceId = game.PlaceId
         local JobId = game.JobId
-        local servers = {}
-        local success, result = pcall(function()
-            return game:HttpGet("https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Asc&limit=100")
-        end)
-        if success and result then
-            local ok, data = pcall(function() return HttpService:JSONDecode(result) end)
-            if ok and data and data.data then
-                for _, v in pairs(data.data) do
-                    if v.playing < v.maxPlayers and v.id ~= JobId then
-                        table.insert(servers, v.id)
-                    end
+        local list = {}
+        local ok, res = pcall(function() return game:HttpGet("https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Asc&limit=100") end)
+        if ok and res then
+            local ok2, data = pcall(function() return HS:JSONDecode(res) end)
+            if ok2 and data and data.data then
+                for _,v in pairs(data.data) do
+                    if v.playing < v.maxPlayers and v.id ~= JobId then table.insert(list, v.id) end
                 end
             end
         end
-        if #servers > 0 then
-            TeleportService:TeleportToPlaceInstance(PlaceId, servers[math.random(1,#servers)])
-        else
-            TeleportService:Teleport(PlaceId)
-        end
+        if #list>0 then TS:TeleportToPlaceInstance(PlaceId, list[math.random(1,#list)]) else TS:Teleport(PlaceId) end
     end
-
-    local function DoHop(eventName)
-        pcall(function()
-            Main.CreateNoti({Title="Hop Others", Desc="Entrando em servidor com "..eventName.."...", ShowTime=4})
-        end)
-        task.wait(0.3)
-        HopServerOnce()
-    end
-
-    SectionHopOthers.CreateButton({ Title = "Hop Prehistoric Island" }, function() DoHop("Prehistoric Island") end)
-    SectionHopOthers.CreateButton({ Title = "Hop Mirage Island" }, function() DoHop("Mirage Island") end)
-    SectionHopOthers.CreateButton({ Title = "Hop Kitsune Island" }, function() DoHop("Kitsune Island") end)
-    SectionHopOthers.CreateButton({ Title = "Hop Full Moon" }, function() DoHop("Full Moon") end)
-    SectionHopOthers.CreateButton({ Title = "Hop Legendary Haki" }, function() DoHop("Legendary Haki") end)
-    SectionHopOthers.CreateButton({ Title = "Hop Fruit" }, function() DoHop("Fruit Spawn") end)
+    SectionHopOthers.CreateButton({ Title = "Hop Prehistoric Island" }, function() HopOnce() end)
+    SectionHopOthers.CreateButton({ Title = "Hop Mirage Island" }, function() HopOnce() end)
+    SectionHopOthers.CreateButton({ Title = "Hop Kitsune Island" }, function() HopOnce() end)
+    SectionHopOthers.CreateButton({ Title = "Hop Full Moon" }, function() HopOnce() end)
+    SectionHopOthers.CreateButton({ Title = "Hop Legendary Haki" }, function() HopOnce() end)
+    SectionHopOthers.CreateButton({ Title = "Hop Fruit" }, function() HopOnce() end)
 end
 -- ===================== FIM HOP OTHERS =====================
 
