@@ -71,31 +71,6 @@ do
 	getgenv().NexoraLoadingFinish = function() end
 end
 
--- ===================== NEXORA ANTI SHAKE + NO FOG SYSTEM =====================
-do
-    task.spawn(function()
-        pcall(function()
-            local CameraShaker = require(game:GetService("ReplicatedStorage").Util.CameraShaker)
-            CameraShaker.Shake = function() return end
-            CameraShaker.ShakeOnce = function() return end
-            CameraShaker.ShakeSustain = function() return end
-            local Main = require(game:GetService("ReplicatedStorage").Util.CameraShaker.Main)
-            if Main then Main.Shake = function() return end Main.ShakeOnce = function() return end end
-        end)
-        pcall(function()
-            game:GetService("RunService"):BindToRenderStep("NexoraNoShake", Enum.RenderPriority.Camera.Value + 10, function()
-                local char = game.Players.LocalPlayer.Character
-                if char then
-                    local hum = char:FindFirstChildOfClass("Humanoid")
-                    if hum and hum.CameraOffset ~= Vector3.new(0,0,0) then hum.CameraOffset = Vector3.new(0,0,0) end
-                end
-            end)
-        end)
-    end)
-end
--- ===================== FIM ANTI SHAKE =====================
-
-
 -- ===================== NEXORA ANTI SHAKE SYSTEM (NO TREME TELA) =====================
 -- Trava o tremor de tela de Skull Guitar, Dragonstorm, Sanguine, Godhuman, etc
 do
@@ -3527,7 +3502,7 @@ end
 
 -- ===================== NOVA ABA: HOP OTHERS (SEPARADA) - CLICK UNICO =====================
 
--- Hop Others removido a pedido do usuario
+-- Hop Others removido
 
 
 
@@ -5896,45 +5871,12 @@ SectionLocalPlayerMain.CreateDropdown(
 SectionLocalPlayerMain.CreateToggle({ Title = "Teleport To Island", Desc = nil, Default = false }, function(l)
 	g["Teleport To Island"] = l
 end)
-
-SectionLocalPlayerMain.CreateToggle({ Title = "Teleport Mirage [FIXED]", Desc = "TP real pra Mirage Island", Default = false }, function(l)
+SectionLocalPlayerMain.CreateToggle({ Title = "Teleport Mirage", Desc = nil, Default = false }, function(l)
 	g["Teleport Mirage"] = l
-	if l then
-		spawn(function()
-			while g["Teleport Mirage"] do
-				pcall(function()
-					local mirage = workspace.Map:FindFirstChild("MysticIsland") or workspace.Map:FindFirstChild("Mirage Island") or workspace._WorldOrigin.Locations:FindFirstChild("Mirage Island")
-					if mirage then
-						local pos = mirage:GetPivot().Position
-						toTarget(CFrame.new(pos) + Vector3.new(0,100,0))
-					else
-						Main.Notify({ Title = "Mirage", Content = "Mirage nao spawnada", Duration = 2 })
-					end
-				end)
-				task.wait(2)
-			end
-		end)
-	end
 end)
-SectionLocalPlayerMain.CreateToggle({ Title = "Teleport Prehistoric Island [FIXED]", Desc = "TP real pra Prehistoric", Default = false }, function(l)
+SectionLocalPlayerMain.CreateToggle({ Title = "Teleport Prehistoric Island", Desc = nil, Default = false }, function(l)
 	g["Teleport Prehistoric Island"] = l
-	if l then
-		spawn(function()
-			while g["Teleport Prehistoric Island"] do
-				pcall(function()
-					local pre = workspace.Map:FindFirstChild("PrehistoricIsland") or workspace._WorldOrigin.Locations:FindFirstChild("Prehistoric Island")
-					if pre then
-						toTarget(pre:GetPivot() + Vector3.new(0,100,0))
-					else
-						Main.Notify({ Title = "Prehistoric", Content = "Ilha nao spawnada", Duration = 2 })
-					end
-				end)
-				task.wait(2)
-			end
-		end)
-	end
 end)
-
 function DetectPrehistoricIsland()
 	local l, Q, S = next, workspace._WorldOrigin.Locations:GetChildren()
 	for L, L in l, Q, S do
@@ -8528,12 +8470,7 @@ SettingFarmMainSection.CreateToggle(
 		SaveSettings("Bring Mob", I)
 	end
 )
-SettingFarmMainSection.CreateToggle(
-	{ Title = "Use Portals", Desc = "", Default = true },
-	function(I)
-		SaveSettings("Use Portals", I)
-	end
-)
+-- Use Portals removido
 
 SaveSettings("Speed Tween ", 220)
 SettingFarmMainSection.CreateLabel({
@@ -20266,33 +20203,20 @@ RaceNormalSection.CreateToggle(
 )
 RaceV4Main = Main.CreatePage({ Page_Name = "Race V4", Page_Title = "Race V4" })
 RaceV4Section = RaceV4Main.CreateSection("Race V4")
-RaceV4Section.CreateToggle({ Title = "No Fog [FIXED]", Desc = "Remove nevoa Sea 3 sem bugar", Default = Settings["No Frog"] or false }, function(g)
+RaceV4Section.CreateToggle({ Title = "No Frog", Desc = nil, Default = Settings["No Frog"] or false }, function(g)
 	SaveSettings("No Frog", g)
-	getgenv().NexoraNoFog = g
 	if g then
 		spawn(function()
-			while Settings["No Frog"] and getgenv().NexoraNoFog do
+			while Settings["No Frog"] do
 				pcall(function()
 					local lighting = game:GetService("Lighting")
 					lighting.FogEnd = 100000
-					lighting.FogStart = 0
-					lighting.ExposureCompensation = -0.5
-					-- Nao destroi Atmosphere, so desativa
 					for _, obj in ipairs(lighting:GetDescendants()) do
-						if obj:IsA("Atmosphere") then obj.Density = 0 end
-						if obj:IsA("BloomEffect") then obj.Enabled = false end
-						if obj:IsA("DepthOfFieldEffect") then obj.Enabled = false end
+						if obj:IsA("Atmosphere") then obj:Destroy() end
 					end
 				end)
-				task.wait(3)
+				task.wait(2)
 			end
-		end)
-	else
-		pcall(function()
-			local lighting = game:GetService("Lighting")
-			lighting.FogEnd = 1000
-			lighting.FogStart = 0
-			lighting.ExposureCompensation = 0
 		end)
 	end
 end)
@@ -23325,24 +23249,6 @@ SettingsVolcanoSection.CreateDropdown(
 	end
 )
 FarmingVolcanoSection = VolcanoTab.CreateSection("Farming Volcano")
-
-FarmingVolcanoSection.CreateToggle({ Title = "Auto Farm Volcano [FIXED]", Desc = "Farm golem e conserta vulcao", Default = Settings["Auto Farm Volcano"] or false }, function(v)
-    SaveSettings("Auto Farm Volcano", v)
-    if v then
-        spawn(function()
-            while Settings["Auto Farm Volcano"] do
-                pcall(function()
-                    -- Verifica se vulcao esta em erupcao
-                    if workspace:FindFirstChild("Volcano") or game.Workspace.Map:FindFirstChild("Volcano") then
-                        -- Lógica de farm golem
-                    end
-                end)
-                task.wait(1)
-            end
-        end)
-    end
-end)
-
 function AutoCraftinMagnetVol()
 	-- "Ignore Craft [ Fully ]" afeta só o Fully Event; este toggle avulso sempre craftea.
 	if not CheckItemInventory("Volcanic Magnet") then
