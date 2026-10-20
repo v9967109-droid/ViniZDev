@@ -3624,6 +3624,12 @@ do
         if getgenv().NexoraAutoHop and getgenv().NexoraHopTarget == "Fruit" then StopAutoHop() else StartAutoHop("Fruit") end
     end)
 
+    SectionHopOthers.CreateButton({ Title = "Hop Aleatorio [SEM ERRO 773]" }, function()
+        StopAutoHop()
+        NotifyHop("Hop Aleatorio", "Indo pra servidor aleatorio sem erro 773...")
+        HopServerOnce()
+    end)
+
     SectionHopOthers.CreateButton({ Title = "PARAR Auto Hop" }, function()
         StopAutoHop()
     end)
