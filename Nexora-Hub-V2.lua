@@ -1730,7 +1730,7 @@ game:GetService("Players").LocalPlayer.Idled:connect(function()
 end)
 local A =
 	loadstring(game:HttpGet("https://raw.githubusercontent.com/obiiyeuem/vthangsitink/refs/heads/main/zzzz.lua"))()
-Main = A.CreateMain({ Title = "Nexora Hub Blox Fruits", Desc = "Blox Fruits" })
+Main = A.CreateMain({ Title = "Nexora Blox Fruits", Desc = "Nexora Blox Fruits" })
 
 -- HOP OTHERS - ADICIONADO
 local HopOthersPage = Main.CreatePage({ Page_Name = "Hop Others", Page_Title = "Hop Others" })
