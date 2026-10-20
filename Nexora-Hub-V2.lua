@@ -3467,8 +3467,10 @@ do
     local function HopServerOnce()
         local TeleportService = game:GetService("TeleportService")
         local HttpService = game:GetService("HttpService")
+        local Players = game:GetService("Players")
         local PlaceId = game.PlaceId
         local JobId = game.JobId
+        local LocalPlayer = Players.LocalPlayer
         local servers = {}
         local success, result = pcall(function()
             return game:HttpGet("https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Asc&limit=100")
@@ -3483,10 +3485,21 @@ do
                 end
             end
         end
+        -- CORREÇÃO TELEPORT LOCAL RESTRITO: sempre passa LocalPlayer e usa pcall
         if #servers > 0 then
-            TeleportService:TeleportToPlaceInstance(PlaceId, servers[math.random(1,#servers)])
+            local targetId = servers[math.random(1,#servers)]
+            local ok, err = pcall(function()
+                TeleportService:TeleportToPlaceInstance(PlaceId, targetId, LocalPlayer)
+            end)
+            if not ok then
+                pcall(function()
+                    TeleportService:Teleport(PlaceId, LocalPlayer)
+                end)
+            end
         else
-            TeleportService:Teleport(PlaceId)
+            pcall(function()
+                TeleportService:Teleport(PlaceId, LocalPlayer)
+            end)
         end
     end
 
@@ -5089,9 +5102,9 @@ spawn(function()
 			StatusKatakuri.SetText("Cake Prince: " .. string.gsub(E, "%D", "") .. " Mobs")
 			Statusspy.SetText("Leviathan: " .. StatusCheckLeviathan())
 			if workspace.Map:FindFirstChild("MysticIsland") then
-				StatusMirage.SetText("Mirage Island: \226\156\133")
+				StatusMirage.SetText("Mirage Island: 🟢")
 			else
-				StatusMirage.SetText("Mirage Island: \226\157\140")
+				StatusMirage.SetText("Mirage Island: 🔴")
 			end
 			do
 				local kitsuneOn = false
