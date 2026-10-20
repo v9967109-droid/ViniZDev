@@ -29,11 +29,55 @@ pcall(function()
 end)
 
 if isArceus then
-    -- No Arceus, desativa writefile pra nao crashar
-    writefile = nil
-    isfile = nil
-    readfile = nil
-    print("[NexoraHub] Arceus X detectado - file system desativado")
+    -- Não sobrescrever APIs do executor. Se não existirem, os fallbacks abaixo
+    -- oferecem armazenamento em memória para evitar falha durante a inicialização.
+    print("[NexoraHub] Arceus X detectado - usando compatibilidade segura")
+end
+
+-- Fallbacks de filesystem para executores que não implementam estas APIs.
+-- Os dados ficam em memória durante a sessão quando não há filesystem real.
+local __NEXORA_MEM_FILES = {}
+local __NEXORA_MEM_FOLDERS = { [""] = true }
+local function __nexora_norm(path)
+    return tostring(path):gsub("\\\\", "/"):gsub("/+", "/"):gsub("^/", "")
+end
+if type(isfolder) ~= "function" then
+    isfolder = function(path)
+        path = __nexora_norm(path)
+        if __NEXORA_MEM_FOLDERS[path] then return true end
+        local prefix = path .. "/"
+        for key in pairs(__NEXORA_MEM_FOLDERS) do
+            if key:sub(1, #prefix) == prefix then return true end
+        end
+        return false
+    end
+end
+if type(makefolder) ~= "function" then
+    makefolder = function(path)
+        path = __nexora_norm(path)
+        __NEXORA_MEM_FOLDERS[path] = true
+        return true
+    end
+end
+if type(isfile) ~= "function" then
+    isfile = function(path) return __NEXORA_MEM_FILES[__nexora_norm(path)] ~= nil end
+end
+if type(readfile) ~= "function" then
+    readfile = function(path)
+        local key = __nexora_norm(path)
+        local value = __NEXORA_MEM_FILES[key]
+        if value == nil then error("File not found: " .. key) end
+        return value
+    end
+end
+if type(writefile) ~= "function" then
+    writefile = function(path, contents)
+        __NEXORA_MEM_FILES[__nexora_norm(path)] = tostring(contents)
+        return true
+    end
+end
+if type(delfile) ~= "function" then
+    delfile = function(path) __NEXORA_MEM_FILES[__nexora_norm(path)] = nil end
 end
 
 
@@ -338,12 +382,15 @@ function ForceResetSchema(l, Q)
 end
 
 
--- Não confiar apenas na flag: execuções anteriores podem ter falhado depois de marcá-la.
-pcall(function()
-    local env = getgenv()
-    env.__BF_LOADED = nil
-    env.__BF_RESULT = nil
-end)
+do
+    local __env = getgenv()
+    if __env.__BF_LOADED and __env.__BF_RESULT ~= nil then
+        return __env.__BF_RESULT
+    end
+    -- Flag antiga sem resultado indica inicialização interrompida.
+    __env.__BF_LOADED = nil
+    __env.__BF_RESULT = nil
+end
 
 Settings = {}
 HttpService = game:GetService("HttpService")
@@ -26757,7 +26804,7 @@ BananaCatBF.AutoFarm = AutoFarm
 BananaCatBF.CheckQuest = CheckQuest
 getgenv().CheckQuest = CheckQuest
 
--- __BF_LOADED será marcado somente ao final da inicialização
+getgenv().__BF_LOADED = true
 
 
 
@@ -29720,10 +29767,3 @@ task.spawn(function()
     if A and A.RestoreSavedToggles then A.RestoreSavedToggles() end
     pcall(function() if getgenv().NexoraLoadingFinish then getgenv().NexoraLoadingFinish() end end)
 end)
-
-pcall(function()
-    local env = getgenv()
-    env.__BF_RESULT = A
-    env.__BF_LOADED = true
-end)
-print("[NexoraHub] Source chegou ao fim da inicialização.")
