@@ -1,99 +1,108 @@
+-- CAMADA DE COMPATIBILIDADE BASE (mobile e PC)
+-- Nenhum shim consegue garantir compatibilidade com todos os executores:
+-- APIs ausentes são tratadas com fallback sempre que possível.
 
--- FIX ESPECIFICO PARA ARCEUS X
-local function getParent()
-    local parent = nil
-    -- Arceus X usa gethui() ou game.CoreGui
-    if gethui then
-        local ok,res = pcall(gethui)
-        if ok and res then parent = res end
+local function _safeCall(fn, ...)
+    if type(fn) ~= "function" then return false, nil end
+    return pcall(fn, ...)
+end
+
+-- Ambiente global: alguns executores expõem getgenv(), outros não.
+if type(getgenv) ~= "function" then
+    function getgenv()
+        return _G
     end
-    if not parent and pcall(function() return game.CoreGui end) then
-        pcall(function() parent = game.CoreGui end)
+end
+
+-- Identificação opcional do executor.
+local ExecutorName = "Unknown"
+pcall(function()
+    if type(identifyexecutor) == "function" then
+        ExecutorName = tostring(identifyexecutor())
+    elseif type(getexecutorname) == "function" then
+        ExecutorName = tostring(getexecutorname())
+    elseif type(is_sirhurt_closure) == "function" then
+        ExecutorName = "SirHurt"
+    elseif type(pebc_execute) == "function" then
+        ExecutorName = "ProtoSmasher"
+    end
+end)
+
+-- Acesso à GUI: gethui pode falhar ou não existir.
+local function getParent()
+    local parent
+    pcall(function()
+        if type(gethui) == "function" then
+            local ok, result = pcall(gethui)
+            if ok and result then parent = result end
+        end
+    end)
+    if not parent then
+        pcall(function() parent = game:GetService("CoreGui") end)
     end
     if not parent then
-        parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+        pcall(function()
+            parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+        end)
     end
     return parent
 end
 
--- Desativa file system no Arceus X se der erro
-local isArceus = false
-pcall(function()
-    local exec = ""
-    if identifyexecutor then exec = identifyexecutor() end
-    if exec:lower():find("arceus") or exec:lower():find("ax") then
-        isArceus = true
-    end
-    -- Arceus tem global _G.ArceusX
-    if _G.ArceusX or _G.AX then isArceus = true end
-end)
-
-if isArceus then
-    -- No Arceus, desativa writefile pra nao crashar
-    writefile = nil
-    isfile = nil
-    readfile = nil
-    print("[NexoraHub] Arceus X detectado - file system desativado")
-end
-
-
-
--- COMPATIBILIDADE UNIVERSAL PARA TODOS EXECUTORES MOBILE E PC
--- Delta, Fluxus, Arceus X, Codex, Trigon, KRNL, Synapse, Wave, Vega X, Evon, etc.
-
--- Detecta executor
-local ExecutorName = "Unknown"
-pcall(function()
-    if identifyexecutor then ExecutorName = identifyexecutor() 
-    elseif getexecutorname then ExecutorName = getexecutorname()
-    elseif is_sirhurt_closure then ExecutorName = "SirHurt"
-    elseif pebc_execute then ExecutorName = "ProtoSmasher"
-    end
-end)
-
--- File functions universal
-local function safeIsFile(f) 
-    if isfile then 
-        local ok,res = pcall(isfile,f) 
-        if ok then return res end 
-    end 
-    return false 
-end
-
-local function safeReadFile(f)
-    if readfile and safeIsFile(f) then
-        local ok,res = pcall(readfile,f)
-        if ok then return res end
-    end
-    return nil
-end
-
-local function safeWriteFile(f,c)
-    if writefile then
-        pcall(writefile,f,c)
-        return true
+-- File-system: preserve as funções originais e use wrappers seguros.
+local function safeIsFile(path)
+    if type(isfile) == "function" then
+        local ok, result = pcall(isfile, path)
+        if ok then return result end
     end
     return false
 end
 
--- getcustomasset para imagens (Delta, Fluxus, Codex suportam)
-local function getAsset(path)
-    if getcustomasset then
-        local ok,res = pcall(getcustomasset, path)
-        if ok and res then return res end
+local function safeReadFile(path)
+    if type(readfile) == "function" and safeIsFile(path) then
+        local ok, result = pcall(readfile, path)
+        if ok then return result end
     end
-    -- Fallback para rbxassetid publico
+    return nil
+end
+
+local function safeWriteFile(path, content)
+    if type(writefile) == "function" then
+        local ok = pcall(writefile, path, content)
+        return ok
+    end
+    return false
+end
+
+-- Assets locais são opcionais; use imagem pública como fallback.
+local function getAsset(path)
+    if type(getcustomasset) == "function" then
+        local ok, result = pcall(getcustomasset, path)
+        if ok and result then return result end
+    end
+    if type(getsynasset) == "function" then
+        local ok, result = pcall(getsynasset, path)
+        if ok and result then return result end
+    end
     return "rbxassetid://17336164180"
 end
 
--- Verifica se é mobile
 local UserInputService = game:GetService("UserInputService")
-local IsMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled and not UserInputService.MouseEnabled
--- Alguns PCs com touch, entao verifica tamanho da tela tambem
-local IsSmallScreen = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize.Y < 600
+local IsMobile = UserInputService.TouchEnabled
+    and not UserInputService.KeyboardEnabled
+    and not UserInputService.MouseEnabled
+local IsSmallScreen = false
+pcall(function()
+    local camera = workspace.CurrentCamera
+    IsSmallScreen = camera ~= nil and camera.ViewportSize.Y < 600
+end)
 
-print("[NexoraHub] Executor: "..tostring(ExecutorName).." | Mobile: "..tostring(IsMobile))
+print("[NexoraHub] Executor: " .. tostring(ExecutorName)
+    .. " | Mobile: " .. tostring(IsMobile))
 
+-- Clipboard opcional: evita erro em executores que não oferecem essa API.
+if type(setclipboard) ~= "function" then
+    setclipboard = function(_) return false end
+end
 
 -- Tela de carregamento (Nexora Hub): pequena e rápida. O resto do script só roda depois dela terminar.
 do
