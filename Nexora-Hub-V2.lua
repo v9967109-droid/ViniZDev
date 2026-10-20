@@ -14040,81 +14040,19 @@ ToggleFindMirage = FarmingSeaEventSection.CreateToggle(
 	end
 )
 
--- NEXORA: Raise Boat Manual Drive / Boat Height
--- Ajusta somente a altura do barco ocupado; o deslocamento horizontal continua sob controle do jogador.
-local RaiseBoatManualDriveEnabled = Settings["Raise Boat Manual Drive"] or false
-local BoatHeightValue = math.clamp(tonumber(Settings["Boat Height"]) or 175, 5, 175)
-local RaiseBoatManualDriveLoopRunning = false
-
-local function GetPlayerDrivenBoatSeat()
-	local player = game:GetService("Players").LocalPlayer
-	local character = player and player.Character
-	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	if not humanoid or not humanoid.SeatPart then
-		return nil, nil
-	end
-	local seat = humanoid.SeatPart
-	if not seat:IsA("VehicleSeat") and not seat:IsA("Seat") then
-		return nil, nil
-	end
-	local model = seat:FindFirstAncestorOfClass("Model")
-	if not model then
-		return nil, nil
-	end
-	return seat, model
-end
-
-local function StartRaiseBoatManualDriveLoop()
-	if RaiseBoatManualDriveLoopRunning then return end
-	RaiseBoatManualDriveLoopRunning = true
-	task.spawn(function()
-		local RunService = game:GetService("RunService")
-		while RaiseBoatManualDriveEnabled do
-			local seat, boat = GetPlayerDrivenBoatSeat()
-			if seat and boat and boat.Parent then
-				-- Recalcula a diferença a cada frame para manter a altura sem travar o movimento X/Z.
-				local deltaY = BoatHeightValue - seat.Position.Y
-				if math.abs(deltaY) > 0.05 then
-					pcall(function()
-						boat:PivotTo(boat:GetPivot() + Vector3.new(0, deltaY, 0))
-					end)
-				end
-			end
-			RunService.Heartbeat:Wait()
-		end
-		RaiseBoatManualDriveLoopRunning = false
-	end)
-end
-
+-- RAISE BOAT MANUAL DRIVE - ADICIONADO (SEM REMOVER NADA DA SOURCE)
 SettingSeaEventSection.CreateToggle(
-	{
-		Title = "Raise Boat Manual Drive",
-		Desc = "Mantém o barco na altura configurada e permite dirigir normalmente.",
-		Default = RaiseBoatManualDriveEnabled,
-	},
+	{ Title = "Raise Boat Manual Drive", Desc = "Sobe o barco no eixo Y - mesma funcao do Nexora", Default = Settings["Raise Boat Manual Drive"] or false },
 	function(v)
-		RaiseBoatManualDriveEnabled = v
 		SaveSettings("Raise Boat Manual Drive", v)
-		if v then StartRaiseBoatManualDriveLoop() end
 	end
 )
 SettingSeaEventSection.CreateSlider(
-	{
-		Title = "Boat Height",
-		Min = 5,
-		Max = 175,
-		Default = BoatHeightValue,
-		Precise = false,
-	},
+	{ Title = "Boat Height", Min = 5, Max = 175, Default = Settings["Boat Height"] or 175, Precise = false },
 	function(v)
-		BoatHeightValue = math.clamp(tonumber(v) or 175, 5, 175)
-		SaveSettings("Boat Height", BoatHeightValue)
+		SaveSettings("Boat Height", v)
 	end
 )
-if RaiseBoatManualDriveEnabled then
-	StartRaiseBoatManualDriveLoop()
-end
-
 
 KitsuneEventMain = Main.CreatePage({ Page_Name = "Kitsune Event", Page_Title = "Kitsune Event" })
 KitsuneEventSection = KitsuneEventMain.CreateSection("Kitsune Event")
