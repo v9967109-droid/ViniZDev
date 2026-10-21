@@ -12859,126 +12859,222 @@ game:GetService("Players").LocalPlayer.PlayerGui.Notifications.ChildAdded:Connec
     end
 end)
 
-
 function AutoDragonHunterQuestLoop()
     pcall(function()
         local t = game.Players.LocalPlayer
         if not t or not t.Character or not t.Character:FindFirstChild("HumanoidRootPart") then return end
-        
-        -- NEXORA FIX: Se tem 3+ Blaze Embers mas missao acabou, volta no Dragon Hunter
-        if CheckCountItem("Blaze Ember", 3) and not getgenv().QuestHunterDragon then
-            print("[Nexora] 3+ Embers mas sem missao ativa, voltando no Dragon Hunter")
-            local npc = GetDragonHunterNPC() or workspace.NPCs:FindFirstChild("Dragon Hunter")
+
+        -- Posição do Dragon Dojo / Hydra - Dragon Hunter
+        local DOJO_CFRAME = CFrame.new(5661.5302734375, 1013.411315918, -334.9619140625)
+
+        -- Se já tem 15 Blaze Ember, vai craftar
+        if CheckCountItem("Blaze Ember", 15) and CheckCountItem("Scrap Metal", 10) then
+            local npc = GetDragonHunterNPC()
             if npc and npc:FindFirstChild("HumanoidRootPart") then
                 if t:DistanceFromCharacter(npc.HumanoidRootPart.Position) > 12 then
-                    toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 4))
+                    toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0,0,4))
                 else
-                    local res = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({ Context = "Check" })
-                    if not res or not res.Text then
-                        local req = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({ Context = "RequestQuest" })
-                        if req and req.Text then
-                            getgenv().QuestHunterDragon = req.Text
-                            getgenv().__DragonHunterMissionPickedAt = tick()
-                            print("[Nexora] Missao nova apos 3 embers: " .. req.Text)
-                            task.wait(10)
-                        end
-                    else
-                        getgenv().QuestHunterDragon = res.Text
-                    end
+                    -- Tenta todos os métodos de craft
+                    pcall(function()
+                        game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/Craft"):InvokeServer(unpack({[1]="Craft",[2]="Volcanic Magnet",[3]=1,[4]={}}))
+                    end)
+                    pcall(function()
+                        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("CraftItem", "Volcanic Magnet")
+                    end)
+                    task.wait(2)
                 end
+            else
+                -- Se NPC não encontrado, vai pro Dojo
+                toTarget(DOJO_CFRAME)
             end
             return
         end
 
+        -- Se não tem quest, pega quest no Dragon Hunter
         local npc = GetDragonHunterNPC()
         if not npc or not npc:FindFirstChild("HumanoidRootPart") then
-            npc = workspace.NPCs:FindFirstChild("Dragon Hunter") or game:GetService("ReplicatedStorage").NPCs:FindFirstChild("Dragon Hunter")
+            -- O NPC pode não estar replicado enquanto o jogador está longe.
+            toTarget(DOJO_CFRAME)
+            return
         end
-        
+
+        -- DETECTA DE LONGE: se está longe, vai até o NPC/Dragon Dojo
+        local distToNPC = t:DistanceFromCharacter(npc.HumanoidRootPart.Position)
+        if distToNPC > 1500 then
+            -- Longe: usa tween até Hydra/Dojo
+            toTarget(DOJO_CFRAME)
+            return
+        end
+
         if not getgenv().QuestHunterDragon then
-            if not npc or not npc:FindFirstChild("HumanoidRootPart") then return end
-            if t:DistanceFromCharacter(npc.HumanoidRootPart.Position) > 12 then
-                toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 4))
+            if distToNPC > 12 then
+                toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0,4,4))
             else
-                local res = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({ Context = "Check" })
-                if not res or not res.Text then
-                    local req = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({ Context = "RequestQuest" })
-                    if req and req.Text then
-                        getgenv().QuestHunterDragon = req.Text
-                        getgenv().__DragonHunterMissionPickedAt = tick()
-                        print("[Nexora] Missao Dragon Hunter pega: " .. req.Text .. " - 10s")
-                        task.wait(10)
+                pcall(function()
+                    local check = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({Context="Check"})
+                    if not check or not check.Text then
+                        local req = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({Context="RequestQuest"})
+                        if req and req.Text then
+                            getgenv().QuestHunterDragon = req.Text
+                        end
+                    else
+                        getgenv().QuestHunterDragon = check.Text
                     end
-                else
-                    getgenv().QuestHunterDragon = res.Text
+                end)
+                -- Se ainda não tem, tenta RequestQuest direto
+                if not getgenv().QuestHunterDragon then
+                    pcall(function()
+                        local req = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({Context="RequestQuest"})
+                        if req and req.Text then getgenv().QuestHunterDragon = req.Text end
+                    end)
                 end
             end
             return
         end
 
-        -- Se ja tem 15, claim
-        if CheckCountItem("Blaze Ember", 15) then
-            if not npc or not npc:FindFirstChild("HumanoidRootPart") then return end
-            if t:DistanceFromCharacter(npc.HumanoidRootPart.Position) > 12 then
-                toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 4))
-            else
-                pcall(function()
-                    game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({ Context = "ClaimReward" })
-                    game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({ Context = "Claim" })
-                    game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({ Context = "CompleteQuest" })
+        -- V8 FIX: Sempre que completar, claim + já pede outra, até 15 Blaze Ember
+        local shouldClaim = false
+        pcall(function()
+            local net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter")
+            local check = net:InvokeServer({Context="Check"})
+            if check then
+                if type(check)=="table" then
+                    if check.Progress and check.Goal and check.Progress >= check.Goal then shouldClaim=true end
+                    if check.Completed or check.ReadyToClaim or check.CanClaim or check.Finished then shouldClaim=true end
+                    -- Se Text vazio ou não tem quest mas tinha antes
+                    if not check.Text or check.Text=="" then shouldClaim=true end
+                end
+            end
+            -- Também checa se o player não tem mais mob da quest vivo e QuestHunterDragon ainda setado
+            if getgenv().QuestHunterDragon and getgenv().QuestHunterDragon~="" then
+                -- Se não achou mob da quest perto, pode ser que já completou
+                local mobName = string.match(getgenv().QuestHunterDragon, "Defeat %d+ (.+)")
+                if mobName then
+                    local stillExists = false
+                    pcall(function()
+                        for _,v in pairs(game.Workspace.Enemies:GetChildren()) do
+                            if v.Name:find(mobName) then stillExists=true end
+                        end
+                    end)
+                    -- Se não existe e o Check falhou, ainda tenta claim
+                end
+            end
+        end)
+
+        if shouldClaim then
+            pcall(function()
+                if distToNPC > 20 then
+                    toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0,4,4))
+                else
+                    for _, ctx in ipairs({"ClaimReward","Claim","Complete","CompleteQuest","ClaimQuest","Finish","Collect"}) do
+                        pcall(function()
+                            game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({Context=ctx})
+                        end)
+                    end
+                    task.wait(1.2)
                     getgenv().QuestHunterDragon = nil
-                    getgenv().__DragonHunterMissionPickedAt = nil
-                end)
-            end
+                    -- Força pedir nova missão imediatamente
+                    pcall(function()
+                        local net = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter")
+                        local req = net:InvokeServer({Context="RequestQuest"})
+                        if req then
+                            if type(req)=="table" and req.Text then
+                                getgenv().QuestHunterDragon = req.Text
+                            elseif type(req)=="string" then
+                                getgenv().QuestHunterDragon = req
+                            else
+                                getgenv().QuestHunterDragon = nil
+                            end
+                        else
+                            getgenv().QuestHunterDragon = nil
+                        end
+                    end)
+                    task.wait(0.5)
+                end
+            end)
             return
         end
 
-        -- Espera 35s antes de farmar (anti bug sem missao)
-        if getgenv().__DragonHunterMissionPickedAt and tick() - getgenv().__DragonHunterMissionPickedAt < 35 then
-            task.wait(35 - (tick() - getgenv().__DragonHunterMissionPickedAt))
+        -- Se já tem 15 Ember, claim final
+        if CheckCountItem("Blaze Ember", 15) then
+            pcall(function()
+                if distToNPC > 20 then
+                    toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0,4,4))
+                else
+                    for _, ctx in ipairs({"ClaimReward","Claim","Complete","CompleteQuest","ClaimQuest","Finish"}) do
+                        pcall(function()
+                            game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({Context=ctx})
+                        end)
+                    end
+                    getgenv().QuestHunterDragon = nil
+                end
+            end)
+            return
         end
 
-        -- Farm
+        -- Verifica EmberTemplate no chão (detecta de longe)
         local ember = DetectEmberTemplate()
-        if ember then
-            toTarget(ember.Part.CFrame)
+        if ember and ember:FindFirstChild("Part") then
+            pcall(function()
+                toTarget(ember.Part.CFrame)
+            end)
             return
         end
 
-        if string.find(getgenv().QuestHunterDragon, "Hydra") then
-            local mob = DetectMob("Hydra Enforcer")
-            if not mob then
-                local part = DetectPartSpawnMob("Hydra Enforcer", true)
-                if part then toTarget(part.CFrame * CFrame.new(0, 60, 0)) end
+        -- Farm baseado na quest atual
+        if getgenv().QuestHunterDragon then
+            local questText = getgenv().QuestHunterDragon
+            if string.find(questText, "Hydra Enforcers") then
+                local mob = DetectMob("Hydra Enforcer")
+                if not mob then
+                    local spawnPart = DetectPartSpawnMob("Hydra Enforcer", true)
+                    if spawnPart then
+                        toTarget(spawnPart.CFrame * CFrame.new(0,60,0))
+                    else
+                        -- Vai para Hydra Island area
+                        toTarget(CFrame.new(5661, 1013, -334))
+                    end
+                else
+                    pcall(function()
+                        sizepart(mob)
+                        BringMob(mob)
+                        UsedualFlock()
+                        ClickM1(mob)
+                        if Settings["Select Weapon"] == "Blox Fruit" then
+                            toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(-7, getgenv().YPosFruit or 20, 0))
+                        else
+                            toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(7, 20, 0))
+                        end
+                    end)
+                end
+            elseif string.find(questText, "Venomous Assailants") or string.find(questText, "Venomous") then
+                local mob = DetectMob("Venomous Assailant")
+                if not mob then
+                    local spawnPart = DetectPartSpawnMob("Venomous Assailant", true)
+                    if spawnPart then
+                        toTarget(spawnPart.CFrame * CFrame.new(0,60,0))
+                    end
+                else
+                    pcall(function()
+                        sizepart(mob)
+                        BringMob(mob)
+                        UsedualFlock()
+                        ClickM1(mob)
+                        toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(7, 20, 0))
+                    end)
+                end
             else
-                sizepart(mob)
-                BringMob(mob)
-                UsedualFlock()
-                ClickM1(mob)
-                toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(7, 20, 0))
-            end
-        elseif string.find(getgenv().QuestHunterDragon, "Venomous") then
-            local mob = DetectMob("Venomous Assailant")
-            if not mob then
-                local part = DetectPartSpawnMob("Venomous Assailant", true)
-                if part then toTarget(part.CFrame * CFrame.new(0, 60, 0)) end
-            else
-                sizepart(mob)
-                BringMob(mob)
-                UsedualFlock()
-                ClickM1(mob)
-                toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(7, 20, 0))
-            end
-        elseif string.find(getgenv().QuestHunterDragon, "trees") then
-            local tree = DetectTree()
-            if tree then
-                toTarget(tree.WorldPivot)
-                getgenv().AimPos = tree.WorldPivot
+                -- Quest genérica, tenta Hydra Enforcer como fallback
+                local mob = DetectMob("Hydra Enforcer")
+                if mob then
+                    toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(7,20,0))
+                else
+                    toTarget(DOJO_CFRAME)
+                end
             end
         end
     end)
 end
-
 
 function AutoCraftingVolcanicMagnet()
     pcall(function()
@@ -23203,36 +23299,8 @@ SettingsVolcanoSection.CreateDropdown(
 )
 FarmingVolcanoSection = VolcanoTab.CreateSection("Farming Volcano")
 function AutoCraftinMagnetVol()
-	-- NEXORA FIX: Vai no Dragon Hunter dps de completar missao mesmo com 3 blaze embers
+	-- "Ignore Craft [ Fully ]" afeta só o Fully Event; este toggle avulso sempre craftea.
 	if not CheckItemInventory("Volcanic Magnet") then
-		-- Se ja tem 3 blaze mas missao acabou, volta no NPC
-		if CheckCountItem("Blaze Ember", 3) and not CheckCountItem("Blaze Ember", 15) then
-			if not getgenv().QuestHunterDragon then
-				print("[Nexora] Tem 3 Blaze Embers mas sem missao, voltando no Dragon Hunter")
-				local npc = GetDragonHunterNPC() or workspace.NPCs:FindFirstChild("Dragon Hunter") or game:GetService("ReplicatedStorage").NPCs:FindFirstChild("Dragon Hunter")
-				if npc and npc:FindFirstChild("HumanoidRootPart") then
-					if game.Players.LocalPlayer:DistanceFromCharacter(npc.HumanoidRootPart.Position) > 12 then
-						toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 4))
-						return
-					else
-						pcall(function()
-							local res = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({ Context = "Check" })
-							if not res or not res.Text then
-								local req = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({ Context = "RequestQuest" })
-								if req and req.Text then
-									getgenv().QuestHunterDragon = req.Text
-									getgenv().__DragonHunterMissionPickedAt = tick()
-									print("[Nexora] Nova missao pega apos 3 embers: " .. req.Text)
-									task.wait(10)
-								end
-							else
-								getgenv().QuestHunterDragon = res.Text
-							end
-						end)
-					end
-				end
-			end
-		end
 		if not CheckCountItem("Scrap Metal", 10) then
 			local g = { "Jungle Pirate", "Musketeer Pirate" }
 			local f = DetectMob(g)
@@ -23270,18 +23338,6 @@ function AutoCraftinMagnetVol()
 			end
 			return
 		elseif not CheckCountItem("Blaze Ember", 15) then
-			-- NEXORA FIX: Sempre verifica se precisa voltar no Dragon Hunter
-			if getgenv().QuestHunterDragon == nil or CheckCountItem("Blaze Ember", 3) then
-				pcall(function()
-					local npcCheck = GetDragonHunterNPC() or workspace.NPCs:FindFirstChild("Dragon Hunter")
-					if npcCheck and npcCheck:FindFirstChild("HumanoidRootPart") then
-						-- Se missao acabou ou tem 3+ embers, força check no NPC
-						if game.Players.LocalPlayer:DistanceFromCharacter(npcCheck.HumanoidRootPart.Position) < 300 then
-							game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({ Context = "Check" })
-						end
-					end
-				end)
-			end
 			local g = workspace.NPCs:FindFirstChild("Dragon Hunter")
 				or (game:GetService("ReplicatedStorage").NPCs:FindFirstChild("Dragon Hunter"))
 				or NPCManager.getNPCsByName("Dragon Hunter")[1]._modelState._instance
