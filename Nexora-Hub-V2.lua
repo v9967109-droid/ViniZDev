@@ -12304,7 +12304,20 @@ function AutoQuestDojo()
 		SaveSettings("QuestDojo", true)
 		local y = GetNameDoubleQuest() or ""
 		if not t.PlayerGui.Main:FindFirstChild("Quest").Visible and typeof(y) == "string" then
+			-- NEXORA FIX: Mesmo tempo de pegar missao que tem nos Farms (0.8s parado no NPC + espera)
+			print("[Nexora] White Belt sem missao, indo pegar - aguardando 0.8s no NPC")
+			task.wait(0.8)
 			TakeQuestLevel()
+			task.wait(1.5)
+			-- Verifica se pegou, se nao, tenta de novo com tempo maior igual nos Farms (2s, 4s)
+			getgenv().__WhiteBeltQuestFails = (getgenv().__WhiteBeltQuestFails or 0) + 1
+			if not t.PlayerGui.Main:FindFirstChild("Quest").Visible then
+				local waitTime = math.min(2 * getgenv().__WhiteBeltQuestFails, 10)
+				print("[Nexora] Tentando pegar White Belt de novo em " .. waitTime .. "s")
+				task.wait(waitTime)
+			else
+				getgenv().__WhiteBeltQuestFails = 0
+			end
 		else
 			local P = DetectMob(y)
 			if not P then
@@ -12639,8 +12652,13 @@ function AutoDragonHunter()
 					else
 						getgenv().QuestHunterDragon = "Hydra Enforcers"
 					end
+					-- NEXORA FIX: Tempo de 10s quando pegar missao + 35s pra nao farmar sem missao (Blade members)
+					getgenv().__DragonHunterMissionPickedAt = tick()
+					print("[Nexora] Missao Dragon Hunter pega: " .. tostring(getgenv().QuestHunterDragon) .. " - aguardando 10s")
+					task.wait(10)
 				else
 					getgenv().QuestHunterDragon = res.Text
+					getgenv().__DragonHunterMissionPickedAt = getgenv().__DragonHunterMissionPickedAt or tick()
 				end
 				-- Se já tem 15 Blaze Ember, tenta claim
 				if CheckCountItem("Blaze Ember", 15) then
@@ -12675,6 +12693,14 @@ function AutoDragonHunter()
 			until not y or not y.Parent or not Settings["Auto Quest Dragon Hunter"]
 			return
 		end
+		-- NEXORA FIX: Espera 35s total apos pegar missao pra nao matar NPC/arvore sem missao
+			if getgenv().__DragonHunterMissionPickedAt and tick() - getgenv().__DragonHunterMissionPickedAt < 35 then
+				local waitLeft = 35 - (tick() - getgenv().__DragonHunterMissionPickedAt)
+				if waitLeft > 0 then
+					print("[Nexora] Aguardando " .. math.floor(waitLeft) .. "s antes de farmar Blade members (anti bug sem missao)")
+					task.wait(waitLeft)
+				end
+			end
 		if string.find(getgenv().QuestHunterDragon, "Hydra Enforcers") then
 			local P = DetectMob("Hydra Enforcer")
 			if not P then
@@ -12707,6 +12733,10 @@ function AutoDragonHunter()
 				until not IsMobAlive(P) or not Settings["Auto Quest Dragon Hunter"] or y
 			end
 		elseif string.find(getgenv().QuestHunterDragon, "Venomous Assailants") then
+			-- Verifica tempo 35s tambem pra Venomous
+			if getgenv().__DragonHunterMissionPickedAt and tick() - getgenv().__DragonHunterMissionPickedAt < 35 then
+				task.wait(35 - (tick() - getgenv().__DragonHunterMissionPickedAt))
+			end
 			local P = DetectMob("Venomous Assailant")
 			if not P then
 				local Y = DetectPartSpawnMob("Venomous Assailant", true)
@@ -12738,6 +12768,10 @@ function AutoDragonHunter()
 				until not IsMobAlive(P) or not Settings["Auto Quest Dragon Hunter"] or y
 			end
 		elseif string.find(getgenv().QuestHunterDragon, "trees") then
+			-- Verifica tempo 35s tambem pra arvores
+			if getgenv().__DragonHunterMissionPickedAt and tick() - getgenv().__DragonHunterMissionPickedAt < 35 then
+				task.wait(35 - (tick() - getgenv().__DragonHunterMissionPickedAt))
+			end
 			local P, Y = workspace.CurrentCamera, DetectTree()
 			if Y then
 				Instance.new("IntValue", Y).Name = "Ignored"
@@ -23453,13 +23487,23 @@ ToggleAutoCraftingVolcanicMagnet = FarmingVolcanoSection.CreateToggle(
 	{ Title = "Auto Crafting Volcanic Magnet", Desc = nil, Default = Settings["Auto Crafting Volcanic Magnet"] or false },
 	function(g)
 		if g then
+			-- NEXORA FIX: Mesmo deslocamento da Hydra que tem no Auto Dragon Treinar
+			getgenv().__HydraReady_Volcanic = false
+			getgenv().__HydraDestinationName_Volcanic = "Hydra Island / Dragon Dojo - Volcanic Magnet"
+			BananaMoveToDestination(CFrame.new(5661.5302734375, 1013.411315918, -334.9619140625), "Auto Crafting Volcanic Magnet", "__HydraReady_Volcanic", 100)
 			spawn(function()
-				while Settings["Auto Crafting Volcanic Magnet"] and (wait(0.1)) do
-					pcall(function()
-						AutoCraftinMagnetVol()
-					end)
+				while Settings["Auto Crafting Volcanic Magnet"] do
+					if getgenv().__HydraReady_Volcanic then
+						pcall(function()
+							AutoCraftinMagnetVol()
+						end)
+					end
+					task.wait(0.1)
 				end
+				getgenv().__HydraReady_Volcanic = false
 			end)
+			else
+				getgenv().__HydraReady_Volcanic = false
 		end
 		SaveSettings("Auto Crafting Volcanic Magnet", g)
 	end
