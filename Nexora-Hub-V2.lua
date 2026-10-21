@@ -34,7 +34,8 @@ do
 		mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,2), Size=UDim2.new(1,0,0,13), Text="♛", TextColor3=Color3.fromRGB(80, 180, 255), Font=Enum.Font.GothamBold, TextSize=12}, logo)
 		local n = mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,10), Size=UDim2.new(1,0,1,-12), Text="N", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.GothamBlack, TextSize=26}, logo)
 		mk("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 140, 255))}, n)
-		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,64), Size=UDim2.fromOffset(220,20), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.GothamBlack, TextSize=16}, card)
+		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,62), Size=UDim2.fromOffset(220,20), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.GothamBlack, TextSize=16}, card)
+		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,80), Size=UDim2.fromOffset(220,14), BackgroundTransparency=1, Text="BLOX FRUITS • ViniZDev", TextColor3=Color3.fromRGB(165,165,174), Font=Enum.Font.GothamMedium, TextSize=11}, card)
 		local track = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,92), Size=UDim2.fromOffset(150,3), BackgroundColor3=Color3.fromRGB(30,28,24), BorderSizePixel=0}, card)
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, track)
 		local fill = mk("Frame", {Size=UDim2.new(0,0,1,0), BackgroundColor3=GOLD, BorderSizePixel=0}, track)
@@ -2118,7 +2119,7 @@ function Nexora.CreateMain(config)
     end
     local title = make("TextLabel", {Position=UDim2.new(0,18,0,10), Size=UDim2.new(0,300,0,26), BackgroundTransparency=1, RichText=true, Text='<font color="#FFFFFF">NEXORA</font> <font color="#008CFF">HUB</font>', TextColor3=Color3.fromRGB(255,255,255), Font=Enum.Font.GothamBlack, TextSize=22, TextXAlignment=Enum.TextXAlignment.Left}, top)
     local function tracked(t) return (string.gsub(string.upper(t), "(%S)", "%1\u{2009}")) end
-    local desc = make("TextLabel", {Position=UDim2.new(0,19,0,37), Size=UDim2.new(0,300,0,16), BackgroundTransparency=1, Text=tracked(config.Subtitle or "Blox Fruits"), TextColor3=GRAY, Font=Enum.Font.GothamMedium, TextSize=10, TextXAlignment=Enum.TextXAlignment.Left}, top)
+    local desc = make("TextLabel", {Position=UDim2.new(0,19,0,37), Size=UDim2.new(0,300,0,16), BackgroundTransparency=1, Text=tracked("BLOX FRUITS • ViniZDev"), TextColor3=GRAY, Font=Enum.Font.GothamMedium, TextSize=10, TextXAlignment=Enum.TextXAlignment.Left}, top)
     -- 3 tracinhos removidos da UI como você pediu
     local hamburger = make("TextButton", {Name="Menu", AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,-12,0.5,0), Size=UDim2.new(0,36,0,36), BackgroundTransparency=1, Text="", TextTransparency=1, Visible=false, AutoButtonColor=false}, top)
     -- ScreenGui separado: o botão fica fora da janela e não some junto com a UI (nem com o keybind Toggle GUI).
@@ -16890,8 +16891,7 @@ function getSeatedBoat()
 	if not char then return false end
 	local hum = char:FindFirstChildOfClass("Humanoid")
 	if not hum or not hum.SeatPart then return false end
-	local seat = hum.SeatPart
-	local boat = seat:FindFirstAncestorOfClass("Model")
+	local boat = hum.SeatPart:FindFirstAncestorOfClass("Model")
 	if boat and boat:FindFirstChild("VehicleSeat", true) then return boat end
 	return false
 end
@@ -29530,139 +29530,185 @@ end)()
 
 
 
+-- DRAGONSTORM REMOTE ONLY FIX
+-- Esse fix faz a Dragonstorm atirar SÓ via remotes, sem clique físico na tela
+-- Cole DEPOIS do Nexora Hub carregar ou injete na source
 
+task.wait(0.5)
 
--- ===================== VIDEO CLICK FIX - EXATO DO VIDEO =====================
--- Esse é o click do video: Hibrido (Remote + Activate + Touch) spam rapido 0.12s
--- Igual teu video: Lv 2925, em cima do barco, Dragonstorm atirando nos barcos
+print("[Dragonstorm Fix] Aplicando modo REMOTE ONLY...")
 
-task.wait(0.3)
-
--- Mata o antigo
-getgenv().PhysicalGunClickInterval = 0.12
-getgenv().DSClickInterval = 0.12
-getgenv().DragonstormRemoteDelay = 0.12
-getgenv().__DragonstormLastShot = 0
-
--- Click EXATO do video: igual mobile faz
-function DragonstormPhysicalClick(force, toolName)
-    toolName = toolName or "Dragonstorm"
-    local now = os.clock()
-    local lastKey = "__PhysicalClickLast_"..tostring(toolName)
-    local interval = getgenv().PhysicalGunClickInterval or 0.12
-    if not force and now - (getgenv()[lastKey] or 0) < interval then
-        return false
+-- 1. Desativa completamente o clique físico (o que causa detecção e bug no celular)
+if DragonstormPhysicalClick then
+    _G.Old_DragonstormPhysicalClick = DragonstormPhysicalClick
+    function DragonstormPhysicalClick(force)
+        -- Não faz mais mouse move, SendMouseButtonEvent, SendTouchEvent, VirtualUser Click
+        -- Retorna true só pra não travar o fluxo
+        return true
     end
-    getgenv()[lastKey] = now
-
-    task.spawn(function()
-        pcall(function()
-            local tool = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild(toolName)
-            if not tool then return end
-            -- 1) Activate da tool (principal do video)
-            tool:Activate()
-            -- 2) Camera mira
-            local Camera = workspace.CurrentCamera
-            if not Camera then return end
-            local vp = Camera.ViewportSize
-            local x, y = math.floor(vp.X/2), math.floor(vp.Y/2)
-            local VIM = game:GetService("VirtualInputManager")
-            -- 3) Click fisico igual video mobile
-            VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
-            task.wait(0.03)
-            VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
-            -- 4) Touch pra mobile (igual teu video)
-            pcall(function()
-                VIM:SendTouchEvent(1, 0, x, y)
-                task.wait(0.02)
-                VIM:SendTouchEvent(1, 2, x, y)
-            end)
-            pcall(function()
-                local VU = game:GetService("VirtualUser")
-                VU:CaptureController()
-                VU:ClickButton1(Vector2.new(x,y))
-            end)
-        end)
-    end)
-    return true
+    getgenv().DragonstormPhysicalClick = DragonstormPhysicalClick
+    print("[Fix] DragonstormPhysicalClick desativado (sem clique físico)")
 end
-getgenv().DragonstormPhysicalClick = DragonstormPhysicalClick
 
--- Spam principal EXATO DO VIDEO: Remote + Activate juntos
+-- 2. Reescreve SpamGunDragonStorm pra ser 100% remote
 getgenv().SpamGunDragonStorm = function(targetPart)
-    local plr = game.Players.LocalPlayer
-    local char = plr.Character
+    local char = game.Players.LocalPlayer.Character
     if not char then return end
     local tool = char:FindFirstChild("Dragonstorm")
     if not tool then return end
     if not targetPart then return end
-
+    
     local targetPos
     if typeof(targetPart) == "Instance" then
-        if targetPart:IsA("BasePart") then targetPos = targetPart.Position
+        if targetPart:IsA("BasePart") then
+            targetPos = targetPart.Position
         elseif targetPart:IsA("Model") then
             local hrp = targetPart:FindFirstChild("HumanoidRootPart") or targetPart.PrimaryPart
             targetPos = hrp and hrp.Position or targetPart:GetPivot().Position
         end
-    elseif typeof(targetPart) == "Vector3" then targetPos = targetPart
-    elseif typeof(targetPart) == "CFrame" then targetPos = targetPart.Position
+    elseif typeof(targetPart) == "Vector3" then
+        targetPos = targetPart
+    elseif typeof(targetPart) == "CFrame" then
+        targetPos = targetPart.Position
+    else
+        return
     end
+    
     if not targetPos then return end
-
-    local now = os.clock()
-    if now - (getgenv().__DragonstormLastShot or 0) < (getgenv().DragonstormRemoteDelay or 0.12) then return end
-    getgenv().__DragonstormLastShot = now
-
-    getgenv().AimPos = CFrame.new(targetPos)
-
-    -- CLIQUE DO VIDEO: Activate + Remote (sem travar)
-    pcall(function() tool:Activate() end)
-
-    -- Validator
+    
+    -- Validação anti-reload
+    local reloading = false
     pcall(function()
-        local cc = plr.PlayerScripts:FindFirstChild("Controllers") and plr.PlayerScripts.Controllers:FindFirstChild("CombatController")
-        if not cc then return end
-        local mod = require(cc)
-        if not mod.Attack then return end
-        local up = getupvalues and getupvalues(mod.Attack)
-        if not up or not up[9] then return end
-        local l = up[9]
-        local I = debug.getupvalue(l, 15)
-        local _ = debug.getupvalue(l, 13)
-        local o = debug.getupvalue(l, 16)
-        local V = debug.getupvalue(l, 17)
-        local N = debug.getupvalue(l, 14)
-        local y = debug.getupvalue(l, 12)
-        if not I or not _ then return end
-        local Q2 = y * _
-        local d2 = ((N * _ + y * I) % o * o + Q2) % V
-        local N2 = math.floor(d2 / o)
-        local y2 = d2 - N2 * o
-        local data = string.pack("ii", N2, y2)
-        local validator = game:GetService("ReplicatedStorage").Remotes:FindFirstChild("Validator")
-        if validator then validator:FireServer(data) end
-    end)
-
-    -- Remote que atira (principal)
-    pcall(function()
-        local net = game:GetService("ReplicatedStorage").Modules.Net
-        local shoot = net:FindFirstChild("RE/ShootGunEvent")
-        if shoot then
-            local hit = nil
-            if typeof(targetPart) == "Instance" then
-                if targetPart:IsA("BasePart") then hit = targetPart
-                else hit = targetPart:FindFirstChild("HumanoidRootPart") end
-            end
-            if hit then shoot:FireServer(targetPos, {hit}) else shoot:FireServer(targetPos, {}) end
+        local CombatUtil = require(game:GetService("ReplicatedStorage").Modules.CombatUtil)
+        if CombatUtil and CombatUtil.IsGunReloading then
+            reloading = CombatUtil:IsGunReloading(tool)
         end
     end)
-
+    if reloading then return end
+    
+    -- Cooldown pequeno pra não floodar remote
+    local now = os.clock()
+    getgenv().__DragonstormLastShot = getgenv().__DragonstormLastShot or 0
+    if now - getgenv().__DragonstormLastShot < (getgenv().DragonstormRemoteDelay or 0.08) then
+        return
+    end
+    getgenv().__DragonstormLastShot = now
+    
+    -- Mira
+    getgenv().AimPos = CFrame.new(targetPos)
+    
+    -- REMOTES ONLY - Sem VirtualInputManager, sem tool:Activate(), sem mouse
+    pcall(function()
+        -- Validator2 (anti-cheat do jogo precisa disso)
+        local CombatController = require(game.Players.LocalPlayer.PlayerScripts.Controllers.CombatController)
+        local attackFunc = require(game:GetService("ReplicatedStorage").Controllers.CombatController)
+        -- tenta pegar o upvalue do validator
+        local l = getupvalues and getupvalues(CombatController.Attack)[9] or nil
+        if l then
+            local I = debug.getupvalue(l, 15)
+            local _ = debug.getupvalue(l, 13)
+            local o = debug.getupvalue(l, 16)
+            local V = debug.getupvalue(l, 17)
+            local N = debug.getupvalue(l, 14)
+            local y = debug.getupvalue(l, 12)
+            local P = debug.getupvalue(l, 18)
+            local Q2 = y * _
+            local d2 = ((N * _ + y * I) % o * o + Q2) % V
+            N = math.floor(d2 / o)
+            y = d2 - N * o
+            P = P + 1
+            debug.setupvalue(l, 15, I)
+            debug.setupvalue(l, 13, _)
+            debug.setupvalue(l, 16, o)
+            debug.setupvalue(l, 17, V)
+            debug.setupvalue(l, 14, N)
+            debug.setupvalue(l, 12, y)
+            debug.setupvalue(l, 18, P)
+            game:GetService("ReplicatedStorage").Remotes.Validator2:FireServer(math.floor(d2 / V * 16777215), P)
+        end
+    end)
+    
+    -- Remote principal que atira
+    pcall(function()
+        local args = {targetPos, {targetPart}}
+        -- Se targetPart for Vector3, manda só posição
+        if typeof(targetPart) == "Vector3" then
+            args = {targetPos, {}}
+        end
+        game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RE/ShootGunEvent"):FireServer(unpack(args))
+        -- Alternativa: game.ReplicatedStorage.Remotes.Validator:FireServer etc já está no validator acima
+    end)
+    
+    -- Segunda tentativa com remote direto (alguns executors precisam)
     pcall(function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("ShootGun", targetPos)
     end)
-
-    -- Click fisico logo depois (igual video)
-    DragonstormPhysicalClick(true, "Dragonstorm")
 end
 
-print("[Video Click] Fix aplicado - Igual do video, 0.12s spam hibrido!")
+print("[Dragonstorm Fix] SpamGunDragonStorm reescrito - REMOTE ONLY!")
+
+-- 3. Também corrige ShootM1 pra não chamar o clique físico quando for Dragonstorm
+if ShootM1 then
+    local oldShoot = ShootM1
+    function ShootM1(E)
+        local char = game.Players.LocalPlayer.Character
+        if not char or not E then return false end
+        local gunName = NameWeapon and NameWeapon("Gun") or "Dragonstorm"
+        local gun = char:FindFirstChild(gunName)
+        if not gun then
+            if EquipOnlyIfNeeded then EquipOnlyIfNeeded(gunName, 1.5) end
+            return false
+        end
+        -- Se for Dragonstorm, NÃO chama DragonstormPhysicalClick
+        if gunName == "Dragonstorm" then
+            -- vai direto pro remote
+            local targetPos
+            if typeof(E) == "Instance" then
+                if E:IsA("BasePart") then targetPos = E.Position
+                elseif E:IsA("Model") then
+                    local hrp = E:FindFirstChild("HumanoidRootPart") or E.PrimaryPart
+                    targetPos = hrp and hrp.Position or E:GetPivot().Position
+                end
+            elseif typeof(E) == "Vector3" then targetPos = E
+            elseif typeof(E) == "CFrame" then targetPos = E.Position
+            end
+            if targetPos then
+                getgenv().SpamGunDragonStorm(E)
+            end
+            return true
+        end
+        -- Pra outras guns, mantém original
+        return oldShoot(E)
+    end
+    print("[Fix] ShootM1 corrigido pra Dragonstorm remote only")
+end
+
+-- 4. Corrige UseDragonstormAllSeaEvents e UseDragonstormSkill pra não usar clique
+if UseDragonstormAllSeaEvents then
+    local oldAll = UseDragonstormAllSeaEvents
+    function UseDragonstormAllSeaEvents(Part)
+        if not Part or not Part.Parent then return end
+        if not EquipOnlyIfNeeded or not EquipOnlyIfNeeded("Dragonstorm", 1.0) then
+            -- Tenta equipar, se não tiver ainda sai
+            pcall(function() game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("LoadItem", "Dragonstorm") end)
+            return
+        end
+        -- NÃO chama DragonstormPhysicalClick()
+        getgenv().SpamGunDragonStorm(Part)
+    end
+end
+
+-- 5. Config extra: delay menor = atira mais rápido só via remote
+getgenv().DragonstormRemoteDelay = 0.06 -- 60ms entre tiros, ajusta se quiser (0.05 mais rápido, 0.1 mais seguro)
+getgenv().DSClickInterval = 9999 -- desativa intervalo do clique antigo
+getgenv().__DSClickLast = math.huge
+
+print("[Dragonstorm Fix] ✅ Tudo remote only! Sem mouse, sem toque, sem VirtualUser!")
+print("[Dragonstorm Fix] Delay atual: "..getgenv().DragonstormRemoteDelay.."s - Ajusta com getgenv().DragonstormRemoteDelay = 0.08 se tomar kick")
+
+-- Restaura os toggles ativos (UI + callback) pelo mesmo caminho do clique manual.
+task.spawn(function()
+    task.wait()
+    if A and A.RestoreSavedToggles then A.RestoreSavedToggles() end
+    pcall(function() if getgenv().NexoraLoadingFinish then getgenv().NexoraLoadingFinish() end end)
+end)
