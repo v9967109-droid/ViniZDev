@@ -2135,65 +2135,16 @@ function Nexora.CreateMain(config)
     }, floatGui)
     reopen:SetAttribute("NexoraKeepColor", true)
     make("UICorner", {CornerRadius=UDim.new(0, 18)}, reopen)
-    local stroke = make("UIStroke", {Color=Color3.fromRGB(0, 140, 255), Thickness=2.5, Transparency=0.1}, reopen)
-    reopen.ClipsDescendants = true
-    -- Glow interno 100% dentro
-    local innerGlow = make("Frame", {
-        Name="InnerGlow",
-        BackgroundColor3=Color3.fromRGB(0, 140, 255),
-        BackgroundTransparency=0.1,
-        Size=UDim2.new(1, 0, 1, 0),
-        Position=UDim2.new(0, 0, 0, 0),
-        BorderSizePixel=0,
-        ZIndex=90
-    }, reopen)
-    make("UICorner", {CornerRadius=UDim.new(0, 18)}, innerGlow)
-    -- Raios no botao inteiro (dentro)
-    local rayBtnL = make("Frame", {BackgroundColor3=Color3.fromRGB(80, 180, 255), BackgroundTransparency=0.05, Size=UDim2.new(0, 2, 0, 12), Position=UDim2.new(0, 2, 0.5, -6), BorderSizePixel=0, ZIndex=91}, reopen)
-    local rayBtnR = make("Frame", {BackgroundColor3=Color3.fromRGB(80, 180, 255), BackgroundTransparency=0.05, Size=UDim2.new(0, 2, 0, 12), Position=UDim2.new(1, -4, 0.5, -6), BorderSizePixel=0, ZIndex=91}, reopen)
-    local rayBtnT = make("Frame", {BackgroundColor3=Color3.fromRGB(0, 140, 255), BackgroundTransparency=0.05, Size=UDim2.new(0, 12, 0, 2), Position=UDim2.new(0.5, -6, 0, 2), BorderSizePixel=0, ZIndex=91}, reopen)
-    local rayBtnB = make("Frame", {BackgroundColor3=Color3.fromRGB(0, 140, 255), BackgroundTransparency=0.05, Size=UDim2.new(0, 12, 0, 2), Position=UDim2.new(0.5, -6, 1, -4), BorderSizePixel=0, ZIndex=91}, reopen)
-    make("UICorner", {CornerRadius=UDim.new(1,0)}, rayBtnL)
-    make("UICorner", {CornerRadius=UDim.new(1,0)}, rayBtnR)
-    make("UICorner", {CornerRadius=UDim.new(1,0)}, rayBtnT)
-    make("UICorner", {CornerRadius=UDim.new(1,0)}, rayBtnB)
-    task.spawn(function()
-        local TS = game:GetService("TweenService")
-        while reopen.Parent do
-            pcall(function()
-                local t1 = TS:Create(stroke, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency=0.1, Color=Color3.fromRGB(100, 200, 255)})
-                local t2 = TS:Create(innerGlow, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.055})
-                t1:Play(); t2:Play()
-                for _, r in ipairs({rayBtnL, rayBtnR, rayBtnT, rayBtnB}) do TS:Create(r, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.05}):Play() end
-            end)
-            task.wait(0.8)
-            pcall(function()
-                local t1 = TS:Create(stroke, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency=0.1, Color=Color3.fromRGB(0, 140, 255)})
-                local t2 = TS:Create(innerGlow, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.1})
-                t1:Play(); t2:Play()
-                for _, r in ipairs({rayBtnL, rayBtnR, rayBtnT, rayBtnB}) do TS:Create(r, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.05}):Play() end
-            end)
-            task.wait(0.8)
-        end
-    end)
-    -- Icone N com raios realistas 100% dentro (24x24)
+    make("UIStroke", {Color=Color3.fromRGB(60, 60, 65), Thickness=1, Transparency=0.3}, reopen)
+    -- Icone N pulsando (so o icone)
     local iconFrame = make("Frame", {
         BackgroundColor3=Color3.fromRGB(35, 35, 45),
         Size=UDim2.new(0, 24, 0, 24),
         Position=UDim2.new(0, 6, 0.5, -12),
         BorderSizePixel=0,
-        ClipsDescendants=true,
         ZIndex=101
     }, reopen)
     make("UICorner", {CornerRadius=UDim.new(1,0)}, iconFrame)
-    -- 4 raios pequenos dentro do N
-    local nRay1 = make("Frame", {BackgroundColor3=Color3.fromRGB(80, 180, 255), BackgroundTransparency=0.05, Size=UDim2.new(0, 1, 0, 8), Position=UDim2.new(0.5, -0.5, 0, 1), BorderSizePixel=0, ZIndex=99}, iconFrame)
-    local nRay2 = make("Frame", {BackgroundColor3=Color3.fromRGB(80, 180, 255), BackgroundTransparency=0.05, Size=UDim2.new(0, 1, 0, 8), Position=UDim2.new(0.5, -0.5, 1, -9), BorderSizePixel=0, ZIndex=99}, iconFrame)
-    local nRay3 = make("Frame", {BackgroundColor3=Color3.fromRGB(80, 180, 255), BackgroundTransparency=0.05, Size=UDim2.new(0, 8, 0, 1), Position=UDim2.new(0, 1, 0.5, -0.5), BorderSizePixel=0, ZIndex=99}, iconFrame)
-    local nRay4 = make("Frame", {BackgroundColor3=Color3.fromRGB(80, 180, 255), BackgroundTransparency=0.05, Size=UDim2.new(0, 8, 0, 1), Position=UDim2.new(1, -9, 0.5, -0.5), BorderSizePixel=0, ZIndex=99}, iconFrame)
-    local nRay5 = make("Frame", {BackgroundColor3=Color3.fromRGB(0, 140, 255), BackgroundTransparency=0.05, Size=UDim2.new(0, 1, 0, 6), Position=UDim2.new(0.5, -0.5, 0.5, -3), Rotation=45, BorderSizePixel=0, ZIndex=99}, iconFrame)
-    local nRay6 = make("Frame", {BackgroundColor3=Color3.fromRGB(0, 140, 255), BackgroundTransparency=0.05, Size=UDim2.new(0, 1, 0, 6), Position=UDim2.new(0.5, -0.5, 0.5, -3), Rotation=-45, BorderSizePixel=0, ZIndex=99}, iconFrame)
-    -- N azul
     local iconText = make("TextLabel", {
         BackgroundTransparency=1,
         Size=UDim2.new(1, 0, 1, 0),
@@ -2206,19 +2157,18 @@ function Nexora.CreateMain(config)
         ZIndex=103
     }, iconFrame)
     make("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 140, 255))}, iconText)
+    -- So o N pulsa, sem raios no botao
     task.spawn(function()
         local TS = game:GetService("TweenService")
-        while iconFrame.Parent do
+        while iconText.Parent do
             pcall(function()
-                TS:Create(iconText, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize=20, TextColor3=Color3.fromRGB(120, 210, 255)}):Play()
-                for _, r in ipairs({nRay1, nRay2, nRay3, nRay4, nRay5, nRay6}) do TS:Create(r, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.1}):Play() end
+                TS:Create(iconText, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize=21, TextColor3=Color3.fromRGB(120, 210, 255), TextStrokeTransparency=0}):Play()
             end)
-            task.wait(0.7)
+            task.wait(0.8)
             pcall(function()
-                TS:Create(iconText, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize=18, TextColor3=Color3.fromRGB(0, 140, 255)}):Play()
-                for _, r in ipairs({nRay1, nRay2, nRay3, nRay4, nRay5, nRay6}) do TS:Create(r, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.05}):Play() end
+                TS:Create(iconText, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize=18, TextColor3=Color3.fromRGB(0, 140, 255), TextStrokeTransparency=0.3}):Play()
             end)
-            task.wait(0.7)
+            task.wait(0.8)
         end
     end)
     local iconImg = make("ImageLabel", {
@@ -2570,7 +2520,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
             local head=make("TextLabel", {Size=UDim2.new(1,0,0,22),BackgroundTransparency=1,Text=sectionName,TextColor3=Color3.fromRGB(245,245,250),Font=Enum.Font.GothamBold,TextSize=12,TextXAlignment=Enum.TextXAlignment.Left},card)
             make("UIPadding", {PaddingLeft=UDim.new(0,10)}, head)
             do local hb=make("Frame", {Position=UDim2.new(0,-10,.5,-7),Size=UDim2.new(0,3,0,14),BackgroundColor3=C.gold,BorderSizePixel=0},head); corner(hb,2) end
-            make("Frame", {Size=UDim2.new(1,0,0,1), BackgroundColor3=Color3.fromRGB(255,255,255), BackgroundTransparency=0.1, BorderSizePixel=0}, card)
+            make("Frame", {Size=UDim2.new(1,0,0,1), BackgroundColor3=Color3.fromRGB(255,255,255), BackgroundTransparency=0.92, BorderSizePixel=0}, card)
             local Section={}
             local function row(height)
                 return make("Frame", {Size=UDim2.new(1,0,0,height),BackgroundTransparency=1},card)
@@ -29259,12 +29209,12 @@ rawset(_G, "RecoveredFunction_0276", RecoveredFunction_0276)
 end
 
 do
-local function RecoveredFunction_0287(...)local __args = {...};local b = __args[1];local Z = __args[5];return function()local Z=GetEspFruit();if not Z then return;end;local F,c=GetFruitName(Z),Z:FindFirstChild("Handle");if not c then return;end;local l=Instance.new("IntValue");l.Name="Ignored";l.Parent=c;local l,H=({["Leopard Fruit"]=Color3.fromRGB(255,170,0),["Dragon (East) Fruit"]=Color3.fromRGB(255,0,0),["Dragon (West) Fruit"]=Color3.fromRGB(255,80,80),["Kitsune Fruit"]=Color3.fromRGB(200,100,255),["Spirit Fruit"]=Color3.fromRGB(120,200,255),["Venom Fruit"]=Color3.fromRGB(180,60,200),["Dough Fruit"]=Color3.fromRGB(255,220,180),["Light Fruit"]=Color3.fromRGB(255,255,150)})[F]or(Color3.fromRGB(255,255,255)),Drawing.new("Text");H.Visible=false;H.Transparency=1;H.Text=F;H.Color=l;H.Size=20;H.Outline=true;H.OutlineColor=Color3.fromRGB(0,0,0);H.Center=true;H.Font=2;local M=Drawing.new("Square");M.Visible=false;M.Filled=true;M.Color=Color3.fromRGB(0,0,0);M.Transparency=0.1;spawn(function()repeat task.wait();if c then local S,Q=workspace.CurrentCamera:WorldToViewportPoint(c.Position);if Q then H.Text=F.." ["..math.round(b[1]:DistanceFromCharacter(c.Position)).."m]";H.Position=Vector2.new(S.X,S.Y-20);H.Color=l;H.Visible=true;local b=H.TextBounds;M.Position=Vector2.new(H.Position.X-b.X/-2,H.Position.Y-2);M.Size=Vector2.new(b.X+8,b.Y+4);M.Visible=true;else H.Visible=false;M.Visible=false;end;end;until not Z or not Z.Parent or not c.Parent or not Settings["ESP Fruit"];H:Remove();M:Remove();if c:FindFirstChild("Ignored")then c.Ignored:Destroy();end;end);end;end
+local function RecoveredFunction_0287(...)local __args = {...};local b = __args[1];local Z = __args[5];return function()local Z=GetEspFruit();if not Z then return;end;local F,c=GetFruitName(Z),Z:FindFirstChild("Handle");if not c then return;end;local l=Instance.new("IntValue");l.Name="Ignored";l.Parent=c;local l,H=({["Leopard Fruit"]=Color3.fromRGB(255,170,0),["Dragon (East) Fruit"]=Color3.fromRGB(255,0,0),["Dragon (West) Fruit"]=Color3.fromRGB(255,80,80),["Kitsune Fruit"]=Color3.fromRGB(200,100,255),["Spirit Fruit"]=Color3.fromRGB(120,200,255),["Venom Fruit"]=Color3.fromRGB(180,60,200),["Dough Fruit"]=Color3.fromRGB(255,220,180),["Light Fruit"]=Color3.fromRGB(255,255,150)})[F]or(Color3.fromRGB(255,255,255)),Drawing.new("Text");H.Visible=false;H.Transparency=1;H.Text=F;H.Color=l;H.Size=20;H.Outline=true;H.OutlineColor=Color3.fromRGB(0,0,0);H.Center=true;H.Font=2;local M=Drawing.new("Square");M.Visible=false;M.Filled=true;M.Color=Color3.fromRGB(0,0,0);M.Transparency=0.4;spawn(function()repeat task.wait();if c then local S,Q=workspace.CurrentCamera:WorldToViewportPoint(c.Position);if Q then H.Text=F.." ["..math.round(b[1]:DistanceFromCharacter(c.Position)).."m]";H.Position=Vector2.new(S.X,S.Y-20);H.Color=l;H.Visible=true;local b=H.TextBounds;M.Position=Vector2.new(H.Position.X-b.X/-2,H.Position.Y-2);M.Size=Vector2.new(b.X+8,b.Y+4);M.Visible=true;else H.Visible=false;M.Visible=false;end;end;until not Z or not Z.Parent or not c.Parent or not Settings["ESP Fruit"];H:Remove();M:Remove();if c:FindFirstChild("Ignored")then c.Ignored:Destroy();end;end);end;end
 rawset(_G, "RecoveredFunction_0287", RecoveredFunction_0287)
 end
 
 do
-local function RecoveredFunction_0288()local Z=GetEspFruit();if not Z then return;end;local F,c=GetFruitName(Z),Z:FindFirstChild("Handle");if not c then return;end;local l=Instance.new("IntValue");l.Name="Ignored";l.Parent=c;local l,H=({["Leopard Fruit"]=Color3.fromRGB(255,170,0),["Dragon (East) Fruit"]=Color3.fromRGB(255,0,0),["Dragon (West) Fruit"]=Color3.fromRGB(255,80,80),["Kitsune Fruit"]=Color3.fromRGB(200,100,255),["Spirit Fruit"]=Color3.fromRGB(120,200,255),["Venom Fruit"]=Color3.fromRGB(180,60,200),["Dough Fruit"]=Color3.fromRGB(255,220,180),["Light Fruit"]=Color3.fromRGB(255,255,150)})[F]or(Color3.fromRGB(255,255,255)),Drawing.new("Text");H.Visible=false;H.Transparency=1;H.Text=F;H.Color=l;H.Size=20;H.Outline=true;H.OutlineColor=Color3.fromRGB(0,0,0);H.Center=true;H.Font=2;local M=Drawing.new("Square");M.Visible=false;M.Filled=true;M.Color=Color3.fromRGB(0,0,0);M.Transparency=0.1;spawn(function()repeat task.wait();if c then local S,Q=workspace.CurrentCamera:WorldToViewportPoint(c.Position);if Q then H.Text=F.." ["..math.round(b[1]:DistanceFromCharacter(c.Position)).."m]";H.Position=Vector2.new(S.X,S.Y-20);H.Color=l;H.Visible=true;local b=H.TextBounds;M.Position=Vector2.new(H.Position.X-b.X/-2,H.Position.Y-2);M.Size=Vector2.new(b.X+8,b.Y+4);M.Visible=true;else H.Visible=false;M.Visible=false;end;end;until not Z or not Z.Parent or not c.Parent or not Settings["ESP Fruit"];H:Remove();M:Remove();if c:FindFirstChild("Ignored")then c.Ignored:Destroy();end;end);end
+local function RecoveredFunction_0288()local Z=GetEspFruit();if not Z then return;end;local F,c=GetFruitName(Z),Z:FindFirstChild("Handle");if not c then return;end;local l=Instance.new("IntValue");l.Name="Ignored";l.Parent=c;local l,H=({["Leopard Fruit"]=Color3.fromRGB(255,170,0),["Dragon (East) Fruit"]=Color3.fromRGB(255,0,0),["Dragon (West) Fruit"]=Color3.fromRGB(255,80,80),["Kitsune Fruit"]=Color3.fromRGB(200,100,255),["Spirit Fruit"]=Color3.fromRGB(120,200,255),["Venom Fruit"]=Color3.fromRGB(180,60,200),["Dough Fruit"]=Color3.fromRGB(255,220,180),["Light Fruit"]=Color3.fromRGB(255,255,150)})[F]or(Color3.fromRGB(255,255,255)),Drawing.new("Text");H.Visible=false;H.Transparency=1;H.Text=F;H.Color=l;H.Size=20;H.Outline=true;H.OutlineColor=Color3.fromRGB(0,0,0);H.Center=true;H.Font=2;local M=Drawing.new("Square");M.Visible=false;M.Filled=true;M.Color=Color3.fromRGB(0,0,0);M.Transparency=0.4;spawn(function()repeat task.wait();if c then local S,Q=workspace.CurrentCamera:WorldToViewportPoint(c.Position);if Q then H.Text=F.." ["..math.round(b[1]:DistanceFromCharacter(c.Position)).."m]";H.Position=Vector2.new(S.X,S.Y-20);H.Color=l;H.Visible=true;local b=H.TextBounds;M.Position=Vector2.new(H.Position.X-b.X/-2,H.Position.Y-2);M.Size=Vector2.new(b.X+8,b.Y+4);M.Visible=true;else H.Visible=false;M.Visible=false;end;end;until not Z or not Z.Parent or not c.Parent or not Settings["ESP Fruit"];H:Remove();M:Remove();if c:FindFirstChild("Ignored")then c.Ignored:Destroy();end;end);end
 rawset(_G, "RecoveredFunction_0288", RecoveredFunction_0288)
 end
 
