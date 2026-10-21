@@ -6883,6 +6883,7 @@ function toTarget(P, e)
     local bestPortal = nil
 
     pcall(function()
+        do return end -- PORTAL REMOVIDO
         if Settings and Settings["Use Portals"] == false then return end
         local myPos = H.Position
         local targetPos = P.Position
@@ -6946,7 +6947,7 @@ function toTarget(P, e)
         end
 
         if bestPortal then
-            shouldUsePortal = true
+            shouldUsePortal = false -- REMOVIDO
             warn("[Nexora Portal] "..myIsland.." -> "..bestPortal.Dest.." = "..bestPortal.Name)
         end
     end)
@@ -12304,19 +12305,11 @@ function AutoQuestDojo()
 		SaveSettings("QuestDojo", true)
 		local y = GetNameDoubleQuest() or ""
 		if not t.PlayerGui.Main:FindFirstChild("Quest").Visible and typeof(y) == "string" then
-			-- NEXORA FIX: Mesmo tempo de pegar missao que tem nos Farms (0.8s parado no NPC + espera)
-			print("[Nexora] White Belt sem missao, indo pegar - aguardando 0.8s no NPC")
-			task.wait(0.8)
+			task.wait(10)
 			TakeQuestLevel()
-			task.wait(1.5)
-			-- Verifica se pegou, se nao, tenta de novo com tempo maior igual nos Farms (2s, 4s)
-			getgenv().__WhiteBeltQuestFails = (getgenv().__WhiteBeltQuestFails or 0) + 1
+			task.wait(1)
 			if not t.PlayerGui.Main:FindFirstChild("Quest").Visible then
-				local waitTime = math.min(2 * getgenv().__WhiteBeltQuestFails, 10)
-				print("[Nexora] Tentando pegar White Belt de novo em " .. waitTime .. "s")
-				task.wait(waitTime)
-			else
-				getgenv().__WhiteBeltQuestFails = 0
+				task.wait(75)
 			end
 		else
 			local P = DetectMob(y)
@@ -12652,9 +12645,7 @@ function AutoDragonHunter()
 					else
 						getgenv().QuestHunterDragon = "Hydra Enforcers"
 					end
-					-- NEXORA FIX: Tempo de 10s quando pegar missao + 35s pra nao farmar sem missao (Blade members)
 					getgenv().__DragonHunterMissionPickedAt = tick()
-					print("[Nexora] Missao Dragon Hunter pega: " .. tostring(getgenv().QuestHunterDragon) .. " - aguardando 10s")
 					task.wait(10)
 				else
 					getgenv().QuestHunterDragon = res.Text
@@ -12693,14 +12684,7 @@ function AutoDragonHunter()
 			until not y or not y.Parent or not Settings["Auto Quest Dragon Hunter"]
 			return
 		end
-		-- NEXORA FIX: Espera 35s total apos pegar missao pra nao matar NPC/arvore sem missao
-			if getgenv().__DragonHunterMissionPickedAt and tick() - getgenv().__DragonHunterMissionPickedAt < 35 then
-				local waitLeft = 35 - (tick() - getgenv().__DragonHunterMissionPickedAt)
-				if waitLeft > 0 then
-					print("[Nexora] Aguardando " .. math.floor(waitLeft) .. "s antes de farmar Blade members (anti bug sem missao)")
-					task.wait(waitLeft)
-				end
-			end
+		if getgenv().__DragonHunterMissionPickedAt and tick() - getgenv().__DragonHunterMissionPickedAt < 35 then task.wait(35 - (tick() - getgenv().__DragonHunterMissionPickedAt)) end
 		if string.find(getgenv().QuestHunterDragon, "Hydra Enforcers") then
 			local P = DetectMob("Hydra Enforcer")
 			if not P then
@@ -12733,10 +12717,6 @@ function AutoDragonHunter()
 				until not IsMobAlive(P) or not Settings["Auto Quest Dragon Hunter"] or y
 			end
 		elseif string.find(getgenv().QuestHunterDragon, "Venomous Assailants") then
-			-- Verifica tempo 35s tambem pra Venomous
-			if getgenv().__DragonHunterMissionPickedAt and tick() - getgenv().__DragonHunterMissionPickedAt < 35 then
-				task.wait(35 - (tick() - getgenv().__DragonHunterMissionPickedAt))
-			end
 			local P = DetectMob("Venomous Assailant")
 			if not P then
 				local Y = DetectPartSpawnMob("Venomous Assailant", true)
@@ -12768,10 +12748,6 @@ function AutoDragonHunter()
 				until not IsMobAlive(P) or not Settings["Auto Quest Dragon Hunter"] or y
 			end
 		elseif string.find(getgenv().QuestHunterDragon, "trees") then
-			-- Verifica tempo 35s tambem pra arvores
-			if getgenv().__DragonHunterMissionPickedAt and tick() - getgenv().__DragonHunterMissionPickedAt < 35 then
-				task.wait(35 - (tick() - getgenv().__DragonHunterMissionPickedAt))
-			end
 			local P, Y = workspace.CurrentCamera, DetectTree()
 			if Y then
 				Instance.new("IntValue", Y).Name = "Ignored"
@@ -16909,21 +16885,39 @@ function AutoBuyBoatBeastHunter()
 	return checkboat()
 end
 
+-- FIX: pega qualquer barco que você estiver sentado (seu ou de outro player)
+function getSeatedBoat()
+	local char = t.Character
+	if not char then return false end
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	if not hum or not hum.SeatPart then return false end
+	local seat = hum.SeatPart
+	if seat.Name ~= "VehicleSeat" and seat.Name ~= "Seat" then return false end
+	local boat = seat:FindFirstAncestorOfClass("Model")
+	if boat and boat:FindFirstChild("VehicleSeat", true) then
+		return boat
+	end
+	return false
+end
+
 function checkboatFind()
 	local y, P, Y = next, game:GetService("Workspace").Boats:GetChildren()
 	for H, H in y, P, Y do
 		if H:IsA("Model") then
-			if
-				H:FindFirstChild("Owner")
-				and t:DistanceFromCharacter(H.VehicleSeat.Position) < 10
-				and t.Character.Humanoid.SeatPart
-				and t.Character.Humanoid.SeatPart.Name == "VehicleSeat"
-				and H.Humanoid.Value > 0
-			then
+			local hum = t.Character and t.Character:FindFirstChildOfClass("Humanoid")
+			if hum and hum.SeatPart and hum.SeatPart:IsDescendantOf(H) and H:FindFirstChild("VehicleSeat") and H.Humanoid.Value > 0 then
 				return H
 			end
 		end
 	end
+	for H, H in y, P, Y do
+		if H:IsA("Model") and H:FindFirstChild("VehicleSeat") and H.Humanoid.Value > 0 then
+			if t:DistanceFromCharacter(H.VehicleSeat.Position) < 15 then
+				return H
+			end
+		end
+	end
+	return false
 end
 g, s, a, I = {}, next, game:GetService("ReplicatedStorage").RockGenerator.Rocks:GetChildren()
 for y, y in s, a, I do
@@ -18244,19 +18238,35 @@ BoatSettingSection.CreateSlider(
 	end
 )
 function checkSpeedboat()
-	local b, s = math.clamp(tonumber(Settings["Value Speed Boat"]) or 300, 0, 300), checkboat()
+	local b = math.clamp(tonumber(Settings["Value Speed Boat"]) or 300, 0, 300)
+	local seated = getSeatedBoat()
+	if seated then
+		local vs = seated:FindFirstChild("VehicleSeat", true)
+		if vs then
+			return seated
+		end
+	end
+	local found = checkboatFind()
+	if found then
+		return found
+	end
+	local s = checkboat()
 	if s then
 		local X = s:FindFirstChild("VehicleSeat")
-		if X and X.MaxSpeed + 1 < b then
+		if X then
 			return s
 		end
 	end
 	return false
 end
 function ChangeSpeedBoat()
-	local b, s = math.clamp(tonumber(Settings["Value Speed Boat"]) or 300, 0, 300), checkSpeedboat()
+	local b = math.clamp(tonumber(Settings["Value Speed Boat"]) or 300, 0, 300)
+	local s = checkSpeedboat()
 	if s then
-		s.VehicleSeat.MaxSpeed = math.clamp(b, 0, 300)
+		local vs = s:FindFirstChild("VehicleSeat", true) or s:FindFirstChild("VehicleSeat")
+		if vs then
+			vs.MaxSpeed = math.clamp(b, 0, 300)
+		end
 	end
 end
 BoatSettingSection.CreateToggle(
@@ -23303,8 +23313,26 @@ SettingsVolcanoSection.CreateDropdown(
 )
 FarmingVolcanoSection = VolcanoTab.CreateSection("Farming Volcano")
 function AutoCraftinMagnetVol()
-	-- "Ignore Craft [ Fully ]" afeta só o Fully Event; este toggle avulso sempre craftea.
 	if not CheckItemInventory("Volcanic Magnet") then
+		if CheckCountItem("Blaze Ember", 3) and not getgenv().QuestHunterDragon and not CheckCountItem("Blaze Ember", 15) then
+			local npc = workspace.NPCs:FindFirstChild("Dragon Hunter") or game:GetService("ReplicatedStorage").NPCs:FindFirstChild("Dragon Hunter")
+			if npc and npc:FindFirstChild("HumanoidRootPart") then
+				if game.Players.LocalPlayer:DistanceFromCharacter(npc.HumanoidRootPart.Position) > 12 then
+					toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 4))
+					return
+				else
+					pcall(function()
+						local req = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({ Context = "RequestQuest" })
+						if req and req.Text then
+							getgenv().QuestHunterDragon = req.Text
+							getgenv().__DragonHunterMissionPickedAt = tick()
+							task.wait(10)
+						end
+					end)
+				end
+			end
+			return
+		end
 		if not CheckCountItem("Scrap Metal", 10) then
 			local g = { "Jungle Pirate", "Musketeer Pirate" }
 			local f = DetectMob(g)
@@ -23487,9 +23515,7 @@ ToggleAutoCraftingVolcanicMagnet = FarmingVolcanoSection.CreateToggle(
 	{ Title = "Auto Crafting Volcanic Magnet", Desc = nil, Default = Settings["Auto Crafting Volcanic Magnet"] or false },
 	function(g)
 		if g then
-			-- NEXORA FIX: Mesmo deslocamento da Hydra que tem no Auto Dragon Treinar
 			getgenv().__HydraReady_Volcanic = false
-			getgenv().__HydraDestinationName_Volcanic = "Hydra Island / Dragon Dojo - Volcanic Magnet"
 			BananaMoveToDestination(CFrame.new(5661.5302734375, 1013.411315918, -334.9619140625), "Auto Crafting Volcanic Magnet", "__HydraReady_Volcanic", 100)
 			spawn(function()
 				while Settings["Auto Crafting Volcanic Magnet"] do
