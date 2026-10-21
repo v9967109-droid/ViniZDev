@@ -2585,18 +2585,35 @@ local fScale = make("UIScale", {Scale=1}, reopen)
             end
             function Section.CreateSlider(cfg, callback)
                 cfg=cfg or {}; local t=cfg.Title or "Slider"; local min=cfg.Min or cfg.MinValue or 0; local max=cfg.Max or cfg.MaxValue or 100; local val=math.clamp(cfg.Default or cfg.Value or min,min,max)
-                local r=row(51); label(make("Frame",{Size=UDim2.new(1,-65,0,22),BackgroundTransparency=1},r),t,11,C.text)
-                local num=label(make("Frame",{Position=UDim2.new(1,-58,0,0),Size=UDim2.new(0,58,0,22),BackgroundTransparency=1},r),val,11,C.gold); num.TextXAlignment=Enum.TextXAlignment.Right
-                local bar=make("Frame",{Position=UDim2.new(0,0,0,30),Size=UDim2.new(1,0,0,7),BackgroundColor3=C.panel2,BorderSizePixel=0},r); corner(bar,4)
-                local fill=make("Frame",{Size=UDim2.new((val-min)/math.max(1,max-min),0,1,0),BackgroundColor3=C.gold,BorderSizePixel=0},bar); corner(fill,4)
-                local hit=make("TextButton",{Size=UDim2.new(1,0,0,20),Position=UDim2.new(0,0,0,-6),BackgroundTransparency=1,Text="",TextTransparency=1},bar)
+                -- Row maior pra ficar igual Quantum Onyx
+                local r=row(52); 
+                label(make("Frame",{Size=UDim2.new(1,-70,0,22),BackgroundTransparency=1},r),t,11,C.text)
+                local num=label(make("Frame",{Position=UDim2.new(1,-65,0,0),Size=UDim2.new(0,65,0,22),BackgroundTransparency=1},r),val,11,C.gold); num.TextXAlignment=Enum.TextXAlignment.Right
+                -- Barra estilo Quantum: fundo cinza escuro, altura 6, cantos arredondados
+                local bar=make("Frame",{Position=UDim2.new(0,0,0,30),Size=UDim2.new(1,0,0,6),BackgroundColor3=Color3.fromRGB(45,45,55),BorderSizePixel=0},r); corner(bar,10)
+                -- Fill azul igual Quantum Onyx (0,140,255)
+                local fill=make("Frame",{Size=UDim2.new((val-min)/math.max(1,max-min),0,1,0),BackgroundColor3=Color3.fromRGB(0,140,255),BorderSizePixel=0},bar); corner(fill,10)
+                -- Bolinha branca (knob) igual da tua imagem Quantum
+                local knob=make("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new((val-min)/math.max(1,max-min),0,0.5,0),Size=UDim2.fromOffset(14,14),BackgroundColor3=Color3.fromRGB(255,255,255),BorderSizePixel=0},bar); corner(knob,10)
+                make("UIStroke",{Color=Color3.fromRGB(30,30,40),Thickness=1,Transparency=0.3},knob)
+                local hit=make("TextButton",{Size=UDim2.new(1,0,0,24),Position=UDim2.new(0,0,0,-9),BackgroundTransparency=1,Text="",TextTransparency=1},bar)
                 local opt
-                local function set(x) local ratio=math.clamp((x-bar.AbsolutePosition.X)/math.max(1,bar.AbsoluteSize.X),0,1); val=math.floor(min+(max-min)*ratio); fill.Size=UDim2.new(ratio,0,1,0); num.Text=tostring(val); if opt then opt.value=val end; if callback then pcall(callback,val) end end
+                local function set(x) 
+                    local ratio=math.clamp((x-bar.AbsolutePosition.X)/math.max(1,bar.AbsoluteSize.X),0,1); 
+                    val=math.floor(min+(max-min)*ratio); 
+                    fill.Size=UDim2.new(ratio,0,1,0); 
+                    knob.Position=UDim2.new(ratio,0,0.5,0);
+                    num.Text=tostring(val); 
+                    if opt then opt.value=val end; 
+                    if callback then pcall(callback,val) end 
+                end
                 opt=addOption(t,"slider",val,pageName,sectionName,callback)
                 opt._setValue = function(v)
                     val = math.clamp(tonumber(v) or min, min, max)
                     local ratio = (val-min)/math.max(1,max-min)
-                    fill.Size=UDim2.new(ratio,0,1,0); num.Text=tostring(val)
+                    fill.Size=UDim2.new(ratio,0,1,0); 
+                    knob.Position=UDim2.new(ratio,0,0.5,0);
+                    num.Text=tostring(val)
                 end
                 hit.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then set(i.Position.X) end end)
                 hit.InputChanged:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch then if UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then set(i.Position.X) end end end)
@@ -15186,6 +15203,13 @@ SettingSeaEventSection.CreateDropdown(
 		SaveSettings("Select Boat", l)
 	end
 )
+
+-- === SLIDES IGUAL QUANTUM ONYX (todos) ===
+SettingSeaEventSection.CreateSlider(
+	{ Title = "Boat Speed", Min = 0, Max = 300, Default = Settings["Boat Speed"] or Settings["Value Speed Boat"] or 275, Precise = true },
+	function(v) SaveSettings("Boat Speed", v) SaveSettings("Value Speed Boat", v) SaveSettings("Speed Boat Auto Drive", v) end
+)
+
 SettingSeaEventSection.CreateDropdown(
 	{
 		Title = "Select Weapons Use Skill",
@@ -29489,24 +29513,219 @@ end)()
 
 
 
+-- DRAGONSTORM REMOTE ONLY FIX
+-- Esse fix faz a Dragonstorm atirar SÓ via remotes, sem clique físico na tela
+-- Cole DEPOIS do Nexora Hub carregar ou injete na source
+
+task.wait(0.5)
+
+print("[Dragonstorm Fix] Aplicando modo REMOTE ONLY...")
+
+-- 1. Desativa completamente o clique físico (o que causa detecção e bug no celular)
+if DragonstormPhysicalClick then
+    _G.Old_DragonstormPhysicalClick = DragonstormPhysicalClick
+    function DragonstormPhysicalClick(force)
+        -- Não faz mais mouse move, SendMouseButtonEvent, SendTouchEvent, VirtualUser Click
+        -- Retorna true só pra não travar o fluxo
+        return true
+    end
+    getgenv().DragonstormPhysicalClick = DragonstormPhysicalClick
+    print("[Fix] DragonstormPhysicalClick desativado (sem clique físico)")
+end
+
+-- 2. Reescreve SpamGunDragonStorm pra ser 100% remote
+getgenv().SpamGunDragonStorm = function(targetPart)
+    local char = game.Players.LocalPlayer.Character
+    if not char then return end
+    local tool = char:FindFirstChild("Dragonstorm")
+    if not tool then return end
+    if not targetPart then return end
+    
+    local targetPos
+    if typeof(targetPart) == "Instance" then
+        if targetPart:IsA("BasePart") then
+            targetPos = targetPart.Position
+        elseif targetPart:IsA("Model") then
+            local hrp = targetPart:FindFirstChild("HumanoidRootPart") or targetPart.PrimaryPart
+            targetPos = hrp and hrp.Position or targetPart:GetPivot().Position
+        end
+    elseif typeof(targetPart) == "Vector3" then
+        targetPos = targetPart
+    elseif typeof(targetPart) == "CFrame" then
+        targetPos = targetPart.Position
+    else
+        return
+    end
+    
+    if not targetPos then return end
+    
+    -- Validação anti-reload
+    local reloading = false
+    pcall(function()
+        local CombatUtil = require(game:GetService("ReplicatedStorage").Modules.CombatUtil)
+        if CombatUtil and CombatUtil.IsGunReloading then
+            reloading = CombatUtil:IsGunReloading(tool)
+        end
+    end)
+    if reloading then return end
+    
+    -- Cooldown pequeno pra não floodar remote
+    local now = os.clock()
+    getgenv().__DragonstormLastShot = getgenv().__DragonstormLastShot or 0
+    if now - getgenv().__DragonstormLastShot < (getgenv().DragonstormRemoteDelay or 0.08) then
+        return
+    end
+    getgenv().__DragonstormLastShot = now
+    
+    -- Mira
+    getgenv().AimPos = CFrame.new(targetPos)
+    
+    -- REMOTES ONLY - Sem VirtualInputManager, sem tool:Activate(), sem mouse
+    pcall(function()
+        -- Validator2 (anti-cheat do jogo precisa disso)
+        local CombatController = require(game.Players.LocalPlayer.PlayerScripts.Controllers.CombatController)
+        local attackFunc = require(game:GetService("ReplicatedStorage").Controllers.CombatController)
+        -- tenta pegar o upvalue do validator
+        local l = getupvalues and getupvalues(CombatController.Attack)[9] or nil
+        if l then
+            local I = debug.getupvalue(l, 15)
+            local _ = debug.getupvalue(l, 13)
+            local o = debug.getupvalue(l, 16)
+            local V = debug.getupvalue(l, 17)
+            local N = debug.getupvalue(l, 14)
+            local y = debug.getupvalue(l, 12)
+            local P = debug.getupvalue(l, 18)
+            local Q2 = y * _
+            local d2 = ((N * _ + y * I) % o * o + Q2) % V
+            N = math.floor(d2 / o)
+            y = d2 - N * o
+            P = P + 1
+            debug.setupvalue(l, 15, I)
+            debug.setupvalue(l, 13, _)
+            debug.setupvalue(l, 16, o)
+            debug.setupvalue(l, 17, V)
+            debug.setupvalue(l, 14, N)
+            debug.setupvalue(l, 12, y)
+            debug.setupvalue(l, 18, P)
+            game:GetService("ReplicatedStorage").Remotes.Validator2:FireServer(math.floor(d2 / V * 16777215), P)
+        end
+    end)
+    
+    -- Remote principal que atira
+    pcall(function()
+        local args = {targetPos, {targetPart}}
+        -- Se targetPart for Vector3, manda só posição
+        if typeof(targetPart) == "Vector3" then
+            args = {targetPos, {}}
+        end
+        game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RE/ShootGunEvent"):FireServer(unpack(args))
+        -- Alternativa: game.ReplicatedStorage.Remotes.Validator:FireServer etc já está no validator acima
+    end)
+    
+    -- Segunda tentativa com remote direto (alguns executors precisam)
+    pcall(function()
+        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("ShootGun", targetPos)
+    end)
+end
+
+print("[Dragonstorm Fix] SpamGunDragonStorm reescrito - REMOTE ONLY!")
+
+-- 3. Também corrige ShootM1 pra não chamar o clique físico quando for Dragonstorm
+if ShootM1 then
+    local oldShoot = ShootM1
+    function ShootM1(E)
+        local char = game.Players.LocalPlayer.Character
+        if not char or not E then return false end
+        local gunName = NameWeapon and NameWeapon("Gun") or "Dragonstorm"
+        local gun = char:FindFirstChild(gunName)
+        if not gun then
+            if EquipOnlyIfNeeded then EquipOnlyIfNeeded(gunName, 1.5) end
+            return false
+        end
+        -- Se for Dragonstorm, NÃO chama DragonstormPhysicalClick
+        if gunName == "Dragonstorm" then
+            -- vai direto pro remote
+            local targetPos
+            if typeof(E) == "Instance" then
+                if E:IsA("BasePart") then targetPos = E.Position
+                elseif E:IsA("Model") then
+                    local hrp = E:FindFirstChild("HumanoidRootPart") or E.PrimaryPart
+                    targetPos = hrp and hrp.Position or E:GetPivot().Position
+                end
+            elseif typeof(E) == "Vector3" then targetPos = E
+            elseif typeof(E) == "CFrame" then targetPos = E.Position
+            end
+            if targetPos then
+                getgenv().SpamGunDragonStorm(E)
+            end
+            return true
+        end
+        -- Pra outras guns, mantém original
+        return oldShoot(E)
+    end
+    print("[Fix] ShootM1 corrigido pra Dragonstorm remote only")
+end
+
+-- 4. Corrige UseDragonstormAllSeaEvents e UseDragonstormSkill pra não usar clique
+if UseDragonstormAllSeaEvents then
+    local oldAll = UseDragonstormAllSeaEvents
+    function UseDragonstormAllSeaEvents(Part)
+        if not Part or not Part.Parent then return end
+        if not EquipOnlyIfNeeded or not EquipOnlyIfNeeded("Dragonstorm", 1.0) then
+            -- Tenta equipar, se não tiver ainda sai
+            pcall(function() game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("LoadItem", "Dragonstorm") end)
+            return
+        end
+        -- NÃO chama DragonstormPhysicalClick()
+        getgenv().SpamGunDragonStorm(Part)
+    end
+end
+
+-- 5. Config extra: delay menor = atira mais rápido só via remote
+getgenv().DragonstormRemoteDelay = 0.06 -- 60ms entre tiros, ajusta se quiser (0.05 mais rápido, 0.1 mais seguro)
+getgenv().DSClickInterval = 9999 -- desativa intervalo do clique antigo
+getgenv().__DSClickLast = math.huge
+
+print("[Dragonstorm Fix] ✅ Tudo remote only! Sem mouse, sem toque, sem VirtualUser!")
+print("[Dragonstorm Fix] Delay atual: "..getgenv().DragonstormRemoteDelay.."s - Ajusta com getgenv().DragonstormRemoteDelay = 0.08 se tomar kick")
+
+-- Restaura os toggles ativos (UI + callback) pelo mesmo caminho do clique manual.
+task.spawn(function()
+    task.wait()
+    if A and A.RestoreSavedToggles then A.RestoreSavedToggles() end
+    pcall(function() if getgenv().NexoraLoadingFinish then getgenv().NexoraLoadingFinish() end end)
+end)
 
 
--- ===================== FINAL FIX: REMOTE + ACTIVATE SEM MOUSE, LOOP INFINITO =====================
--- Problema: remote sozinho não ataca, precisa de tool:Activate()
--- Solução: Activate() + Remote (sem nenhum SendMouseButtonEvent)
-
+-- ===================== DRAGONSTORM CLICK ESTILO MELEE SEM MOUSE =====================
 getgenv().PhysicalGunClickInterval = 9999
 getgenv().DSClickInterval = 9999
-getgenv().DragonstormRemoteDelay = 0.10
+getgenv().DragonstormRemoteDelay = 0.11
 getgenv().__DragonstormLastShot = 0
-
-function DragonstormPhysicalClick(force, toolName)
-    -- ZERO MOUSE
-    return true
-end
+function DragonstormPhysicalClick() return true end
 getgenv().DragonstormPhysicalClick = DragonstormPhysicalClick
-
--- NOVA SpamGunDragonStorm que funciona sozinha em loop
+local function ClickMeleeStyle()
+    pcall(function()
+        local VU = game:GetService("VirtualUser")
+        VU:CaptureController()
+        VU:ClickButton1(Vector2.new(-1, 1))
+    end)
+end
+local function FastAttackGun()
+    pcall(function()
+        local CombatFramework = require(game:GetService("ReplicatedStorage").CombatFramework)
+        local controller = CombatFramework.activeController
+        if controller then
+            controller.hitboxMagnitude = 55
+            controller.timeToNextAttack = 0
+            controller.attacking = false
+            controller.increment = 3
+            controller.blocking = false
+            controller.timeToNextBlock = 0
+            if controller.attack then controller:attack() end
+        end
+    end)
+end
 getgenv().SpamGunDragonStorm = function(targetPart)
     local plr = game.Players.LocalPlayer
     local char = plr and plr.Character
@@ -29514,111 +29733,47 @@ getgenv().SpamGunDragonStorm = function(targetPart)
     local tool = char:FindFirstChild("Dragonstorm")
     if not tool then return end
     if not targetPart then return end
-
     local targetPos, hitPart
     if typeof(targetPart) == "Instance" then
-        if targetPart:IsA("BasePart") then
-            targetPos = targetPart.Position
-            hitPart = targetPart
+        if targetPart:IsA("BasePart") then targetPos = targetPart.Position hitPart = targetPart
         elseif targetPart:IsA("Model") then
             local hrp = targetPart:FindFirstChild("HumanoidRootPart") or targetPart.PrimaryPart
-            if hrp then
-                targetPos = hrp.Position
-                hitPart = hrp
-            else
-                targetPos = targetPart:GetPivot().Position
-            end
+            if hrp then targetPos = hrp.Position hitPart = hrp else targetPos = targetPart:GetPivot().Position end
         end
-    elseif typeof(targetPart) == "Vector3" then
-        targetPos = targetPart
-    elseif typeof(targetPart) == "CFrame" then
-        targetPos = targetPart.Position
-    end
+    elseif typeof(targetPart) == "Vector3" then targetPos = targetPart
+    elseif typeof(targetPart) == "CFrame" then targetPos = targetPart.Position end
     if not targetPos then return end
-
     local now = os.clock()
-    if now - (getgenv().__DragonstormLastShot or 0) < (getgenv().DragonstormRemoteDelay or 0.10) then
-        return
-    end
+    if now - (getgenv().__DragonstormLastShot or 0) < 0.11 then return end
     getgenv().__DragonstormLastShot = now
-
     getgenv().AimPos = CFrame.new(targetPos)
-
-    -- 1) Activate da tool (ESSENCIAL pro remote funcionar sozinho)
-    pcall(function()
-        tool:Activate()
-    end)
-
-    -- 2) Validator (tenta, mas se falhar continua)
-    pcall(function()
-        local controllers = plr.PlayerScripts:FindFirstChild("Controllers")
-        local cc = controllers and controllers:FindFirstChild("CombatController")
-        if not cc then return end
-        local mod = require(cc)
-        if not mod.Attack then return end
-        local ups = getupvalues and getupvalues(mod.Attack)
-        if not ups or not ups[9] then return end
-        local l = ups[9]
-        local I = debug.getupvalue(l, 15)
-        local _ = debug.getupvalue(l, 13)
-        local o = debug.getupvalue(l, 16)
-        local V = debug.getupvalue(l, 17)
-        local N = debug.getupvalue(l, 14)
-        local y = debug.getupvalue(l, 12)
-        if not I or not _ then return end
-        local Q2 = y * _
-        local d2 = ((N * _ + y * I) % o * o + Q2) % V
-        local N2 = math.floor(d2 / o)
-        local y2 = d2 - N2 * o
-        local data = string.pack("ii", N2, y2)
-        local validator = game:GetService("ReplicatedStorage").Remotes:FindFirstChild("Validator")
-        if validator then validator:FireServer(data) end
-    end)
-
-    -- 3) Remote principal
+    ClickMeleeStyle()
+    FastAttackGun()
+    pcall(function() tool:Activate() end)
     pcall(function()
         local net = game:GetService("ReplicatedStorage").Modules.Net
         local shoot = net and net:FindFirstChild("RE/ShootGunEvent")
         if shoot then
-            if hitPart then
-                shoot:FireServer(targetPos, {hitPart})
-            else
-                shoot:FireServer(targetPos, {})
-            end
+            if hitPart then shoot:FireServer(targetPos, {hitPart}) else shoot:FireServer(targetPos, {}) end
         end
     end)
-
-    -- 4) Fallback
-    pcall(function()
-        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("ShootGun", targetPos)
-    end)
+    pcall(function() game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("ShootGun", targetPos) end)
 end
-
--- ShootM1 e AllSeaEvents usando só remote+activate
 if ShootM1 then
     local oldShoot = ShootM1
-    getgenv()._OldShootM1_Backup = oldShoot
     function ShootM1(E)
         local char = game.Players.LocalPlayer.Character
         if not char or not E then return false end
         local gunName = NameWeapon and NameWeapon("Gun") or "Dragonstorm"
-        if gunName == "Dragonstorm" then
-            getgenv().SpamGunDragonStorm(E)
-            return true
-        end
+        if gunName == "Dragonstorm" then getgenv().SpamGunDragonStorm(E) return true end
         return oldShoot(E)
     end
 end
-
 function UseDragonstormAllSeaEvents(Part)
     if not Part or not Part.Parent then return end
     local has = game.Players.LocalPlayer.Backpack:FindFirstChild("Dragonstorm") or (game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Dragonstorm"))
-    if not has then
-        pcall(function() game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("LoadItem", "Dragonstorm") end)
-        return
-    end
+    if not has then pcall(function() game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("LoadItem", "Dragonstorm") end) return end
     if not EquipOnlyIfNeeded or not EquipOnlyIfNeeded("Dragonstorm", 1.0) then return end
     getgenv().SpamGunDragonStorm(Part)
 end
-
-print("[Fix Final] DragonStorm SEM MOUSE mas COM Activate + Remote - Loop OK | ViniZDev")
+print("[Fix] Todos Slides Quantum Onyx + Melee Click | ViniZDev")
