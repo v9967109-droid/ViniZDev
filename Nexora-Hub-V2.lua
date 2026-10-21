@@ -2136,39 +2136,85 @@ function Nexora.CreateMain(config)
     reopen:SetAttribute("NexoraKeepColor", true)
     make("UICorner", {CornerRadius=UDim.new(0, 18)}, reopen)
     make("UIStroke", {Color=Color3.fromRGB(60, 60, 65), Thickness=1, Transparency=0.3}, reopen)
-    -- Icone N pulsando (so o icone)
+    -- Icone N TOP PREMIUM
     local iconFrame = make("Frame", {
-        BackgroundColor3=Color3.fromRGB(35, 35, 45),
-        Size=UDim2.new(0, 24, 0, 24),
-        Position=UDim2.new(0, 6, 0.5, -12),
+        BackgroundColor3=Color3.fromRGB(25, 25, 35),
+        Size=UDim2.new(0, 26, 0, 26),
+        Position=UDim2.new(0, 5, 0.5, -13),
         BorderSizePixel=0,
         ZIndex=101
     }, reopen)
     make("UICorner", {CornerRadius=UDim.new(1,0)}, iconFrame)
+    local iconStroke = make("UIStroke", {Color=Color3.fromRGB(0, 140, 255), Thickness=1.5, Transparency=0.2, ApplyStrokeMode=Enum.ApplyStrokeMode.Border}, iconFrame)
+    -- Glow atras do N
+    local nGlow = make("Frame", {
+        BackgroundColor3=Color3.fromRGB(0, 140, 255),
+        BackgroundTransparency=0.85,
+        Size=UDim2.new(0, 32, 0, 32),
+        Position=UDim2.new(0.5, -16, 0.5, -16),
+        BorderSizePixel=0,
+        ZIndex=100
+    }, iconFrame)
+    make("UICorner", {CornerRadius=UDim.new(1,0)}, nGlow)
+    -- Sombra
+    local nShadow = make("Frame", {
+        BackgroundColor3=Color3.fromRGB(0, 0, 0),
+        BackgroundTransparency=0.7,
+        Size=UDim2.new(0, 26, 0, 26),
+        Position=UDim2.new(0, 1, 0, 1),
+        BorderSizePixel=0,
+        ZIndex=99
+    }, iconFrame)
+    make("UICorner", {CornerRadius=UDim.new(1,0)}, nShadow)
+    -- N premium
     local iconText = make("TextLabel", {
         BackgroundTransparency=1,
         Size=UDim2.new(1, 0, 1, 0),
         Position=UDim2.new(0, 0, 0, 0),
         Text="N",
-        TextColor3=Color3.fromRGB(0, 140, 255),
+        TextColor3=Color3.fromRGB(255, 255, 255),
         Font=Enum.Font.GothamBlack,
-        TextSize=18,
-        TextStrokeTransparency=0.3,
-        ZIndex=103
+        TextSize=19,
+        TextStrokeTransparency=0,
+        ZIndex=104
     }, iconFrame)
-    make("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 140, 255))}, iconText)
-    -- So o N pulsa, sem raios no botao
+    local grad = make("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(120, 220, 255), Color3.fromRGB(0, 140, 255))}, iconText)
+    local stroke = make("UIStroke", {Color=Color3.fromRGB(0, 100, 200), Thickness=1.2, Transparency=0}, iconText)
+    -- Brilho extra no N
+    local highlight = make("Frame", {
+        BackgroundColor3=Color3.fromRGB(255, 255, 255),
+        BackgroundTransparency=0.8,
+        Size=UDim2.new(0.6, 0, 0, 2),
+        Position=UDim2.new(0.2, 0, 0.25, 0),
+        Rotation=-20,
+        BorderSizePixel=0,
+        ZIndex=105
+    }, iconText)
+    make("UICorner", {CornerRadius=UDim.new(1,0)}, highlight)
+    -- Animacao TOP
     task.spawn(function()
         local TS = game:GetService("TweenService")
         while iconText.Parent do
             pcall(function()
-                TS:Create(iconText, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize=21, TextColor3=Color3.fromRGB(120, 210, 255), TextStrokeTransparency=0}):Play()
+                TS:Create(iconText, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {TextSize=22, Rotation=3}):Play()
+                TS:Create(nGlow, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.4, Size=UDim2.new(0, 38, 0, 38), Position=UDim2.new(0.5, -19, 0.5, -19)}):Play()
+                TS:Create(iconStroke, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Thickness=2.2, Transparency=0}):Play()
+                TS:Create(grad, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Rotation=110}):Play()
+                TS:Create(highlight, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.4}):Play()
             end)
-            task.wait(0.8)
+            task.wait(0.6)
             pcall(function()
-                TS:Create(iconText, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize=18, TextColor3=Color3.fromRGB(0, 140, 255), TextStrokeTransparency=0.3}):Play()
+                TS:Create(iconText, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {TextSize=19, Rotation=-2}):Play()
+                TS:Create(nGlow, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.85, Size=UDim2.new(0, 32, 0, 32), Position=UDim2.new(0.5, -16, 0.5, -16)}):Play()
+                TS:Create(iconStroke, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Thickness=1.5, Transparency=0.2}):Play()
+                TS:Create(grad, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Rotation=90}):Play()
+                TS:Create(highlight, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.8}):Play()
             end)
-            task.wait(0.8)
+            task.wait(0.6)
+            pcall(function()
+                TS:Create(iconText, TweenInfo.new(0.3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Rotation=0}):Play()
+            end)
+            task.wait(0.3)
         end
     end)
     local iconImg = make("ImageLabel", {
@@ -13817,13 +13863,13 @@ DevilFruitSection.CreateToggle(
 			getgenv().__RandomFruitNext = 0
 			getgenv().__RandomFruitWarn = 0
 			pcall(function()
-				A.CreateNoti({Title = "Nexora Hub", Desc = "Random Devil Fruit ativado", ShowTime = 4})
+				-- Removed noti ativado, ShowTime = 4})
 			end)
 		else
 			getgenv().__RandomFruitBusy = false
 			getgenv().__SpinOpenedAt = nil
 			pcall(function()
-				A.CreateNoti({Title = "Nexora Hub", Desc = "Random Devil Fruit desativado", ShowTime = 4})
+				A.CreateNoti({Title = "Nexora Hub", Desc = "REMOVED", ShowTime = 4})
 			end)
 		end
 	end
@@ -14386,10 +14432,17 @@ function RandomFruit()
 	end
 
 	pcall(function()
-		-- 1) Tenta comprar direto SEM ir até o NPC - inclui Zioles BloxFruitsGacha
+		-- 1) Tenta comprar direto SEM ir até o NPC - CORRIGIDO ZIOLES
 		TryRemote("Cousin-Buy", function() return CommF:InvokeServer("Cousin", "Buy") end)
+		TryRemote("Cousin-Buy2", function() return CommF:InvokeServer("Cousin", "Buy", 1) end)
 		TryRemote("Zioles-Buy", function() return CommF:InvokeServer("Zioles", "Buy") end)
+		TryRemote("Zioles-Buy2", function() return CommF:InvokeServer("Zioles", "Buy", 1) end)
+		TryRemote("Zioles-Buy3", function() return CommF:InvokeServer("Zioles", "Purchase") end)
 		TryRemote("BloxFruitsGacha-Buy", function() return CommF:InvokeServer("BloxFruitsGacha", "Buy") end)
+		TryRemote("BloxFruitsGacha-Buy2", function() return CommF:InvokeServer("BloxFruitsGacha", "Purchase") end)
+		-- Tenta custo especifico Zioles 444850
+		TryRemote("Zioles-444850", function() return CommF:InvokeServer("Zioles", "Buy", 444850) end)
+		TryRemote("Cousin-444850", function() return CommF:InvokeServer("Cousin", "Buy", 444850) end)
 		TryRemote("BloxFruitsGacha", function() return CommF:InvokeServer("BloxFruitsGacha") end)
 		TryRemote("Gacha-Buy", function() return CommF:InvokeServer("Gacha", "Buy") end)
 		TryRemote("Gacha", function() return CommF:InvokeServer("Gacha") end)
@@ -14435,14 +14488,21 @@ function RandomFruit()
 			if playerGui then
 				for _, gui in ipairs(playerGui:GetDescendants()) do
 					if gui:IsA("TextButton") or gui:IsA("ImageButton") then
-						local txt = tostring(gui.Text or "") .. tostring(gui.Name or "")
-						if string.find(txt, "444,850") or string.find(txt, "444850") or (gui.Parent and string.find(tostring(gui.Parent.Name), "Gacha")) then
-							pcall(function()
-								for _, conn in ipairs(getconnections(gui.MouseButton1Click)) do
-									conn:Fire()
-								end
-								gui:Activate()
-							end)
+						local txt = tostring(gui.Text or ""):lower() .. tostring(gui.Name or ""):lower()
+						-- Detecta botao de giro Zioles / Cousin - CORRIGIDO
+						if string.find(txt, "444") or string.find(txt, "spin") or string.find(txt, "roll") or string.find(txt, "buy") or string.find(txt, "purchase") or string.find(txt, "gacha") then
+							if gui.Visible and gui.AbsoluteSize.X > 10 then
+								pcall(function()
+									for _, conn in ipairs(getconnections(gui.MouseButton1Click)) do
+										conn:Fire()
+									end
+									gui:Activate()
+									-- Tenta click virtual tambem
+									local VirtualInput = game:GetService("VirtualInputManager")
+									VirtualInput:SendMouseButtonEvent(gui.AbsolutePosition.X + gui.AbsoluteSize.X/2, gui.AbsolutePosition.Y + gui.AbsoluteSize.Y/2, 0, true, game, 1)
+									VirtualInput:SendMouseButtonEvent(gui.AbsolutePosition.X + gui.AbsoluteSize.X/2, gui.AbsolutePosition.Y + gui.AbsoluteSize.Y/2, 0, false, game, 1)
+								end)
+							end
 						end
 					end
 				end
@@ -14611,10 +14671,19 @@ function StoreFruit(container)
 	end
 
 	for _, tool in ipairs(container:GetChildren()) do
-		if IsFruitTool(tool) then
+		-- FIX: Aceita qualquer tool que parece fruta (nome termina com Fruit ou tem Handle)
+		local isFruit = false
+		pcall(function()
+			if tool:FindFirstChild("Handle") then
+				if string.find(tool.Name, "Fruit") or IsFruitTool(tool) then
+					isFruit = true
+				end
+			end
+		end)
+		if isFruit then
 			local failedAt = tool:GetAttribute("__StoreFail")
 			if not (typeof(failedAt) == "number" and tick() - failedAt < 30) then
-				local fruitName = GetFruitOriginalName(tool)
+				local fruitName = GetFruitOriginalName(tool) or tool.Name
 				if fruitName then
 					-- 1) tira da mão
 					if tool.Parent == LocalPlayer.Character then
