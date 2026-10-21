@@ -7786,10 +7786,7 @@ function EquipOnlyIfNeeded(toolName, interval)
 	hum:EquipTool(bp)
 	return false -- vai atirar no próximo ciclo
 end
-function DragonstormPhysicalClick(force, toolName)
-	-- SEM CLICK DE MOUSE - REMOVIDO POR ViniZDev
-	return true
-end
+function DragonstormPhysicalClick() return true end
 function ShootM1(E)
 	local char = t.Character
 	if not char or not E then
@@ -29494,17 +29491,22 @@ end)()
 
 
 
--- ===================== FIX FINAL: DRAGONSTORM SEM CLICK DE MOUSE =====================
+-- ===================== FINAL FIX: REMOTE + ACTIVATE SEM MOUSE, LOOP INFINITO =====================
+-- Problema: remote sozinho não ataca, precisa de tool:Activate()
+-- Solução: Activate() + Remote (sem nenhum SendMouseButtonEvent)
+
 getgenv().PhysicalGunClickInterval = 9999
 getgenv().DSClickInterval = 9999
-getgenv().DragonstormRemoteDelay = 0.12
+getgenv().DragonstormRemoteDelay = 0.10
 getgenv().__DragonstormLastShot = 0
 
 function DragonstormPhysicalClick(force, toolName)
+    -- ZERO MOUSE
     return true
 end
 getgenv().DragonstormPhysicalClick = DragonstormPhysicalClick
 
+-- NOVA SpamGunDragonStorm que funciona sozinha em loop
 getgenv().SpamGunDragonStorm = function(targetPart)
     local plr = game.Players.LocalPlayer
     local char = plr and plr.Character
@@ -29512,41 +29514,90 @@ getgenv().SpamGunDragonStorm = function(targetPart)
     local tool = char:FindFirstChild("Dragonstorm")
     if not tool then return end
     if not targetPart then return end
-    local targetPos
+
+    local targetPos, hitPart
     if typeof(targetPart) == "Instance" then
-        if targetPart:IsA("BasePart") then targetPos = targetPart.Position
+        if targetPart:IsA("BasePart") then
+            targetPos = targetPart.Position
+            hitPart = targetPart
         elseif targetPart:IsA("Model") then
             local hrp = targetPart:FindFirstChild("HumanoidRootPart") or targetPart.PrimaryPart
-            targetPos = hrp and hrp.Position or targetPart:GetPivot().Position
+            if hrp then
+                targetPos = hrp.Position
+                hitPart = hrp
+            else
+                targetPos = targetPart:GetPivot().Position
+            end
         end
-    elseif typeof(targetPart) == "Vector3" then targetPos = targetPart
-    elseif typeof(targetPart) == "CFrame" then targetPos = targetPart.Position
+    elseif typeof(targetPart) == "Vector3" then
+        targetPos = targetPart
+    elseif typeof(targetPart) == "CFrame" then
+        targetPos = targetPart.Position
     end
     if not targetPos then return end
+
     local now = os.clock()
-    if now - (getgenv().__DragonstormLastShot or 0) < 0.12 then return end
+    if now - (getgenv().__DragonstormLastShot or 0) < (getgenv().DragonstormRemoteDelay or 0.10) then
+        return
+    end
     getgenv().__DragonstormLastShot = now
+
     getgenv().AimPos = CFrame.new(targetPos)
+
+    -- 1) Activate da tool (ESSENCIAL pro remote funcionar sozinho)
     pcall(function()
-        local rs = game:GetService("ReplicatedStorage")
-        local net = rs.Modules.Net
-        local shoot = net:FindFirstChild("RE/ShootGunEvent")
+        tool:Activate()
+    end)
+
+    -- 2) Validator (tenta, mas se falhar continua)
+    pcall(function()
+        local controllers = plr.PlayerScripts:FindFirstChild("Controllers")
+        local cc = controllers and controllers:FindFirstChild("CombatController")
+        if not cc then return end
+        local mod = require(cc)
+        if not mod.Attack then return end
+        local ups = getupvalues and getupvalues(mod.Attack)
+        if not ups or not ups[9] then return end
+        local l = ups[9]
+        local I = debug.getupvalue(l, 15)
+        local _ = debug.getupvalue(l, 13)
+        local o = debug.getupvalue(l, 16)
+        local V = debug.getupvalue(l, 17)
+        local N = debug.getupvalue(l, 14)
+        local y = debug.getupvalue(l, 12)
+        if not I or not _ then return end
+        local Q2 = y * _
+        local d2 = ((N * _ + y * I) % o * o + Q2) % V
+        local N2 = math.floor(d2 / o)
+        local y2 = d2 - N2 * o
+        local data = string.pack("ii", N2, y2)
+        local validator = game:GetService("ReplicatedStorage").Remotes:FindFirstChild("Validator")
+        if validator then validator:FireServer(data) end
+    end)
+
+    -- 3) Remote principal
+    pcall(function()
+        local net = game:GetService("ReplicatedStorage").Modules.Net
+        local shoot = net and net:FindFirstChild("RE/ShootGunEvent")
         if shoot then
-            local hit = nil
-            if typeof(targetPart) == "Instance" then
-                if targetPart:IsA("BasePart") then hit = targetPart
-                else hit = targetPart:FindFirstChild("HumanoidRootPart") end
+            if hitPart then
+                shoot:FireServer(targetPos, {hitPart})
+            else
+                shoot:FireServer(targetPos, {})
             end
-            if hit then shoot:FireServer(targetPos, {hit}) else shoot:FireServer(targetPos, {}) end
         end
     end)
+
+    -- 4) Fallback
     pcall(function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("ShootGun", targetPos)
     end)
 end
 
+-- ShootM1 e AllSeaEvents usando só remote+activate
 if ShootM1 then
     local oldShoot = ShootM1
+    getgenv()._OldShootM1_Backup = oldShoot
     function ShootM1(E)
         local char = game.Players.LocalPlayer.Character
         if not char or not E then return false end
@@ -29561,11 +29612,13 @@ end
 
 function UseDragonstormAllSeaEvents(Part)
     if not Part or not Part.Parent then return end
-    if not EquipOnlyIfNeeded or not EquipOnlyIfNeeded("Dragonstorm", 1.0) then
+    local has = game.Players.LocalPlayer.Backpack:FindFirstChild("Dragonstorm") or (game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Dragonstorm"))
+    if not has then
         pcall(function() game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("LoadItem", "Dragonstorm") end)
         return
     end
+    if not EquipOnlyIfNeeded or not EquipOnlyIfNeeded("Dragonstorm", 1.0) then return end
     getgenv().SpamGunDragonStorm(Part)
 end
 
-print("[Fix] DragonStorm SEM CLICK DE MOUSE - OK | ViniZDev")
+print("[Fix Final] DragonStorm SEM MOUSE mas COM Activate + Remote - Loop OK | ViniZDev")
