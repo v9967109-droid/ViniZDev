@@ -2585,35 +2585,18 @@ local fScale = make("UIScale", {Scale=1}, reopen)
             end
             function Section.CreateSlider(cfg, callback)
                 cfg=cfg or {}; local t=cfg.Title or "Slider"; local min=cfg.Min or cfg.MinValue or 0; local max=cfg.Max or cfg.MaxValue or 100; local val=math.clamp(cfg.Default or cfg.Value or min,min,max)
-                -- Row maior pra ficar igual Quantum Onyx
-                local r=row(52); 
-                label(make("Frame",{Size=UDim2.new(1,-70,0,22),BackgroundTransparency=1},r),t,11,C.text)
-                local num=label(make("Frame",{Position=UDim2.new(1,-65,0,0),Size=UDim2.new(0,65,0,22),BackgroundTransparency=1},r),val,11,C.gold); num.TextXAlignment=Enum.TextXAlignment.Right
-                -- Barra estilo Quantum: fundo cinza escuro, altura 6, cantos arredondados
-                local bar=make("Frame",{Position=UDim2.new(0,0,0,30),Size=UDim2.new(1,0,0,6),BackgroundColor3=Color3.fromRGB(45,45,55),BorderSizePixel=0},r); corner(bar,10)
-                -- Fill azul igual Quantum Onyx (0,140,255)
-                local fill=make("Frame",{Size=UDim2.new((val-min)/math.max(1,max-min),0,1,0),BackgroundColor3=Color3.fromRGB(0,140,255),BorderSizePixel=0},bar); corner(fill,10)
-                -- Bolinha branca (knob) igual da tua imagem Quantum
-                local knob=make("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new((val-min)/math.max(1,max-min),0,0.5,0),Size=UDim2.fromOffset(14,14),BackgroundColor3=Color3.fromRGB(255,255,255),BorderSizePixel=0},bar); corner(knob,10)
-                make("UIStroke",{Color=Color3.fromRGB(30,30,40),Thickness=1,Transparency=0.3},knob)
-                local hit=make("TextButton",{Size=UDim2.new(1,0,0,24),Position=UDim2.new(0,0,0,-9),BackgroundTransparency=1,Text="",TextTransparency=1},bar)
+                local r=row(51); label(make("Frame",{Size=UDim2.new(1,-65,0,22),BackgroundTransparency=1},r),t,11,C.text)
+                local num=label(make("Frame",{Position=UDim2.new(1,-58,0,0),Size=UDim2.new(0,58,0,22),BackgroundTransparency=1},r),val,11,C.gold); num.TextXAlignment=Enum.TextXAlignment.Right
+                local bar=make("Frame",{Position=UDim2.new(0,0,0,30),Size=UDim2.new(1,0,0,7),BackgroundColor3=C.panel2,BorderSizePixel=0},r); corner(bar,4)
+                local fill=make("Frame",{Size=UDim2.new((val-min)/math.max(1,max-min),0,1,0),BackgroundColor3=C.gold,BorderSizePixel=0},bar); corner(fill,4)
+                local hit=make("TextButton",{Size=UDim2.new(1,0,0,20),Position=UDim2.new(0,0,0,-6),BackgroundTransparency=1,Text="",TextTransparency=1},bar)
                 local opt
-                local function set(x) 
-                    local ratio=math.clamp((x-bar.AbsolutePosition.X)/math.max(1,bar.AbsoluteSize.X),0,1); 
-                    val=math.floor(min+(max-min)*ratio); 
-                    fill.Size=UDim2.new(ratio,0,1,0); 
-                    knob.Position=UDim2.new(ratio,0,0.5,0);
-                    num.Text=tostring(val); 
-                    if opt then opt.value=val end; 
-                    if callback then pcall(callback,val) end 
-                end
+                local function set(x) local ratio=math.clamp((x-bar.AbsolutePosition.X)/math.max(1,bar.AbsoluteSize.X),0,1); val=math.floor(min+(max-min)*ratio); fill.Size=UDim2.new(ratio,0,1,0); num.Text=tostring(val); if opt then opt.value=val end; if callback then pcall(callback,val) end end
                 opt=addOption(t,"slider",val,pageName,sectionName,callback)
                 opt._setValue = function(v)
                     val = math.clamp(tonumber(v) or min, min, max)
                     local ratio = (val-min)/math.max(1,max-min)
-                    fill.Size=UDim2.new(ratio,0,1,0); 
-                    knob.Position=UDim2.new(ratio,0,0.5,0);
-                    num.Text=tostring(val)
+                    fill.Size=UDim2.new(ratio,0,1,0); num.Text=tostring(val)
                 end
                 hit.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then set(i.Position.X) end end)
                 hit.InputChanged:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch then if UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then set(i.Position.X) end end end)
@@ -15204,10 +15187,9 @@ SettingSeaEventSection.CreateDropdown(
 	end
 )
 
--- === SLIDES IGUAL QUANTUM ONYX (todos) ===
 SettingSeaEventSection.CreateSlider(
 	{ Title = "Boat Speed", Min = 0, Max = 300, Default = Settings["Boat Speed"] or Settings["Value Speed Boat"] or 275, Precise = true },
-	function(v) SaveSettings("Boat Speed", v) SaveSettings("Value Speed Boat", v) SaveSettings("Speed Boat Auto Drive", v) end
+	function(v) SaveSettings("Boat Speed", v) SaveSettings("Value Speed Boat", v) end
 )
 
 SettingSeaEventSection.CreateDropdown(
@@ -29697,35 +29679,17 @@ task.spawn(function()
 end)
 
 
--- ===================== DRAGONSTORM CLICK ESTILO MELEE SEM MOUSE =====================
+-- ===================== NEXORA FULL SOURCE - ViniZDev FIX =====================
+-- Source inteira + Boat Any + UI ViniZDev + Slides Quantum + DragonStorm Melee Click
+
 getgenv().PhysicalGunClickInterval = 9999
 getgenv().DSClickInterval = 9999
 getgenv().DragonstormRemoteDelay = 0.11
 getgenv().__DragonstormLastShot = 0
+
 function DragonstormPhysicalClick() return true end
 getgenv().DragonstormPhysicalClick = DragonstormPhysicalClick
-local function ClickMeleeStyle()
-    pcall(function()
-        local VU = game:GetService("VirtualUser")
-        VU:CaptureController()
-        VU:ClickButton1(Vector2.new(-1, 1))
-    end)
-end
-local function FastAttackGun()
-    pcall(function()
-        local CombatFramework = require(game:GetService("ReplicatedStorage").CombatFramework)
-        local controller = CombatFramework.activeController
-        if controller then
-            controller.hitboxMagnitude = 55
-            controller.timeToNextAttack = 0
-            controller.attacking = false
-            controller.increment = 3
-            controller.blocking = false
-            controller.timeToNextBlock = 0
-            if controller.attack then controller:attack() end
-        end
-    end)
-end
+
 getgenv().SpamGunDragonStorm = function(targetPart)
     local plr = game.Players.LocalPlayer
     local char = plr and plr.Character
@@ -29747,8 +29711,12 @@ getgenv().SpamGunDragonStorm = function(targetPart)
     if now - (getgenv().__DragonstormLastShot or 0) < 0.11 then return end
     getgenv().__DragonstormLastShot = now
     getgenv().AimPos = CFrame.new(targetPos)
-    ClickMeleeStyle()
-    FastAttackGun()
+    -- Click estilo melee (igual soco) - SEM mouse no meio da tela
+    pcall(function()
+        local VU = game:GetService("VirtualUser")
+        VU:CaptureController()
+        VU:ClickButton1(Vector2.new(-1, 1))
+    end)
     pcall(function() tool:Activate() end)
     pcall(function()
         local net = game:GetService("ReplicatedStorage").Modules.Net
@@ -29757,8 +29725,11 @@ getgenv().SpamGunDragonStorm = function(targetPart)
             if hitPart then shoot:FireServer(targetPos, {hitPart}) else shoot:FireServer(targetPos, {}) end
         end
     end)
-    pcall(function() game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("ShootGun", targetPos) end)
+    pcall(function()
+        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("ShootGun", targetPos)
+    end)
 end
+
 if ShootM1 then
     local oldShoot = ShootM1
     function ShootM1(E)
@@ -29769,6 +29740,7 @@ if ShootM1 then
         return oldShoot(E)
     end
 end
+
 function UseDragonstormAllSeaEvents(Part)
     if not Part or not Part.Parent then return end
     local has = game.Players.LocalPlayer.Backpack:FindFirstChild("Dragonstorm") or (game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Dragonstorm"))
@@ -29776,4 +29748,5 @@ function UseDragonstormAllSeaEvents(Part)
     if not EquipOnlyIfNeeded or not EquipOnlyIfNeeded("Dragonstorm", 1.0) then return end
     getgenv().SpamGunDragonStorm(Part)
 end
-print("[Fix] Todos Slides Quantum Onyx + Melee Click | ViniZDev")
+
+print("[NEXORA FULL SOURCE] ViniZDev - Source Inteira - Boat Any - Melee Click - UI ViniZDev")
