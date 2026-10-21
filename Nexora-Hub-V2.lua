@@ -2136,69 +2136,46 @@ function Nexora.CreateMain(config)
     reopen:SetAttribute("NexoraKeepColor", true)
     make("UICorner", {CornerRadius=UDim.new(0, 18)}, reopen)
     make("UIStroke", {Color=Color3.fromRGB(60, 60, 65), Thickness=1, Transparency=0.3}, reopen)
-    -- Icone N TOP - ISOLADO pra nao quebrar UI
+    -- Icone N TOP - 100% seguro, sem frames extras que quebram UI
     local iconFrame = make("Frame", {
-        BackgroundColor3=Color3.fromRGB(30, 30, 40),
+        BackgroundColor3=Color3.fromRGB(20, 20, 30),
         Size=UDim2.new(0, 24, 0, 24),
         Position=UDim2.new(0, 6, 0.5, -12),
         BorderSizePixel=0,
         ZIndex=101
     }, reopen)
     make("UICorner", {CornerRadius=UDim.new(1,0)}, iconFrame)
+    make("UIStroke", {Color=Color3.fromRGB(0, 140, 255), Thickness=1.2, Transparency=0.2}, iconFrame)
     local iconText = make("TextLabel", {
         BackgroundTransparency=1,
         Size=UDim2.new(1, 0, 1, 0),
         Position=UDim2.new(0, 0, 0, 0),
         Text="N",
-        TextColor3=Color3.fromRGB(0, 140, 255),
+        TextColor3=Color3.fromRGB(255, 255, 255),
         Font=Enum.Font.GothamBlack,
-        TextSize=18,
-        TextStrokeTransparency=0.2,
+        TextSize=19,
+        TextStrokeTransparency=0,
         ZIndex=102
     }, iconFrame)
-    make("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(100, 200, 255), Color3.fromRGB(0, 140, 255))}, iconText)
-    -- Efeito TOP em thread separada com pcall pra NAO quebrar a UI
+    local grad = make("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(150, 230, 255), Color3.fromRGB(0, 140, 255))}, iconText)
+    local txtStroke = make("UIStroke", {Color=Color3.fromRGB(0, 80, 160), Thickness=1.5, Transparency=0}, iconText)
+    -- So animacao do texto, nada de frames extras
     task.spawn(function()
-        pcall(function()
-            local TS = game:GetService("TweenService")
-            -- Cria glow e efeitos DEPOIS, isolado
-            local glow = Instance.new("Frame")
-            glow.Name = "NGlow"
-            glow.BackgroundColor3 = Color3.fromRGB(0, 140, 255)
-            glow.BackgroundTransparency = 0.8
-            glow.Size = UDim2.new(0, 32, 0, 32)
-            glow.Position = UDim2.new(0.5, -16, 0.5, -16)
-            glow.BorderSizePixel = 0
-            glow.ZIndex = 100
-            glow.Parent = iconFrame
-            local c = Instance.new("UICorner")
-            c.CornerRadius = UDim.new(1,0)
-            c.Parent = glow
-            -- Borda brilhante
-            local stroke = Instance.new("UIStroke")
-            stroke.Color = Color3.fromRGB(0, 140, 255)
-            stroke.Thickness = 1.5
-            stroke.Transparency = 0.3
-            stroke.Parent = iconFrame
-            while iconText.Parent do
-                pcall(function()
-                    TS:Create(iconText, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize=20, TextColor3=Color3.fromRGB(120, 210, 255), Rotation=2}):Play()
-                    TS:Create(glow, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.5, Size=UDim2.new(0, 36, 0, 36), Position=UDim2.new(0.5, -18, 0.5, -18)}):Play()
-                    TS:Create(stroke, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Thickness=2, Transparency=0}):Play()
-                end)
-                task.wait(0.7)
-                pcall(function()
-                    TS:Create(iconText, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize=18, TextColor3=Color3.fromRGB(0, 140, 255), Rotation=-1}):Play()
-                    TS:Create(glow, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.8, Size=UDim2.new(0, 32, 0, 32), Position=UDim2.new(0.5, -16, 0.5, -16)}):Play()
-                    TS:Create(stroke, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Thickness=1.5, Transparency=0.3}):Play()
-                end)
-                task.wait(0.7)
-                pcall(function()
-                    TS:Create(iconText, TweenInfo.new(0.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Rotation=0}):Play()
-                end)
-                task.wait(0.2)
-            end
-        end)
+        local TS = game:GetService("TweenService")
+        while iconText.Parent do
+            pcall(function()
+                TS:Create(iconText, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize=22, TextColor3=Color3.fromRGB(180, 240, 255)}):Play()
+                TS:Create(grad, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Rotation=120}):Play()
+                TS:Create(txtStroke, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Thickness=2, Color=Color3.fromRGB(0, 140, 255)}):Play()
+            end)
+            task.wait(0.6)
+            pcall(function()
+                TS:Create(iconText, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize=19, TextColor3=Color3.fromRGB(255, 255, 255)}):Play()
+                TS:Create(grad, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Rotation=90}):Play()
+                TS:Create(txtStroke, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Thickness=1.5, Color=Color3.fromRGB(0, 80, 160)}):Play()
+            end)
+            task.wait(0.6)
+        end
     end)
     local iconImg = make("ImageLabel", {
         BackgroundTransparency=1,
