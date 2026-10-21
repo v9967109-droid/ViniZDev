@@ -12215,8 +12215,11 @@ function checkboat()
 	local y, P, Y = next, game:GetService("Workspace").Boats:GetChildren()
 	for H, H in y, P, Y do
 		if H:IsA("Model") then
-			if H:FindFirstChild("Owner") and tostring(H.Owner.Value) == V and H.Humanoid.Value > 0 then
-				return H
+			local owner = H:FindFirstChild("Owner")
+			local hum = H:FindFirstChild("Humanoid")
+			if owner and hum and tostring(owner.Value) == V then
+				local ok, val = pcall(function() return hum.Value end)
+				if ok and val and val > 0 then return H end
 			end
 		end
 	end
@@ -16464,91 +16467,144 @@ function DetectIslandKitsune()
 end
 function AutoSpawnKitsune()
 	local y, P = game.Lighting.ClockTime, checkboat()
-	-- Hop logic (mantido)
+	-- Init notification flags to avoid spam
+	getgenv().KitsuneNotifyFlags = getgenv().KitsuneNotifyFlags or {mar5=false, waiting=false, mar6=false, dough=false}
+
+	local function NotifyOnce(key, title, desc, time)
+		if not getgenv().KitsuneNotifyFlags[key] then
+			getgenv().KitsuneNotifyFlags[key] = true
+			pcall(function() A.CreateNoti({Title = title, Desc = desc, ShowTime = time or 5}) end)
+		end
+	end
+
+	local function ResetNoti(exceptKey)
+		for k,_ in pairs(getgenv().KitsuneNotifyFlags) do
+			if k ~= exceptKey then getgenv().KitsuneNotifyFlags[k] = false end
+		end
+	end
+
+	-- Check Dough Sea (when Dough Sea is active, avoid Sea 6)
+	local function IsDoughSea()
+		return workspace.Map:FindFirstChild("DoughSea") ~= nil or workspace:FindFirstChild("DoughSea") ~= nil or workspace._WorldOrigin:FindFirstChild("Dough Dimension") ~= nil or game.ReplicatedStorage:FindFirstChild("DoughSea") ~= nil
+	end
+
+	local function StopBoat100Percent(boat)
+		pcall(function()
+			if getgenv().TweenBoat then getgenv().TweenBoat:Pause() getgenv().TweenBoat:Cancel() end
+			if getgenv().TweenBoatBack then getgenv().TweenBoatBack:Pause() getgenv().TweenBoatBack:Cancel() end
+			local seat = boat:FindFirstChild("VehicleSeat", true)
+			if seat then
+				seat.ThrottleFloat = 0
+				seat.Throttle = 0
+				seat.MaxSpeed = 0
+				seat.Velocity = Vector3.new(0,0,0)
+				seat.AngularVelocity = Vector3.new(0,0,0)
+			end
+			for _,v in ipairs(boat:GetDescendants()) do
+				if v:IsA("BasePart") then
+					v.Velocity = Vector3.new(0,0,0)
+					v.AngularVelocity = Vector3.new(0,0,0)
+				end
+			end
+		end)
+	end
+
 	if Settings["Hop Server Kitsune Island"] then
 		local Y = CheckMoon()
-		if not (
-				Y == "Full Moon" and math.floor(18 - y) <= 5 and math.floor(18 - y) >= 0
-				or Y == "Next Night"
-				or Y == "Full Moon" and y <= 5 and math.floor(5 - y) >= 11
-			) then
+		if not (Y == "Full Moon" and math.floor(18 - y) <= 5 and math.floor(18 - y) >= 0 or Y == "Next Night" or Y == "Full Moon" and y <= 5 and math.floor(5 - y) >= 11) then
 			HopServer()
 			return
 		end
 	end
 
-	-- Se não tem barco, compra
-	if not P then
+	-- If boat is too far, buy another one
+	local isBoatFar = false
+	if P then
+		pcall(function()
+			if t:DistanceFromCharacter(P.VehicleSeat.Position) >= 3500 then
+				isBoatFar = true
+			end
+		end)
+	end
+
+	if not P or isBoatFar then
+		if isBoatFar then
+			pcall(function()
+				-- Despawn old far boat by buying new one, no notification spam
+				getgenv().KitsuneFarBoatNotified = getgenv().KitsuneFarBoatNotified or false
+				if not getgenv().KitsuneFarBoatNotified then
+					getgenv().KitsuneFarBoatNotified = true
+					A.CreateNoti({Title = "Nexora Hub - Kitsune", Desc = "Boat too far, buying new one", ShowTime = 4})
+				end
+			end)
+		end
 		local Y = CFrame.new(-13.488054275512695, 10.311711311340332, 2927.692)
 		Y = if game.PlaceId == getgenv().CheckPlaceId then (CFrame.new(-16204.0810546875, 9.0863618850708, 479.2259521484375)) else Y
 		if (Y.Position - t.Character.HumanoidRootPart.Position).Magnitude > 8 then
 			toTarget(Y)
 		else
 			local Y = Settings["Select Boat"]
-			if not Y then WarnOnce("SelectBoat", "Selecione o barco em Sea Event > Select Boat") return end
+			if not Y then WarnOnce("SelectBoat", "Select boat in Sea Event > Select Boat first.") return end
 			local H = Y == "Brigade"
 			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyBoat", if H or Y == "GrandBrigade" then "Pirate" .. Y else Y)
-			task.wait(0.1)
+			task.wait(1)
+			getgenv().KitsuneFarBoatNotified = false
 		end
 		return
 	end
 
-	-- Tem barco - logica nova ViniZDev
-	-- Mar 5: -38480.42578125, 0, 10350.943359375
-	-- Mar 6: -32975.9921875, 0, 25963.7109375
-	-- Se não é lua cheia, vai até o Mar 5 e para perto do 6
-	-- Se é lua cheia, vai até o Mar 6
-
 	NoclipBoat(P)
 	local boatY = P.WorldPivot.Y
 	local isFullMoon = CheckMoon() == "Full Moon"
+	local isDough = IsDoughSea()
 
-	-- Define os pontos
+	-- Positions
 	local zone5Pos = CFrame.new(-38480.42578125, boatY, 10350.943359375)
-	-- Ponto de parada: entre Mar 5 e Mar 6, perto de ir pro 6 (como pediu)
 	local stopNear6Pos = CFrame.new(-35700, boatY, 18000)
 	local zone6Pos = CFrame.new(-32975.9921875, boatY, 25963.7109375) * CFrame.new(0, 0, 500)
+	local alternativeDoughPos = CFrame.new(-26017.931640625, boatY, 5657.8837890625) -- Zone 2 as safe point when Dough Sea
+
+	if isDough then
+		-- Dough Sea active: go to alternative point, not Sea 6
+		if (P.VehicleSeat.Position - alternativeDoughPos.Position).Magnitude > 250 then
+			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) else manageTween(P.VehicleSeat, alternativeDoughPos, 350, "TweenBoat") end
+			NotifyOnce("dough", "Nexora Hub - Kitsune", "Dough Sea detected! Going to safe point, not Sea 6", 5)
+		else
+			StopBoat100Percent(P)
+			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) end
+		end
+		return
+	end
 
 	if not isFullMoon then
-		-- NÃO é lua cheia: vai de barco até o Mar 5, depois para perto do 6
 		local distToZone5 = (P.VehicleSeat.Position - zone5Pos.Position).Magnitude
 		local distToStop = (P.VehicleSeat.Position - stopNear6Pos.Position).Magnitude
 
 		if distToZone5 > 300 then
-			-- Ainda longe do Mar 5, vai pro Mar 5
-			if not t.Character.Humanoid.Sit then
-				toTarget(P.VehicleSeat.CFrame)
-			else
-				manageTween(P.VehicleSeat, zone5Pos, 350, "TweenBoat")
-			end
-			A.CreateNoti({Title = "Nexora Hub - Kitsune", Desc = "Indo de barco até o Mar 5 (aguardando lua cheia)", ShowTime = 3})
+			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) else manageTween(P.VehicleSeat, zone5Pos, 350, "TweenBoat") end
+			ResetNoti("mar5")
+			NotifyOnce("mar5", "Nexora Hub - Kitsune", "Sailing to Sea 5 (waiting for full moon)", 5)
 		elseif distToStop > 250 then
-			-- Já chegou no Mar 5, agora vai até o ponto de parada perto do Mar 6
 			manageTween(P.VehicleSeat, stopNear6Pos, 300, "TweenBoat")
-			A.CreateNoti({Title = "Nexora Hub - Kitsune", Desc = "Chegou no Mar 5, parando perto do Mar 6. Aguardando lua cheia...", ShowTime = 4})
+			ResetNoti("waiting")
+			NotifyOnce("waiting", "Nexora Hub - Kitsune", "Arrived at Sea 5, stopped near Sea 6. Waiting for full moon...", 5)
 		else
-			-- Já está no ponto de parada, fica esperando lua cheia
-			-- Só fica no barco, não voa
-			if not t.Character.Humanoid.Sit then
-				toTarget(P.VehicleSeat.CFrame)
-			end
-			-- Não faz tween, fica parado
+			-- 100% stopped at Sea 5
+			StopBoat100Percent(P)
+			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) end
 		end
 	else
-		-- É LUA CHEIA: vai com o barco até o Mar 6
+		-- Full moon: go to Sea 6 with boat
 		local distToZone6 = (P.VehicleSeat.Position - zone6Pos.Position).Magnitude
 		if distToZone6 > 250 then
-			if not t.Character.Humanoid.Sit then
-				toTarget(P.VehicleSeat.CFrame)
-			else
-				manageTween(P.VehicleSeat, zone6Pos, 350, "TweenBoat")
-			end
-			A.CreateNoti({Title = "Nexora Hub - Kitsune", Desc = "Lua cheia! Indo de barco até o Mar 6", ShowTime = 3})
+			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) else manageTween(P.VehicleSeat, zone6Pos, 350, "TweenBoat") end
+			ResetNoti("mar6")
+			NotifyOnce("mar6", "Nexora Hub - Kitsune", "Full moon! Sailing to Sea 6", 5)
 		else
-			-- Chegou no Mar 6
-			if not t.Character.Humanoid.Sit then
-				toTarget(P.VehicleSeat.CFrame)
-			end
+			StopBoat100Percent(P)
+			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) end
+			-- Reset flags for next cycle
+			getgenv().KitsuneNotifyFlags = {mar5=false, waiting=false, mar6=false, dough=false}
 		end
 	end
 end
@@ -18265,19 +18321,24 @@ BoatSettingSection.CreateSlider(
 	end
 )
 function checkSpeedboat()
-	local seated = getSeatedBoat()
-	if seated then return seated end
-	local found = checkboatFind()
-	if found then return found end
-	return checkboat()
+	local ok, result = pcall(function()
+		local seated = getSeatedBoat()
+		if seated then return seated end
+		local found = checkboatFind()
+		if found then return found end
+		return checkboat()
+	end)
+	if ok then return result else return false end
 end
 function ChangeSpeedBoat()
-	local b = math.clamp(tonumber(Settings["Value Speed Boat"]) or 300, 0, 300)
-	local s = checkSpeedboat()
-	if s then
-		local vs = s:FindFirstChild("VehicleSeat", true) or s:FindFirstChild("VehicleSeat")
-		if vs then vs.MaxSpeed = math.clamp(b, 0, 300) end
-	end
+	pcall(function()
+		local b = math.clamp(tonumber(Settings["Value Speed Boat"]) or 300, 0, 300)
+		local s = checkSpeedboat()
+		if s and s.Parent then
+			local vs = s:FindFirstChild("VehicleSeat", true) or s:FindFirstChild("VehicleSeat")
+			if vs then vs.MaxSpeed = math.clamp(b, 0, 300) end
+		end
+	end)
 end
 BoatSettingSection.CreateToggle(
 	{ Title = "Change Speed Boat", Desc = nil, Default = Settings["Change Speed Boat"] or false },
@@ -18285,10 +18346,7 @@ BoatSettingSection.CreateToggle(
 		if b then
 			spawn(function()
 				while Settings["Change Speed Boat"] and (task.wait(0.3)) do
-					local s, X = pcall(ChangeSpeedBoat)
-					if not s then
-						WarnOnce("ChangeSpeedBoat", "Change Speed Boat loi: " .. tostring(X))
-					end
+					pcall(ChangeSpeedBoat)
 				end
 			end)
 		end
@@ -23960,13 +24018,22 @@ function AutoFindPrehistoric()
 			getgenv().TweenBoat:Pause()
 			getgenv().TweenBoat:Cancel()
 		end
-		A.CreateNoti({ Title = "Nexora Hub", Desc = "Prehistoric Island Spawned", ShowTime = 5 })
+		getgenv().PrehistoricNotified = getgenv().PrehistoricNotified or false
+		if not getgenv().PrehistoricNotified then
+			getgenv().PrehistoricNotified = true
+			A.CreateNoti({ Title = "Nexora Hub", Desc = "Prehistoric Island Found! Auto disabled.", ShowTime = 6 })
+		end
 		if Settings["Auto Multi Find Prehistoric Island"] then
 			Settings["Auto Multi Find Prehistoric Island"] = false
+			SaveSettings("Auto Multi Find Prehistoric Island", false)
 		else
-			ToggleAutoFindPrehistoricIsland:SetStage(false)
+			Settings["Auto Find Prehistoric Island"] = false
+			SaveSettings("Auto Find Prehistoric Island", false)
+			pcall(function() ToggleAutoFindPrehistoricIsland:SetStage(false) end)
 		end
-		wait(5)
+		task.wait(2)
+		getgenv().PrehistoricNotified = false
+		return
 	end
 end
 ToggleAutoFindPrehistoricIsland = FarmingVolcanoSection.CreateToggle(
@@ -29750,7 +29817,7 @@ task.spawn(function()
 end)
 
 
--- ===================== DRAGONSTORM CLICK HIBRIDO + KITSUNE MAR 5->6 =====================
+-- ===================== FINAL FIX ViniZDev - ENGLISH NOTI + NO SPAM + BOAT STOP + DOUGH SEA + PREHISTORIC TOGGLE =====================
 getgenv().PhysicalGunClickInterval = 0.11
 getgenv().DSClickInterval = 0.11
 getgenv().DragonstormRemoteDelay = 0.11
@@ -29760,8 +29827,7 @@ function DragonstormPhysicalClick(force, toolName)
     toolName = toolName or "Dragonstorm"
     local now = os.clock()
     local lastKey = "__PhysicalClickLast_" .. tostring(toolName)
-    local interval = 0.11
-    if not force and now - (getgenv()[lastKey] or 0) < interval then return false end
+    if not force and now - (getgenv()[lastKey] or 0) < 0.11 then return false end
     getgenv()[lastKey] = now
     task.spawn(function()
         pcall(function()
@@ -29819,4 +29885,4 @@ function UseDragonstormAllSeaEvents(Part)
     getgenv().SpamGunDragonStorm(Part)
 end
 
-print("[NEXORA] Kitsune Mar5->Mar6 + DragonStorm Hibrido - ViniZDev")
+print("[NEXORA] English notifications, no spam, boat 100% stopped, Dough Sea safe, Prehistoric auto-off - ViniZDev")
