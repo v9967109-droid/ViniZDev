@@ -2135,87 +2135,17 @@ function Nexora.CreateMain(config)
     }, floatGui)
     reopen:SetAttribute("NexoraKeepColor", true)
     make("UICorner", {CornerRadius=UDim.new(0, 18)}, reopen)
-    local stroke = make("UIStroke", {Color=Color3.fromRGB(0, 140, 255), Thickness=1.5, Transparency=0.4}, reopen)
-    reopen.ClipsDescendants = true
-    -- Glow interno azul dentro do botao (100% dentro)
-    local innerGlow = make("Frame", {
-        Name="InnerGlow",
-        BackgroundColor3=Color3.fromRGB(0, 140, 255),
-        BackgroundTransparency=0.9,
-        Size=UDim2.new(1, 0, 1, 0),
-        Position=UDim2.new(0, 0, 0, 0),
-        BorderSizePixel=0,
-        ZIndex=90
-    }, reopen)
-    make("UICorner", {CornerRadius=UDim.new(0, 18)}, innerGlow)
-
-    -- Icone N com raios realistas 100% DENTRO
+    make("UIStroke", {Color=Color3.fromRGB(60, 60, 65), Thickness=1, Transparency=0.3}, reopen)
+    -- Ícone à esquerda (logo) - FIX N icon
     local iconFrame = make("Frame", {
         BackgroundColor3=Color3.fromRGB(35, 35, 45),
         Size=UDim2.new(0, 24, 0, 24),
         Position=UDim2.new(0, 6, 0.5, -12),
         BorderSizePixel=0,
-        ClipsDescendants=true,
         ZIndex=101
     }, reopen)
     make("UICorner", {CornerRadius=UDim.new(1,0)}, iconFrame)
-    -- Raios realistas DENTRO do N (pequenos, nao sai pra fora)
-    local ray1 = make("Frame", {
-        BackgroundColor3=Color3.fromRGB(80, 180, 255),
-        BackgroundTransparency=0.6,
-        Size=UDim2.new(0, 1, 0, 10),
-        Position=UDim2.new(0.5, -0.5, 0, 2),
-        Rotation=0,
-        BorderSizePixel=0,
-        ZIndex=99
-    }, iconFrame)
-    local ray2 = make("Frame", {
-        BackgroundColor3=Color3.fromRGB(80, 180, 255),
-        BackgroundTransparency=0.6,
-        Size=UDim2.new(0, 1, 0, 10),
-        Position=UDim2.new(0.5, -0.5, 1, -12),
-        Rotation=0,
-        BorderSizePixel=0,
-        ZIndex=99
-    }, iconFrame)
-    local ray3 = make("Frame", {
-        BackgroundColor3=Color3.fromRGB(80, 180, 255),
-        BackgroundTransparency=0.6,
-        Size=UDim2.new(0, 10, 0, 1),
-        Position=UDim2.new(0, 2, 0.5, -0.5),
-        Rotation=0,
-        BorderSizePixel=0,
-        ZIndex=99
-    }, iconFrame)
-    local ray4 = make("Frame", {
-        BackgroundColor3=Color3.fromRGB(80, 180, 255),
-        BackgroundTransparency=0.6,
-        Size=UDim2.new(0, 10, 0, 1),
-        Position=UDim2.new(1, -12, 0.5, -0.5),
-        Rotation=0,
-        BorderSizePixel=0,
-        ZIndex=99
-    }, iconFrame)
-    -- Diagonais
-    local ray5 = make("Frame", {
-        BackgroundColor3=Color3.fromRGB(0, 140, 255),
-        BackgroundTransparency=0.7,
-        Size=UDim2.new(0, 1, 0, 8),
-        Position=UDim2.new(0.5, -0.5, 0.5, -4),
-        Rotation=45,
-        BorderSizePixel=0,
-        ZIndex=99
-    }, iconFrame)
-    local ray6 = make("Frame", {
-        BackgroundColor3=Color3.fromRGB(0, 140, 255),
-        BackgroundTransparency=0.7,
-        Size=UDim2.new(0, 1, 0, 8),
-        Position=UDim2.new(0.5, -0.5, 0.5, -4),
-        Rotation=-45,
-        BorderSizePixel=0,
-        ZIndex=99
-    }, iconFrame)
-    -- N azul
+    -- N como TextLabel (sempre aparece)
     local iconText = make("TextLabel", {
         BackgroundTransparency=1,
         Size=UDim2.new(1, 0, 1, 0),
@@ -2224,34 +2154,10 @@ function Nexora.CreateMain(config)
         TextColor3=Color3.fromRGB(0, 140, 255),
         Font=Enum.Font.GothamBlack,
         TextSize=18,
-        TextStrokeTransparency=0.3,
+        TextStrokeTransparency=0.5,
         ZIndex=103
     }, iconFrame)
     make("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 140, 255))}, iconText)
-    -- Animacao dos raios dentro do N + botao
-    task.spawn(function()
-        local TweenService = game:GetService("TweenService")
-        while iconFrame.Parent do
-            -- N pulsa
-            local tN = TweenService:Create(iconText, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize=20, TextColor3=Color3.fromRGB(120, 210, 255)})
-            local tGlow = TweenService:Create(innerGlow, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.7})
-            local tStroke = TweenService:Create(stroke, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Color=Color3.fromRGB(120, 210, 255), Transparency=0.1})
-            -- Raios aparecem
-            for _, r in ipairs({ray1, ray2, ray3, ray4, ray5, ray6}) do
-                TweenService:Create(r, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.2}):Play()
-            end
-            tN:Play(); tGlow:Play(); tStroke:Play()
-            tN.Completed:Wait()
-            local tN2 = TweenService:Create(iconText, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize=18, TextColor3=Color3.fromRGB(0, 140, 255)})
-            local tGlow2 = TweenService:Create(innerGlow, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.9})
-            local tStroke2 = TweenService:Create(stroke, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Color=Color3.fromRGB(0, 140, 255), Transparency=0.4})
-            for _, r in ipairs({ray1, ray2, ray3, ray4, ray5, ray6}) do
-                TweenService:Create(r, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.6}):Play()
-            end
-            tN2:Play(); tGlow2:Play(); tStroke2:Play()
-            tN2.Completed:Wait()
-        end
-    end)
     local iconImg = make("ImageLabel", {
         BackgroundTransparency=1,
         Size=UDim2.new(1, -4, 1, -4),
@@ -26599,26 +26505,23 @@ do
 					BuyFruitShop()
 				end
 				if Settings["Auto Awake Fruit"] then
-					pcall(function()
-						local isInRaid = game.Players.LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible
-						if isInRaid then return end
-						local frags = 0
-						pcall(function() frags = game.Players.LocalPlayer.Data.Fragments.Value end)
-						if frags < 500 then return end
-						local fruits = {"Flame","Ice","Sand","Dark","Light","Magma","Quake","Buddha","Spider","Phoenix","Rumble","Dough"}
-						local skills = {"Z","X","C","V","F"}
-						for _, sk in ipairs(skills) do
-							pcall(function() L.Remotes.CommF_:InvokeServer("Awakener", "Awaken", sk) end)
-							pcall(function() L.Remotes.CommF_:InvokeServer("Awakener", "Awaken") end)
-							task.wait(0.1)
-						end
-						for _, fr in ipairs(fruits) do
-							for _, sk in ipairs(skills) do
-								pcall(function() L.Remotes.CommF_:InvokeServer("Awakener", "Awaken", fr, sk) end)
-								task.wait(0.05)
+					-- So compra fora da Raid
+					if not game.Players.LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible then
+						local okFrags = false
+						pcall(function() if game.Players.LocalPlayer.Data.Fragments.Value >= 500 then okFrags = true end end)
+						if okFrags then
+							pcall(function() L.Remotes.CommF_:InvokeServer("Awakener", "Check") end)
+							for _, sk in ipairs({"Z","X","C","V","F"}) do
+								pcall(function() L.Remotes.CommF_:InvokeServer("Awakener", "Awaken", sk) end)
+								pcall(function() L.Remotes.CommF_:InvokeServer("Awakener", "Awaken") end)
+							end
+							for _, fr in ipairs({"Flame","Ice","Sand","Dark","Light","Magma","Quake","Buddha","Spider","Phoenix","Rumble","Dough"}) do
+								for _, sk in ipairs({"Z","X","C","V","F"}) do
+									pcall(function() L.Remotes.CommF_:InvokeServer("Awakener", "Awaken", fr, sk) end)
+								end
 							end
 						end
-					end)
+					end
 				end
 				if Settings["Auto Buy Legendary Sword"] then
 					L.Remotes.CommF_:InvokeServer("LegendarySwordDealer", "2")
