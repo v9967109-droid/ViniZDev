@@ -7787,7 +7787,48 @@ function EquipOnlyIfNeeded(toolName, interval)
 	hum:EquipTool(bp)
 	return false -- vai atirar no próximo ciclo
 end
-function DragonstormPhysicalClick() return true end
+function DragonstormPhysicalClick(force, toolName)
+	toolName = toolName or "Dragonstorm"
+	local now = os.clock()
+	local lastKey = "__PhysicalClickLast_" .. tostring(toolName)
+	local interval = getgenv().PhysicalGunClickInterval or getgenv().DSClickInterval or 0.5
+	if not force and now - (getgenv()[lastKey] or 0) < interval then
+		return false
+	end
+	getgenv()[lastKey] = now
+	task.spawn(function()
+		pcall(function()
+			local Camera = workspace.CurrentCamera
+			if not Camera then return end
+			local vp = Camera.ViewportSize
+			local x, y = math.floor(vp.X / 2), 2
+			local VIM = game:GetService("VirtualInputManager")
+			-- Mesma sequência física da Dragonstorm: mover o mouse e clicar com botão esquerdo.
+			VIM:SendMouseMoveEvent(x, y, game)
+			task.wait(0.03)
+			VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
+			task.wait(0.05)
+			VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
+			-- Fallback para executores mobile que ignoram eventos de mouse.
+			pcall(function()
+				local tx, ty = x, math.max(64, math.floor(vp.Y * 0.12))
+				VIM:SendTouchEvent(1, 0, tx, ty)
+				task.wait(0.04)
+				VIM:SendTouchEvent(1, 2, tx, ty)
+			end)
+			pcall(function()
+				local tool = t.Character and t.Character:FindFirstChild(toolName)
+				if tool then tool:Activate() end
+			end)
+			pcall(function()
+				local VU = game:GetService("VirtualUser")
+				VU:CaptureController()
+				VU:ClickButton1(Vector2.new(x, y))
+			end)
+		end)
+	end)
+	return true
+end
 function ShootM1(E)
 	local char = t.Character
 	if not char or not E then
@@ -16423,57 +16464,92 @@ function DetectIslandKitsune()
 end
 function AutoSpawnKitsune()
 	local y, P = game.Lighting.ClockTime, checkboat()
+	-- Hop logic (mantido)
 	if Settings["Hop Server Kitsune Island"] then
 		local Y = CheckMoon()
-		if
-			not (
+		if not (
 				Y == "Full Moon" and math.floor(18 - y) <= 5 and math.floor(18 - y) >= 0
 				or Y == "Next Night"
 				or Y == "Full Moon" and y <= 5 and math.floor(5 - y) >= 11
-			)
-		then
+			) then
 			HopServer()
 			return
 		end
 	end
+
+	-- Se não tem barco, compra
 	if not P then
 		local Y = CFrame.new(-13.488054275512695, 10.311711311340332, 2927.692)
-		Y = if game.PlaceId == getgenv().CheckPlaceId
-			then (CFrame.new(-16204.0810546875, 9.0863618850708, 479.2259521484375))
-			else Y
+		Y = if game.PlaceId == getgenv().CheckPlaceId then (CFrame.new(-16204.0810546875, 9.0863618850708, 479.2259521484375)) else Y
 		if (Y.Position - t.Character.HumanoidRootPart.Position).Magnitude > 8 then
 			toTarget(Y)
 		else
 			local Y = Settings["Select Boat"]
-			if not Y then
-				WarnOnce("SelectBoat", "Chon thuyen o Sea Event > Select Boat truoc da.")
-				return
-			end
+			if not Y then WarnOnce("SelectBoat", "Selecione o barco em Sea Event > Select Boat") return end
 			local H = Y == "Brigade"
-			game:GetService("ReplicatedStorage").Remotes.CommF_
-				:InvokeServer("BuyBoat", if H or Y == "GrandBrigade" then "Pirate" .. Y else Y)
+			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyBoat", if H or Y == "GrandBrigade" then "Pirate" .. Y else Y)
 			task.wait(0.1)
 		end
 		return
 	end
+
+	-- Tem barco - logica nova ViniZDev
+	-- Mar 5: -38480.42578125, 0, 10350.943359375
+	-- Mar 6: -32975.9921875, 0, 25963.7109375
+	-- Se não é lua cheia, vai até o Mar 5 e para perto do 6
+	-- Se é lua cheia, vai até o Mar 6
+
 	NoclipBoat(P)
-	local Y = P.WorldPivot.Y
-	local H = CFrame.new(-32975.9921875, Y, 25963.7109375) * CFrame.new(0, 0, 1000)
-	if CheckMoon() == "Full Moon" and math.floor(18 - y) <= 0 then
-		if (P.VehicleSeat.Position - H.Position).Magnitude > 200 then
+	local boatY = P.WorldPivot.Y
+	local isFullMoon = CheckMoon() == "Full Moon"
+
+	-- Define os pontos
+	local zone5Pos = CFrame.new(-38480.42578125, boatY, 10350.943359375)
+	-- Ponto de parada: entre Mar 5 e Mar 6, perto de ir pro 6 (como pediu)
+	local stopNear6Pos = CFrame.new(-35700, boatY, 18000)
+	local zone6Pos = CFrame.new(-32975.9921875, boatY, 25963.7109375) * CFrame.new(0, 0, 500)
+
+	if not isFullMoon then
+		-- NÃO é lua cheia: vai de barco até o Mar 5, depois para perto do 6
+		local distToZone5 = (P.VehicleSeat.Position - zone5Pos.Position).Magnitude
+		local distToStop = (P.VehicleSeat.Position - stopNear6Pos.Position).Magnitude
+
+		if distToZone5 > 300 then
+			-- Ainda longe do Mar 5, vai pro Mar 5
 			if not t.Character.Humanoid.Sit then
 				toTarget(P.VehicleSeat.CFrame)
 			else
-				manageTween(P.VehicleSeat, H, 350, "TweenBoat")
+				manageTween(P.VehicleSeat, zone5Pos, 350, "TweenBoat")
 			end
-		elseif not t.Character.Humanoid.Sit then
-			toTarget(P.VehicleSeat.CFrame)
+			A.CreateNoti({Title = "Nexora Hub - Kitsune", Desc = "Indo de barco até o Mar 5 (aguardando lua cheia)", ShowTime = 3})
+		elseif distToStop > 250 then
+			-- Já chegou no Mar 5, agora vai até o ponto de parada perto do Mar 6
+			manageTween(P.VehicleSeat, stopNear6Pos, 300, "TweenBoat")
+			A.CreateNoti({Title = "Nexora Hub - Kitsune", Desc = "Chegou no Mar 5, parando perto do Mar 6. Aguardando lua cheia...", ShowTime = 4})
+		else
+			-- Já está no ponto de parada, fica esperando lua cheia
+			-- Só fica no barco, não voa
+			if not t.Character.Humanoid.Sit then
+				toTarget(P.VehicleSeat.CFrame)
+			end
+			-- Não faz tween, fica parado
 		end
 	else
-		if (P.VehicleSeat.Position - H.Position).Magnitude > 200 then
-			manageTween(P.VehicleSeat, H, 350, "TweenBoat")
+		-- É LUA CHEIA: vai com o barco até o Mar 6
+		local distToZone6 = (P.VehicleSeat.Position - zone6Pos.Position).Magnitude
+		if distToZone6 > 250 then
+			if not t.Character.Humanoid.Sit then
+				toTarget(P.VehicleSeat.CFrame)
+			else
+				manageTween(P.VehicleSeat, zone6Pos, 350, "TweenBoat")
+			end
+			A.CreateNoti({Title = "Nexora Hub - Kitsune", Desc = "Lua cheia! Indo de barco até o Mar 6", ShowTime = 3})
+		else
+			-- Chegou no Mar 6
+			if not t.Character.Humanoid.Sit then
+				toTarget(P.VehicleSeat.CFrame)
+			end
 		end
-		toTarget(H * CFrame.new(0, 2000, 0))
 	end
 end
 function DetectSoulEmber()
@@ -29674,13 +29750,37 @@ task.spawn(function()
 end)
 
 
--- ===================== NEXORA SOURCE INTEIRA - ViniZDev - SLIDES QUANTUM + MELEE CLICK =====================
-getgenv().PhysicalGunClickInterval = 9999
-getgenv().DSClickInterval = 9999
+-- ===================== DRAGONSTORM CLICK HIBRIDO + KITSUNE MAR 5->6 =====================
+getgenv().PhysicalGunClickInterval = 0.11
+getgenv().DSClickInterval = 0.11
 getgenv().DragonstormRemoteDelay = 0.11
 getgenv().__DragonstormLastShot = 0
 
-function DragonstormPhysicalClick() return true end
+function DragonstormPhysicalClick(force, toolName)
+    toolName = toolName or "Dragonstorm"
+    local now = os.clock()
+    local lastKey = "__PhysicalClickLast_" .. tostring(toolName)
+    local interval = 0.11
+    if not force and now - (getgenv()[lastKey] or 0) < interval then return false end
+    getgenv()[lastKey] = now
+    task.spawn(function()
+        pcall(function()
+            local Camera = workspace.CurrentCamera
+            if not Camera then return end
+            local vp = Camera.ViewportSize
+            local x, y = math.floor(vp.X / 2), 2
+            local VIM = game:GetService("VirtualInputManager")
+            VIM:SendMouseMoveEvent(x, y, game)
+            task.wait(0.03)
+            VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
+            task.wait(0.05)
+            VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
+            pcall(function() local tool = t.Character and t.Character:FindFirstChild(toolName) if tool then tool:Activate() end end)
+            pcall(function() local VU = game:GetService("VirtualUser") VU:CaptureController() VU:ClickButton1(Vector2.new(x, y)) end)
+        end)
+    end)
+    return true
+end
 getgenv().DragonstormPhysicalClick = DragonstormPhysicalClick
 
 getgenv().SpamGunDragonStorm = function(targetPart)
@@ -29693,9 +29793,7 @@ getgenv().SpamGunDragonStorm = function(targetPart)
     local targetPos, hitPart
     if typeof(targetPart) == "Instance" then
         if targetPart:IsA("BasePart") then targetPos = targetPart.Position hitPart = targetPart
-        elseif targetPart:IsA("Model") then
-            local hrp = targetPart:FindFirstChild("HumanoidRootPart") or targetPart.PrimaryPart
-            if hrp then targetPos = hrp.Position hitPart = hrp else targetPos = targetPart:GetPivot().Position end
+        elseif targetPart:IsA("Model") then local hrp = targetPart:FindFirstChild("HumanoidRootPart") or targetPart.PrimaryPart if hrp then targetPos = hrp.Position hitPart = hrp else targetPos = targetPart:GetPivot().Position end
         end
     elseif typeof(targetPart) == "Vector3" then targetPos = targetPart
     elseif typeof(targetPart) == "CFrame" then targetPos = targetPart.Position end
@@ -29704,33 +29802,13 @@ getgenv().SpamGunDragonStorm = function(targetPart)
     if now - (getgenv().__DragonstormLastShot or 0) < 0.11 then return end
     getgenv().__DragonstormLastShot = now
     getgenv().AimPos = CFrame.new(targetPos)
-    pcall(function()
-        local VU = game:GetService("VirtualUser")
-        VU:CaptureController()
-        VU:ClickButton1(Vector2.new(-1, 1))
-    end)
+    pcall(function() if DragonstormPhysicalClick then DragonstormPhysicalClick(true, "Dragonstorm") end end)
     pcall(function() tool:Activate() end)
     pcall(function()
         local net = game:GetService("ReplicatedStorage").Modules.Net
         local shoot = net and net:FindFirstChild("RE/ShootGunEvent")
-        if shoot then
-            if hitPart then shoot:FireServer(targetPos, {hitPart}) else shoot:FireServer(targetPos, {}) end
-        end
+        if shoot then if hitPart then shoot:FireServer(targetPos, {hitPart}) else shoot:FireServer(targetPos, {}) end end
     end)
-    pcall(function()
-        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("ShootGun", targetPos)
-    end)
-end
-
-if ShootM1 then
-    local oldShoot = ShootM1
-    function ShootM1(E)
-        local char = game.Players.LocalPlayer.Character
-        if not char or not E then return false end
-        local gunName = NameWeapon and NameWeapon("Gun") or "Dragonstorm"
-        if gunName == "Dragonstorm" then getgenv().SpamGunDragonStorm(E) return true end
-        return oldShoot(E)
-    end
 end
 
 function UseDragonstormAllSeaEvents(Part)
@@ -29741,4 +29819,4 @@ function UseDragonstormAllSeaEvents(Part)
     getgenv().SpamGunDragonStorm(Part)
 end
 
-print("[NEXORA FULL] Slides Quantum (azul + bolinha branca) + Melee Click - ViniZDev")
+print("[NEXORA] Kitsune Mar5->Mar6 + DragonStorm Hibrido - ViniZDev")
