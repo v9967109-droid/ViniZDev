@@ -12304,15 +12304,19 @@ function AutoQuestDojo()
 		SaveSettings("QuestDojo", true)
 		local y = GetNameDoubleQuest() or ""
 		if not t.PlayerGui.Main:FindFirstChild("Quest").Visible and typeof(y) == "string" then
-			-- NEXORA FIX: 10s pra pegar missao Belt + 75s sem pegar (ajustado)
-			print("[Nexora] White Belt sem missao - aguardando 10s pra pegar")
-			task.wait(10)
+			-- NEXORA FIX: Mesmo tempo de pegar missao que tem nos Farms (0.8s parado no NPC + espera)
+			print("[Nexora] White Belt sem missao, indo pegar - aguardando 0.8s no NPC")
+			task.wait(0.8)
 			TakeQuestLevel()
-			task.wait(1)
-			-- Se nao pegou, espera 75s igual voce pediu
+			task.wait(1.5)
+			-- Verifica se pegou, se nao, tenta de novo com tempo maior igual nos Farms (2s, 4s)
+			getgenv().__WhiteBeltQuestFails = (getgenv().__WhiteBeltQuestFails or 0) + 1
 			if not t.PlayerGui.Main:FindFirstChild("Quest").Visible then
-				print("[Nexora] White Belt nao pegou, esperando 75s")
-				task.wait(75)
+				local waitTime = math.min(2 * getgenv().__WhiteBeltQuestFails, 10)
+				print("[Nexora] Tentando pegar White Belt de novo em " .. waitTime .. "s")
+				task.wait(waitTime)
+			else
+				getgenv().__WhiteBeltQuestFails = 0
 			end
 		else
 			local P = DetectMob(y)
