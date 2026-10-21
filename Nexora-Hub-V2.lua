@@ -16891,7 +16891,6 @@ function getSeatedBoat()
 	local hum = char:FindFirstChildOfClass("Humanoid")
 	if not hum or not hum.SeatPart then return false end
 	local seat = hum.SeatPart
-	if seat.Name ~= "VehicleSeat" and seat.Name ~= "Seat" then return false end
 	local boat = seat:FindFirstAncestorOfClass("Model")
 	if boat and boat:FindFirstChild("VehicleSeat", true) then return boat end
 	return false
@@ -18230,7 +18229,6 @@ BoatSettingSection.CreateSlider(
 	end
 )
 function checkSpeedboat()
-	local b = math.clamp(tonumber(Settings["Value Speed Boat"]) or 300, 0, 300)
 	local seated = getSeatedBoat()
 	if seated then return seated end
 	local found = checkboatFind()
@@ -29534,27 +29532,66 @@ end)()
 
 
 
--- ===================== DRAGONSTORM REMOTE ONLY + LOOP 2S FIX =====================
--- Click só via remotes, sem mouse/touch na tela, loopando a cada 2s sem travar
+-- ===================== VIDEO CLICK FIX - EXATO DO VIDEO =====================
+-- Esse é o click do video: Hibrido (Remote + Activate + Touch) spam rapido 0.12s
+-- Igual teu video: Lv 2925, em cima do barco, Dragonstorm atirando nos barcos
 
 task.wait(0.3)
 
--- 1. Mata qualquer clique físico
+-- Mata o antigo
+getgenv().PhysicalGunClickInterval = 0.12
+getgenv().DSClickInterval = 0.12
+getgenv().DragonstormRemoteDelay = 0.12
+getgenv().__DragonstormLastShot = 0
+
+-- Click EXATO do video: igual mobile faz
 function DragonstormPhysicalClick(force, toolName)
+    toolName = toolName or "Dragonstorm"
+    local now = os.clock()
+    local lastKey = "__PhysicalClickLast_"..tostring(toolName)
+    local interval = getgenv().PhysicalGunClickInterval or 0.12
+    if not force and now - (getgenv()[lastKey] or 0) < interval then
+        return false
+    end
+    getgenv()[lastKey] = now
+
+    task.spawn(function()
+        pcall(function()
+            local tool = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild(toolName)
+            if not tool then return end
+            -- 1) Activate da tool (principal do video)
+            tool:Activate()
+            -- 2) Camera mira
+            local Camera = workspace.CurrentCamera
+            if not Camera then return end
+            local vp = Camera.ViewportSize
+            local x, y = math.floor(vp.X/2), math.floor(vp.Y/2)
+            local VIM = game:GetService("VirtualInputManager")
+            -- 3) Click fisico igual video mobile
+            VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
+            task.wait(0.03)
+            VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
+            -- 4) Touch pra mobile (igual teu video)
+            pcall(function()
+                VIM:SendTouchEvent(1, 0, x, y)
+                task.wait(0.02)
+                VIM:SendTouchEvent(1, 2, x, y)
+            end)
+            pcall(function()
+                local VU = game:GetService("VirtualUser")
+                VU:CaptureController()
+                VU:ClickButton1(Vector2.new(x,y))
+            end)
+        end)
+    end)
     return true
 end
 getgenv().DragonstormPhysicalClick = DragonstormPhysicalClick
 
--- Config 2 segundos
-getgenv().PhysicalGunClickInterval = 2
-getgenv().DSClickInterval = 2
-getgenv().DragonstormRemoteDelay = 2
-getgenv().__DragonstormLastShot = 0
-
--- 2. SpamGunDragonStorm 100% REMOTE, sem travar
+-- Spam principal EXATO DO VIDEO: Remote + Activate juntos
 getgenv().SpamGunDragonStorm = function(targetPart)
-    local plr = game:GetService("Players").LocalPlayer
-    local char = plr and plr.Character
+    local plr = game.Players.LocalPlayer
+    local char = plr.Character
     if not char then return end
     local tool = char:FindFirstChild("Dragonstorm")
     if not tool then return end
@@ -29562,115 +29599,70 @@ getgenv().SpamGunDragonStorm = function(targetPart)
 
     local targetPos
     if typeof(targetPart) == "Instance" then
-        if targetPart:IsA("BasePart") then
-            targetPos = targetPart.Position
+        if targetPart:IsA("BasePart") then targetPos = targetPart.Position
         elseif targetPart:IsA("Model") then
             local hrp = targetPart:FindFirstChild("HumanoidRootPart") or targetPart.PrimaryPart
             targetPos = hrp and hrp.Position or targetPart:GetPivot().Position
         end
-    elseif typeof(targetPart) == "Vector3" then
-        targetPos = targetPart
-    elseif typeof(targetPart) == "CFrame" then
-        targetPos = targetPart.Position
+    elseif typeof(targetPart) == "Vector3" then targetPos = targetPart
+    elseif typeof(targetPart) == "CFrame" then targetPos = targetPart.Position
     end
     if not targetPos then return end
 
-    -- Cooldown de 2s
     local now = os.clock()
-    if now - (getgenv().__DragonstormLastShot or 0) < (getgenv().DragonstormRemoteDelay or 2) then
-        return
-    end
+    if now - (getgenv().__DragonstormLastShot or 0) < (getgenv().DragonstormRemoteDelay or 0.12) then return end
     getgenv().__DragonstormLastShot = now
 
-    -- Mira
     getgenv().AimPos = CFrame.new(targetPos)
 
-    -- Tenta não travar por reloading - ignora check, deixa o jogo gerenciar
-    -- Se quiser bloquear durante reload real, descomenta:
-    -- local ok, reloading = pcall(function() return require(game:GetService("ReplicatedStorage").Modules.CombatUtil):IsGunReloading(tool) end)
-    -- if ok and reloading then return end
+    -- CLIQUE DO VIDEO: Activate + Remote (sem travar)
+    pcall(function() tool:Activate() end)
 
-    -- 1) Validator (precisa pro anti-cheat)
+    -- Validator
     pcall(function()
-        local CombatController = plr.PlayerScripts:FindFirstChild("Controllers") and plr.PlayerScripts.Controllers:FindFirstChild("CombatController")
-        if not CombatController then return end
-        local cc = require(CombatController)
-        if not cc or not cc.Attack then return end
-        local attackUp = getupvalues and getupvalues(cc.Attack)
-        if not attackUp or not attackUp[9] then return end
-        local l = attackUp[9]
+        local cc = plr.PlayerScripts:FindFirstChild("Controllers") and plr.PlayerScripts.Controllers:FindFirstChild("CombatController")
+        if not cc then return end
+        local mod = require(cc)
+        if not mod.Attack then return end
+        local up = getupvalues and getupvalues(mod.Attack)
+        if not up or not up[9] then return end
+        local l = up[9]
         local I = debug.getupvalue(l, 15)
         local _ = debug.getupvalue(l, 13)
         local o = debug.getupvalue(l, 16)
         local V = debug.getupvalue(l, 17)
         local N = debug.getupvalue(l, 14)
         local y = debug.getupvalue(l, 12)
-        local P = debug.getupvalue(l, 18)
-        if not I or not _ or not o or not V or not N or not y then return end
+        if not I or not _ then return end
         local Q2 = y * _
         local d2 = ((N * _ + y * I) % o * o + Q2) % V
         local N2 = math.floor(d2 / o)
         local y2 = d2 - N2 * o
         local data = string.pack("ii", N2, y2)
-        -- Fire validator
-        local validator = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes") and game:GetService("ReplicatedStorage").Remotes:FindFirstChild("Validator")
-        if validator then
-            validator:FireServer(data)
-        end
+        local validator = game:GetService("ReplicatedStorage").Remotes:FindFirstChild("Validator")
+        if validator then validator:FireServer(data) end
     end)
 
-    -- 2) ShootGunEvent - PRINCIPAL, é esse que atira de verdade sem click
+    -- Remote que atira (principal)
     pcall(function()
-        local rs = game:GetService("ReplicatedStorage")
-        local net = rs:FindFirstChild("Modules") and rs.Modules:FindFirstChild("Net")
-        local shoot = net and net:FindFirstChild("RE/ShootGunEvent")
+        local net = game:GetService("ReplicatedStorage").Modules.Net
+        local shoot = net:FindFirstChild("RE/ShootGunEvent")
         if shoot then
-            -- acha uma part pra mandar como hit
-            local hitPart = nil
+            local hit = nil
             if typeof(targetPart) == "Instance" then
-                if targetPart:IsA("BasePart") then hitPart = targetPart
-                elseif targetPart:IsA("Model") then hitPart = targetPart:FindFirstChild("HumanoidRootPart") or targetPart.PrimaryPart end
+                if targetPart:IsA("BasePart") then hit = targetPart
+                else hit = targetPart:FindFirstChild("HumanoidRootPart") end
             end
-            if hitPart then
-                shoot:FireServer(targetPos, {hitPart})
-            else
-                shoot:FireServer(targetPos, {})
-            end
+            if hit then shoot:FireServer(targetPos, {hit}) else shoot:FireServer(targetPos, {}) end
         end
     end)
 
-    -- 3) Fallback CommF_ ShootGun
     pcall(function()
         game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("ShootGun", targetPos)
     end)
+
+    -- Click fisico logo depois (igual video)
+    DragonstormPhysicalClick(true, "Dragonstorm")
 end
 
--- 3. ShootM1 também só remote quando for Dragonstorm
-if ShootM1 then
-    local oldShoot = ShootM1
-    getgenv()._OldShootM1 = oldShoot
-    function ShootM1(E)
-        local char = game.Players.LocalPlayer.Character
-        if not char or not E then return false end
-        local gunName = NameWeapon and NameWeapon("Gun") or "Dragonstorm"
-        if gunName == "Dragonstorm" then
-            getgenv().SpamGunDragonStorm(E)
-            return true
-        end
-        return oldShoot(E)
-    end
-end
-
--- 4. UseDragonstormAllSeaEvents sem clique
-if UseDragonstormAllSeaEvents then
-    function UseDragonstormAllSeaEvents(Part)
-        if not Part or not Part.Parent then return end
-        if not EquipOnlyIfNeeded or not EquipOnlyIfNeeded("Dragonstorm", 1.0) then
-            pcall(function() game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("LoadItem", "Dragonstorm") end)
-            return
-        end
-        getgenv().SpamGunDragonStorm(Part)
-    end
-end
-
-print("[Dragonstorm Fix] REMOTE ONLY 2s - Loop eterno, sem click na tela!")
+print("[Video Click] Fix aplicado - Igual do video, 0.12s spam hibrido!")
