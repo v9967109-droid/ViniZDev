@@ -2585,18 +2585,19 @@ local fScale = make("UIScale", {Scale=1}, reopen)
             end
             function Section.CreateSlider(cfg, callback)
                 cfg=cfg or {}; local t=cfg.Title or "Slider"; local min=cfg.Min or cfg.MinValue or 0; local max=cfg.Max or cfg.MaxValue or 100; local val=math.clamp(cfg.Default or cfg.Value or min,min,max)
-                local r=row(51); label(make("Frame",{Size=UDim2.new(1,-65,0,22),BackgroundTransparency=1},r),t,11,C.text)
-                local num=label(make("Frame",{Position=UDim2.new(1,-58,0,0),Size=UDim2.new(0,58,0,22),BackgroundTransparency=1},r),val,11,C.gold); num.TextXAlignment=Enum.TextXAlignment.Right
-                local bar=make("Frame",{Position=UDim2.new(0,0,0,30),Size=UDim2.new(1,0,0,7),BackgroundColor3=C.panel2,BorderSizePixel=0},r); corner(bar,4)
-                local fill=make("Frame",{Size=UDim2.new((val-min)/math.max(1,max-min),0,1,0),BackgroundColor3=C.gold,BorderSizePixel=0},bar); corner(fill,4)
-                local hit=make("TextButton",{Size=UDim2.new(1,0,0,20),Position=UDim2.new(0,0,0,-6),BackgroundTransparency=1,Text="",TextTransparency=1},bar)
+                local r=row(52); label(make("Frame",{Size=UDim2.new(1,-70,0,22),BackgroundTransparency=1},r),t,11,C.text)
+                local num=label(make("Frame",{Position=UDim2.new(1,-65,0,0),Size=UDim2.new(0,65,0,22),BackgroundTransparency=1},r),val,11,Color3.fromRGB(0,140,255)); num.TextXAlignment=Enum.TextXAlignment.Right
+                local bar=make("Frame",{Position=UDim2.new(0,0,0,30),Size=UDim2.new(1,0,0,6),BackgroundColor3=Color3.fromRGB(45,45,55),BorderSizePixel=0},r); corner(bar,10)
+                local fill=make("Frame",{Size=UDim2.new((val-min)/math.max(1,max-min),0,1,0),BackgroundColor3=Color3.fromRGB(0,140,255),BorderSizePixel=0},bar); corner(fill,10)
+                local knob=make("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new((val-min)/math.max(1,max-min),0,0.5,0),Size=UDim2.fromOffset(14,14),BackgroundColor3=Color3.fromRGB(255,255,255),BorderSizePixel=0},bar); corner(knob,10)
+                local hit=make("TextButton",{Size=UDim2.new(1,0,0,24),Position=UDim2.new(0,0,0,-9),BackgroundTransparency=1,Text="",TextTransparency=1},bar)
                 local opt
-                local function set(x) local ratio=math.clamp((x-bar.AbsolutePosition.X)/math.max(1,bar.AbsoluteSize.X),0,1); val=math.floor(min+(max-min)*ratio); fill.Size=UDim2.new(ratio,0,1,0); num.Text=tostring(val); if opt then opt.value=val end; if callback then pcall(callback,val) end end
+                local function set(x) local ratio=math.clamp((x-bar.AbsolutePosition.X)/math.max(1,bar.AbsoluteSize.X),0,1); val=math.floor(min+(max-min)*ratio); fill.Size=UDim2.new(ratio,0,1,0); knob.Position=UDim2.new(ratio,0,0.5,0); num.Text=tostring(val); if opt then opt.value=val end; if callback then pcall(callback,val) end end
                 opt=addOption(t,"slider",val,pageName,sectionName,callback)
                 opt._setValue = function(v)
                     val = math.clamp(tonumber(v) or min, min, max)
                     local ratio = (val-min)/math.max(1,max-min)
-                    fill.Size=UDim2.new(ratio,0,1,0); num.Text=tostring(val)
+                    fill.Size=UDim2.new(ratio,0,1,0); knob.Position=UDim2.new(ratio,0,0.5,0); num.Text=tostring(val)
                 end
                 hit.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then set(i.Position.X) end end)
                 hit.InputChanged:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch then if UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then set(i.Position.X) end end end)
@@ -15186,12 +15187,6 @@ SettingSeaEventSection.CreateDropdown(
 		SaveSettings("Select Boat", l)
 	end
 )
-
-SettingSeaEventSection.CreateSlider(
-	{ Title = "Boat Speed", Min = 0, Max = 300, Default = Settings["Boat Speed"] or Settings["Value Speed Boat"] or 275, Precise = true },
-	function(v) SaveSettings("Boat Speed", v) SaveSettings("Value Speed Boat", v) end
-)
-
 SettingSeaEventSection.CreateDropdown(
 	{
 		Title = "Select Weapons Use Skill",
@@ -29679,9 +29674,7 @@ task.spawn(function()
 end)
 
 
--- ===================== NEXORA FULL SOURCE - ViniZDev FIX =====================
--- Source inteira + Boat Any + UI ViniZDev + Slides Quantum + DragonStorm Melee Click
-
+-- ===================== NEXORA SOURCE INTEIRA - ViniZDev - SLIDES QUANTUM + MELEE CLICK =====================
 getgenv().PhysicalGunClickInterval = 9999
 getgenv().DSClickInterval = 9999
 getgenv().DragonstormRemoteDelay = 0.11
@@ -29711,7 +29704,6 @@ getgenv().SpamGunDragonStorm = function(targetPart)
     if now - (getgenv().__DragonstormLastShot or 0) < 0.11 then return end
     getgenv().__DragonstormLastShot = now
     getgenv().AimPos = CFrame.new(targetPos)
-    -- Click estilo melee (igual soco) - SEM mouse no meio da tela
     pcall(function()
         local VU = game:GetService("VirtualUser")
         VU:CaptureController()
@@ -29749,4 +29741,4 @@ function UseDragonstormAllSeaEvents(Part)
     getgenv().SpamGunDragonStorm(Part)
 end
 
-print("[NEXORA FULL SOURCE] ViniZDev - Source Inteira - Boat Any - Melee Click - UI ViniZDev")
+print("[NEXORA FULL] Slides Quantum (azul + bolinha branca) + Melee Click - ViniZDev")
