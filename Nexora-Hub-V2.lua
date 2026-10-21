@@ -6879,9 +6879,80 @@ function toTarget(P, e)
     local H, Z = Y.HumanoidRootPart, Y:FindFirstChildOfClass("Humanoid")
     if not Z then return end
 
-        local shouldUsePortal = false
+    local shouldUsePortal = false
     local bestPortal = nil
-    -- PORTAL REMOVIDO
+
+    pcall(function()
+        if Settings and Settings["Use Portals"] == false then return end
+        local myPos = H.Position
+        local targetPos = P.Position
+        local direct = (targetPos - myPos).Magnitude
+        if direct < 2500 then return end
+
+        -- POSICOES REAIS PESQUISADAS
+        local islandExit = {
+            Castle = Vector3.new(-5084, 314, -3150),
+            Mansion = Vector3.new(-12462, 375, -7524),
+            Hydra = Vector3.new(5541, 668, 195),
+            Tiki = Vector3.new(-16545, 430, -210),
+        }
+
+        local function GetIsland(pos)
+            local best = "Sea"
+            local bestDist = 9e9
+            for name, ipos in pairs(islandExit) do
+                local d = (pos - ipos).Magnitude
+                if d < bestDist then bestDist = d best = name end
+            end
+            if bestDist < 6000 then return best, bestDist else return "Sea", bestDist end
+        end
+
+        local myIsland, myDist = GetIsland(myPos)
+        local targetIsland, targetDist = GetIsland(targetPos)
+
+        -- JA PERTO: NAO USA PORTAL
+        if myIsland ~= "Sea" and targetIsland ~= "Sea" and myIsland == targetIsland then return end
+
+        -- PORTAIS OFICIAIS DO WIKI:
+        -- Castle: 3 portais na casa de telhado azul a esquerda do castelo principal
+        --   Esquerda LARANJA = Tiki, Meio = Mansion, Direita = Hydra
+        -- Mansion: Lado esquerdo da varanda interior, quase na parede frontal
+        -- Tiki: Na frente do porto, oposto ao spawn/safe zone
+        -- Hydra: Topo da montanha no centro da ilha, esquerda do predio do Hydra Leader
+
+        local portals = {
+            CastleToMansion = {Name="Castle->Mansion", EntryPos=Vector3.new(-5084, 314, -3150), ExitPos=Vector3.new(-12462, 375, -7524), Dest="Mansion"},
+            CastleToHydra = {Name="Castle->Hydra", EntryPos=Vector3.new(-5144, 314, -3151), ExitPos=Vector3.new(5541, 668, 195), Dest="Hydra"},
+            CastleToTiki = {Name="Castle->Tiki", EntryPos=Vector3.new(-5008, 314, -3151), ExitPos=Vector3.new(-16545, 430, -210), Dest="Tiki"},
+            MansionToCastle = {Name="Mansion->Castle", EntryPos=Vector3.new(-12462, 375, -7524), ExitPos=Vector3.new(-5084, 314, -3150), Dest="Castle"},
+            HydraToCastle = {Name="Hydra->Castle", EntryPos=Vector3.new(5541, 668, 195), ExitPos=Vector3.new(-5144, 314, -3151), Dest="Castle"},
+            TikiToCastle = {Name="Tiki->Castle", EntryPos=Vector3.new(-16545, 430, -210), ExitPos=Vector3.new(-5008, 314, -3151), Dest="Castle"},
+        }
+
+        if myIsland == "Tiki" and targetIsland ~= "Tiki" then bestPortal = portals.TikiToCastle
+        elseif myIsland == "Mansion" and targetIsland ~= "Mansion" then bestPortal = portals.MansionToCastle
+        elseif myIsland == "Hydra" and targetIsland ~= "Hydra" then bestPortal = portals.HydraToCastle
+        elseif myIsland == "Castle" then
+            -- Escolhe pelo destino mais proximo
+            local distMansion = (targetPos - islandExit.Mansion).Magnitude
+            local distHydra = (targetPos - islandExit.Hydra).Magnitude
+            local distTiki = (targetPos - islandExit.Tiki).Magnitude
+            local minDist = math.min(distMansion, distHydra, distTiki)
+            if minDist > 6500 then return end
+            if minDist == distMansion then bestPortal = portals.CastleToMansion
+            elseif minDist == distHydra then bestPortal = portals.CastleToHydra
+            elseif minDist == distTiki then bestPortal = portals.CastleToTiki
+            end
+        end
+
+        if bestPortal then
+            shouldUsePortal = true
+            warn("[Nexora Portal] "..myIsland.." -> "..bestPortal.Dest.." = "..bestPortal.Name)
+        end
+    end)
+
+    if shouldUsePortal and bestPortal then
+        pcall(function() TweenManager.CancelCurrent() end)
         local realPart = nil
         local realPos = bestPortal.EntryPos
         pcall(function()
