@@ -2135,24 +2135,35 @@ function Nexora.CreateMain(config)
     }, floatGui)
     reopen:SetAttribute("NexoraKeepColor", true)
     make("UICorner", {CornerRadius=UDim.new(0, 18)}, reopen)
-    local stroke = make("UIStroke", {Color=Color3.fromRGB(0, 140, 255), Thickness=1.5, Transparency=0.4}, reopen)
+    local stroke = make("UIStroke", {Color=Color3.fromRGB(0, 140, 255), Thickness=2.5, Transparency=0.1}, reopen)
     reopen.ClipsDescendants = true
-    -- Glow interno 100% dentro
+    -- Glow interno FORTE 100% dentro
     local innerGlow = make("Frame", {
         Name="InnerGlow",
-        BackgroundColor3=Color3.fromRGB(0, 140, 255),
-        BackgroundTransparency=0.92,
+        BackgroundColor3=Color3.fromRGB(0, 180, 255),
+        BackgroundTransparency=0.5,
         Size=UDim2.new(1, 0, 1, 0),
         Position=UDim2.new(0, 0, 0, 0),
         BorderSizePixel=0,
         ZIndex=90
     }, reopen)
+    -- Segundo glow mais forte no centro
+    local centerGlow = make("Frame", {
+        Name="CenterGlow",
+        BackgroundColor3=Color3.fromRGB(100, 220, 255),
+        BackgroundTransparency=0.7,
+        Size=UDim2.new(0.8, 0, 0.6, 0),
+        Position=UDim2.new(0.1, 0, 0.2, 0),
+        BorderSizePixel=0,
+        ZIndex=91
+    }, reopen)
+    make("UICorner", {CornerRadius=UDim.new(0, 10)}, centerGlow)
     make("UICorner", {CornerRadius=UDim.new(0, 18)}, innerGlow)
     -- Raios no botao inteiro (dentro)
-    local rayBtnL = make("Frame", {BackgroundColor3=Color3.fromRGB(80, 180, 255), BackgroundTransparency=0.7, Size=UDim2.new(0, 2, 0, 12), Position=UDim2.new(0, 2, 0.5, -6), BorderSizePixel=0, ZIndex=91}, reopen)
-    local rayBtnR = make("Frame", {BackgroundColor3=Color3.fromRGB(80, 180, 255), BackgroundTransparency=0.7, Size=UDim2.new(0, 2, 0, 12), Position=UDim2.new(1, -4, 0.5, -6), BorderSizePixel=0, ZIndex=91}, reopen)
-    local rayBtnT = make("Frame", {BackgroundColor3=Color3.fromRGB(0, 140, 255), BackgroundTransparency=0.7, Size=UDim2.new(0, 12, 0, 2), Position=UDim2.new(0.5, -6, 0, 2), BorderSizePixel=0, ZIndex=91}, reopen)
-    local rayBtnB = make("Frame", {BackgroundColor3=Color3.fromRGB(0, 140, 255), BackgroundTransparency=0.7, Size=UDim2.new(0, 12, 0, 2), Position=UDim2.new(0.5, -6, 1, -4), BorderSizePixel=0, ZIndex=91}, reopen)
+    local rayBtnL = make("Frame", {BackgroundColor3=Color3.fromRGB(0, 200, 255), BackgroundTransparency=0.1, Size=UDim2.new(0, 2, 0, 12), Position=UDim2.new(0, 2, 0.5, -6), BorderSizePixel=0, ZIndex=91}, reopen)
+    local rayBtnR = make("Frame", {BackgroundColor3=Color3.fromRGB(0, 200, 255), BackgroundTransparency=0.1, Size=UDim2.new(0, 2, 0, 12), Position=UDim2.new(1, -4, 0.5, -6), BorderSizePixel=0, ZIndex=91}, reopen)
+    local rayBtnT = make("Frame", {BackgroundColor3=Color3.fromRGB(0, 140, 255), BackgroundTransparency=0.3, Size=UDim2.new(0, 12, 0, 2), Position=UDim2.new(0.5, -6, 0, 2), BorderSizePixel=0, ZIndex=91}, reopen)
+    local rayBtnB = make("Frame", {BackgroundColor3=Color3.fromRGB(0, 140, 255), BackgroundTransparency=0.3, Size=UDim2.new(0, 12, 0, 2), Position=UDim2.new(0.5, -6, 1, -4), BorderSizePixel=0, ZIndex=91}, reopen)
     make("UICorner", {CornerRadius=UDim.new(1,0)}, rayBtnL)
     make("UICorner", {CornerRadius=UDim.new(1,0)}, rayBtnR)
     make("UICorner", {CornerRadius=UDim.new(1,0)}, rayBtnT)
@@ -2162,16 +2173,17 @@ function Nexora.CreateMain(config)
         while reopen.Parent do
             pcall(function()
                 local t1 = TS:Create(stroke, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency=0.1, Color=Color3.fromRGB(100, 200, 255)})
-                local t2 = TS:Create(innerGlow, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.75})
+                local t2 = TS:Create(innerGlow, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.35})
                 t1:Play(); t2:Play()
                 for _, r in ipairs({rayBtnL, rayBtnR, rayBtnT, rayBtnB}) do TS:Create(r, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.2}):Play() end
             end)
             task.wait(0.8)
             pcall(function()
-                local t1 = TS:Create(stroke, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency=0.4, Color=Color3.fromRGB(0, 140, 255)})
-                local t2 = TS:Create(innerGlow, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.92})
+                local t1 = TS:Create(stroke, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency=0.2, Color=Color3.fromRGB(0, 140, 255)})
+                local t2 = TS:Create(innerGlow, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.5})
+                pcall(function() TS:Create(centerGlow, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.7}):Play() end)
                 t1:Play(); t2:Play()
-                for _, r in ipairs({rayBtnL, rayBtnR, rayBtnT, rayBtnB}) do TS:Create(r, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.7}):Play() end
+                for _, r in ipairs({rayBtnL, rayBtnR, rayBtnT, rayBtnB}) do TS:Create(r, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.3}):Play() end
             end)
             task.wait(0.8)
         end
@@ -2187,12 +2199,12 @@ function Nexora.CreateMain(config)
     }, reopen)
     make("UICorner", {CornerRadius=UDim.new(1,0)}, iconFrame)
     -- 4 raios pequenos dentro do N
-    local nRay1 = make("Frame", {BackgroundColor3=Color3.fromRGB(80, 180, 255), BackgroundTransparency=0.6, Size=UDim2.new(0, 1, 0, 8), Position=UDim2.new(0.5, -0.5, 0, 1), BorderSizePixel=0, ZIndex=99}, iconFrame)
-    local nRay2 = make("Frame", {BackgroundColor3=Color3.fromRGB(80, 180, 255), BackgroundTransparency=0.6, Size=UDim2.new(0, 1, 0, 8), Position=UDim2.new(0.5, -0.5, 1, -9), BorderSizePixel=0, ZIndex=99}, iconFrame)
-    local nRay3 = make("Frame", {BackgroundColor3=Color3.fromRGB(80, 180, 255), BackgroundTransparency=0.6, Size=UDim2.new(0, 8, 0, 1), Position=UDim2.new(0, 1, 0.5, -0.5), BorderSizePixel=0, ZIndex=99}, iconFrame)
-    local nRay4 = make("Frame", {BackgroundColor3=Color3.fromRGB(80, 180, 255), BackgroundTransparency=0.6, Size=UDim2.new(0, 8, 0, 1), Position=UDim2.new(1, -9, 0.5, -0.5), BorderSizePixel=0, ZIndex=99}, iconFrame)
-    local nRay5 = make("Frame", {BackgroundColor3=Color3.fromRGB(0, 140, 255), BackgroundTransparency=0.7, Size=UDim2.new(0, 1, 0, 6), Position=UDim2.new(0.5, -0.5, 0.5, -3), Rotation=45, BorderSizePixel=0, ZIndex=99}, iconFrame)
-    local nRay6 = make("Frame", {BackgroundColor3=Color3.fromRGB(0, 140, 255), BackgroundTransparency=0.7, Size=UDim2.new(0, 1, 0, 6), Position=UDim2.new(0.5, -0.5, 0.5, -3), Rotation=-45, BorderSizePixel=0, ZIndex=99}, iconFrame)
+    local nRay1 = make("Frame", {BackgroundColor3=Color3.fromRGB(0, 200, 255), BackgroundTransparency=0.2, Size=UDim2.new(0, 1, 0, 8), Position=UDim2.new(0.5, -0.5, 0, 1), BorderSizePixel=0, ZIndex=99}, iconFrame)
+    local nRay2 = make("Frame", {BackgroundColor3=Color3.fromRGB(0, 200, 255), BackgroundTransparency=0.2, Size=UDim2.new(0, 1, 0, 8), Position=UDim2.new(0.5, -0.5, 1, -9), BorderSizePixel=0, ZIndex=99}, iconFrame)
+    local nRay3 = make("Frame", {BackgroundColor3=Color3.fromRGB(0, 200, 255), BackgroundTransparency=0.2, Size=UDim2.new(0, 8, 0, 1), Position=UDim2.new(0, 1, 0.5, -0.5), BorderSizePixel=0, ZIndex=99}, iconFrame)
+    local nRay4 = make("Frame", {BackgroundColor3=Color3.fromRGB(0, 200, 255), BackgroundTransparency=0.2, Size=UDim2.new(0, 8, 0, 1), Position=UDim2.new(1, -9, 0.5, -0.5), BorderSizePixel=0, ZIndex=99}, iconFrame)
+    local nRay5 = make("Frame", {BackgroundColor3=Color3.fromRGB(0, 140, 255), BackgroundTransparency=0.3, Size=UDim2.new(0, 1, 0, 6), Position=UDim2.new(0.5, -0.5, 0.5, -3), Rotation=45, BorderSizePixel=0, ZIndex=99}, iconFrame)
+    local nRay6 = make("Frame", {BackgroundColor3=Color3.fromRGB(0, 140, 255), BackgroundTransparency=0.3, Size=UDim2.new(0, 1, 0, 6), Position=UDim2.new(0.5, -0.5, 0.5, -3), Rotation=-45, BorderSizePixel=0, ZIndex=99}, iconFrame)
     -- N azul
     local iconText = make("TextLabel", {
         BackgroundTransparency=1,
@@ -2570,7 +2582,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
             local head=make("TextLabel", {Size=UDim2.new(1,0,0,22),BackgroundTransparency=1,Text=sectionName,TextColor3=Color3.fromRGB(245,245,250),Font=Enum.Font.GothamBold,TextSize=12,TextXAlignment=Enum.TextXAlignment.Left},card)
             make("UIPadding", {PaddingLeft=UDim.new(0,10)}, head)
             do local hb=make("Frame", {Position=UDim2.new(0,-10,.5,-7),Size=UDim2.new(0,3,0,14),BackgroundColor3=C.gold,BorderSizePixel=0},head); corner(hb,2) end
-            make("Frame", {Size=UDim2.new(1,0,0,1), BackgroundColor3=Color3.fromRGB(255,255,255), BackgroundTransparency=0.92, BorderSizePixel=0}, card)
+            make("Frame", {Size=UDim2.new(1,0,0,1), BackgroundColor3=Color3.fromRGB(255,255,255), BackgroundTransparency=0.6, BorderSizePixel=0}, card)
             local Section={}
             local function row(height)
                 return make("Frame", {Size=UDim2.new(1,0,0,height),BackgroundTransparency=1},card)
