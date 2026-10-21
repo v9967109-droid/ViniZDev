@@ -2135,123 +2135,87 @@ function Nexora.CreateMain(config)
     }, floatGui)
     reopen:SetAttribute("NexoraKeepColor", true)
     make("UICorner", {CornerRadius=UDim.new(0, 18)}, reopen)
-    local stroke = make("UIStroke", {Color=Color3.fromRGB(0, 140, 255), Thickness=2, Transparency=0.5}, reopen)
-    -- Raios azuis no botao inteiro
-    local outerGlow = make("Frame", {
-        Name="OuterGlow",
+    local stroke = make("UIStroke", {Color=Color3.fromRGB(0, 140, 255), Thickness=1.5, Transparency=0.4}, reopen)
+    reopen.ClipsDescendants = true
+    -- Glow interno azul dentro do botao (100% dentro)
+    local innerGlow = make("Frame", {
+        Name="InnerGlow",
         BackgroundColor3=Color3.fromRGB(0, 140, 255),
         BackgroundTransparency=0.9,
-        Size=UDim2.new(1, 30, 1, 30),
-        Position=UDim2.new(0, -15, 0, -15),
+        Size=UDim2.new(1, 0, 1, 0),
+        Position=UDim2.new(0, 0, 0, 0),
         BorderSizePixel=0,
         ZIndex=90
     }, reopen)
-    make("UICorner", {CornerRadius=UDim.new(0, 26)}, outerGlow)
-    local outerGrad = make("UIGradient", {Rotation=0, Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(0.6, 0.8), NumberSequenceKeypoint.new(1, 1)})}, outerGlow)
-    
-    -- Container raios realistas do botao
-    local raysBtnContainer = make("Frame", {
-        Name="RaysButton",
-        BackgroundTransparency=1,
-        Size=UDim2.new(1, 40, 1, 40),
-        Position=UDim2.new(0, -20, 0, -20),
-        BorderSizePixel=0,
-        ZIndex=89
-    }, reopen)
-    
-    local function createBtnRay(parent, rot, len, width)
-        local ray = make("Frame", {
-            BackgroundColor3=Color3.fromRGB(0, 180, 255),
-            BackgroundTransparency=0.4,
-            Size=UDim2.new(0, width, 0, len),
-            Position=UDim2.new(0.5, -width/2, 0.5, 0),
-            AnchorPoint=Vector2.new(0.5, 0),
-            Rotation=rot,
-            BorderSizePixel=0,
-            ZIndex=89
-        }, parent)
-        local grad = make("UIGradient", {
-            Rotation=90,
-            Transparency=NumberSequence.new({
-                NumberSequenceKeypoint.new(0, 0),
-                NumberSequenceKeypoint.new(0.3, 0.3),
-                NumberSequenceKeypoint.new(0.8, 0.85),
-                NumberSequenceKeypoint.new(1, 1)
-            })
-        }, ray)
-        make("UICorner", {CornerRadius=UDim.new(1,0)}, ray)
-        return ray
-    end
-    
-    local btnRays = {}
-    for i=1,12 do
-        local rot = (i-1)*30
-        local len = (i%3==0) and 22 or (i%2==0) and 16 or 12
-        local w = (i%3==0) and 2 or 1.2
-        table.insert(btnRays, createBtnRay(raysBtnContainer, rot, len, w))
-    end
-    
-    -- Ray lateral extra (brilho forte nas bordas)
-    local rayBtn1 = btnRays[1]
-    local rayBtn2 = btnRays[7]
-    -- Animacao realista botao + raios girando
-    task.spawn(function()
-        local TweenService = game:GetService("TweenService")
-        while reopen.Parent do
-            local t1 = TweenService:Create(stroke, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Color=Color3.fromRGB(100, 200, 255), Transparency=0.1, Thickness=3})
-            local tGlow = TweenService:Create(outerGlow, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.5, Size=UDim2.new(1, 36, 1, 36), Position=UDim2.new(0, -18, 0, -18)})
-            local tRot = TweenService:Create(raysBtnContainer, TweenInfo.new(4, Enum.EasingStyle.Linear), {Rotation=180})
-            t1:Play(); tGlow:Play(); tRot:Play()
-            t1.Completed:Wait()
-            local t1b = TweenService:Create(stroke, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Color=Color3.fromRGB(0, 140, 255), Transparency=0.5, Thickness=1.5})
-            local tGlowb = TweenService:Create(outerGlow, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.9, Size=UDim2.new(1, 30, 1, 30), Position=UDim2.new(0, -15, 0, -15)})
-            local tRot2 = TweenService:Create(raysBtnContainer, TweenInfo.new(4, Enum.EasingStyle.Linear), {Rotation=360})
-            t1b:Play(); tGlowb:Play(); tRot2:Play()
-            t1b.Completed:Wait()
-            raysBtnContainer.Rotation = 0
-        end
-    end)
-    -- Ícone N AZUL com RAIO PULSANDO
+    make("UICorner", {CornerRadius=UDim.new(0, 18)}, innerGlow)
+
+    -- Icone N com raios realistas 100% DENTRO
     local iconFrame = make("Frame", {
         BackgroundColor3=Color3.fromRGB(35, 35, 45),
         Size=UDim2.new(0, 24, 0, 24),
         Position=UDim2.new(0, 6, 0.5, -12),
         BorderSizePixel=0,
+        ClipsDescendants=true,
         ZIndex=101
     }, reopen)
     make("UICorner", {CornerRadius=UDim.new(1,0)}, iconFrame)
-    -- Glow azul realista atras do N
-    local glowBehind = make("Frame", {
-        BackgroundColor3=Color3.fromRGB(0, 140, 255),
-        BackgroundTransparency=0.7,
-        Size=UDim2.new(0, 32, 0, 32),
-        Position=UDim2.new(0.5, -16, 0.5, -16),
-        BorderSizePixel=0,
-        ZIndex=100
-    }, iconFrame)
-    make("UICorner", {CornerRadius=UDim.new(1,0)}, glowBehind)
-    -- Raios azuis girando
+    -- Raios realistas DENTRO do N (pequenos, nao sai pra fora)
     local ray1 = make("Frame", {
         BackgroundColor3=Color3.fromRGB(80, 180, 255),
         BackgroundTransparency=0.6,
-        Size=UDim2.new(0, 2, 0, 36),
-        Position=UDim2.new(0.5, -1, 0.5, -18),
-        BorderSizePixel=0,
+        Size=UDim2.new(0, 1, 0, 10),
+        Position=UDim2.new(0.5, -0.5, 0, 2),
         Rotation=0,
+        BorderSizePixel=0,
         ZIndex=99
     }, iconFrame)
     local ray2 = make("Frame", {
-        BackgroundColor3=Color3.fromRGB(0, 140, 255),
+        BackgroundColor3=Color3.fromRGB(80, 180, 255),
         BackgroundTransparency=0.6,
-        Size=UDim2.new(0, 2, 0, 36),
-        Position=UDim2.new(0.5, -1, 0.5, -18),
+        Size=UDim2.new(0, 1, 0, 10),
+        Position=UDim2.new(0.5, -0.5, 1, -12),
+        Rotation=0,
         BorderSizePixel=0,
-        Rotation=90,
         ZIndex=99
     }, iconFrame)
-    make("UICorner", {CornerRadius=UDim.new(1,0)}, ray1)
-    make("UICorner", {CornerRadius=UDim.new(1,0)}, ray2)
-    -- N como TextLabel pulsando
+    local ray3 = make("Frame", {
+        BackgroundColor3=Color3.fromRGB(80, 180, 255),
+        BackgroundTransparency=0.6,
+        Size=UDim2.new(0, 10, 0, 1),
+        Position=UDim2.new(0, 2, 0.5, -0.5),
+        Rotation=0,
+        BorderSizePixel=0,
+        ZIndex=99
+    }, iconFrame)
+    local ray4 = make("Frame", {
+        BackgroundColor3=Color3.fromRGB(80, 180, 255),
+        BackgroundTransparency=0.6,
+        Size=UDim2.new(0, 10, 0, 1),
+        Position=UDim2.new(1, -12, 0.5, -0.5),
+        Rotation=0,
+        BorderSizePixel=0,
+        ZIndex=99
+    }, iconFrame)
+    -- Diagonais
+    local ray5 = make("Frame", {
+        BackgroundColor3=Color3.fromRGB(0, 140, 255),
+        BackgroundTransparency=0.7,
+        Size=UDim2.new(0, 1, 0, 8),
+        Position=UDim2.new(0.5, -0.5, 0.5, -4),
+        Rotation=45,
+        BorderSizePixel=0,
+        ZIndex=99
+    }, iconFrame)
+    local ray6 = make("Frame", {
+        BackgroundColor3=Color3.fromRGB(0, 140, 255),
+        BackgroundTransparency=0.7,
+        Size=UDim2.new(0, 1, 0, 8),
+        Position=UDim2.new(0.5, -0.5, 0.5, -4),
+        Rotation=-45,
+        BorderSizePixel=0,
+        ZIndex=99
+    }, iconFrame)
+    -- N azul
     local iconText = make("TextLabel", {
         BackgroundTransparency=1,
         Size=UDim2.new(1, 0, 1, 0),
@@ -2260,26 +2224,32 @@ function Nexora.CreateMain(config)
         TextColor3=Color3.fromRGB(0, 140, 255),
         Font=Enum.Font.GothamBlack,
         TextSize=18,
-        TextStrokeTransparency=0.2,
+        TextStrokeTransparency=0.3,
         ZIndex=103
     }, iconFrame)
     make("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 140, 255))}, iconText)
-    -- Animacao realista pulsando + girando
+    -- Animacao dos raios dentro do N + botao
     task.spawn(function()
         local TweenService = game:GetService("TweenService")
         while iconFrame.Parent do
-            -- Pulsar o N
-            local t1 = TweenService:Create(iconText, TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize=21, TextStrokeTransparency=0, TextColor3=Color3.fromRGB(120, 210, 255)})
-            local tGlow = TweenService:Create(glowBehind, TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.4, Size=UDim2.new(0, 48, 0, 48), Position=UDim2.new(0.5, -24, 0.5, -24)})
-            local tRaysRot = TweenService:Create(raysContainer, TweenInfo.new(3, Enum.EasingStyle.Linear), {Rotation=180})
-            t1:Play(); tGlow:Play(); tRaysRot:Play()
-            t1.Completed:Wait()
-            local t1b = TweenService:Create(iconText, TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize=18, TextStrokeTransparency=0.3, TextColor3=Color3.fromRGB(0, 140, 255)})
-            local tGlowb = TweenService:Create(glowBehind, TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.8, Size=UDim2.new(0, 40, 0, 40), Position=UDim2.new(0.5, -20, 0.5, -20)})
-            local tRaysRot2 = TweenService:Create(raysContainer, TweenInfo.new(3, Enum.EasingStyle.Linear), {Rotation=360})
-            t1b:Play(); tGlowb:Play(); tRaysRot2:Play()
-            t1b.Completed:Wait()
-            raysContainer.Rotation = 0
+            -- N pulsa
+            local tN = TweenService:Create(iconText, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize=20, TextColor3=Color3.fromRGB(120, 210, 255)})
+            local tGlow = TweenService:Create(innerGlow, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.7})
+            local tStroke = TweenService:Create(stroke, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Color=Color3.fromRGB(120, 210, 255), Transparency=0.1})
+            -- Raios aparecem
+            for _, r in ipairs({ray1, ray2, ray3, ray4, ray5, ray6}) do
+                TweenService:Create(r, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.2}):Play()
+            end
+            tN:Play(); tGlow:Play(); tStroke:Play()
+            tN.Completed:Wait()
+            local tN2 = TweenService:Create(iconText, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize=18, TextColor3=Color3.fromRGB(0, 140, 255)})
+            local tGlow2 = TweenService:Create(innerGlow, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.9})
+            local tStroke2 = TweenService:Create(stroke, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Color=Color3.fromRGB(0, 140, 255), Transparency=0.4})
+            for _, r in ipairs({ray1, ray2, ray3, ray4, ray5, ray6}) do
+                TweenService:Create(r, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.6}):Play()
+            end
+            tN2:Play(); tGlow2:Play(); tStroke2:Play()
+            tN2.Completed:Wait()
         end
     end)
     local iconImg = make("ImageLabel", {
@@ -3625,123 +3595,9 @@ end
 -- ===============================================================
 
 -- ===================== NOVA ABA: HOP OTHERS (SEPARADA) - CLICK UNICO =====================
-do
-    local PageHopOthers = Main.CreatePage({ Page_Name = "Hop Others", Page_Title = "Hop Others" })
-    local SectionHopOthers = PageHopOthers.CreateSection("Hop Others - 1 Clique = 1 Hop")
 
-    local function NotifyHop(title, content)
-        pcall(function()
-            if Main and Main.Notify then
-                Main.Notify({ Title = title, Content = content, Duration = 4 })
-            end
-        end)
-        pcall(function()
-            local sg = Instance.new("ScreenGui")
-            sg.Name = "HopNotify"
-            sg.Parent = (gethui and gethui()) or game.CoreGui
-            local frame = Instance.new("Frame")
-            frame.Size = UDim2.new(0, 320, 0, 70)
-            frame.Position = UDim2.new(0.5, -160, 0, 20)
-            frame.BackgroundColor3 = Color3.fromRGB(15,15,20)
-            frame.BorderSizePixel = 0
-            local corner = Instance.new("UICorner")
-            corner.CornerRadius = UDim.new(0,10)
-            corner.Parent = frame
-            local stroke = Instance.new("UIStroke")
-            stroke.Color = Color3.fromRGB(0,140,255)
-            stroke.Thickness = 1.5
-            stroke.Parent = frame
-            local titleLabel = Instance.new("TextLabel")
-            titleLabel.BackgroundTransparency = 1
-            titleLabel.Size = UDim2.new(1,-20,0,22)
-            titleLabel.Position = UDim2.new(0,10,0,6)
-            titleLabel.Text = title
-            titleLabel.TextColor3 = Color3.fromRGB(0,180,255)
-            titleLabel.Font = Enum.Font.GothamBold
-            titleLabel.TextSize = 14
-            titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-            titleLabel.Parent = frame
-            local cont = Instance.new("TextLabel")
-            cont.BackgroundTransparency = 1
-            cont.Size = UDim2.new(1,-20,0,30)
-            cont.Position = UDim2.new(0,10,0,28)
-            cont.Text = content
-            cont.TextColor3 = Color3.fromRGB(220,220,230)
-            cont.Font = Enum.Font.Gotham
-            cont.TextSize = 12
-            cont.TextWrapped = true
-            cont.TextXAlignment = Enum.TextXAlignment.Left
-            cont.Parent = frame
-            frame.Parent = sg
-            game.Debris:AddItem(sg, 4)
-        end)
-    end
+-- Hop Others removido
 
-    local function HopServerOnce()
-        local TeleportService = game:GetService("TeleportService")
-        local HttpService = game:GetService("HttpService")
-        local Players = game:GetService("Players")
-        local PlaceId = game.PlaceId
-        local JobId = game.JobId
-        local LocalPlayer = Players.LocalPlayer
-        local servers = {}
-        local success, result = pcall(function()
-            return game:HttpGet("https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=Asc&limit=100")
-        end)
-        if success and result then
-            local ok, data = pcall(function() return HttpService:JSONDecode(result) end)
-            if ok and data and data.data then
-                for _, v in pairs(data.data) do
-                    if v.playing < v.maxPlayers and v.id ~= JobId then
-                        table.insert(servers, v.id)
-                    end
-                end
-            end
-        end
-        -- CORREÇÃO TELEPORT LOCAL RESTRITO: sempre passa LocalPlayer e usa pcall
-        if #servers > 0 then
-            local targetId = servers[math.random(1,#servers)]
-            local ok, err = pcall(function()
-                TeleportService:TeleportToPlaceInstance(PlaceId, targetId, LocalPlayer)
-            end)
-            if not ok then
-                pcall(function()
-                    TeleportService:Teleport(PlaceId, LocalPlayer)
-                end)
-            end
-        else
-            pcall(function()
-                TeleportService:Teleport(PlaceId, LocalPlayer)
-            end)
-        end
-    end
-
-    local function DoHop(eventName)
-        NotifyHop("Hop Others", "Entrando em servidor com "..eventName.."...")
-        task.wait(0.3)
-        HopServerOnce()
-    end
-
-    SectionHopOthers.CreateButton({ Title = "Hop Prehistoric Island" }, function()
-        DoHop("Prehistoric Island")
-    end)
-    SectionHopOthers.CreateButton({ Title = "Hop Mirage Island" }, function()
-        DoHop("Mirage Island")
-    end)
-    SectionHopOthers.CreateButton({ Title = "Hop Kitsune Island" }, function()
-        DoHop("Kitsune Island")
-    end)
-    SectionHopOthers.CreateButton({ Title = "Hop Full Moon" }, function()
-        DoHop("Full Moon")
-    end)
-    SectionHopOthers.CreateButton({ Title = "Hop Legendary Haki" }, function()
-        DoHop("Legendary Haki")
-    end)
-    SectionHopOthers.CreateButton({ Title = "Hop Fruit" }, function()
-        DoHop("Fruit Spawn")
-    end)
-end
--- ===================== FIM NOVA ABA HOP OTHERS =====================
 
 
 SectionServer = PageStatusAndServer.CreateSection("Server")
@@ -8708,12 +8564,7 @@ SettingFarmMainSection.CreateToggle(
 		SaveSettings("Bring Mob", I)
 	end
 )
-SettingFarmMainSection.CreateToggle(
-	{ Title = "Use Portals", Desc = "", Default = true },
-	function(I)
-		SaveSettings("Use Portals", I)
-	end
-)
+-- Use Portals removido
 
 SaveSettings("Speed Tween ", 220)
 SettingFarmMainSection.CreateLabel({
@@ -26749,71 +26600,24 @@ do
 				end
 				if Settings["Auto Awake Fruit"] then
 					pcall(function()
-						-- So compra SE NAO estiver em Raid (espera sair)
-						local function IsInRaid()
-							local ok, result = pcall(function()
-								return game.Players.LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible
-							end)
-							return ok and result
-						end
-						
-						-- Se ainda ta na Raid, nao compra agora, espera proximo ciclo
-						if IsInRaid() then
-							return
-						end
-
-						local fragments = 0
-						pcall(function() fragments = game.Players.LocalPlayer.Data.Fragments.Value end)
-						if fragments < 500 then return end -- sem fragmento nao tenta
-
-						-- Tenta despertar QUALQUER skill de QUALQUER fruta (independente)
-						local allFruits = {"Flame", "Ice", "Sand", "Dark", "Light", "Magma", "Quake", "Buddha", "Spider", "Phoenix", "Rumble", "Dough", "Shadow", "Venom", "Blizzard", "Mammoth", "Gravity"}
-						local allSkills = {"Z", "X", "C", "V", "F"}
-
-						-- 1. Tenta metodo simples sem parametro (desperta a fruta equipada)
-						for _, skill in ipairs(allSkills) do
-							pcall(function()
-								local res = L.Remotes.CommF_:InvokeServer("Awakener", "Awaken", skill)
-								if res and res ~= false then
-									print("[Nexora Awaken] Comprou skill: "..skill)
-								end
-							end)
-							task.wait(0.15)
+						local isInRaid = game.Players.LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible
+						if isInRaid then return end
+						local frags = 0
+						pcall(function() frags = game.Players.LocalPlayer.Data.Fragments.Value end)
+						if frags < 500 then return end
+						local fruits = {"Flame","Ice","Sand","Dark","Light","Magma","Quake","Buddha","Spider","Phoenix","Rumble","Dough"}
+						local skills = {"Z","X","C","V","F"}
+						for _, sk in ipairs(skills) do
+							pcall(function() L.Remotes.CommF_:InvokeServer("Awakener", "Awaken", sk) end)
 							pcall(function() L.Remotes.CommF_:InvokeServer("Awakener", "Awaken") end)
-							task.wait(0.15)
+							task.wait(0.1)
 						end
-
-						-- 2. Tenta com nome da fruta + skill
-						for _, fruit in ipairs(allFruits) do
-							for _, skill in ipairs(allSkills) do
-								pcall(function()
-									local res = L.Remotes.CommF_:InvokeServer("Awakener", "Awaken", fruit, skill)
-									if res and res == true then
-										print("[Nexora Awaken] Comprou "..fruit.." "..skill)
-										Main.Notify({ Title = "Awaken", Content = fruit.." "..skill.." despertado!", Duration = 3 })
-									end
-								end)
-								task.wait(0.1)
+						for _, fr in ipairs(fruits) do
+							for _, sk in ipairs(skills) do
+								pcall(function() L.Remotes.CommF_:InvokeServer("Awakener", "Awaken", fr, sk) end)
+								task.wait(0.05)
 							end
-							-- Tenta so fruta
-							pcall(function() L.Remotes.CommF_:InvokeServer("Awakener", "Awaken", fruit) end)
-							task.wait(0.2)
 						end
-
-						-- 3. Tenta metodo antigo Check retorna tabela
-						pcall(function()
-							local checkData = L.Remotes.CommF_:InvokeServer("Awakener", "Check")
-							if checkData and type(checkData) == "table" then
-								for k,v in pairs(checkData) do
-									if type(v) == "boolean" and v == true then
-										L.Remotes.CommF_:InvokeServer("Awakener", "Awaken", k)
-									elseif type(v) == "table" and v.CanAwaken then
-										L.Remotes.CommF_:InvokeServer("Awakener", "Awaken", k)
-									end
-									task.wait(0.2)
-								end
-							end
-						end)
 					end)
 				end
 				if Settings["Auto Buy Legendary Sword"] then
