@@ -1941,8 +1941,8 @@ local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 local ParentGui = (gethui and gethui()) or CoreGui
 local COLORS = {
-    bg = Color3.fromRGB(3, 10, 22), panel = Color3.fromRGB(5, 19, 39),
-    panel2 = Color3.fromRGB(7, 28, 54), line = Color3.fromRGB(0, 105, 210),
+    bg = Color3.fromRGB(2, 12, 27), panel = Color3.fromRGB(4, 20, 42),
+    panel2 = Color3.fromRGB(6, 27, 53), line = Color3.fromRGB(0, 112, 220),
     blue = Color3.fromRGB(0, 174, 255), cyan = Color3.fromRGB(0, 215, 255),
     text = Color3.fromRGB(235, 245, 255), muted = Color3.fromRGB(135, 170, 205),
     off = Color3.fromRGB(75, 101, 133), green = Color3.fromRGB(0, 215, 255)
@@ -1986,35 +1986,38 @@ function UI.CreateMain(config)
     if oldFloat then oldFloat:Destroy() end
     local gui = make("ScreenGui", {Name="NexoraBlueUI", ResetOnSpawn=false, IgnoreGuiInset=true, ZIndexBehavior=Enum.ZIndexBehavior.Sibling, DisplayOrder=50}, ParentGui)
     local shell = make("Frame", {Name="MainWindow", AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5),
-        Size=UDim2.new(0,760,0,430), BackgroundColor3=COLORS.bg, BorderSizePixel=0, ClipsDescendants=true}, gui)
+        Size=UDim2.new(0,760,0,450), BackgroundColor3=COLORS.bg, BorderSizePixel=0, ClipsDescendants=true}, gui)
     round(shell, 18); outline(shell, COLORS.blue, 0.05, 2)
     make("UIGradient", {Rotation=135, Color=ColorSequence.new(COLORS.bg, Color3.fromRGB(4,25,51))}, shell)
     local scaler = make("UIScale", {Scale=1}, shell)
     local function fit()
         local cam = workspace.CurrentCamera
-        if cam then scaler.Scale = math.clamp(math.min((cam.ViewportSize.X-20)/760,(cam.ViewportSize.Y-20)/430),.42,1) end
+        if cam then scaler.Scale = math.clamp(math.min((cam.ViewportSize.X-20)/760,(cam.ViewportSize.Y-20)/450),.42,1) end
     end
     fit()
     if workspace.CurrentCamera then workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(fit) end
-    local header = make("Frame", {Name="Header", Size=UDim2.new(1,0,0,52), BackgroundColor3=Color3.fromRGB(3,15,32), BorderSizePixel=0}, shell)
-    local logo = make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,18,0,7), Size=UDim2.new(0,40,0,46),
-        Text="N", TextColor3=COLORS.cyan, Font=Enum.Font.GothamBlack, TextSize=36}, header)
-    local title = make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,45,0,0), Size=UDim2.new(1,-90,1,0),
-        RichText=true, Text='<font color="#00BFFF">Nexora Hub</font><font color="#EAF4FF"> - Blox Fruits</font>',
-        TextColor3=COLORS.text, Font=Enum.Font.GothamBold, TextSize=22, TextXAlignment=Enum.TextXAlignment.Center}, header)
+    local header = make("Frame", {Name="Header", Size=UDim2.new(1,0,0,56), BackgroundColor3=Color3.fromRGB(3,15,32), BorderSizePixel=0}, shell)
+    local logo = make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,18,0,6), Size=UDim2.new(0,36,0,44),
+        Text="N", TextColor3=COLORS.cyan, Font=Enum.Font.GothamBlack, TextSize=32}, header)
+    local title = make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,58,0,0), Size=UDim2.new(1,-82,1,0),
+        RichText=true, Text='<font color="#00BFFF">NEXORA</font> <font color="#EAF4FF">HUB</font> <font color="#00BFFF">•</font> <font color="#EAF4FF">BLOX FRUITS</font>',
+        TextColor3=COLORS.text, Font=Enum.Font.GothamBold, TextSize=18, TextXAlignment=Enum.TextXAlignment.Left}, header)
     if config.Title then title.Text = '<font color="#00BFFF">'..tostring(config.Title)..'</font>' end
-    make("Frame", {Position=UDim2.new(0,0,0,51), Size=UDim2.new(1,0,0,2), BackgroundColor3=COLORS.blue, BorderSizePixel=0}, shell)
-    local sidebar = make("Frame", {Name="Sidebar", Position=UDim2.new(0,0,0,53), Size=UDim2.new(0,190,1,-53), BackgroundColor3=Color3.fromRGB(3,14,29), BorderSizePixel=0}, shell)
+    make("Frame", {Position=UDim2.new(0,0,0,55), Size=UDim2.new(1,0,0,2), BackgroundColor3=COLORS.blue, BorderSizePixel=0}, shell)
+    local sidebar = make("Frame", {Name="Sidebar", Position=UDim2.new(0,0,0,57), Size=UDim2.new(0,190,1,-57), BackgroundColor3=Color3.fromRGB(3,14,29), BorderSizePixel=0}, shell)
     make("Frame", {Position=UDim2.new(1,-1,0,0), Size=UDim2.new(0,1,1,0), BackgroundColor3=COLORS.line, BorderSizePixel=0}, sidebar)
-    local searchBox = make("TextBox", {Name="Search", Position=UDim2.new(0,14,0,12), Size=UDim2.new(1,-28,0,36), BackgroundColor3=COLORS.panel,
+    local searchBox = make("TextBox", {Name="Search", Position=UDim2.new(0,14,0,18), Size=UDim2.new(1,-28,0,42), BackgroundColor3=COLORS.panel,
         PlaceholderText="Search section or function...", Text="", TextColor3=COLORS.text, PlaceholderColor3=COLORS.muted,
         Font=Enum.Font.Gotham, TextSize=13, ClearTextOnFocus=false, BorderSizePixel=0}, sidebar)
     round(searchBox,11); outline(searchBox,COLORS.line,.25,1)
     local searchPad = make("UIPadding", {PaddingLeft=UDim.new(0,12),PaddingRight=UDim.new(0,8)}, searchBox)
-    local navScroll = make("ScrollingFrame", {Name="Navigation", Position=UDim2.new(0,8,0,60), Size=UDim2.new(1,-16,1,-70),
+    local navScroll = make("ScrollingFrame", {Name="Navigation", Position=UDim2.new(0,8,0,70), Size=UDim2.new(1,-16,1,-82),
         BackgroundTransparency=1, BorderSizePixel=0, ScrollBarThickness=3, ScrollBarImageColor3=COLORS.blue, CanvasSize=UDim2.new(0,0,0,0), AutomaticCanvasSize=Enum.AutomaticSize.Y}, sidebar)
     make("UIListLayout", {Padding=UDim.new(0,5), SortOrder=Enum.SortOrder.LayoutOrder}, navScroll)
-    local content = make("Frame", {Name="Content", Position=UDim2.new(0,191,0,53), Size=UDim2.new(1,-191,1,-53), BackgroundTransparency=1}, shell)
+    local content = make("Frame", {Name="Content", Position=UDim2.new(0,191,0,57), Size=UDim2.new(1,-191,1,-57), BackgroundTransparency=1}, shell)
+    local footer = make("TextLabel", {Name="Footer", AnchorPoint=Vector2.new(.5,1), Position=UDim2.new(.58,0,1,-1),
+        Size=UDim2.new(0,180,0,17), BackgroundTransparency=1, Text="N e x o r a   H u b   ─────",
+        TextColor3=COLORS.cyan, Font=Enum.Font.Code, TextSize=10, TextXAlignment=Enum.TextXAlignment.Center}, shell)
     local pages, navButtons, activePage = {}, {}, nil
     local pageList = make("Frame", {Name="PageContainer", Position=UDim2.new(0,10,0,10), Size=UDim2.new(1,-20,1,-20), BackgroundTransparency=1}, content)
     local function showPage(page)
@@ -2200,12 +2203,12 @@ function UI.CreateMain(config)
     Main.CreateNoti=notification
     Main.CreateNotification=notification
     local floatGui=make("ScreenGui",{Name="NexoraFloat",ResetOnSpawn=false,IgnoreGuiInset=true,DisplayOrder=999},ParentGui)
-    local float=make("TextButton",{Name="NexoraFloatingButton",AnchorPoint=Vector2.new(0,0),Position=UDim2.new(0,18,0.45,0),Size=UDim2.new(0,145,0,36),BackgroundColor3=Color3.fromRGB(20,20,25),Text="",TextColor3=COLORS.text,Font=Enum.Font.GothamBold,TextSize=13,BorderSizePixel=0,AutoButtonColor=false,ZIndex=100},floatGui)
+    local float=make("TextButton",{Name="NexoraFloatingButton",AnchorPoint=Vector2.new(0,0),Position=UDim2.new(0,18,0.45,0),Size=UDim2.new(0,136,0,34),BackgroundColor3=Color3.fromRGB(20,20,25),Text="",TextColor3=COLORS.text,Font=Enum.Font.GothamBold,TextSize=13,BorderSizePixel=0,AutoButtonColor=false,ZIndex=100},floatGui)
     round(float,18); outline(float,Color3.fromRGB(60,60,65),.3,1)
-    local floatIcon=make("Frame",{Position=UDim2.new(0,6,.5,-12),Size=UDim2.new(0,24,0,24),BackgroundColor3=Color3.fromRGB(20,20,30),BorderSizePixel=0,ZIndex=101},float)
+    local floatIcon=make("Frame",{Position=UDim2.new(0,5,.5,-11),Size=UDim2.new(0,22,0,22),BackgroundColor3=Color3.fromRGB(20,20,30),BorderSizePixel=0,ZIndex=101},float)
     round(floatIcon,12); outline(floatIcon,COLORS.blue,.15,1.2)
     make("TextLabel",{Size=UDim2.fromScale(1,1),BackgroundTransparency=1,Text="N",TextColor3=COLORS.text,Font=Enum.Font.GothamBlack,TextSize=18,ZIndex=102},floatIcon)
-    make("TextLabel",{Position=UDim2.new(0,36,0,0),Size=UDim2.new(0,88,1,0),BackgroundTransparency=1,Text="Nexora Hub",TextColor3=COLORS.text,Font=Enum.Font.GothamMedium,TextSize=13,TextXAlignment=Enum.TextXAlignment.Left,ZIndex=101},float)
+    make("TextLabel",{Position=UDim2.new(0,32,0,0),Size=UDim2.new(0,82,1,0),BackgroundTransparency=1,Text="Nexora Hub",TextColor3=COLORS.text,Font=Enum.Font.GothamMedium,TextSize=13,TextXAlignment=Enum.TextXAlignment.Left,ZIndex=101},float)
     local greenDot=make("Frame",{Position=UDim2.new(1,-18,.5,-5),Size=UDim2.new(0,10,0,10),BackgroundColor3=Color3.fromRGB(0,255,100),BorderSizePixel=0,ZIndex=102},float)
     round(greenDot,5); outline(greenDot,Color3.fromRGB(0,0,0),.5,1)
     task.spawn(function()
