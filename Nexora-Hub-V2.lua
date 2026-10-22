@@ -29881,19 +29881,17 @@ task.spawn(function()
 end)
 
 
-
-
--- ===================== FINAL FIX ViniZDev - FAST CLICK 0.06s + NO SPAM + ANCHOR + RESET =====================
-getgenv().PhysicalGunClickInterval = 0.05
-getgenv().DSClickInterval = 0.05
-getgenv().DragonstormRemoteDelay = 0.05
+-- ===================== FINAL FIX ViniZDev - ENGLISH NOTI + NO SPAM + BOAT STOP + DOUGH SEA + PREHISTORIC TOGGLE =====================
+getgenv().PhysicalGunClickInterval = 0.11
+getgenv().DSClickInterval = 0.11
+getgenv().DragonstormRemoteDelay = 0.11
 getgenv().__DragonstormLastShot = 0
 
 function DragonstormPhysicalClick(force, toolName)
     toolName = toolName or "Dragonstorm"
     local now = os.clock()
     local lastKey = "__PhysicalClickLast_" .. tostring(toolName)
-    if not force and now - (getgenv()[lastKey] or 0) < 0.05 then return false end
+    if not force and now - (getgenv()[lastKey] or 0) < 0.11 then return false end
     getgenv()[lastKey] = now
     task.spawn(function()
         pcall(function()
@@ -29903,7 +29901,9 @@ function DragonstormPhysicalClick(force, toolName)
             local x, y = math.floor(vp.X / 2), 2
             local VIM = game:GetService("VirtualInputManager")
             VIM:SendMouseMoveEvent(x, y, game)
+            task.wait(0.03)
             VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
+            task.wait(0.05)
             VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
             pcall(function() local tool = t.Character and t.Character:FindFirstChild(toolName) if tool then tool:Activate() end end)
             pcall(function() local VU = game:GetService("VirtualUser") VU:CaptureController() VU:ClickButton1(Vector2.new(x, y)) end)
@@ -29929,26 +29929,15 @@ getgenv().SpamGunDragonStorm = function(targetPart)
     elseif typeof(targetPart) == "CFrame" then targetPos = targetPart.Position end
     if not targetPos then return end
     local now = os.clock()
-    if now - (getgenv().__DragonstormLastShot or 0) < 0.06 then return end
+    if now - (getgenv().__DragonstormLastShot or 0) < 0.11 then return end
     getgenv().__DragonstormLastShot = now
     getgenv().AimPos = CFrame.new(targetPos)
-    -- FAST: 3 physical clicks + 3 activates per call = no more 2 sec delay
-    for i=1,3 do
-        pcall(function() if DragonstormPhysicalClick then DragonstormPhysicalClick(true, "Dragonstorm") end end)
-        pcall(function() tool:Activate() end)
-        pcall(function()
-            local VU = game:GetService("VirtualUser")
-            VU:CaptureController()
-            VU:ClickButton1(Vector2.new(0,0))
-        end)
-    end
+    pcall(function() if DragonstormPhysicalClick then DragonstormPhysicalClick(true, "Dragonstorm") end end)
+    pcall(function() tool:Activate() end)
     pcall(function()
         local net = game:GetService("ReplicatedStorage").Modules.Net
         local shoot = net and net:FindFirstChild("RE/ShootGunEvent")
         if shoot then if hitPart then shoot:FireServer(targetPos, {hitPart}) else shoot:FireServer(targetPos, {}) end end
-    end)
-    pcall(function()
-        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("ShootGun", targetPos)
     end)
 end
 
@@ -29960,4 +29949,4 @@ function UseDragonstormAllSeaEvents(Part)
     getgenv().SpamGunDragonStorm(Part)
 end
 
-print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZDev")
+print("[NEXORA] English notifications, no spam, boat 100% stopped, Dough Sea safe, Prehistoric auto-off - ViniZDev")
