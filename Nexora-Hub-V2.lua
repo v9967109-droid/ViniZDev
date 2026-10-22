@@ -16467,12 +16467,15 @@ function DetectIslandKitsune()
 end
 function AutoSpawnKitsune()
 	local y, P = game.Lighting.ClockTime, checkboat()
-	getgenv().KitsuneNotifyFlags = getgenv().KitsuneNotifyFlags or {lastKey = ""}
-	getgenv().KitsuneState = getgenv().KitsuneState or "none"
+	getgenv().KitsuneNotifyFlags = getgenv().KitsuneNotifyFlags or {lastKey = "", lastTime = 0}
+	getgenv().KitsuneState = getgenv().KitsuneState or "none" -- none, going_sea5, going_stop, stopped_sea5, going_sea6, arrived_sea6, dough
 
 	local function NotifyOnce(key, title, desc, time)
-		if getgenv().KitsuneNotifyFlags.lastKey ~= key then
+		local now = tick()
+		-- Only notify if different key and at least 15 seconds since last notify to prevent spam
+		if getgenv().KitsuneNotifyFlags.lastKey ~= key and (now - (getgenv().KitsuneNotifyFlags.lastTime or 0)) > 15 then
 			getgenv().KitsuneNotifyFlags.lastKey = key
+			getgenv().KitsuneNotifyFlags.lastTime = now
 			pcall(function() A.CreateNoti({Title = title, Desc = desc, ShowTime = time or 5}) end)
 		end
 	end
@@ -16494,15 +16497,6 @@ function AutoSpawnKitsune()
 					end
 				end
 			end
-			local seat = boat:FindFirstChild("VehicleSeat", true)
-			if seat then
-				if anchored then
-					seat.ThrottleFloat = 0
-					seat.Throttle = 0
-				else
-					seat.Anchored = false
-				end
-			end
 		end)
 	end
 
@@ -16516,13 +16510,26 @@ function AutoSpawnKitsune()
 				seat.Throttle = 0
 				seat.MaxSpeed = 0
 			end
-			-- Ancorar 100% - sem balançar
 			SetBoatAnchored(boat, true)
 		end)
 	end
 
 	local function UnanchorBoat(boat)
 		pcall(function() SetBoatAnchored(boat, false) end)
+	end
+
+	local function IsBoatDead(boat)
+		local dead = false
+		pcall(function()
+			local h = boat:FindFirstChild("Health")
+			if h and h.Value <= 100 then dead = true end
+			if not boat.Parent then dead = true end
+			local hum = boat:FindFirstChild("Humanoid")
+			if hum and hum.Health <= 0 then dead = true end
+			-- Also check if boat is sinking below -20 Y
+			if boat.PrimaryPart and boat.PrimaryPart.Position.Y < -15 then dead = true end
+		end)
+		return dead
 	end
 
 	if Settings["Hop Server Kitsune Island"] then
@@ -16533,12 +16540,28 @@ function AutoSpawnKitsune()
 		end
 	end
 
-	-- If boat too far, buy new one
+	-- If boat dead or too far, buy new one + reset player for speed
 	local isBoatFar = false
+	local boatDead = false
 	if P then
 		pcall(function()
 			if t:DistanceFromCharacter(P.VehicleSeat.Position) >= 3500 then isBoatFar = true end
+			if IsBoatDead(P) then boatDead = true end
 		end)
+	end
+
+	if boatDead then
+		-- Boat died - reset character to respawn faster and buy new boat
+		pcall(function()
+			NotifyOnce("boat_dead", "Nexora Hub - Kitsune", "Boat destroyed! Respawning to buy new one", 4)
+			getgenv().KitsuneState = "none"
+			getgenv().KitsuneNotifyFlags.lastKey = ""
+			SetBoatAnchored(P, false)
+			if t.Character and t.Character:FindFirstChild("Humanoid") then
+				t.Character.Humanoid.Health = 0
+			end
+		end)
+		return
 	end
 
 	if not P or isBoatFar then
@@ -16565,74 +16588,86 @@ function AutoSpawnKitsune()
 	local isFullMoon = CheckMoon() == "Full Moon"
 	local isDough = IsDoughSea()
 
+	-- Positions
 	local zone5Pos = CFrame.new(-38480.42578125, boatY, 10350.943359375)
-	local stopNear6Pos = CFrame.new(-35700, boatY, 18000)
+	-- Stop point very close to Sea 5, just near Sea 6 entrance, not far
+	local stopNear6Pos = CFrame.new(-37500, boatY, 13000)
 	local zone6Pos = CFrame.new(-32975.9921875, boatY, 25963.7109375) * CFrame.new(0, 0, 500)
 	local alternativeDoughPos = CFrame.new(-26017.931640625, boatY, 5657.8837890625)
 
 	if isDough then
+		if getgenv().KitsuneState == "dough_stopped" then
+			StopBoat100Percent(P)
+			return
+		end
 		if (P.VehicleSeat.Position - alternativeDoughPos.Position).Magnitude > 300 then
 			UnanchorBoat(P)
 			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) else manageTween(P.VehicleSeat, alternativeDoughPos, 350, "TweenBoat") end
 			NotifyOnce("dough", "Nexora Hub - Kitsune", "Dough Sea detected! Going to safe point, not Sea 6", 5)
 		else
-			if getgenv().KitsuneState ~= "dough_stopped" then
-				StopBoat100Percent(P)
-				getgenv().KitsuneState = "dough_stopped"
-			end
+			StopBoat100Percent(P)
+			getgenv().KitsuneState = "dough_stopped"
 		end
 		return
 	end
 
-	if not isFullMoon then
-		local distToZone5 = (P.VehicleSeat.Position - zone5Pos.Position).Magnitude
-		local distToStop = (P.VehicleSeat.Position - stopNear6Pos.Position).Magnitude
-
-		-- State machine to avoid back-and-forth
-		if getgenv().KitsuneState == "stopped_sea5" then
-			-- Already stopped, keep anchored 100% - DO NOT MOVE
-			StopBoat100Percent(P)
-			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) end
-			return
-		end
-
-		if distToZone5 > 400 then
+	-- STATE MACHINE - No back and forth
+	if getgenv().KitsuneState == "stopped_sea5" then
+		-- Already stopped at Sea 5, keep 100% anchored, no notifications spam
+		StopBoat100Percent(P)
+		if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) end
+		-- Only leave this state if full moon
+		if isFullMoon then
+			getgenv().KitsuneState = "going_sea6"
 			UnanchorBoat(P)
-			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) else manageTween(P.VehicleSeat, zone5Pos, 350, "TweenBoat") end
-			NotifyOnce("mar5", "Nexora Hub - Kitsune", "Sailing to Sea 5 (waiting for full moon)", 5)
-			getgenv().KitsuneState = "going_sea5"
-		elseif distToStop > 300 then
-			-- Between Sea5 and near Sea6
-			if getgenv().KitsuneState ~= "going_stop" then
-				NotifyOnce("waiting", "Nexora Hub - Kitsune", "Arrived at Sea 5, stopping near Sea 6. Waiting for full moon...", 5)
+		end
+		return
+	end
+
+	if getgenv().KitsuneState == "arrived_sea6" then
+		StopBoat100Percent(P)
+		if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) end
+		return
+	end
+
+	if not isFullMoon then
+		-- Not full moon: go to Sea 5 then stop
+		if getgenv().KitsuneState == "none" or getgenv().KitsuneState == "going_sea5" then
+			local distToZone5 = (P.VehicleSeat.Position - zone5Pos.Position).Magnitude
+			if distToZone5 > 400 then
+				UnanchorBoat(P)
+				if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) else manageTween(P.VehicleSeat, zone5Pos, 350, "TweenBoat") end
+				NotifyOnce("mar5", "Nexora Hub - Kitsune", "Sailing to Sea 5 (waiting for full moon)", 5)
+				getgenv().KitsuneState = "going_sea5"
+			else
+				-- Arrived Sea 5, now go to stop point near Sea 6
 				getgenv().KitsuneState = "going_stop"
 			end
-			UnanchorBoat(P)
-			manageTween(P.VehicleSeat, stopNear6Pos, 300, "TweenBoat")
-		else
-			-- Arrived - 100% stop, anchor everything, no more movement
-			if getgenv().KitsuneState ~= "stopped_sea5" then
+		elseif getgenv().KitsuneState == "going_stop" then
+			local distToStop = (P.VehicleSeat.Position - stopNear6Pos.Position).Magnitude
+			if distToStop > 300 then
+				UnanchorBoat(P)
+				manageTween(P.VehicleSeat, stopNear6Pos, 300, "TweenBoat")
+				NotifyOnce("waiting", "Nexora Hub - Kitsune", "Arrived at Sea 5, stopping near Sea 6. Waiting for full moon...", 5)
+			else
+				-- Arrived at stop point - ANCHOR 100% and stop spamming
+				StopBoat100Percent(P)
 				NotifyOnce("stopped", "Nexora Hub - Kitsune", "Stopped at Sea 5. Boat anchored, waiting for full moon", 5)
+				getgenv().KitsuneState = "stopped_sea5"
 			end
-			StopBoat100Percent(P)
-			getgenv().KitsuneState = "stopped_sea5"
-			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) end
 		end
 	else
-		-- Full moon: unanchor and go to Sea 6
+		-- Full moon: go to Sea 6
+		UnanchorBoat(P)
 		local distToZone6 = (P.VehicleSeat.Position - zone6Pos.Position).Magnitude
 		if distToZone6 > 300 then
-			UnanchorBoat(P)
 			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) else manageTween(P.VehicleSeat, zone6Pos, 350, "TweenBoat") end
 			NotifyOnce("mar6", "Nexora Hub - Kitsune", "Full moon! Sailing to Sea 6", 5)
 			getgenv().KitsuneState = "going_sea6"
 		else
-			if getgenv().KitsuneState ~= "arrived_sea6" then
-				StopBoat100Percent(P)
-				NotifyOnce("arrived6", "Nexora Hub - Kitsune", "Arrived at Sea 6", 5)
-				getgenv().KitsuneState = "arrived_sea6"
-			end
-			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) end
+			StopBoat100Percent(P)
+			NotifyOnce("arrived6", "Nexora Hub - Kitsune", "Arrived at Sea 6", 5)
+			getgenv().KitsuneState = "arrived_sea6"
 		end
 	end
 end
@@ -29846,17 +29881,19 @@ task.spawn(function()
 end)
 
 
--- ===================== FINAL FIX ViniZDev - ENGLISH NOTI + NO SPAM + BOAT STOP + DOUGH SEA + PREHISTORIC TOGGLE =====================
-getgenv().PhysicalGunClickInterval = 0.11
-getgenv().DSClickInterval = 0.11
-getgenv().DragonstormRemoteDelay = 0.11
+
+
+-- ===================== FINAL FIX ViniZDev - FAST CLICK 0.06s + NO SPAM + ANCHOR + RESET =====================
+getgenv().PhysicalGunClickInterval = 0.05
+getgenv().DSClickInterval = 0.05
+getgenv().DragonstormRemoteDelay = 0.05
 getgenv().__DragonstormLastShot = 0
 
 function DragonstormPhysicalClick(force, toolName)
     toolName = toolName or "Dragonstorm"
     local now = os.clock()
     local lastKey = "__PhysicalClickLast_" .. tostring(toolName)
-    if not force and now - (getgenv()[lastKey] or 0) < 0.11 then return false end
+    if not force and now - (getgenv()[lastKey] or 0) < 0.05 then return false end
     getgenv()[lastKey] = now
     task.spawn(function()
         pcall(function()
@@ -29866,9 +29903,7 @@ function DragonstormPhysicalClick(force, toolName)
             local x, y = math.floor(vp.X / 2), 2
             local VIM = game:GetService("VirtualInputManager")
             VIM:SendMouseMoveEvent(x, y, game)
-            task.wait(0.03)
             VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
-            task.wait(0.05)
             VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
             pcall(function() local tool = t.Character and t.Character:FindFirstChild(toolName) if tool then tool:Activate() end end)
             pcall(function() local VU = game:GetService("VirtualUser") VU:CaptureController() VU:ClickButton1(Vector2.new(x, y)) end)
@@ -29894,15 +29929,26 @@ getgenv().SpamGunDragonStorm = function(targetPart)
     elseif typeof(targetPart) == "CFrame" then targetPos = targetPart.Position end
     if not targetPos then return end
     local now = os.clock()
-    if now - (getgenv().__DragonstormLastShot or 0) < 0.11 then return end
+    if now - (getgenv().__DragonstormLastShot or 0) < 0.06 then return end
     getgenv().__DragonstormLastShot = now
     getgenv().AimPos = CFrame.new(targetPos)
-    pcall(function() if DragonstormPhysicalClick then DragonstormPhysicalClick(true, "Dragonstorm") end end)
-    pcall(function() tool:Activate() end)
+    -- FAST: 3 physical clicks + 3 activates per call = no more 2 sec delay
+    for i=1,3 do
+        pcall(function() if DragonstormPhysicalClick then DragonstormPhysicalClick(true, "Dragonstorm") end end)
+        pcall(function() tool:Activate() end)
+        pcall(function()
+            local VU = game:GetService("VirtualUser")
+            VU:CaptureController()
+            VU:ClickButton1(Vector2.new(0,0))
+        end)
+    end
     pcall(function()
         local net = game:GetService("ReplicatedStorage").Modules.Net
         local shoot = net and net:FindFirstChild("RE/ShootGunEvent")
         if shoot then if hitPart then shoot:FireServer(targetPos, {hitPart}) else shoot:FireServer(targetPos, {}) end end
+    end)
+    pcall(function()
+        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("ShootGun", targetPos)
     end)
 end
 
@@ -29914,4 +29960,4 @@ function UseDragonstormAllSeaEvents(Part)
     getgenv().SpamGunDragonStorm(Part)
 end
 
-print("[NEXORA] English notifications, no spam, boat 100% stopped, Dough Sea safe, Prehistoric auto-off - ViniZDev")
+print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZDev")
