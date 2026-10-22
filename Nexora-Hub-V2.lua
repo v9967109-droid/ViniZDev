@@ -16484,23 +16484,7 @@ function AutoSpawnKitsune()
 		return workspace.Map:FindFirstChild("DoughSea") ~= nil or workspace:FindFirstChild("DoughSea") ~= nil or workspace._WorldOrigin:FindFirstChild("Dough Dimension") ~= nil
 	end
 
-	local function SetBoatAnchored(boat, anchored)
-		pcall(function()
-			for _,v in ipairs(boat:GetDescendants()) do
-				if v:IsA("BasePart") then
-					v.Anchored = anchored
-					if anchored then
-						v.Velocity = Vector3.new(0,0,0)
-						v.AngularVelocity = Vector3.new(0,0,0)
-						v.AssemblyLinearVelocity = Vector3.new(0,0,0)
-						v.AssemblyAngularVelocity = Vector3.new(0,0,0)
-					end
-				end
-			end
-		end)
-	end
-
-	local function StopBoat100Percent(boat)
+	local function StopBoatParado(boat)
 		pcall(function()
 			if getgenv().TweenBoat then getgenv().TweenBoat:Pause() getgenv().TweenBoat:Cancel() end
 			if getgenv().TweenBoatBack then getgenv().TweenBoatBack:Pause() getgenv().TweenBoatBack:Cancel() end
@@ -16509,13 +16493,39 @@ function AutoSpawnKitsune()
 				seat.ThrottleFloat = 0
 				seat.Throttle = 0
 				seat.MaxSpeed = 0
+				seat.Velocity = Vector3.new(0,0,0)
+				seat.AssemblyLinearVelocity = Vector3.new(0,0,0)
 			end
-			SetBoatAnchored(boat, true)
+			for _,v in ipairs(boat:GetDescendants()) do
+				if v:IsA("BasePart") then
+					v.Anchored = false
+					v.Velocity = Vector3.new(0,0,0)
+					v.AssemblyLinearVelocity = Vector3.new(0,0,0)
+					v.AssemblyAngularVelocity = Vector3.new(0,0,0)
+				end
+			end
 		end)
 	end
 
 	local function UnanchorBoat(boat)
-		pcall(function() SetBoatAnchored(boat, false) end)
+		-- Agora só garante que não está ancorado, fica parado flutuando
+		pcall(function()
+			for _,v in ipairs(boat:GetDescendants()) do
+				if v:IsA("BasePart") then v.Anchored = false end
+			end
+		end)
+	end
+
+	local function StopBoat100Percent(boat)
+		StopBoatParado(boat)
+	end
+
+	local function SetBoatAnchored(boat, anchored)
+		if anchored then
+			StopBoatParado(boat)
+		else
+			UnanchorBoat(boat)
+		end
 	end
 
 	local function IsBoatDead(boat)
