@@ -1953,7 +1953,7 @@ local oldFloat = parentGui:FindFirstChild("NexoraFloat")
 if oldFloat then oldFloat:Destroy() end
 
 local C = {
-    -- Fundo preto e azul igual você pediu
+    -- Tema preto e azul neon inspirado na referência enviada
     bg = Color3.fromRGB(0, 0, 0),
     panel = Color3.fromRGB(10, 10, 15),
     panel2 = Color3.fromRGB(18, 18, 28),
@@ -1992,10 +1992,10 @@ local function button(parent, text, height)
         Font = Enum.Font.Gotham, TextSize = 12,
     }, parent)
     corner(b, 7)
-    b.MouseEnter:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.12), {BackgroundColor3 = Color3.fromRGB(36, 34, 31)}):Play() end end)
+    b.MouseEnter:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.12), {BackgroundColor3 = Color3.fromRGB(10, 38, 68)}):Play() end end)
     b.MouseLeave:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.12), {BackgroundColor3 = C.panel2}):Play() end end)
-    b.MouseButton1Down:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.08), {BackgroundColor3 = Color3.fromRGB(58, 46, 22)}):Play() end end)
-    b.MouseButton1Up:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.14), {BackgroundColor3 = Color3.fromRGB(36, 34, 31)}):Play() end end)
+    b.MouseButton1Down:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.08), {BackgroundColor3 = Color3.fromRGB(0, 85, 155)}):Play() end end)
+    b.MouseButton1Up:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.14), {BackgroundColor3 = Color3.fromRGB(10, 38, 68)}):Play() end end)
     return b
 end
 -- Sons da UI. Para usar os seus: getgenv().NexoraSounds = { ping="rbxassetid://ID", switch="rbxassetid://ID", click="rbxassetid://ID" } antes de executar.
@@ -2056,13 +2056,13 @@ function Nexora.CreateMain(config)
     config = config or {}
     local gui = make("ScreenGui", {Name = "NexoraUI", ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
     local SIZE_FILE = "NexoraHubWindowSize.json"
-    local persistedW, persistedH = 690, 440
+    local persistedW, persistedH = 860, 500
     -- Salva o tamanho em arquivo do executor para sobreviver a reinícios do jogo.
     pcall(function()
         if readfile and isfile and isfile(SIZE_FILE) then
             local stored = game:GetService("HttpService"):JSONDecode(readfile(SIZE_FILE))
-            persistedW = math.clamp(tonumber(stored.w) or 690, 360, 900)
-            persistedH = math.clamp(tonumber(stored.h) or 440, 280, 720)
+            persistedW = math.clamp(tonumber(stored.w) or 860, 360, 900)
+            persistedH = math.clamp(tonumber(stored.h) or 500, 280, 720)
         elseif getgenv and getgenv().__NEXORA_WINDOW_SIZE then
             persistedW = math.clamp(tonumber(getgenv().__NEXORA_WINDOW_SIZE.w) or 690, 360, 900)
             persistedH = math.clamp(tonumber(getgenv().__NEXORA_WINDOW_SIZE.h) or 440, 280, 720)
@@ -2095,7 +2095,7 @@ function Nexora.CreateMain(config)
     resize()
     if workspace.CurrentCamera then workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(resize) end
 
-    local HEADER_H, SIDEBAR_W = 64, 190
+    local HEADER_H, SIDEBAR_W = 64, 250
     local GOLD, GOLD_L, GRAY = Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255), Color3.fromRGB(165,165,174)
     local top = make("Frame", {Size=UDim2.new(1,0,0,HEADER_H), BackgroundColor3=Color3.fromRGB(10,10,14), BorderSizePixel=0}, shell)
     corner(top, 12)
@@ -2128,7 +2128,7 @@ function Nexora.CreateMain(config)
     local reopen = make("TextButton", {
         Name="NexoraFloatingButton",
         AutoButtonColor=false,
-        BackgroundColor3=Color3.fromRGB(20, 20, 25),
+        BackgroundColor3=Color3.fromRGB(4, 12, 26),
         BorderSizePixel=0,
         Size=UDim2.new(0, 145, 0, 36),
         Text="",
@@ -2136,10 +2136,10 @@ function Nexora.CreateMain(config)
     }, floatGui)
     reopen:SetAttribute("NexoraKeepColor", true)
     make("UICorner", {CornerRadius=UDim.new(0, 18)}, reopen)
-    make("UIStroke", {Color=Color3.fromRGB(60, 60, 65), Thickness=1, Transparency=0.3}, reopen)
+    make("UIStroke", {Color=Color3.fromRGB(0, 140, 255), Thickness=1.4, Transparency=0.12}, reopen)
     -- Icone N TOP - 100% seguro, sem frames extras que quebram UI
     local iconFrame = make("Frame", {
-        BackgroundColor3=Color3.fromRGB(20, 20, 30),
+        BackgroundColor3=Color3.fromRGB(3, 22, 45),
         Size=UDim2.new(0, 24, 0, 24),
         Position=UDim2.new(0, 6, 0.5, -12),
         BorderSizePixel=0,
