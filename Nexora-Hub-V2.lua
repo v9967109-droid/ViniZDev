@@ -1945,25 +1945,30 @@ local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local CoreGui = game:GetService("CoreGui")
 local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
-local parentGui = (gethui and gethui()) or CoreGui
+local parentGui
+pcall(function()
+    if type(gethui) == "function" then parentGui = gethui() end
+end)
+if not parentGui then
+    pcall(function() parentGui = CoreGui end)
+end
+if not parentGui then
+    parentGui = PlayerGui
+end
 
-local legacyUI = parentGui:FindFirstChild("NexoraUI")
-if legacyUI then legacyUI:Destroy() end
 local old = parentGui:FindFirstChild("NexoraBlueUI_Main")
 if old then old:Destroy() end
-local legacyFloat = parentGui:FindFirstChild("NexoraFloat")
-if legacyFloat then legacyFloat:Destroy() end
 local oldFloat = parentGui:FindFirstChild("NexoraBlueUI_Float")
 if oldFloat then oldFloat:Destroy() end
 
 local C = {
-    -- Fundo preto e azul igual você pediu
+    -- NexoraBlueUI: tema escuro com acentos azul neon
     bg = Color3.fromRGB(0, 0, 0),
     panel = Color3.fromRGB(10, 10, 15),
     panel2 = Color3.fromRGB(18, 18, 28),
     line = Color3.fromRGB(0, 80, 180),
-    gold = Color3.fromRGB(0, 145, 255),
-    goldLight = Color3.fromRGB(70, 205, 255),
+    gold = Color3.fromRGB(0, 140, 255),
+    goldLight = Color3.fromRGB(80, 180, 255),
     text = Color3.fromRGB(240, 245, 255),
     muted = Color3.fromRGB(140, 150, 170),
     green = Color3.fromRGB(0, 200, 255),
@@ -1996,10 +2001,10 @@ local function button(parent, text, height)
         Font = Enum.Font.Gotham, TextSize = 12,
     }, parent)
     corner(b, 7)
-    b.MouseEnter:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.12), {BackgroundColor3 = Color3.fromRGB(36, 34, 31)}):Play() end end)
+    b.MouseEnter:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.12), {BackgroundColor3 = Color3.fromRGB(16, 38, 64)}):Play() end end)
     b.MouseLeave:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.12), {BackgroundColor3 = C.panel2}):Play() end end)
-    b.MouseButton1Down:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.08), {BackgroundColor3 = Color3.fromRGB(58, 46, 22)}):Play() end end)
-    b.MouseButton1Up:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.14), {BackgroundColor3 = Color3.fromRGB(36, 34, 31)}):Play() end end)
+    b.MouseButton1Down:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.08), {BackgroundColor3 = Color3.fromRGB(0, 95, 180)}):Play() end end)
+    b.MouseButton1Up:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.14), {BackgroundColor3 = Color3.fromRGB(16, 38, 64)}):Play() end end)
     return b
 end
 -- Sons da UI. Para usar os seus: getgenv().NexoraSounds = { ping="rbxassetid://ID", switch="rbxassetid://ID", click="rbxassetid://ID" } antes de executar.
@@ -2060,16 +2065,16 @@ function NexoraBlueUI.CreateMain(config)
     config = config or {}
     local gui = make("ScreenGui", {Name = "NexoraBlueUI_Main", ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
     local SIZE_FILE = "NexoraHubWindowSize.json"
-    local persistedW, persistedH = 1020, 650
+    local persistedW, persistedH = 690, 440
     -- Salva o tamanho em arquivo do executor para sobreviver a reinícios do jogo.
     pcall(function()
         if readfile and isfile and isfile(SIZE_FILE) then
             local stored = game:GetService("HttpService"):JSONDecode(readfile(SIZE_FILE))
-            persistedW = math.clamp(tonumber(stored.w) or 1020, 360, 1200)
-            persistedH = math.clamp(tonumber(stored.h) or 650, 280, 850)
+            persistedW = math.clamp(tonumber(stored.w) or 690, 360, 900)
+            persistedH = math.clamp(tonumber(stored.h) or 440, 280, 720)
         elseif getgenv and getgenv().__NEXORA_WINDOW_SIZE then
-            persistedW = math.clamp(tonumber(getgenv().__NEXORA_WINDOW_SIZE.w) or 1020, 360, 1200)
-            persistedH = math.clamp(tonumber(getgenv().__NEXORA_WINDOW_SIZE.h) or 650, 280, 850)
+            persistedW = math.clamp(tonumber(getgenv().__NEXORA_WINDOW_SIZE.w) or 690, 360, 900)
+            persistedH = math.clamp(tonumber(getgenv().__NEXORA_WINDOW_SIZE.h) or 440, 280, 720)
         end
     end)
     local function saveWindowSize(w, h)
@@ -2099,7 +2104,7 @@ function NexoraBlueUI.CreateMain(config)
     resize()
     if workspace.CurrentCamera then workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(resize) end
 
-    local HEADER_H, SIDEBAR_W = 70, 300
+    local HEADER_H, SIDEBAR_W = 70, 250
     local GOLD, GOLD_L, GRAY = Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255), Color3.fromRGB(165,165,174)
     local top = make("Frame", {Size=UDim2.new(1,0,0,HEADER_H), BackgroundColor3=Color3.fromRGB(10,10,14), BorderSizePixel=0}, shell)
     corner(top, 12)
@@ -2884,7 +2889,15 @@ return NexoraBlueUI
 end)()
 
 local A = NexoraBlueUI
-Main = A.CreateMain({ Title = "NEXORA HUB", Desc = "BLOX FRUITS • ViniZDev" })
+local __nexoraMainOk, __nexoraMainResult = pcall(function()
+    return A.CreateMain({ Title = "NEXORA HUB", Desc = "BLOX FRUITS • ViniZDev" })
+end)
+if not __nexoraMainOk then
+    warn("[NexoraBlueUI] Falha ao criar a interface: " .. tostring(__nexoraMainResult))
+    error("[NexoraBlueUI] CreateMain falhou: " .. tostring(__nexoraMainResult))
+end
+Main = __nexoraMainResult
+pcall(function() if getgenv then getgenv().NexoraBlueUI = A end end)
 
 PageShop = Main.CreatePage({ Page_Name = "Shop", Page_Title = "Shop" })
 getgenv().Options = A.Options
