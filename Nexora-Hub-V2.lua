@@ -7732,7 +7732,6 @@ getgenv().SpamGunDragonStorm = function(E)
 	if reloading then
 		return
 	end
-	DragonstormPhysicalClick()
 	-- Validação do jogo: depende de índices de upvalue que mudam a cada update.
 	-- Antes um erro aqui impedia o tiro; agora é tentativa protegida e o tiro sai de qualquer forma.
 	pcall(function()
@@ -7789,7 +7788,7 @@ function EquipOnlyIfNeeded(toolName, interval)
 	return false -- vai atirar no próximo ciclo
 end
 function DragonstormPhysicalClick(force, toolName)
-	-- DRAGONSTORM CLICK NA TELA A CADA 2.5s - ViniZDev
+	-- DRAGONSTORM CLICK NA TELA A CADA 2.5s - ViniZDev - BASE EXECUTANDO
 	toolName = toolName or "Dragonstorm"
 	local now = os.clock()
 	local lastKey = "__PhysicalClickLast_" .. tostring(toolName)
@@ -15710,10 +15709,8 @@ function SpinBoat()
 end
 function NoclipBoat(P)
 	for Y, Y in ipairs(P:GetDescendants()) do
-		if not Y:IsA("VehicleSeat") and not Y:IsA("Seat") then
-			if (Y:IsA("BasePart") or (Y:IsA("Part")) or (Y:IsA("MeshPart"))) and Y.CanCollide then
-				Y.CanCollide = false
-			end
+		if (Y:IsA("BasePart") or (Y:IsA("Part")) or (Y:IsA("MeshPart"))) and Y.CanCollide then
+			Y.CanCollide = false
 		end
 	end
 end
@@ -16496,10 +16493,9 @@ function AutoSpawnKitsune()
 			if seat then
 				seat.ThrottleFloat = 0
 				seat.Throttle = 0
-				-- FIX: nao zera MaxSpeed pra nao quebrar o barco
+				seat.MaxSpeed = 0
 				seat.Velocity = Vector3.new(0,0,0)
 				seat.AssemblyLinearVelocity = Vector3.new(0,0,0)
-				seat.AssemblyAngularVelocity = Vector3.new(0,0,0)
 			end
 			for _,v in ipairs(boat:GetDescendants()) do
 				if v:IsA("BasePart") then
@@ -16533,9 +16529,14 @@ function AutoSpawnKitsune()
 		return dead
 	end
 
-	-- RESQUICIO ANTIGO REMOVIDO: Hop Server desabilitado no novo fluxo DoZero
-	-- Agora fica parado no Mar 5 esperando lua cheia, nao hopa
-	-- if Settings["Hop Server Kitsune Island"] then ... end
+	-- Hop Server logic se ativado
+	if Settings["Hop Server Kitsune Island"] then
+		local Y = CheckMoon()
+		if not (Y == "Full Moon" and math.floor(18 - y) <= 5 and math.floor(18 - y) >= 0 or Y == "Next Night" or Y == "Full Moon" and y <= 5 and math.floor(5 - y) >= 11) then
+			HopServer()
+			return
+		end
+	end
 
 	-- Verifica se barco está longe ou morto
 	local isBoatFar = false
