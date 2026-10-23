@@ -7732,7 +7732,6 @@ getgenv().SpamGunDragonStorm = function(E)
 	if reloading then
 		return
 	end
-	DragonstormPhysicalClick()
 	-- Validação do jogo: depende de índices de upvalue que mudam a cada update.
 	-- Antes um erro aqui impedia o tiro; agora é tentativa protegida e o tiro sai de qualquer forma.
 	pcall(function()
@@ -7789,14 +7788,10 @@ function EquipOnlyIfNeeded(toolName, interval)
 	return false -- vai atirar no próximo ciclo
 end
 function DragonstormPhysicalClick(force, toolName)
-	-- DRAGONSTORM CLICK NA TELA A CADA 2.5s - ViniZDev - VERSAO QUE EXECUTA
 	toolName = toolName or "Dragonstorm"
 	local now = os.clock()
 	local lastKey = "__PhysicalClickLast_" .. tostring(toolName)
-	local interval = 2.5
-	if toolName ~= "Dragonstorm" then
-		interval = getgenv().PhysicalGunClickInterval or getgenv().DSClickInterval or 0.5
-	end
+	local interval = getgenv().PhysicalGunClickInterval or getgenv().DSClickInterval or 0.5
 	if not force and now - (getgenv()[lastKey] or 0) < interval then
 		return false
 	end
@@ -7808,11 +7803,13 @@ function DragonstormPhysicalClick(force, toolName)
 			local vp = Camera.ViewportSize
 			local x, y = math.floor(vp.X / 2), 2
 			local VIM = game:GetService("VirtualInputManager")
+			-- Mesma sequência física da Dragonstorm: mover o mouse e clicar com botão esquerdo.
 			VIM:SendMouseMoveEvent(x, y, game)
 			task.wait(0.03)
 			VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
 			task.wait(0.05)
 			VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
+			-- Fallback para executores mobile que ignoram eventos de mouse.
 			pcall(function()
 				local tx, ty = x, math.max(64, math.floor(vp.Y * 0.12))
 				VIM:SendTouchEvent(1, 0, tx, ty)
@@ -7845,11 +7842,7 @@ function ShootM1(E)
 		return false
 	end
 	if gunName == "Dragonstorm" then
-		-- REMOVIDO: DragonstormPhysicalClick() nao chama mais click na tela
-		pcall(function()
-			local tool = t.Character and t.Character:FindFirstChild(gunName)
-			if tool then tool:Activate() end
-		end)
+		DragonstormPhysicalClick()
 	end
 	-- Target part / position (accepts Model, BasePart, Vector3 or CFrame).
 	local targetPart, targetPos
@@ -7933,26 +7926,19 @@ end
 getgenv().SpamGunSkullGuitar = function(E)
 	local combatUtil, character = require(m.CombatUtil), t.Character
 	local gun = character and character:FindFirstChild("Skull Guitar")
-	if not gun or not E or not character then return false end
-	-- FIX VASOS: Trata Model (vasos/arvore) achando BasePart real, e tenta ClickDetector tambem
+	if not gun or not E or not character then
+		return false
+	end
+	-- Tyrant's destructible Tree is a Model; aim at a real BasePart instead
+	-- of the model pivot, which can be outside the hitbox.
 	local targetPart, targetPosition
-	local targetModel = nil
 	if typeof(E) == "Instance" then
 		if E:IsA("BasePart") then
 			targetPart = E
-			targetModel = E.Parent
 		elseif E:IsA("Model") then
-			targetModel = E
 			targetPart = E:FindFirstChild("HumanoidRootPart", true)
 				or E:FindFirstChild("Handle", true)
 				or E:FindFirstChildWhichIsA("BasePart", true)
-				or E.PrimaryPart
-			-- Para vasos, pega o primeiro BasePart que achar dentro
-			if not targetPart then
-				for _,v in ipairs(E:GetDescendants()) do
-					if v:IsA("BasePart") then targetPart = v break end
-				end
-			end
 		end
 		if targetPart then targetPosition = targetPart.Position end
 	elseif typeof(E) == "CFrame" then
@@ -7961,52 +7947,36 @@ getgenv().SpamGunSkullGuitar = function(E)
 		targetPosition = E
 	end
 	if not targetPosition then return false end
+	-- Do not stop firing just because the reload helper briefly reports busy;
+	-- the M1 loop retries on its next iteration. Keep calls throttled.
 	local now = os.clock()
-	if now - (getgenv().__SkullGuitarM1Last or 0) < 0.08 then return true end
+	if now - (getgenv().__SkullGuitarM1Last or 0) < 0.12 then return true end
 	getgenv().__SkullGuitarM1Last = now
 	getgenv().AimPos = CFrame.new(targetPosition)
+	-- Reutiliza o clique físico da Dragonstorm, ativando a Skull Guitar.
+	if DragonstormPhysicalClick then
+		DragonstormPhysicalClick(false, "Skull Guitar")
+	end
 	local stun = character:FindFirstChild("Stun")
 	if stun and stun.Value ~= 0 then return true end
+	-- Send the regular M1 shot first, with the destructible part as hit target.
 	local sent = false
-	-- 1. Tenta quebrar vaso via ClickDetector (muitos vasos usam ClickDetector)
-	pcall(function()
-		if targetModel then
-			for _,v in ipairs(targetModel:GetDescendants()) do
-				if v:IsA("ClickDetector") then
-					fireclickdetector(v)
-					sent = true
-				end
-			end
-		end
-		if targetPart then
-			for _,v in ipairs(targetPart:GetDescendants()) do
-				if v:IsA("ClickDetector") then fireclickdetector(v) sent = true end
-			end
-			local cd = targetPart:FindFirstChildWhichIsA("ClickDetector", true)
-			if cd then fireclickdetector(cd) sent = true end
-		end
-	end)
-	-- 2. Disparo normal via ShootGunEvent com a parte fisica
 	pcall(function()
 		local rs = game:GetService("ReplicatedStorage")
 		local net = rs:FindFirstChild("Modules") and rs.Modules:FindFirstChild("Net")
 		local shoot = net and net:FindFirstChild("RE/ShootGunEvent")
-		if shoot then
-			if targetPart then
-				shoot:FireServer(targetPosition, { targetPart })
-			else
-				shoot:FireServer(targetPosition, {})
-			end
+		if shoot and targetPart then
+			shoot:FireServer(targetPosition, { targetPart })
 			sent = true
 		end
 	end)
-	-- 3. TAP remote da Skull Guitar (proprio dela)
+	-- Skull Guitar's TAP remote is retained as a fallback for game versions
+	-- that route its basic shot through the tool remote.
+	-- O TAP é o disparo próprio da Skull Guitar: sempre enviado, junto com o tiro normal.
 	pcall(function()
 		local remote = gun:FindFirstChild("RemoteEvent")
-		if remote then remote:FireServer("TAP", targetPosition) sent = true end
+		if remote then remote:FireServer("TAP", targetPosition); sent = true end
 	end)
-	-- 4. Ativa a tool sem click na tela (para vasos)
-	pcall(function() gun:Activate() end)
 	return sent
 end
 local function m(E, l)
@@ -17641,8 +17611,7 @@ function AutoAttackLeviathan()
 				elseif Settings["Use Click M1 DragonStorm Leviathan"] then
 					equiptool("Dragonstorm")
 					if t.Character:FindFirstChild("Dragonstorm") then
-						-- REMOVIDO CLICK TELA DRAGONSTORM
-		pcall(function() local tool = t.Character and t.Character:FindFirstChild("Dragonstorm") if tool then tool:Activate() end end)
+						DragonstormPhysicalClick(true)
 						SpamGunDragonStorm(s.Hitbox11)
 						if t:DistanceFromCharacter(s.Hitbox11.Position) < 400 then
 							UseDragonstormSkill()
@@ -17695,8 +17664,7 @@ function AutoAttackLeviathan()
 			elseif Settings["Use Click M1 DragonStorm Leviathan"] then
 				equiptool("Dragonstorm")
 				if t.Character:FindFirstChild("Dragonstorm") then
-					-- REMOVIDO CLICK TELA DRAGONSTORM
-		pcall(function() local tool = t.Character and t.Character:FindFirstChild("Dragonstorm") if tool then tool:Activate() end end)
+					DragonstormPhysicalClick(true)
 					SpamGunDragonStorm(b.Hitbox11)
 					if t:DistanceFromCharacter(b.Hitbox11.Position) < 400 then
 						UseDragonstormSkill()
@@ -29711,7 +29679,210 @@ print("[Dragonstorm Fix] Aplicando modo REMOTE ONLY...")
 -- 1. Desativa completamente o clique físico (o que causa detecção e bug no celular)
 if DragonstormPhysicalClick then
     _G.Old_DragonstormPhysicalClick = DragonstormPhysicalClick
+    function DragonstormPhysicalClick(force)
+        -- Não faz mais mouse move, SendMouseButtonEvent, SendTouchEvent, VirtualUser Click
+        -- Retorna true só pra não travar o fluxo
+        return true
+    end
     getgenv().DragonstormPhysicalClick = DragonstormPhysicalClick
+    print("[Fix] DragonstormPhysicalClick desativado (sem clique físico)")
+end
+
+-- 2. Reescreve SpamGunDragonStorm pra ser 100% remote
+getgenv().SpamGunDragonStorm = function(targetPart)
+    local char = game.Players.LocalPlayer.Character
+    if not char then return end
+    local tool = char:FindFirstChild("Dragonstorm")
+    if not tool then return end
+    if not targetPart then return end
+    
+    local targetPos
+    if typeof(targetPart) == "Instance" then
+        if targetPart:IsA("BasePart") then
+            targetPos = targetPart.Position
+        elseif targetPart:IsA("Model") then
+            local hrp = targetPart:FindFirstChild("HumanoidRootPart") or targetPart.PrimaryPart
+            targetPos = hrp and hrp.Position or targetPart:GetPivot().Position
+        end
+    elseif typeof(targetPart) == "Vector3" then
+        targetPos = targetPart
+    elseif typeof(targetPart) == "CFrame" then
+        targetPos = targetPart.Position
+    else
+        return
+    end
+    
+    if not targetPos then return end
+    
+    -- Validação anti-reload
+    local reloading = false
+    pcall(function()
+        local CombatUtil = require(game:GetService("ReplicatedStorage").Modules.CombatUtil)
+        if CombatUtil and CombatUtil.IsGunReloading then
+            reloading = CombatUtil:IsGunReloading(tool)
+        end
+    end)
+    if reloading then return end
+    
+    -- Cooldown pequeno pra não floodar remote
+    local now = os.clock()
+    getgenv().__DragonstormLastShot = getgenv().__DragonstormLastShot or 0
+    if now - getgenv().__DragonstormLastShot < (getgenv().DragonstormRemoteDelay or 0.08) then
+        return
+    end
+    getgenv().__DragonstormLastShot = now
+    
+    -- Mira
+    getgenv().AimPos = CFrame.new(targetPos)
+    
+    -- REMOTES ONLY - Sem VirtualInputManager, sem tool:Activate(), sem mouse
+    pcall(function()
+        -- Validator2 (anti-cheat do jogo precisa disso)
+        local CombatController = require(game.Players.LocalPlayer.PlayerScripts.Controllers.CombatController)
+        local attackFunc = require(game:GetService("ReplicatedStorage").Controllers.CombatController)
+        -- tenta pegar o upvalue do validator
+        local l = getupvalues and getupvalues(CombatController.Attack)[9] or nil
+        if l then
+            local I = debug.getupvalue(l, 15)
+            local _ = debug.getupvalue(l, 13)
+            local o = debug.getupvalue(l, 16)
+            local V = debug.getupvalue(l, 17)
+            local N = debug.getupvalue(l, 14)
+            local y = debug.getupvalue(l, 12)
+            local P = debug.getupvalue(l, 18)
+            local Q2 = y * _
+            local d2 = ((N * _ + y * I) % o * o + Q2) % V
+            N = math.floor(d2 / o)
+            y = d2 - N * o
+            P = P + 1
+            debug.setupvalue(l, 15, I)
+            debug.setupvalue(l, 13, _)
+            debug.setupvalue(l, 16, o)
+            debug.setupvalue(l, 17, V)
+            debug.setupvalue(l, 14, N)
+            debug.setupvalue(l, 12, y)
+            debug.setupvalue(l, 18, P)
+            game:GetService("ReplicatedStorage").Remotes.Validator2:FireServer(math.floor(d2 / V * 16777215), P)
+        end
+    end)
+    
+    -- Remote principal que atira
+    pcall(function()
+        local args = {targetPos, {targetPart}}
+        -- Se targetPart for Vector3, manda só posição
+        if typeof(targetPart) == "Vector3" then
+            args = {targetPos, {}}
+        end
+        game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RE/ShootGunEvent"):FireServer(unpack(args))
+        -- Alternativa: game.ReplicatedStorage.Remotes.Validator:FireServer etc já está no validator acima
+    end)
+    
+    -- Segunda tentativa com remote direto (alguns executors precisam)
+    pcall(function()
+        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("ShootGun", targetPos)
+    end)
+end
+
+print("[Dragonstorm Fix] SpamGunDragonStorm reescrito - REMOTE ONLY!")
+
+-- 3. Também corrige ShootM1 pra não chamar o clique físico quando for Dragonstorm
+if ShootM1 then
+    local oldShoot = ShootM1
+    function ShootM1(E)
+        local char = game.Players.LocalPlayer.Character
+        if not char or not E then return false end
+        local gunName = NameWeapon and NameWeapon("Gun") or "Dragonstorm"
+        local gun = char:FindFirstChild(gunName)
+        if not gun then
+            if EquipOnlyIfNeeded then EquipOnlyIfNeeded(gunName, 1.5) end
+            return false
+        end
+        -- Se for Dragonstorm, NÃO chama DragonstormPhysicalClick
+        if gunName == "Dragonstorm" then
+            -- vai direto pro remote
+            local targetPos
+            if typeof(E) == "Instance" then
+                if E:IsA("BasePart") then targetPos = E.Position
+                elseif E:IsA("Model") then
+                    local hrp = E:FindFirstChild("HumanoidRootPart") or E.PrimaryPart
+                    targetPos = hrp and hrp.Position or E:GetPivot().Position
+                end
+            elseif typeof(E) == "Vector3" then targetPos = E
+            elseif typeof(E) == "CFrame" then targetPos = E.Position
+            end
+            if targetPos then
+                getgenv().SpamGunDragonStorm(E)
+            end
+            return true
+        end
+        -- Pra outras guns, mantém original
+        return oldShoot(E)
+    end
+    print("[Fix] ShootM1 corrigido pra Dragonstorm remote only")
+end
+
+-- 4. Corrige UseDragonstormAllSeaEvents e UseDragonstormSkill pra não usar clique
+if UseDragonstormAllSeaEvents then
+    local oldAll = UseDragonstormAllSeaEvents
+    function UseDragonstormAllSeaEvents(Part)
+        if not Part or not Part.Parent then return end
+        if not EquipOnlyIfNeeded or not EquipOnlyIfNeeded("Dragonstorm", 1.0) then
+            -- Tenta equipar, se não tiver ainda sai
+            pcall(function() game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("LoadItem", "Dragonstorm") end)
+            return
+        end
+        -- NÃO chama DragonstormPhysicalClick()
+        getgenv().SpamGunDragonStorm(Part)
+    end
+end
+
+-- 5. Config extra: delay menor = atira mais rápido só via remote
+getgenv().DragonstormRemoteDelay = 0.06 -- 60ms entre tiros, ajusta se quiser (0.05 mais rápido, 0.1 mais seguro)
+getgenv().DSClickInterval = 9999 -- desativa intervalo do clique antigo
+getgenv().__DSClickLast = math.huge
+
+print("[Dragonstorm Fix] ✅ Tudo remote only! Sem mouse, sem toque, sem VirtualUser!")
+print("[Dragonstorm Fix] Delay atual: "..getgenv().DragonstormRemoteDelay.."s - Ajusta com getgenv().DragonstormRemoteDelay = 0.08 se tomar kick")
+
+-- Restaura os toggles ativos (UI + callback) pelo mesmo caminho do clique manual.
+task.spawn(function()
+    task.wait()
+    if A and A.RestoreSavedToggles then A.RestoreSavedToggles() end
+    pcall(function() if getgenv().NexoraLoadingFinish then getgenv().NexoraLoadingFinish() end end)
+end)
+
+
+
+
+-- ===================== FINAL FIX ViniZDev - FAST CLICK 0.06s + NO SPAM + ANCHOR + RESET =====================
+getgenv().PhysicalGunClickInterval = 0.05
+getgenv().DSClickInterval = 0.05
+getgenv().DragonstormRemoteDelay = 0.05
+getgenv().__DragonstormLastShot = 0
+
+function DragonstormPhysicalClick(force, toolName)
+    toolName = toolName or "Dragonstorm"
+    local now = os.clock()
+    local lastKey = "__PhysicalClickLast_" .. tostring(toolName)
+    if not force and now - (getgenv()[lastKey] or 0) < 0.05 then return false end
+    getgenv()[lastKey] = now
+    task.spawn(function()
+        pcall(function()
+            local Camera = workspace.CurrentCamera
+            if not Camera then return end
+            local vp = Camera.ViewportSize
+            local x, y = math.floor(vp.X / 2), 2
+            local VIM = game:GetService("VirtualInputManager")
+            VIM:SendMouseMoveEvent(x, y, game)
+            VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
+            VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
+            pcall(function() local tool = t.Character and t.Character:FindFirstChild(toolName) if tool then tool:Activate() end end)
+            pcall(function() local VU = game:GetService("VirtualUser") VU:CaptureController() VU:ClickButton1(Vector2.new(x, y)) end)
+        end)
+    end)
+    return true
+end
+getgenv().DragonstormPhysicalClick = DragonstormPhysicalClick
 
 getgenv().SpamGunDragonStorm = function(targetPart)
     local plr = game.Players.LocalPlayer
