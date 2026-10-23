@@ -7789,7 +7789,7 @@ function EquipOnlyIfNeeded(toolName, interval)
 	return false -- vai atirar no próximo ciclo
 end
 function DragonstormPhysicalClick(force, toolName)
-	-- DRAGONSTORM CLICK NA TELA A CADA 2.5s - ViniZDev - SEM REMOVER NADA
+	-- DRAGONSTORM CLICK NA TELA A CADA 2.5s - ViniZDev - VERSAO QUE EXECUTA
 	toolName = toolName or "Dragonstorm"
 	local now = os.clock()
 	local lastKey = "__PhysicalClickLast_" .. tostring(toolName)
@@ -7845,7 +7845,11 @@ function ShootM1(E)
 		return false
 	end
 	if gunName == "Dragonstorm" then
-		DragonstormPhysicalClick()
+		-- REMOVIDO: DragonstormPhysicalClick() nao chama mais click na tela
+		pcall(function()
+			local tool = t.Character and t.Character:FindFirstChild(gunName)
+			if tool then tool:Activate() end
+		end)
 	end
 	-- Target part / position (accepts Model, BasePart, Vector3 or CFrame).
 	local targetPart, targetPos
