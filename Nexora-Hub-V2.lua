@@ -15705,17 +15705,27 @@ function SpinBoat()
 		end
 	end
 end
+-- Noclip do barco sem desativar colisao do assento ocupado.
+-- Desligar CanCollide do VehicleSeat enquanto o jogador esta sentado pode fazer
+-- o Roblox soltar o Humanoid do assento; isso afetava Kitsune e Prehistoric.
 function NoclipBoat(P)
-	for Y, Y in ipairs(P:GetDescendants()) do
-		if (Y:IsA("BasePart") or (Y:IsA("Part")) or (Y:IsA("MeshPart"))) and Y.CanCollide then
-			Y.CanCollide = false
+	if not P or not P.Parent then return end
+	for _, part in ipairs(P:GetDescendants()) do
+		if part:IsA("BasePart") then
+			local isSeat = part:IsA("Seat") or part:IsA("VehicleSeat")
+			local occupiedSeat = isSeat and part.Occupant ~= nil
+			if not isSeat and part.CanCollide then
+				part.CanCollide = false
+			end
+			-- Nunca altera CanCollide do assento, ocupado ou nao.
 		end
 	end
 end
 function TurnOffNoclipBoat(P)
-	for Y, Y in ipairs(P:GetDescendants()) do
-		if (Y:IsA("BasePart") or (Y:IsA("Part")) or (Y:IsA("MeshPart"))) and not Y.CanCollide then
-			Y.CanCollide = true
+	if not P or not P.Parent then return end
+	for _, part in ipairs(P:GetDescendants()) do
+		if part:IsA("BasePart") and not part:IsA("Seat") and not part:IsA("VehicleSeat") and not part.CanCollide then
+			part.CanCollide = true
 		end
 	end
 end
