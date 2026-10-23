@@ -7788,44 +7788,25 @@ function EquipOnlyIfNeeded(toolName, interval)
 	return false -- vai atirar no próximo ciclo
 end
 function DragonstormPhysicalClick(force, toolName)
+	-- REMOVIDO CLICK NA TELA DA DRAGONSTORM - ViniZDev pediu para remover
 	toolName = toolName or "Dragonstorm"
+	if toolName == "Dragonstorm" then
+		-- Para DragonStorm nao faz mais click na tela, so ativa a tool via remote (sem VIM/VirtualUser)
+		pcall(function()
+			local tool = t.Character and t.Character:FindFirstChild(toolName)
+			if tool then tool:Activate() end
+		end)
+		return true
+	end
+	-- Para outras guns (Skull Guitar) mantem um click minimo sem VIM, so tool Activate
 	local now = os.clock()
 	local lastKey = "__PhysicalClickLast_" .. tostring(toolName)
 	local interval = getgenv().PhysicalGunClickInterval or getgenv().DSClickInterval or 0.5
-	if not force and now - (getgenv()[lastKey] or 0) < interval then
-		return false
-	end
+	if not force and now - (getgenv()[lastKey] or 0) < interval then return false end
 	getgenv()[lastKey] = now
-	task.spawn(function()
-		pcall(function()
-			local Camera = workspace.CurrentCamera
-			if not Camera then return end
-			local vp = Camera.ViewportSize
-			local x, y = math.floor(vp.X / 2), 2
-			local VIM = game:GetService("VirtualInputManager")
-			-- Mesma sequência física da Dragonstorm: mover o mouse e clicar com botão esquerdo.
-			VIM:SendMouseMoveEvent(x, y, game)
-			task.wait(0.03)
-			VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
-			task.wait(0.05)
-			VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
-			-- Fallback para executores mobile que ignoram eventos de mouse.
-			pcall(function()
-				local tx, ty = x, math.max(64, math.floor(vp.Y * 0.12))
-				VIM:SendTouchEvent(1, 0, tx, ty)
-				task.wait(0.04)
-				VIM:SendTouchEvent(1, 2, tx, ty)
-			end)
-			pcall(function()
-				local tool = t.Character and t.Character:FindFirstChild(toolName)
-				if tool then tool:Activate() end
-			end)
-			pcall(function()
-				local VU = game:GetService("VirtualUser")
-				VU:CaptureController()
-				VU:ClickButton1(Vector2.new(x, y))
-			end)
-		end)
+	pcall(function()
+		local tool = t.Character and t.Character:FindFirstChild(toolName)
+		if tool then tool:Activate() end
 	end)
 	return true
 end
@@ -7842,7 +7823,11 @@ function ShootM1(E)
 		return false
 	end
 	if gunName == "Dragonstorm" then
-		DragonstormPhysicalClick()
+		-- REMOVIDO: DragonstormPhysicalClick() nao chama mais click na tela
+		pcall(function()
+			local tool = t.Character and t.Character:FindFirstChild(gunName)
+			if tool then tool:Activate() end
+		end)
 	end
 	-- Target part / position (accepts Model, BasePart, Vector3 or CFrame).
 	local targetPart, targetPos
@@ -7926,19 +7911,26 @@ end
 getgenv().SpamGunSkullGuitar = function(E)
 	local combatUtil, character = require(m.CombatUtil), t.Character
 	local gun = character and character:FindFirstChild("Skull Guitar")
-	if not gun or not E or not character then
-		return false
-	end
-	-- Tyrant's destructible Tree is a Model; aim at a real BasePart instead
-	-- of the model pivot, which can be outside the hitbox.
+	if not gun or not E or not character then return false end
+	-- FIX VASOS: Trata Model (vasos/arvore) achando BasePart real, e tenta ClickDetector tambem
 	local targetPart, targetPosition
+	local targetModel = nil
 	if typeof(E) == "Instance" then
 		if E:IsA("BasePart") then
 			targetPart = E
+			targetModel = E.Parent
 		elseif E:IsA("Model") then
+			targetModel = E
 			targetPart = E:FindFirstChild("HumanoidRootPart", true)
 				or E:FindFirstChild("Handle", true)
 				or E:FindFirstChildWhichIsA("BasePart", true)
+				or E.PrimaryPart
+			-- Para vasos, pega o primeiro BasePart que achar dentro
+			if not targetPart then
+				for _,v in ipairs(E:GetDescendants()) do
+					if v:IsA("BasePart") then targetPart = v break end
+				end
+			end
 		end
 		if targetPart then targetPosition = targetPart.Position end
 	elseif typeof(E) == "CFrame" then
@@ -7947,36 +7939,52 @@ getgenv().SpamGunSkullGuitar = function(E)
 		targetPosition = E
 	end
 	if not targetPosition then return false end
-	-- Do not stop firing just because the reload helper briefly reports busy;
-	-- the M1 loop retries on its next iteration. Keep calls throttled.
 	local now = os.clock()
-	if now - (getgenv().__SkullGuitarM1Last or 0) < 0.12 then return true end
+	if now - (getgenv().__SkullGuitarM1Last or 0) < 0.08 then return true end
 	getgenv().__SkullGuitarM1Last = now
 	getgenv().AimPos = CFrame.new(targetPosition)
-	-- Reutiliza o clique físico da Dragonstorm, ativando a Skull Guitar.
-	if DragonstormPhysicalClick then
-		DragonstormPhysicalClick(false, "Skull Guitar")
-	end
 	local stun = character:FindFirstChild("Stun")
 	if stun and stun.Value ~= 0 then return true end
-	-- Send the regular M1 shot first, with the destructible part as hit target.
 	local sent = false
+	-- 1. Tenta quebrar vaso via ClickDetector (muitos vasos usam ClickDetector)
+	pcall(function()
+		if targetModel then
+			for _,v in ipairs(targetModel:GetDescendants()) do
+				if v:IsA("ClickDetector") then
+					fireclickdetector(v)
+					sent = true
+				end
+			end
+		end
+		if targetPart then
+			for _,v in ipairs(targetPart:GetDescendants()) do
+				if v:IsA("ClickDetector") then fireclickdetector(v) sent = true end
+			end
+			local cd = targetPart:FindFirstChildWhichIsA("ClickDetector", true)
+			if cd then fireclickdetector(cd) sent = true end
+		end
+	end)
+	-- 2. Disparo normal via ShootGunEvent com a parte fisica
 	pcall(function()
 		local rs = game:GetService("ReplicatedStorage")
 		local net = rs:FindFirstChild("Modules") and rs.Modules:FindFirstChild("Net")
 		local shoot = net and net:FindFirstChild("RE/ShootGunEvent")
-		if shoot and targetPart then
-			shoot:FireServer(targetPosition, { targetPart })
+		if shoot then
+			if targetPart then
+				shoot:FireServer(targetPosition, { targetPart })
+			else
+				shoot:FireServer(targetPosition, {})
+			end
 			sent = true
 		end
 	end)
-	-- Skull Guitar's TAP remote is retained as a fallback for game versions
-	-- that route its basic shot through the tool remote.
-	-- O TAP é o disparo próprio da Skull Guitar: sempre enviado, junto com o tiro normal.
+	-- 3. TAP remote da Skull Guitar (proprio dela)
 	pcall(function()
 		local remote = gun:FindFirstChild("RemoteEvent")
-		if remote then remote:FireServer("TAP", targetPosition); sent = true end
+		if remote then remote:FireServer("TAP", targetPosition) sent = true end
 	end)
+	-- 4. Ativa a tool sem click na tela (para vasos)
+	pcall(function() gun:Activate() end)
 	return sent
 end
 local function m(E, l)
@@ -16469,7 +16477,6 @@ function AutoSpawnKitsune()
 	local y, P = game.Lighting.ClockTime, checkboat()
 	getgenv().KitsuneNotifyFlags = getgenv().KitsuneNotifyFlags or {lastKey = "", lastTime = 0}
 	getgenv().KitsuneState = getgenv().KitsuneState or "none"
-	getgenv().KitsuneTriangleIndex = getgenv().KitsuneTriangleIndex or 1
 
 	local function NotifyOnce(key, title, desc, time)
 		local now = tick()
@@ -16528,6 +16535,7 @@ function AutoSpawnKitsune()
 		return dead
 	end
 
+	-- Hop Server logic se ativado
 	if Settings["Hop Server Kitsune Island"] then
 		local Y = CheckMoon()
 		if not (Y == "Full Moon" and math.floor(18 - y) <= 5 and math.floor(18 - y) >= 0 or Y == "Next Night" or Y == "Full Moon" and y <= 5 and math.floor(5 - y) >= 11) then
@@ -16536,6 +16544,7 @@ function AutoSpawnKitsune()
 		end
 	end
 
+	-- Verifica se barco está longe ou morto
 	local isBoatFar = false
 	local boatDead = false
 	if P then
@@ -16580,15 +16589,11 @@ function AutoSpawnKitsune()
 	local isFullMoon = CheckMoon() == "Full Moon"
 	local isDough = IsDoughSea()
 
-	-- Triangle patrol points in Sea 5 (rodando em triangulo)
-	local trianglePoints = {
-		CFrame.new(-38480.42578125, boatY, 10350.943359375),
-		CFrame.new(-36500, boatY, 13000),
-		CFrame.new(-39800, boatY, 8000),
-	}
+	local zone5Pos = CFrame.new(-38480.42578125, boatY, 10350.943359375)
 	local zone6Pos = CFrame.new(-32975.9921875, boatY, 25963.7109375) * CFrame.new(0, 0, 500)
 	local alternativeDoughPos = CFrame.new(-26017.931640625, boatY, 5657.8837890625)
 
+	-- Dough Sea detectado
 	if isDough then
 		if getgenv().KitsuneState == "dough_stopped" then
 			StopBoatParado(P)
@@ -16605,73 +16610,46 @@ function AutoSpawnKitsune()
 		return
 	end
 
-	-- If already patrolling in triangle at Sea 5
-	if getgenv().KitsuneState == "patrolling_triangle" then
-		if isFullMoon then
-			-- Full moon! Stop patrolling and go to Sea 6
-			getgenv().KitsuneState = "going_sea6"
-			UnanchorBoat(P)
-			NotifyOnce("mar6", "Nexora Hub - Kitsune", "Full moon! Sailing to Sea 6", 5)
-			return
-		end
-		-- Continue triangle patrol
-		local currentPoint = trianglePoints[getgenv().KitsuneTriangleIndex]
-		local dist = (P.VehicleSeat.Position - currentPoint.Position).Magnitude
-		if dist > 300 then
-			UnanchorBoat(P)
-			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) else manageTween(P.VehicleSeat, currentPoint, 320, "TweenBoat") end
-		else
-			-- Reached point, go to next point of triangle
-			getgenv().KitsuneTriangleIndex = getgenv().KitsuneTriangleIndex % #trianglePoints + 1
-		end
-		return
-	end
-
+	-- Ja chegou no Mar 6 e está parado
 	if getgenv().KitsuneState == "arrived_sea6" then
 		StopBoatParado(P)
 		if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) end
 		return
 	end
 
-	if not isFullMoon then
-		if getgenv().KitsuneState == "none" or getgenv().KitsuneState == "going_sea5" then
-			local distToZone5 = (P.VehicleSeat.Position - trianglePoints[1].Position).Magnitude
-			if distToZone5 > 400 then
-				UnanchorBoat(P)
-				if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) else manageTween(P.VehicleSeat, trianglePoints[1], 350, "TweenBoat") end
-				NotifyOnce("mar5", "Nexora Hub - Kitsune", "Sailing to Sea 5", 5)
-				getgenv().KitsuneState = "going_sea5"
-			else
-				-- Arrived Sea 5, start triangle patrol
-				getgenv().KitsuneState = "patrolling_triangle"
-				getgenv().KitsuneTriangleIndex = 2
-				NotifyOnce("triangle", "Nexora Hub - Kitsune", "Arrived at Sea 5. Patrolling in triangle, waiting for full moon", 6)
-			end
-		elseif getgenv().KitsuneState == "going_stop" then
-			-- Legacy state, convert to triangle patrol
-			getgenv().KitsuneState = "patrolling_triangle"
-			getgenv().KitsuneTriangleIndex = 1
-		elseif getgenv().KitsuneState == "stopped_sea5" then
-			-- Legacy stopped, convert to triangle patrol
-			getgenv().KitsuneState = "patrolling_triangle"
-			getgenv().KitsuneTriangleIndex = 1
-			NotifyOnce("triangle", "Nexora Hub - Kitsune", "Patrolling in triangle at Sea 5, waiting for full moon", 6)
-		end
-	else
-		-- Full moon: go to Sea 6
+	-- LOGICA DO ZERO: Compra barco -> vai pro Mar 5 se nao tiver lua cheia, se tiver lua cheia vai direto pro Mar 6, se nao tiver espera no Mar 5 ate lua cheia aparecer e ai vai pro Mar 6
+
+	if isFullMoon then
+		-- Lua cheia: vai direto pro Mar 6
 		UnanchorBoat(P)
 		local distToZone6 = (P.VehicleSeat.Position - zone6Pos.Position).Magnitude
 		if distToZone6 > 300 then
 			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) else manageTween(P.VehicleSeat, zone6Pos, 350, "TweenBoat") end
-			NotifyOnce("mar6", "Nexora Hub - Kitsune", "Full moon! Sailing to Sea 6", 5)
+			NotifyOnce("mar6_full", "Nexora Hub - Kitsune", "Full moon detected! Sailing directly to Sea 6", 5)
 			getgenv().KitsuneState = "going_sea6"
 		else
 			StopBoatParado(P)
-			NotifyOnce("arrived6", "Nexora Hub - Kitsune", "Arrived at Sea 6", 5)
+			NotifyOnce("arrived6", "Nexora Hub - Kitsune", "Arrived at Sea 6 - Full moon", 5)
 			getgenv().KitsuneState = "arrived_sea6"
+		end
+	else
+		-- Sem lua cheia: vai pro Mar 5 e espera la
+		local distToZone5 = (P.VehicleSeat.Position - zone5Pos.Position).Magnitude
+		if distToZone5 > 400 then
+			-- Ainda nao chegou no Mar 5, navegando
+			UnanchorBoat(P)
+			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) else manageTween(P.VehicleSeat, zone5Pos, 350, "TweenBoat") end
+			NotifyOnce("mar5", "Nexora Hub - Kitsune", "No full moon, sailing to Sea 5 to wait", 5)
+			getgenv().KitsuneState = "going_sea5"
+		else
+			-- Chegou no Mar 5, espera parado ate lua cheia
+			StopBoatParado(P)
+			getgenv().KitsuneState = "waiting_sea5"
+			NotifyOnce("waiting5", "Nexora Hub - Kitsune", "Arrived at Sea 5. Waiting for full moon to go to Sea 6", 6)
 		end
 	end
 end
+
 
 function DetectSoulEmber()
 	local y, P, Y = next, game.Workspace:GetChildren()
@@ -17641,7 +17619,8 @@ function AutoAttackLeviathan()
 				elseif Settings["Use Click M1 DragonStorm Leviathan"] then
 					equiptool("Dragonstorm")
 					if t.Character:FindFirstChild("Dragonstorm") then
-						DragonstormPhysicalClick(true)
+						-- REMOVIDO CLICK TELA DRAGONSTORM
+		pcall(function() local tool = t.Character and t.Character:FindFirstChild("Dragonstorm") if tool then tool:Activate() end end)
 						SpamGunDragonStorm(s.Hitbox11)
 						if t:DistanceFromCharacter(s.Hitbox11.Position) < 400 then
 							UseDragonstormSkill()
@@ -17694,7 +17673,8 @@ function AutoAttackLeviathan()
 			elseif Settings["Use Click M1 DragonStorm Leviathan"] then
 				equiptool("Dragonstorm")
 				if t.Character:FindFirstChild("Dragonstorm") then
-					DragonstormPhysicalClick(true)
+					-- REMOVIDO CLICK TELA DRAGONSTORM
+		pcall(function() local tool = t.Character and t.Character:FindFirstChild("Dragonstorm") if tool then tool:Activate() end end)
 					SpamGunDragonStorm(b.Hitbox11)
 					if t:DistanceFromCharacter(b.Hitbox11.Position) < 400 then
 						UseDragonstormSkill()
