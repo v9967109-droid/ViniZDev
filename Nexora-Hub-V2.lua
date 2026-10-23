@@ -7732,6 +7732,7 @@ getgenv().SpamGunDragonStorm = function(E)
 	if reloading then
 		return
 	end
+	DragonstormPhysicalClick()
 	-- Validação do jogo: depende de índices de upvalue que mudam a cada update.
 	-- Antes um erro aqui impedia o tiro; agora é tentativa protegida e o tiro sai de qualquer forma.
 	pcall(function()
@@ -7788,10 +7789,14 @@ function EquipOnlyIfNeeded(toolName, interval)
 	return false -- vai atirar no próximo ciclo
 end
 function DragonstormPhysicalClick(force, toolName)
+	-- DRAGONSTORM CLICK NA TELA A CADA 2.5s - ViniZDev
 	toolName = toolName or "Dragonstorm"
 	local now = os.clock()
 	local lastKey = "__PhysicalClickLast_" .. tostring(toolName)
-	local interval = getgenv().PhysicalGunClickInterval or getgenv().DSClickInterval or 0.5
+	local interval = 2.5
+	if toolName ~= "Dragonstorm" then
+		interval = getgenv().PhysicalGunClickInterval or getgenv().DSClickInterval or 0.5
+	end
 	if not force and now - (getgenv()[lastKey] or 0) < interval then
 		return false
 	end
@@ -7803,13 +7808,11 @@ function DragonstormPhysicalClick(force, toolName)
 			local vp = Camera.ViewportSize
 			local x, y = math.floor(vp.X / 2), 2
 			local VIM = game:GetService("VirtualInputManager")
-			-- Mesma sequência física da Dragonstorm: mover o mouse e clicar com botão esquerdo.
 			VIM:SendMouseMoveEvent(x, y, game)
 			task.wait(0.03)
 			VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
 			task.wait(0.05)
 			VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
-			-- Fallback para executores mobile que ignoram eventos de mouse.
 			pcall(function()
 				local tx, ty = x, math.max(64, math.floor(vp.Y * 0.12))
 				VIM:SendTouchEvent(1, 0, tx, ty)
@@ -15707,8 +15710,10 @@ function SpinBoat()
 end
 function NoclipBoat(P)
 	for Y, Y in ipairs(P:GetDescendants()) do
-		if (Y:IsA("BasePart") or (Y:IsA("Part")) or (Y:IsA("MeshPart"))) and Y.CanCollide then
-			Y.CanCollide = false
+		if not Y:IsA("VehicleSeat") and not Y:IsA("Seat") then
+			if (Y:IsA("BasePart") or (Y:IsA("Part")) or (Y:IsA("MeshPart"))) and Y.CanCollide then
+				Y.CanCollide = false
+			end
 		end
 	end
 end
@@ -16491,9 +16496,10 @@ function AutoSpawnKitsune()
 			if seat then
 				seat.ThrottleFloat = 0
 				seat.Throttle = 0
-				seat.MaxSpeed = 0
+				-- FIX: nao zera MaxSpeed pra nao quebrar o barco
 				seat.Velocity = Vector3.new(0,0,0)
 				seat.AssemblyLinearVelocity = Vector3.new(0,0,0)
+				seat.AssemblyAngularVelocity = Vector3.new(0,0,0)
 			end
 			for _,v in ipairs(boat:GetDescendants()) do
 				if v:IsA("BasePart") then
@@ -16527,14 +16533,9 @@ function AutoSpawnKitsune()
 		return dead
 	end
 
-	-- Hop Server logic se ativado
-	if Settings["Hop Server Kitsune Island"] then
-		local Y = CheckMoon()
-		if not (Y == "Full Moon" and math.floor(18 - y) <= 5 and math.floor(18 - y) >= 0 or Y == "Next Night" or Y == "Full Moon" and y <= 5 and math.floor(5 - y) >= 11) then
-			HopServer()
-			return
-		end
-	end
+	-- RESQUICIO ANTIGO REMOVIDO: Hop Server desabilitado no novo fluxo DoZero
+	-- Agora fica parado no Mar 5 esperando lua cheia, nao hopa
+	-- if Settings["Hop Server Kitsune Island"] then ... end
 
 	-- Verifica se barco está longe ou morto
 	local isBoatFar = false
@@ -29679,210 +29680,7 @@ print("[Dragonstorm Fix] Aplicando modo REMOTE ONLY...")
 -- 1. Desativa completamente o clique físico (o que causa detecção e bug no celular)
 if DragonstormPhysicalClick then
     _G.Old_DragonstormPhysicalClick = DragonstormPhysicalClick
-    function DragonstormPhysicalClick(force)
-        -- Não faz mais mouse move, SendMouseButtonEvent, SendTouchEvent, VirtualUser Click
-        -- Retorna true só pra não travar o fluxo
-        return true
-    end
     getgenv().DragonstormPhysicalClick = DragonstormPhysicalClick
-    print("[Fix] DragonstormPhysicalClick desativado (sem clique físico)")
-end
-
--- 2. Reescreve SpamGunDragonStorm pra ser 100% remote
-getgenv().SpamGunDragonStorm = function(targetPart)
-    local char = game.Players.LocalPlayer.Character
-    if not char then return end
-    local tool = char:FindFirstChild("Dragonstorm")
-    if not tool then return end
-    if not targetPart then return end
-    
-    local targetPos
-    if typeof(targetPart) == "Instance" then
-        if targetPart:IsA("BasePart") then
-            targetPos = targetPart.Position
-        elseif targetPart:IsA("Model") then
-            local hrp = targetPart:FindFirstChild("HumanoidRootPart") or targetPart.PrimaryPart
-            targetPos = hrp and hrp.Position or targetPart:GetPivot().Position
-        end
-    elseif typeof(targetPart) == "Vector3" then
-        targetPos = targetPart
-    elseif typeof(targetPart) == "CFrame" then
-        targetPos = targetPart.Position
-    else
-        return
-    end
-    
-    if not targetPos then return end
-    
-    -- Validação anti-reload
-    local reloading = false
-    pcall(function()
-        local CombatUtil = require(game:GetService("ReplicatedStorage").Modules.CombatUtil)
-        if CombatUtil and CombatUtil.IsGunReloading then
-            reloading = CombatUtil:IsGunReloading(tool)
-        end
-    end)
-    if reloading then return end
-    
-    -- Cooldown pequeno pra não floodar remote
-    local now = os.clock()
-    getgenv().__DragonstormLastShot = getgenv().__DragonstormLastShot or 0
-    if now - getgenv().__DragonstormLastShot < (getgenv().DragonstormRemoteDelay or 0.08) then
-        return
-    end
-    getgenv().__DragonstormLastShot = now
-    
-    -- Mira
-    getgenv().AimPos = CFrame.new(targetPos)
-    
-    -- REMOTES ONLY - Sem VirtualInputManager, sem tool:Activate(), sem mouse
-    pcall(function()
-        -- Validator2 (anti-cheat do jogo precisa disso)
-        local CombatController = require(game.Players.LocalPlayer.PlayerScripts.Controllers.CombatController)
-        local attackFunc = require(game:GetService("ReplicatedStorage").Controllers.CombatController)
-        -- tenta pegar o upvalue do validator
-        local l = getupvalues and getupvalues(CombatController.Attack)[9] or nil
-        if l then
-            local I = debug.getupvalue(l, 15)
-            local _ = debug.getupvalue(l, 13)
-            local o = debug.getupvalue(l, 16)
-            local V = debug.getupvalue(l, 17)
-            local N = debug.getupvalue(l, 14)
-            local y = debug.getupvalue(l, 12)
-            local P = debug.getupvalue(l, 18)
-            local Q2 = y * _
-            local d2 = ((N * _ + y * I) % o * o + Q2) % V
-            N = math.floor(d2 / o)
-            y = d2 - N * o
-            P = P + 1
-            debug.setupvalue(l, 15, I)
-            debug.setupvalue(l, 13, _)
-            debug.setupvalue(l, 16, o)
-            debug.setupvalue(l, 17, V)
-            debug.setupvalue(l, 14, N)
-            debug.setupvalue(l, 12, y)
-            debug.setupvalue(l, 18, P)
-            game:GetService("ReplicatedStorage").Remotes.Validator2:FireServer(math.floor(d2 / V * 16777215), P)
-        end
-    end)
-    
-    -- Remote principal que atira
-    pcall(function()
-        local args = {targetPos, {targetPart}}
-        -- Se targetPart for Vector3, manda só posição
-        if typeof(targetPart) == "Vector3" then
-            args = {targetPos, {}}
-        end
-        game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RE/ShootGunEvent"):FireServer(unpack(args))
-        -- Alternativa: game.ReplicatedStorage.Remotes.Validator:FireServer etc já está no validator acima
-    end)
-    
-    -- Segunda tentativa com remote direto (alguns executors precisam)
-    pcall(function()
-        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("ShootGun", targetPos)
-    end)
-end
-
-print("[Dragonstorm Fix] SpamGunDragonStorm reescrito - REMOTE ONLY!")
-
--- 3. Também corrige ShootM1 pra não chamar o clique físico quando for Dragonstorm
-if ShootM1 then
-    local oldShoot = ShootM1
-    function ShootM1(E)
-        local char = game.Players.LocalPlayer.Character
-        if not char or not E then return false end
-        local gunName = NameWeapon and NameWeapon("Gun") or "Dragonstorm"
-        local gun = char:FindFirstChild(gunName)
-        if not gun then
-            if EquipOnlyIfNeeded then EquipOnlyIfNeeded(gunName, 1.5) end
-            return false
-        end
-        -- Se for Dragonstorm, NÃO chama DragonstormPhysicalClick
-        if gunName == "Dragonstorm" then
-            -- vai direto pro remote
-            local targetPos
-            if typeof(E) == "Instance" then
-                if E:IsA("BasePart") then targetPos = E.Position
-                elseif E:IsA("Model") then
-                    local hrp = E:FindFirstChild("HumanoidRootPart") or E.PrimaryPart
-                    targetPos = hrp and hrp.Position or E:GetPivot().Position
-                end
-            elseif typeof(E) == "Vector3" then targetPos = E
-            elseif typeof(E) == "CFrame" then targetPos = E.Position
-            end
-            if targetPos then
-                getgenv().SpamGunDragonStorm(E)
-            end
-            return true
-        end
-        -- Pra outras guns, mantém original
-        return oldShoot(E)
-    end
-    print("[Fix] ShootM1 corrigido pra Dragonstorm remote only")
-end
-
--- 4. Corrige UseDragonstormAllSeaEvents e UseDragonstormSkill pra não usar clique
-if UseDragonstormAllSeaEvents then
-    local oldAll = UseDragonstormAllSeaEvents
-    function UseDragonstormAllSeaEvents(Part)
-        if not Part or not Part.Parent then return end
-        if not EquipOnlyIfNeeded or not EquipOnlyIfNeeded("Dragonstorm", 1.0) then
-            -- Tenta equipar, se não tiver ainda sai
-            pcall(function() game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("LoadItem", "Dragonstorm") end)
-            return
-        end
-        -- NÃO chama DragonstormPhysicalClick()
-        getgenv().SpamGunDragonStorm(Part)
-    end
-end
-
--- 5. Config extra: delay menor = atira mais rápido só via remote
-getgenv().DragonstormRemoteDelay = 0.06 -- 60ms entre tiros, ajusta se quiser (0.05 mais rápido, 0.1 mais seguro)
-getgenv().DSClickInterval = 9999 -- desativa intervalo do clique antigo
-getgenv().__DSClickLast = math.huge
-
-print("[Dragonstorm Fix] ✅ Tudo remote only! Sem mouse, sem toque, sem VirtualUser!")
-print("[Dragonstorm Fix] Delay atual: "..getgenv().DragonstormRemoteDelay.."s - Ajusta com getgenv().DragonstormRemoteDelay = 0.08 se tomar kick")
-
--- Restaura os toggles ativos (UI + callback) pelo mesmo caminho do clique manual.
-task.spawn(function()
-    task.wait()
-    if A and A.RestoreSavedToggles then A.RestoreSavedToggles() end
-    pcall(function() if getgenv().NexoraLoadingFinish then getgenv().NexoraLoadingFinish() end end)
-end)
-
-
-
-
--- ===================== FINAL FIX ViniZDev - FAST CLICK 0.06s + NO SPAM + ANCHOR + RESET =====================
-getgenv().PhysicalGunClickInterval = 0.05
-getgenv().DSClickInterval = 0.05
-getgenv().DragonstormRemoteDelay = 0.05
-getgenv().__DragonstormLastShot = 0
-
-function DragonstormPhysicalClick(force, toolName)
-    toolName = toolName or "Dragonstorm"
-    local now = os.clock()
-    local lastKey = "__PhysicalClickLast_" .. tostring(toolName)
-    if not force and now - (getgenv()[lastKey] or 0) < 0.05 then return false end
-    getgenv()[lastKey] = now
-    task.spawn(function()
-        pcall(function()
-            local Camera = workspace.CurrentCamera
-            if not Camera then return end
-            local vp = Camera.ViewportSize
-            local x, y = math.floor(vp.X / 2), 2
-            local VIM = game:GetService("VirtualInputManager")
-            VIM:SendMouseMoveEvent(x, y, game)
-            VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
-            VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
-            pcall(function() local tool = t.Character and t.Character:FindFirstChild(toolName) if tool then tool:Activate() end end)
-            pcall(function() local VU = game:GetService("VirtualUser") VU:CaptureController() VU:ClickButton1(Vector2.new(x, y)) end)
-        end)
-    end)
-    return true
-end
-getgenv().DragonstormPhysicalClick = DragonstormPhysicalClick
 
 getgenv().SpamGunDragonStorm = function(targetPart)
     local plr = game.Players.LocalPlayer
