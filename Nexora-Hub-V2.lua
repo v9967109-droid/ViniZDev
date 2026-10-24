@@ -11665,6 +11665,129 @@ EventEasterSection.CreateToggle(
 		SaveSettings("Auto Collect Egg Easter", V)
 	end
 )
+
+-- ============================================================================
+-- NEXORA HUB | SECRET QUESTS (UPDATE 30 - FIRST SEA)
+-- Organizado abaixo de Farming Other. Não altera nem remove funções existentes.
+-- Este módulo organiza e acompanha a seleção das 39 Island Secrets documentadas;
+-- cada segredo pode exigir uma sequência específica de puzzles/eventos/chefes.
+-- ============================================================================
+SecretQuestsMain = Main.CreatePage({ Page_Name = "Secret Quests", Page_Title = "Secret Quests" })
+SecretQuestsInfo = SecretQuestsMain.CreateSection("First Sea - Update 30")
+SecretQuestsInfo.CreateLabel({ Title = "39 Island Secrets | The Finale não incluída" })
+SecretQuestsInfo.CreateLabel({ Title = "Selecione uma ilha e uma missão para acompanhar." })
+
+local NexoraSecretQuestNames = {
+    ["Middle Town"] = { "Early Access", "Lookout Duty", "X Marks the Spot" },
+    ["Jungle"] = { "Zipline Repair", "The Thieving Monkey", "Awakened Gorilla King" },
+    ["Pirate Village"] = { "Free the Windmill", "Tavern Brawl", "Awakened Chef" },
+    ["Desert"] = { "Save Hasan", "Rune Cleanup", "Prickly Harvest" },
+    ["Frozen Village"] = { "Breaking the Ice", "Build a Snowman", "Awakened Yeti" },
+    ["Marine Fortress"] = { "Raise the Flag", "Pirate Raid", "Awakened Vice Admiral" },
+    ["Lower Skylands"] = { "Missing Lightning Bolt", "Return the Treasure", "Unexpected Guest" },
+    ["Prison"] = { "Prison Break", "Mysterious Key", "Awakened Warden" },
+    ["Colosseum"] = { "Gladiatorial Combat", "Previous Champions", "Crowded Colosseum" },
+    ["Magma Village"] = { "Magma Nest", "Magma Ore Extraction", "Awakened Magma General" },
+    ["Underwater City"] = { "Ride the Bubble", "Scattered Light", "Awakened Fishman Lord" },
+    ["Upper Skylands"] = { "The Old Temple", "Awakened Sky Warlord", "Awakened Lightning God" },
+    ["Fountain City"] = { "Pipe Repairs", "Sewer Gang", "Awakened Cyborg" },
+}
+
+local NexoraSecretIslandNames = {
+    "Middle Town", "Jungle", "Pirate Village", "Desert", "Frozen Village",
+    "Marine Fortress", "Lower Skylands", "Prison", "Colosseum", "Magma Village",
+    "Underwater City", "Upper Skylands", "Fountain City"
+}
+local NexoraSecretIslandOptions = {}
+for _, islandName in ipairs(NexoraSecretIslandNames) do
+    table.insert(NexoraSecretIslandOptions, islandName)
+end
+
+local NexoraSelectedSecretIsland = Settings["Secret Quests Island"] or "Middle Town"
+local NexoraSelectedSecretQuest = Settings["Secret Quests Selected"] or "Early Access"
+local NexoraSecretQuestTracking = false
+local NexoraSecretStatusLabel = SecretQuestsInfo.CreateLabel({
+    Title = "Status: Nenhuma missão em execução"
+})
+local NexoraSecretSelectionLabel = SecretQuestsInfo.CreateLabel({
+    Title = "Selecionada: Middle Town - Early Access"
+})
+
+local SecretQuestSelectionSection = SecretQuestsMain.CreateSection("Selecionar Secret Quest")
+SecretQuestSelectionSection.CreateDropdown({
+    Title = "Island Selector",
+    List = NexoraSecretIslandOptions,
+    Search = true,
+    Selected = false,
+    Default = NexoraSelectedSecretIsland,
+}, function(value)
+    if type(value) == "table" then
+        for k, v in pairs(value) do
+            if v then NexoraSelectedSecretIsland = k; break end
+        end
+    elseif type(value) == "string" then
+        NexoraSelectedSecretIsland = value
+    end
+    local available = NexoraSecretQuestNames[NexoraSelectedSecretIsland]
+    if available and not table.find(available, NexoraSelectedSecretQuest) then
+        NexoraSelectedSecretQuest = available[1]
+    end
+    SaveSettings("Secret Quests Island", NexoraSelectedSecretIsland)
+    SaveSettings("Secret Quests Selected", NexoraSelectedSecretQuest)
+    NexoraSecretSelectionLabel.SetText("Selecionada: " .. tostring(NexoraSelectedSecretIsland) .. " - " .. tostring(NexoraSelectedSecretQuest))
+    NexoraSecretStatusLabel.SetText("Status: Missão selecionada; confira os requisitos no jogo.")
+end)
+
+-- Um dropdown separado por ilha mantém as 39 missões organizadas e fáceis de localizar.
+for _, islandName in ipairs(NexoraSecretIslandNames) do
+    local islandSection = SecretQuestsMain.CreateSection(islandName)
+    islandSection.CreateDropdown({
+        Title = "Secret Quest - " .. islandName,
+        List = NexoraSecretQuestNames[islandName],
+        Search = true,
+        Selected = false,
+        Default = (NexoraSelectedSecretIsland == islandName and NexoraSelectedSecretQuest) or nil,
+    }, function(value)
+        local selected = value
+        if type(value) == "table" then
+            selected = nil
+            for k, v in pairs(value) do
+                if v then selected = k; break end
+            end
+        end
+        if type(selected) == "string" and table.find(NexoraSecretQuestNames[islandName], selected) then
+            NexoraSelectedSecretIsland = islandName
+            NexoraSelectedSecretQuest = selected
+            SaveSettings("Secret Quests Island", NexoraSelectedSecretIsland)
+            SaveSettings("Secret Quests Selected", NexoraSelectedSecretQuest)
+            NexoraSecretSelectionLabel.SetText("Selecionada: " .. islandName .. " - " .. selected)
+            NexoraSecretStatusLabel.SetText("Status: Selecionada; a conclusão deve ser confirmada no jogo.")
+        end
+    end)
+end
+
+local SecretQuestTrackingSection = SecretQuestsMain.CreateSection("Progress Tracker")
+SecretQuestTrackingSection.CreateToggle({
+    Title = "Track Selected Secret Quest",
+    Desc = "Acompanha a missão selecionada na interface; não executa automaticamente puzzles ou chefes.",
+    Default = Settings["Track Selected Secret Quest"] or false,
+}, function(enabled)
+    NexoraSecretQuestTracking = enabled
+    SaveSettings("Track Selected Secret Quest", enabled)
+    if enabled then
+        NexoraSecretSelectionLabel.SetText("Selecionada: " .. tostring(NexoraSelectedSecretIsland) .. " - " .. tostring(NexoraSelectedSecretQuest))
+        NexoraSecretStatusLabel.SetText("Status: Acompanhamento ativado; confirme o objetivo dentro do jogo.")
+    else
+        NexoraSecretStatusLabel.SetText("Status: Acompanhamento desativado")
+    end
+end)
+SecretQuestTrackingSection.CreateButton({
+    Title = "Refresh Selected Secret"
+}, function()
+    NexoraSecretSelectionLabel.SetText("Selecionada: " .. tostring(NexoraSelectedSecretIsland) .. " - " .. tostring(NexoraSelectedSecretQuest))
+    NexoraSecretStatusLabel.SetText("Status: Atualizado manualmente; verifique a conclusão no jogo.")
+end)
+
 FishingMain = Main.CreatePage({ Page_Name = "Fishing", Page_Title = "Fishing" })
 FishingSection = FishingMain.CreateSection("Fishing")
 FishingSection.CreateToggle(
@@ -15706,16 +15829,20 @@ function SpinBoat()
 	end
 end
 function NoclipBoat(P)
-	for Y, Y in ipairs(P:GetDescendants()) do
-		if (Y:IsA("BasePart") or (Y:IsA("Part")) or (Y:IsA("MeshPart"))) and Y.CanCollide then
-			Y.CanCollide = false
+	-- Mantem os assentos colidiveis: desativar CanCollide no VehicleSeat
+	-- pode fazer o jogador ser ejetado durante a navegacao.
+	if not P then return end
+	for _, part in ipairs(P:GetDescendants()) do
+		if part:IsA("BasePart") and not part:IsA("VehicleSeat") and not part:IsA("Seat") then
+			part.CanCollide = false
 		end
 	end
 end
 function TurnOffNoclipBoat(P)
-	for Y, Y in ipairs(P:GetDescendants()) do
-		if (Y:IsA("BasePart") or (Y:IsA("Part")) or (Y:IsA("MeshPart"))) and not Y.CanCollide then
-			Y.CanCollide = true
+	if not P then return end
+	for _, part in ipairs(P:GetDescendants()) do
+		if part:IsA("BasePart") and not part:IsA("VehicleSeat") and not part:IsA("Seat") then
+			part.CanCollide = true
 		end
 	end
 end
