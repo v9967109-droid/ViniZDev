@@ -331,8 +331,20 @@ function ForceResetSchema(l, Q)
 end
 
 
+-- Recuperação segura de uma execução anterior que deixou a flag ativa sem a UI.
+-- Mantém todas as funções do script e recria apenas as GUIs Nexora já existentes.
 if getgenv().__BF_LOADED then
-	return getgenv().__BF_RESULT
+    local _players = game:GetService("Players")
+    local _localPlayer = _players and _players.LocalPlayer
+    local _playerGui = _localPlayer and _localPlayer:FindFirstChildOfClass("PlayerGui")
+    if _playerGui then
+        for _, _guiName in ipairs({"NexoraUI", "NexoraFloat", "NexoraNotifs", "NexoraLoading"}) do
+            local _oldGui = _playerGui:FindFirstChild(_guiName)
+            if _oldGui then pcall(function() _oldGui:Destroy() end) end
+        end
+    end
+    getgenv().__BF_LOADED = nil
+    getgenv().__BF_RESULT = nil
 end
 
 Settings = {}
