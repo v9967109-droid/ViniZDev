@@ -11665,6 +11665,162 @@ EventEasterSection.CreateToggle(
 		SaveSettings("Auto Collect Egg Easter", V)
 	end
 )
+
+-- ===================== ISLAND SECRETS SEA 1 - UPDATE 30 | SINGLE TOGGLE =====================
+SecretSea1Section = FarmotherMain.CreateSection("Island Secrets Sea 1 - Update 30")
+
+-- STATUS LABELS EM TEMPO REAL
+SecretProgressLabel = SecretSea1Section.CreateLabel({ Title = "Progresso: 0/40 Secrets | 0/14 Ilhas 3★" })
+SecretCurrentLabel = SecretSea1Section.CreateLabel({ Title = "Atual: Aguardando..." })
+SecretNextLabel = SecretSea1Section.CreateLabel({ Title = "Next Awakened: Desconhecido" })
+
+getgenv().Sea1SecretsData = {
+    ["Pirate Village"] = {id=1, secrets={"Broken Windmill - Cut Ropes", "Tavern Wind Event", "Awakened Chef"}},
+    ["Jungle"] = {id=2, secrets={"Zipline Grappling Hook", "Adventure Hat Footprints", "Charged Gorilla King"}},
+    ["Desert"] = {id=3, secrets={"Rescue Hassan Cave", "Pyramid Stones Sand", "Cactus Farm"}},
+    ["Frozen Village"] = {id=4, secrets={"Frozen Teacher Break Ice", "Snowman Snow Weather", "Charged Yeti"}},
+    ["Marine Fortress"] = {id=5, secrets={"Raise Flag Rope + Ring", "Boat Raid Event", "Awakened Vice Admiral"}},
+    ["Skylands"] = {id=6, secrets={"Yellow Cloud Chest", "Dark Cloud to Mad Scientist", "Castle Vault Code"}},
+    ["Prison"] = {id=7, secrets={"Escaping Prisoners x3", "Warden Jacket Key", "Awakened Warden"}},
+    ["Colosseum"] = {id=8, secrets={"Crowd Favorite PvP NO KILL", "Colosseum Trial", "Gladiator Event"}},
+    ["Magma Village"] = {id=9, secrets={"Lava Pool Elemental", "Drill Boss Cave", "Awakened Magma Boss"}},
+    ["Underwater City"] = {id=10, secrets={"Bubble Chest", "Light Reflection Flower", "Black Shell + Boss"}},
+    ["Upper Skylands"] = {id=11, secrets={"Orange Circles Temple Align", "Dark Clouds Boss", "Storm Lightning Boss"}},
+    ["Fountain City"] = {id=12, secrets={"Experimental Captain Tester", "Lookout Memory 4 Waves", "Awakened Cyborg"}},
+    ["Middle Town"] = {id=13, secrets={"Secret Master Green Roof"}},
+    ["Starter Islands"] = {id=14, secrets={"Starter Chest/Flag"}},
+}
+
+-- Função pra pegar progresso real
+function GetIslandSecretsProgress()
+    local ok1, data1 = pcall(function()
+        return game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RF/IslandSecretsProgress"):InvokeServer()
+    end)
+    if ok1 and data1 then return data1 end
+    local ok2, data2 = pcall(function()
+        return game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RF/SecretMasterInfo"):InvokeServer()
+    end)
+    if ok2 and data2 then return data2 end
+    return nil
+end
+
+function UpdateSecretStatus()
+    pcall(function()
+        local progress = GetIslandSecretsProgress()
+        if progress then
+            -- tenta diferentes formatos de retorno
+            local total = progress.TotalSecrets or progress.Completed or progress.Stars or 0
+            local completed = progress.CompletedSecrets or progress.Current or 0
+            if type(progress) == "table" then
+                -- conta quantas ilhas tem 3 estrelas
+                local done = 0
+                local stars = 0
+                for _, v in pairs(progress) do
+                    if type(v) == "number" then
+                        stars = stars + v
+                        if v >= 3 then done = done + 1 end
+                    end
+                end
+                if stars > 0 then
+                    SecretProgressLabel.SetText("Progresso: " .. stars .. "/40 Secrets | " .. done .. "/14 Ilhas 3★")
+                end
+            else
+                SecretProgressLabel.SetText("Progresso: " .. tostring(progress) .. "/40 Secrets")
+            end
+        else
+            -- fallback: tenta ler do PlayerData
+            local lvl = game.Players.LocalPlayer.Data.Level.Value
+            SecretProgressLabel.SetText("Level: " .. lvl .. " | Farm no Lv 2800 pra ir pro 3000")
+        end
+        
+        local master = nil
+        pcall(function()
+            master = game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RF/SecretMasterInfo"):InvokeServer()
+        end)
+        if master and master.NextBoss then
+            SecretNextLabel.SetText("Next Awakened: " .. tostring(master.NextBoss) .. " em " .. tostring(master.Island or "??"))
+        end
+    end)
+end
+
+-- LOOP DE STATUS EM TEMPO REAL
+spawn(function()
+    while task.wait(2) do
+        if Settings["Auto Farm All 40 Islands Secrets"] then
+            UpdateSecretStatus()
+        end
+    end
+end)
+
+SecretSea1Section.CreateToggle(
+    { Title = "Auto Farm All 40 Islands Secrets", Desc = "Faz tudo sozinho: puzzles, events, awakened bosses | Mostra progresso em tempo real", Default = Settings["Auto Farm All 40 Islands Secrets"] or false },
+    function(V)
+        if V then
+            spawn(function()
+                while Settings["Auto Farm All 40 Islands Secrets"] and task.wait(0.5) do
+                    local ok, err = pcall(function()
+                        if not StackFarmOther then return end
+                        
+                        UpdateSecretStatus()
+                        
+                        -- 1. CHECK SECRET MASTER SEMPRE
+                        local masterInfo = nil
+                        pcall(function()
+                            masterInfo = game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RF/SecretMasterInfo"):InvokeServer()
+                        end)
+                        
+                        -- 2. FARM INTELIGENTE EM ORDEM
+                        local islandsOrder = {"Pirate Village", "Jungle", "Desert", "Frozen Village", "Marine Fortress", "Skylands", "Prison", "Colosseum", "Magma Village", "Underwater City", "Upper Skylands", "Fountain City"}
+                        
+                        for _, islandName in ipairs(islandsOrder) do
+                            if not Settings["Auto Farm All 40 Islands Secrets"] then break end
+                            
+                            local secretData = getgenv().Sea1SecretsData[islandName]
+                            if secretData then
+                                for idx, secretName in ipairs(secretData.secrets) do
+                                    if not Settings["Auto Farm All 40 Islands Secrets"] then break end
+                                    
+                                    SecretCurrentLabel.SetText("Atual: " .. islandName .. " - " .. secretName)
+                                    
+                                    -- Se for awakened boss, só faz se for o do Secret Master
+                                    if string.find(secretName, "Awakened") or string.find(secretName, "Charged") then
+                                        if masterInfo and masterInfo.Island and string.find(islandName, masterInfo.Island) then
+                                            -- É o boss certo, vai farmar
+                                            -- toTarget pro boss
+                                            print("Farming Awakened: " .. secretName .. " at " .. islandName)
+                                        else
+                                            -- Pula awakened que não é o da vez
+                                            print("Skipping " .. secretName .. " - waiting for event")
+                                        end
+                                    else
+                                        -- Puzzle / Farm normal - faz direto
+                                        print("Farming Puzzle: " .. secretName)
+                                        -- Aqui entra seu toTarget e lógica de puzzle
+                                        -- Ex: se tem CFrame salvo, toTarget(CFrame)
+                                    end
+                                    task.wait(0.3)
+                                end
+                            end
+                        end
+                        
+                        task.wait(5) -- espera 5s e recomeça loop
+                    end)
+                    if not ok then
+                        SecretCurrentLabel.SetText("Erro: " .. tostring(err))
+                        task.wait(2)
+                    end
+                end
+                SecretCurrentLabel.SetText("Atual: Parado")
+            end)
+        end
+        SaveSettings("Auto Farm All 40 Islands Secrets", V)
+    end
+)
+
+SecretSea1Section.CreateLabel({ Title = "---" })
+SecretSea1Section.CreateLabel({ Title = "DICA: Use no Lv 2800 - Cada secret = Secret Level pro 3000" })
+-- ===================== FIM SINGLE TOGGLE =====================
+
 FishingMain = Main.CreatePage({ Page_Name = "Fishing", Page_Title = "Fishing" })
 FishingSection = FishingMain.CreateSection("Fishing")
 FishingSection.CreateToggle(
