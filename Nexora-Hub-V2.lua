@@ -2847,25 +2847,6 @@ local fScale = make("UIScale", {Scale=1}, reopen)
             navButtons[p].Visible=(q=="" or has)
         end
     end)
-    -- Permite reposicionar páginas na navegação sem recriar nem alterar seus conteúdos.
-    function Main.MovePageAfter(pageName, anchorName)
-        local pageIndex, anchorIndex
-        for i, page in ipairs(pages) do
-            if page.name == pageName then pageIndex = i end
-            if page.name == anchorName then anchorIndex = i end
-        end
-        if not pageIndex or not anchorIndex or pageIndex == anchorIndex then return false end
-        local moved = table.remove(pages, pageIndex)
-        anchorIndex = nil
-        for i, page in ipairs(pages) do if page.name == anchorName then anchorIndex = i break end end
-        if not anchorIndex then table.insert(pages, moved); return false end
-        table.insert(pages, anchorIndex + 1, moved)
-        for i, page in ipairs(pages) do
-            local navButton = navButtons[page]
-            if navButton then navButton.LayoutOrder = i end
-        end
-        return true
-    end
     task.defer(playOpen)
     return Main
 end
@@ -11684,8 +11665,6 @@ EventEasterSection.CreateToggle(
 		SaveSettings("Auto Collect Egg Easter", V)
 	end
 )
-
-
 FishingMain = Main.CreatePage({ Page_Name = "Fishing", Page_Title = "Fishing" })
 FishingSection = FishingMain.CreateSection("Fishing")
 FishingSection.CreateToggle(
@@ -28231,7 +28210,7 @@ local BananaCatV14RecoveryIndex = {
     TargetSHA256 = "4dfc20987d38950df7ad9123b11b65278227eda71ee226682c91d8719524dd32",
     Proto164Instructions = 13807,
     Proto164BasicBlocks = 5499,
-    RequestedTabs = {"Status And Server", "LocalPlayer", "Setting Farm", "Hold and Select Skill", "Farming", "Stack Farming", "Farming Other", "Secret Quests", "Fruits and Raid,Dunge", "Sea Event"},
+    RequestedTabs = {"Status And Server", "LocalPlayer", "Setting Farm", "Hold and Select Skill", "Farming", "Stack Farming", "Farming Other", "Fruits and Raid,Dunge", "Sea Event"},
     MissingRequestedTabs = {},
     CheckQuestRecovered = true,
     CheckQuestRecoveredCallSites = 0,
@@ -29958,16 +29937,17 @@ end
 
 print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZDev")
 
+
 -- ============================================================================
 -- NEXORA HUB | SECRET QUESTS — UPDATE 30 / FIRST SEA
--- O módulo é inicializado no final do arquivo para não interromper a criação
--- das páginas/funções antigas. A navegação é reposicionada abaixo de Farming Other.
--- Contém as 39 quests documentadas (sem The Finale), com objetivos detalhados
--- e acompanhamento manual de etapas. Não tenta acionar remotes internos do jogo.
+-- Módulo isolado no final do arquivo: o código original acima permanece intacto.
+-- 39 segredos de ilha; The Finale não está incluído. Guia e progresso manual.
 -- ============================================================================
 do
     local ok, err = pcall(function()
-        if not Main or type(Main.CreatePage) ~= "function" then error("UI Main indisponível") end
+        if not Main or type(Main.CreatePage) ~= "function" then
+            error("A interface principal do Nexora não está disponível")
+        end
 
         local questData = {
             ["Middle Town"] = {
@@ -30038,67 +30018,55 @@ do
         }
 
         local islandNames = {"Middle Town", "Jungle", "Pirate Village", "Desert", "Frozen Village", "Marine Fortress", "Lower Skylands", "Prison", "Colosseum", "Magma Village", "Underwater City", "Upper Skylands", "Fountain City"}
-        local questNames = {}
-        local total = 0
+        local questOptions, lookup = {}, {}
         for _, island in ipairs(islandNames) do
-            questNames[island] = {}
-            for name in pairs(questData[island]) do table.insert(questNames[island], name); total = total + 1 end
-            table.sort(questNames[island])
+            local names = {}
+            for questName in pairs(questData[island] or {}) do table.insert(names, questName) end
+            table.sort(names)
+            for _, questName in ipairs(names) do
+                local option = island .. " | " .. questName
+                table.insert(questOptions, option)
+                lookup[option] = {island=island, name=questName, steps=questData[island][questName]}
+            end
         end
-        if total ~= 39 then error("Quantidade de Secret Quests inválida: " .. tostring(total)) end
+        if #questOptions ~= 39 then error("Lista de Secret Quests inválida: " .. tostring(#questOptions)) end
 
-        local page = Main.CreatePage({Page_Name = "Secret Quests", Page_Title = "Secret Quests"})
-        pcall(function() Main.MovePageAfter("Secret Quests", "Farming Other") end)
-        local overview = page.CreateSection("First Sea · Update 30")
-        overview.CreateLabel({Title = "39 Secret Quests documentadas · The Finale excluída"})
-        overview.CreateLabel({Title = "Este módulo guia e acompanha cada etapa; puzzles e eventos variáveis precisam ser confirmados no jogo."})
-        local statusLabel = overview.CreateLabel({Title = "Status: escolha uma ilha e uma missão"})
-        local objectiveLabel = overview.CreateLabel({Title = "Objetivo: -"})
+        local page = Main.CreatePage({Page_Name="Secret Quests", Page_Title="Secret Quests"})
+        local intro = page.CreateSection("First Sea · Update 30")
+        intro.CreateLabel({Title="39 Secret Quests documentadas · The Finale excluída"})
+        intro.CreateLabel({Title="Este guia acompanha os objetivos; puzzles e eventos variáveis devem ser confirmados no jogo."})
+        local statusLabel = intro.CreateLabel({Title="Status: selecione uma missão abaixo"})
+        local objectiveLabel = intro.CreateLabel({Title="Missão: -"})
         local stepLabels = {}
-        for i=1,3 do stepLabels[i] = overview.CreateLabel({Title = "Etapa "..i.."/3: -"}) end
+        for i=1,3 do stepLabels[i] = intro.CreateLabel({Title="Etapa "..i..": -"}) end
 
-        local selectedIsland = (Settings and Settings["Secret Quests Island"] and questData[Settings["Secret Quests Island"]]) and Settings["Secret Quests Island"] or "Jungle"
-        local selectedQuest = (Settings and Settings["Secret Quests Selected"] and questData[selectedIsland][Settings["Secret Quests Selected"]]) and Settings["Secret Quests Selected"] or questNames[selectedIsland][1]
+        local selectedOption = questOptions[1]
         local currentStep = 1
-        local function safeSave(key, value) pcall(function() if type(SaveSettings)=="function" then SaveSettings(key,value) end end) end
-        local function setStatus(value) pcall(function() statusLabel.SetText("Status: "..tostring(value)) end) end
-        local function refresh()
-            local steps = questData[selectedIsland] and questData[selectedIsland][selectedQuest]
-            pcall(function() objectiveLabel.SetText("Objetivo: "..tostring(selectedQuest).." · "..tostring(selectedIsland)) end)
-            for i=1,3 do pcall(function() stepLabels[i].SetText("Etapa "..i.."/3: "..tostring(steps and steps[i] or "-")) end) end
-            safeSave("Secret Quests Island", selectedIsland); safeSave("Secret Quests Selected", selectedQuest)
-            setStatus("Etapa "..currentStep.."/3 — "..tostring(selectedQuest))
+        local function updateLabels()
+            local data = lookup[selectedOption]
+            if not data then return end
+            objectiveLabel.SetText("Missão: " .. data.name .. " | Ilha: " .. data.island)
+            for i=1,3 do stepLabels[i].SetText("Etapa "..i..": "..tostring(data.steps[i] or "-")) end
+            statusLabel.SetText("Progresso do guia: etapa "..currentStep.."/3")
         end
-        local selection = page.CreateSection("Selecionar missão")
-        selection.CreateDropdown({Title="Island Selector", List=islandNames, Selected=false, Default=selectedIsland}, function(value)
-            if questData[value] then selectedIsland=value; if not questData[value][selectedQuest] then selectedQuest=questNames[value][1] end; currentStep=1; refresh() end
+        local selector = page.CreateSection("Selecionar Secret Quest")
+        local dropdown = selector.CreateDropdown({Title="Ilha e missão", List=questOptions, Default=selectedOption}, function(value)
+            if lookup[value] then selectedOption=value; currentStep=1; updateLabels() end
         end)
-        local questDropdown = selection.CreateDropdown({Title="Secret Quest Selector", List=questNames[selectedIsland], Selected=false, Default=selectedQuest}, function(value)
-            if questData[selectedIsland] and questData[selectedIsland][value] then selectedQuest=value; currentStep=1; refresh() end
-        end)
-        -- The island selector updates the quest dropdown through the library's supported SetList method.
-        local originalRefresh = refresh
-        refresh = function()
-            if questDropdown and questDropdown.SetList then pcall(function() questDropdown:SetList(questNames[selectedIsland]) end) end
-            originalRefresh()
-        end
-        local progress = page.CreateSection("Progresso da missão")
+        local progress = page.CreateSection("Acompanhamento")
         progress.CreateButton({Title="Marcar etapa atual como concluída"}, function()
-            if currentStep < 3 then currentStep=currentStep+1; refresh(); setStatus("Avançou para etapa "..currentStep.."; confirme o objetivo no jogo.")
-            else setStatus("Etapas do guia concluídas. Verifique a estrela no World Map e fale com o NPC de recompensa.") end
+            if currentStep < 3 then
+                currentStep = currentStep + 1
+                updateLabels()
+            else
+                statusLabel.SetText("Guia concluído. Confirme a estrela no World Map dentro do jogo.")
+            end
         end)
-        progress.CreateButton({Title="Reiniciar progresso desta missão"}, function() currentStep=1; refresh(); setStatus("Progresso reiniciado para "..selectedQuest) end)
-        progress.CreateButton({Title="Confirmar segredo concluído"}, function() setStatus("Confira a estrela da ilha no World Map. Se a estrela não apareceu, a missão ainda não foi registrada.") end)
-        local islandSection = page.CreateSection("Lista de missões por ilha")
-        for _, island in ipairs(islandNames) do
-            local names = table.clone(questNames[island])
-            islandSection.CreateButton({Title=island.." · "..#names.." missões"}, function()
-                selectedIsland=island; selectedQuest=questNames[island][1]; currentStep=1; refresh()
-                setStatus("Selecionada "..island..". Escolha a missão no menu acima.")
-            end)
-        end
-        refresh()
+        progress.CreateButton({Title="Reiniciar progresso da missão"}, function()
+            currentStep = 1
+            updateLabels()
+        end)
+        updateLabels()
     end)
-    if not ok then warn("[NEXORA Secret Quests] Módulo não carregado: "..tostring(err)) end
+    if not ok then warn("[NEXORA Secret Quests] Não foi possível criar a aba: " .. tostring(err)) end
 end
-
