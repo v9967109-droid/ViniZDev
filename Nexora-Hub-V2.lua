@@ -11667,30 +11667,88 @@ EventEasterSection.CreateToggle(
 )
 
 -- ============================================================================
--- NEXORA HUB | SECRET QUESTS (UPDATE 30 - FIRST SEA)
--- Organizado abaixo de Farming Other. Não altera nem remove funções existentes.
--- Este módulo organiza e acompanha a seleção das 39 Island Secrets documentadas;
--- cada segredo pode exigir uma sequência específica de puzzles/eventos/chefes.
+-- NEXORA HUB | SECRET QUESTS - UPDATE 30 / FIRST SEA
+-- Módulo isolado e protegido: não substitui nem remove funções existentes.
+-- O tracker acompanha os objetivos e fornece instruções específicas por segredo.
 -- ============================================================================
-SecretQuestsMain = Main.CreatePage({ Page_Name = "Secret Quests", Page_Title = "Secret Quests" })
-SecretQuestsInfo = SecretQuestsMain.CreateSection("First Sea - Update 30")
-SecretQuestsInfo.CreateLabel({ Title = "39 Island Secrets | The Finale não incluída" })
-SecretQuestsInfo.CreateLabel({ Title = "Selecione uma ilha e uma missão para acompanhar." })
+local SecretQuestsPage
+local SecretQuestsSection
+local SecretQuestStatusLabel
+local SecretQuestObjectiveLabel
+local SecretQuestIslandDropdown
+local SecretQuestNameDropdown
+local SecretQuestActive = false
+local SecretQuestAssistConnection = nil
+local NexoraSelectedSecretIsland = "Jungle"
+local NexoraSelectedSecretQuest = "Zipline Repair"
+local SecretQuestStepLabels = {}
 
-local NexoraSecretQuestNames = {
-    ["Middle Town"] = { "Early Access", "Lookout Duty", "X Marks the Spot" },
-    ["Jungle"] = { "Zipline Repair", "The Thieving Monkey", "Awakened Gorilla King" },
-    ["Pirate Village"] = { "Free the Windmill", "Tavern Brawl", "Awakened Chef" },
-    ["Desert"] = { "Save Hasan", "Rune Cleanup", "Prickly Harvest" },
-    ["Frozen Village"] = { "Breaking the Ice", "Build a Snowman", "Awakened Yeti" },
-    ["Marine Fortress"] = { "Raise the Flag", "Pirate Raid", "Awakened Vice Admiral" },
-    ["Lower Skylands"] = { "Missing Lightning Bolt", "Return the Treasure", "Unexpected Guest" },
-    ["Prison"] = { "Prison Break", "Mysterious Key", "Awakened Warden" },
-    ["Colosseum"] = { "Gladiatorial Combat", "Previous Champions", "Crowded Colosseum" },
-    ["Magma Village"] = { "Magma Nest", "Magma Ore Extraction", "Awakened Magma General" },
-    ["Underwater City"] = { "Ride the Bubble", "Scattered Light", "Awakened Fishman Lord" },
-    ["Upper Skylands"] = { "The Old Temple", "Awakened Sky Warlord", "Awakened Lightning God" },
-    ["Fountain City"] = { "Pipe Repairs", "Sewer Gang", "Awakened Cyborg" },
+local NexoraSecretQuestData = {
+    ["Middle Town"] = {
+        ["Early Access"] = {"Aguarde o spawn diário de Janus na casa perto do Experienced Captain.", "Quebre a janela acima do carrinho e fale com Janus quando aparecer.", "Pegue a chave perto do Aura Editor, abra a porta traseira do prédio Robotmega e interaja com o computador; volte a Janus."},
+        ["Lookout Duty"] = {"Fale com Experienced Captain e escolha Keep Lookout.", "Observe cada uma das quatro ondas de navios e conte/registre as velas.", "Responda às quatro perguntas corretamente; se estiver em cooldown, volte quando o timer acabar."},
+        ["X Marks the Spot"] = {"Interaja com os objetos de cenário da ilha até o objeto que contém o mapa reagir.", "Pegue as partes do mapa e siga as pistas pela ilha.", "Siga a última pista, interaja com o local do tesouro e conclua o encontro que aparecer."},
+    },
+    ["Jungle"] = {
+        ["Zipline Repair"] = {"Vá até a área estendida da ilha e encontre o gancho junto à árvore com plataforma.", "Pegue o gancho e use a plataforma para lançar/ancorar a tirolesa do outro lado da água.", "Confirme a conclusão no objetivo/NPC correspondente."},
+        ["The Thieving Monkey"] = {"Aguarde o evento e procure pegadas perto da árvore grande.", "Interaja com a árvore indicada para revelar o ladrão.", "Derrote o macaco e devolva o chapéu ao Adventurer."},
+        ["Awakened Gorilla King"] = {"Verifique no Rumor/World Map se o segredo está disponível.", "Localize o Gorilla King na forma despertada e derrote-o.", "Confira se a estrela da Jungle foi registrada no mapa."},
+    },
+    ["Pirate Village"] = {
+        ["Free the Windmill"] = {"Vá até o moinho grande no centro da vila.", "Interaja com os cinco pontos de corda que prendem as pás, usando a mecânica exigida pelo jogo.", "Volte ao NPC de missão perto das docas para receber a conclusão."},
+        ["Tavern Brawl"] = {"Aguarde o aviso do evento e vá à porta da taverna perto do Chef.", "Entre quando a cena/porta reagir e derrote os três Tavern Pirates.", "Fale com o Chef e depois com o NPC das docas para confirmar a recompensa."},
+        ["Awakened Chef"] = {"Confira a indicação de boss no Rumor/World Map.", "Encontre o Chef na forma despertada e derrote-o.", "Verifique se a estrela da missão foi registrada."},
+    },
+    ["Desert"] = {
+        ["Save Hasan"] = {"Procure a entrada escondida no canto da pirâmide próximo à vila, junto ao cacto/cerca.", "Entre na passagem e derrote os Desert Skeletons que cercam Hasan.", "Fale com Hasan e retorne ao Desert Merchant."},
+        ["Rune Cleanup"] = {"Vá ao círculo de pedras junto à pirâmide.", "Ataque cada pedra várias vezes até revelar os símbolos e ativar a placa central.", "Fale com o Desert Merchant para concluir."},
+        ["Prickly Harvest"] = {"Fale com Desert Merchant e escolha Prickly Harvest.", "Quebre dez cactos espalhados pelo deserto e recolha as dez Cactus Flowers.", "Entregue as flores ao Desert Merchant."},
+    },
+    ["Frozen Village"] = {
+        ["Breaking the Ice"] = {"Entre na grande caverna na frente da ilha.", "Siga a interação de puzzle indicada pelo jogo para libertar o Ability Teacher do gelo.", "Confirme a estrela no World Map."},
+        ["Build a Snowman"] = {"Aguarde o evento de neve intensa na ilha.", "Recolha neve e forme três bolas de neve, rolando-as até o tamanho necessário.", "Complete a montagem do boneco e confira o progresso."},
+        ["Awakened Yeti"] = {"Verifique o rumor/horário do boss despertado.", "Localize e derrote o Yeti despertado.", "Confira a estrela da Frozen Village."},
+    },
+    ["Marine Fortress"] = {
+        ["Raise the Flag"] = {"Procure a bandeira/estrutura danificada e o NPC de rumor na fortaleza.", "Siga a interação indicada pelo objetivo para levantar a bandeira.", "Retorne ao NPC se houver diálogo de recompensa e confirme a estrela."},
+        ["Pirate Raid"] = {"Aguarde o evento de ataque de piratas e localize os navios perto da fortaleza.", "Siga as instruções do evento da fortaleza para concluir o desafio contra os navios.", "Sobreviva/complete o evento e confira a estrela no mapa."},
+        ["Awakened Vice Admiral"] = {"Consulte Rumor/World Map para confirmar o boss escolhido.", "Localize e derrote o Vice Admiral despertado.", "Confirme a estrela da Marine Fortress."},
+    },
+    ["Lower Skylands"] = {
+        ["Missing Lightning Bolt"] = {"Procure o NPC e o objeto elétrico/raio indicado pelo rumor nas ilhas celestes inferiores.", "Siga as pistas e interaja com o objeto necessário para recuperar o raio.", "Retorne ao NPC que iniciou o objetivo e confirme a conclusão."},
+        ["Return the Treasure"] = {"Fale com o NPC de rumor próximo à área de Skylands.", "Encontre o tesouro indicado pelas pistas nas ilhas flutuantes.", "Leve/entregue o tesouro ao NPC e confirme a estrela."},
+        ["Unexpected Guest"] = {"Aguarde o evento/visitante aparecer na área de Lower Skylands.", "Localize o NPC visitante e siga o diálogo/objetivo exibido.", "Complete a etapa solicitada e confirme o progresso no mapa."},
+    },
+    ["Prison"] = {
+        ["Prison Break"] = {"Fale com Jail Keeper e descubra quais prisioneiros estão fugindo.", "Interrompa as três fugas: o prisioneiro na parede externa, o que cava no gramado e o que constrói uma jangada na praia.", "Volte ao Jail Keeper para concluir."},
+        ["Mysterious Key"] = {"Procure o rumor/NPC que menciona a chave misteriosa na Prison.", "Explore as celas e áreas da prisão e encontre a chave/objeto indicado pelo objetivo.", "Entregue ou use a chave conforme o diálogo e confirme a estrela."},
+        ["Awakened Warden"] = {"Confira o boss indicado no Rumor/World Map.", "Localize e derrote o Warden despertado.", "Confirme a estrela da Prison."},
+    },
+    ["Colosseum"] = {
+        ["Gladiatorial Combat"] = {"Fale com Colosseum Emperor na varanda.", "Complete as três ondas de combate: Gladiators, Upgraded Gladiators e Supreme Gladiator.", "Fale novamente com o Emperor para receber a recompensa."},
+        ["Previous Champions"] = {"Consulte o rumor e procure o NPC relacionado aos campeões anteriores.", "Siga o desafio indicado e vença os adversários/etapas necessários.", "Retorne ao NPC e confira a estrela no mapa."},
+        ["Crowded Colosseum"] = {"Aguarde o evento do coliseu ficar ativo.", "Derrote os grupos de inimigos que surgirem dentro do coliseu.", "Continue até o evento registrar a conclusão e confira o mapa."},
+    },
+    ["Magma Village"] = {
+        ["Magma Nest"] = {"Vá à piscina de lava perto das docas e localize o ponto de magma indicado.", "Ative o evento na cratera e conclua o desafio dos Lava Elementals e Mini Lava Elementals.", "Fale com o Mayor para receber a conclusão."},
+        ["Magma Ore Extraction"] = {"Encontre o Living Skeleton e aceite a tarefa relacionada à broca.", "Entre na Volcano Cave pela entrada da mina na parte de trás da ilha.", "Localize e desligue a broca; retorne ao NPC para confirmar."},
+        ["Awakened Magma General"] = {"Confira o boss indicado pelo Rumor/World Map.", "Localize e derrote o Magma General despertado.", "Confirme a estrela da Magma Village."},
+    },
+    ["Underwater City"] = {
+        ["Ride the Bubble"] = {"Acesse Underwater City pelo redemoinho/Whirlpool.", "Procure a bolha/rota indicada pelo rumor e interaja conforme o objetivo.", "Conclua a travessia e confirme o progresso."},
+        ["Scattered Light"] = {"Procure as pistas e fontes de luz espalhadas pela Underwater City.", "Ative/reúna os pontos de luz indicados pelo objetivo.", "Retorne ao NPC relacionado e confira a estrela."},
+        ["Awakened Fishman Lord"] = {"Consulte o Rumor/World Map para identificar o boss despertado.", "Localize e derrote o Fishman Lord despertado.", "Confirme a estrela da Underwater City."},
+    },
+    ["Upper Skylands"] = {
+        ["The Old Temple"] = {"Use o portal de Skylands para chegar a Upper Skylands e fale com Sky Quest Giver 2.", "Aceite The Ancient Temple; abra os bloqueios usando a mecânica de puzzle exigida e ajuste os dispositivos para fechar o círculo de feixes.", "Pegue a informação/objetivo e retorne ao NPC durante o evento de raios para entregar."},
+        ["Awakened Sky Warlord"] = {"Confira o boss indicado pelo Rumor/World Map.", "Localize e derrote o Sky Warlord despertado.", "Confirme a estrela de Upper Skylands."},
+        ["Awakened Lightning God"] = {"Confira o boss indicado pelo Rumor/World Map.", "Localize e derrote o Lightning God despertado.", "Confirme a estrela de Upper Skylands."},
+    },
+    ["Fountain City"] = {
+        ["Pipe Repairs"] = {"Procure canos/estruturas danificadas e o NPC que dá o rumor em Fountain City.", "Interaja com cada ponto de reparo indicado pelo objetivo.", "Retorne ao NPC e confira se a estrela foi registrada."},
+        ["Sewer Gang"] = {"Procure a entrada dos esgotos e o NPC que menciona o grupo.", "Encontre e derrote os inimigos da Sewer Gang conforme o objetivo.", "Volte ao NPC e confirme a conclusão."},
+        ["Awakened Cyborg"] = {"Confira o boss indicado pelo Rumor/World Map.", "Localize e derrote o Cyborg despertado.", "Confirme a estrela de Fountain City."},
+    },
 }
 
 local NexoraSecretIslandNames = {
@@ -11698,95 +11756,156 @@ local NexoraSecretIslandNames = {
     "Marine Fortress", "Lower Skylands", "Prison", "Colosseum", "Magma Village",
     "Underwater City", "Upper Skylands", "Fountain City"
 }
-local NexoraSecretIslandOptions = {}
+local NexoraSecretQuestNames = {}
 for _, islandName in ipairs(NexoraSecretIslandNames) do
-    table.insert(NexoraSecretIslandOptions, islandName)
+    NexoraSecretQuestNames[islandName] = {}
+    for questName in pairs(NexoraSecretQuestData[islandName]) do
+        table.insert(NexoraSecretQuestNames[islandName], questName)
+    end
+    table.sort(NexoraSecretQuestNames[islandName])
 end
 
-local NexoraSelectedSecretIsland = Settings["Secret Quests Island"] or "Middle Town"
-local NexoraSelectedSecretQuest = Settings["Secret Quests Selected"] or "Early Access"
-local NexoraSecretQuestTracking = false
-local NexoraSecretStatusLabel = SecretQuestsInfo.CreateLabel({
-    Title = "Status: Nenhuma missão em execução"
-})
-local NexoraSecretSelectionLabel = SecretQuestsInfo.CreateLabel({
-    Title = "Selecionada: Middle Town - Early Access"
-})
-
-local SecretQuestSelectionSection = SecretQuestsMain.CreateSection("Selecionar Secret Quest")
-SecretQuestSelectionSection.CreateDropdown({
-    Title = "Island Selector",
-    List = NexoraSecretIslandOptions,
-    Search = true,
-    Selected = false,
-    Default = NexoraSelectedSecretIsland,
-}, function(value)
-    if type(value) == "table" then
-        for k, v in pairs(value) do
-            if v then NexoraSelectedSecretIsland = k; break end
-        end
-    elseif type(value) == "string" then
-        NexoraSelectedSecretIsland = value
-    end
-    local available = NexoraSecretQuestNames[NexoraSelectedSecretIsland]
-    if available and not table.find(available, NexoraSelectedSecretQuest) then
-        NexoraSelectedSecretQuest = available[1]
-    end
-    SaveSettings("Secret Quests Island", NexoraSelectedSecretIsland)
-    SaveSettings("Secret Quests Selected", NexoraSelectedSecretQuest)
-    NexoraSecretSelectionLabel.SetText("Selecionada: " .. tostring(NexoraSelectedSecretIsland) .. " - " .. tostring(NexoraSelectedSecretQuest))
-    NexoraSecretStatusLabel.SetText("Status: Missão selecionada; confira os requisitos no jogo.")
-end)
-
--- Um dropdown separado por ilha mantém as 39 missões organizadas e fáceis de localizar.
-for _, islandName in ipairs(NexoraSecretIslandNames) do
-    local islandSection = SecretQuestsMain.CreateSection(islandName)
-    islandSection.CreateDropdown({
-        Title = "Secret Quest - " .. islandName,
-        List = NexoraSecretQuestNames[islandName],
-        Search = true,
-        Selected = false,
-        Default = (NexoraSelectedSecretIsland == islandName and NexoraSelectedSecretQuest) or nil,
-    }, function(value)
-        local selected = value
-        if type(value) == "table" then
-            selected = nil
-            for k, v in pairs(value) do
-                if v then selected = k; break end
-            end
-        end
-        if type(selected) == "string" and table.find(NexoraSecretQuestNames[islandName], selected) then
-            NexoraSelectedSecretIsland = islandName
-            NexoraSelectedSecretQuest = selected
-            SaveSettings("Secret Quests Island", NexoraSelectedSecretIsland)
-            SaveSettings("Secret Quests Selected", NexoraSelectedSecretQuest)
-            NexoraSecretSelectionLabel.SetText("Selecionada: " .. islandName .. " - " .. selected)
-            NexoraSecretStatusLabel.SetText("Status: Selecionada; a conclusão deve ser confirmada no jogo.")
-        end
+local function NexoraSecretSafeSave(key, value)
+    pcall(function()
+        if type(SaveSettings) == "function" then SaveSettings(key, value) end
     end)
 end
 
-local SecretQuestTrackingSection = SecretQuestsMain.CreateSection("Progress Tracker")
-SecretQuestTrackingSection.CreateToggle({
-    Title = "Track Selected Secret Quest",
-    Desc = "Acompanha a missão selecionada na interface; não executa automaticamente puzzles ou chefes.",
-    Default = Settings["Track Selected Secret Quest"] or false,
-}, function(enabled)
-    NexoraSecretQuestTracking = enabled
-    SaveSettings("Track Selected Secret Quest", enabled)
-    if enabled then
-        NexoraSecretSelectionLabel.SetText("Selecionada: " .. tostring(NexoraSelectedSecretIsland) .. " - " .. tostring(NexoraSelectedSecretQuest))
-        NexoraSecretStatusLabel.SetText("Status: Acompanhamento ativado; confirme o objetivo dentro do jogo.")
-    else
-        NexoraSecretStatusLabel.SetText("Status: Acompanhamento desativado")
+local function NexoraSecretSetStatus(text)
+    if SecretQuestStatusLabel and SecretQuestStatusLabel.SetText then
+        pcall(function() SecretQuestStatusLabel.SetText("Status: " .. tostring(text)) end)
     end
+end
+
+local function NexoraSecretSetObjective()
+    local steps = NexoraSecretQuestData[NexoraSelectedSecretIsland]
+        and NexoraSecretQuestData[NexoraSelectedSecretIsland][NexoraSelectedSecretQuest]
+    if not steps then
+        if SecretQuestObjectiveLabel and SecretQuestObjectiveLabel.SetText then
+            pcall(function() SecretQuestObjectiveLabel.SetText("Objetivo: selecione uma missão válida.") end)
+        end
+        for i = 1, 3 do
+            local labelHandle = SecretQuestStepLabels[i]
+            if labelHandle and labelHandle.SetText then
+                pcall(function() labelHandle.SetText("Etapa " .. tostring(i) .. "/3: -") end)
+            end
+        end
+        return
+    end
+    if SecretQuestObjectiveLabel and SecretQuestObjectiveLabel.SetText then
+        pcall(function() SecretQuestObjectiveLabel.SetText("Objetivo: " .. tostring(NexoraSelectedSecretQuest)) end)
+    end
+    for i = 1, 3 do
+        local labelHandle = SecretQuestStepLabels[i]
+        if labelHandle and labelHandle.SetText then
+            pcall(function() labelHandle.SetText("Etapa " .. tostring(i) .. "/3: " .. tostring(steps[i])) end)
+        end
+    end
+    NexoraSecretSetStatus("Pronto para: " .. tostring(NexoraSelectedSecretQuest))
+end
+
+local okPage, pageResult = pcall(function()
+    return Main.CreatePage({ Page_Name = "Secret Quests", Page_Title = "Secret Quests" })
 end)
-SecretQuestTrackingSection.CreateButton({
-    Title = "Refresh Selected Secret"
-}, function()
-    NexoraSecretSelectionLabel.SetText("Selecionada: " .. tostring(NexoraSelectedSecretIsland) .. " - " .. tostring(NexoraSelectedSecretQuest))
-    NexoraSecretStatusLabel.SetText("Status: Atualizado manualmente; verifique a conclusão no jogo.")
-end)
+if okPage and pageResult then
+    SecretQuestsPage = pageResult
+    local okSection, sectionResult = pcall(function()
+        return SecretQuestsPage.CreateSection("First Sea - Update 30")
+    end)
+    if okSection and sectionResult then
+        SecretQuestsSection = sectionResult
+        pcall(function() SecretQuestsSection.CreateLabel({Title = "39 Island Secrets | The Finale excluída"}) end)
+        pcall(function() SecretQuestsSection.CreateLabel({Title = "Guia por objetivo: puzzles, NPCs, eventos e bosses."}) end)
+        SecretQuestStatusLabel = SecretQuestsSection.CreateLabel({Title = "Status: selecione uma ilha e uma missão"})
+        SecretQuestObjectiveLabel = SecretQuestsSection.CreateLabel({Title = "Objetivos: selecione uma missão"})
+        for i = 1, 3 do
+            SecretQuestStepLabels[i] = SecretQuestsSection.CreateLabel({Title = "Etapa " .. tostring(i) .. "/3: -"})
+        end
+        local selectSection = SecretQuestsPage.CreateSection("Selecionar Secret Quest")
+        local savedIsland = Settings and Settings["Secret Quests Island"]
+        local savedQuest = Settings and Settings["Secret Quests Selected"]
+        NexoraSelectedSecretIsland = (savedIsland and NexoraSecretQuestData[savedIsland]) and savedIsland or "Jungle"
+        NexoraSelectedSecretQuest = (savedQuest and NexoraSecretQuestData[NexoraSelectedSecretIsland] and NexoraSecretQuestData[NexoraSelectedSecretIsland][savedQuest]) and savedQuest or NexoraSecretQuestNames[NexoraSelectedSecretIsland][1]
+
+        local function refreshQuestSelection()
+            NexoraSecretSafeSave("Secret Quests Island", NexoraSelectedSecretIsland)
+            NexoraSecretSafeSave("Secret Quests Selected", NexoraSelectedSecretQuest)
+            if SecretQuestNameDropdown and SecretQuestNameDropdown.SetList then
+                pcall(function() SecretQuestNameDropdown:SetList(NexoraSecretQuestNames[NexoraSelectedSecretIsland]) end)
+            end
+            NexoraSecretSetObjective()
+        end
+
+        selectSection.CreateDropdown({
+            Title = "Island Selector",
+            List = NexoraSecretIslandNames,
+            Selected = false,
+            Default = NexoraSelectedSecretIsland,
+        }, function(value)
+            if type(value) == "string" and NexoraSecretQuestData[value] then
+                NexoraSelectedSecretIsland = value
+                if not NexoraSecretQuestData[value][NexoraSelectedSecretQuest] then
+                    NexoraSelectedSecretQuest = NexoraSecretQuestNames[value][1]
+                end
+                refreshQuestSelection()
+            end
+        end)
+
+        SecretQuestNameDropdown = selectSection.CreateDropdown({
+            Title = "Secret Quest Selector",
+            List = NexoraSecretQuestNames[NexoraSelectedSecretIsland],
+            Selected = false,
+            Default = NexoraSelectedSecretQuest,
+        }, function(value)
+            if type(value) == "string" and NexoraSecretQuestData[NexoraSelectedSecretIsland][value] then
+                NexoraSelectedSecretQuest = value
+                refreshQuestSelection()
+            end
+        end)
+
+        -- Menus independentes garantem acesso direto a todas as 39 missões.
+        for _, islandName in ipairs(NexoraSecretIslandNames) do
+            local islandSection = SecretQuestsPage.CreateSection(islandName)
+            islandSection.CreateDropdown({
+                Title = "Missão - " .. islandName,
+                List = NexoraSecretQuestNames[islandName],
+                Selected = false,
+                Default = nil,
+            }, function(value)
+                if type(value) == "string" and NexoraSecretQuestData[islandName][value] then
+                    NexoraSelectedSecretIsland = islandName
+                    NexoraSelectedSecretQuest = value
+                    refreshQuestSelection()
+                end
+            end)
+        end
+
+        local trackingSection = SecretQuestsPage.CreateSection("Assistente de Objetivos")
+        trackingSection.CreateToggle({
+            Title = "Track Secret Quest",
+            Desc = "Mantém o objetivo selecionado visível e atualiza o estado.",
+            Default = Settings and Settings["Track Secret Quest"] or false,
+        }, function(enabled)
+            SecretQuestActive = enabled == true
+            NexoraSecretSafeSave("Track Secret Quest", SecretQuestActive)
+            if SecretQuestActive then
+                NexoraSecretSetStatus("Acompanhando " .. tostring(NexoraSelectedSecretIsland) .. " / " .. tostring(NexoraSelectedSecretQuest))
+            else
+                NexoraSecretSetStatus("Acompanhamento pausado")
+            end
+        end)
+        trackingSection.CreateButton({Title = "Atualizar objetivo"}, function()
+            NexoraSecretSetObjective()
+            NexoraSecretSetStatus("Objetivo atualizado; confira o World Map do jogo para confirmar a estrela.")
+        end)
+        trackingSection.CreateButton({Title = "Abrir World Map / verificar estrelas"}, function()
+            NexoraSecretSetStatus("Abra o World Map do Blox Fruits e confirme a estrela da ilha selecionada.")
+        end)
+        NexoraSecretSetObjective()
+    end
+else
+    warn("[NEXORA Secret Quests] Não foi possível criar a página: " .. tostring(pageResult))
+end
 
 FishingMain = Main.CreatePage({ Page_Name = "Fishing", Page_Title = "Fishing" })
 FishingSection = FishingMain.CreateSection("Fishing")
@@ -28333,7 +28452,7 @@ local BananaCatV14RecoveryIndex = {
     TargetSHA256 = "4dfc20987d38950df7ad9123b11b65278227eda71ee226682c91d8719524dd32",
     Proto164Instructions = 13807,
     Proto164BasicBlocks = 5499,
-    RequestedTabs = {"Status And Server", "LocalPlayer", "Setting Farm", "Hold and Select Skill", "Farming", "Stack Farming", "Farming Other", "Fruits and Raid,Dunge", "Sea Event"},
+    RequestedTabs = {"Status And Server", "LocalPlayer", "Setting Farm", "Hold and Select Skill", "Farming", "Stack Farming", "Farming Other", "Secret Quests", "Fruits and Raid,Dunge", "Sea Event"},
     MissingRequestedTabs = {},
     CheckQuestRecovered = true,
     CheckQuestRecoveredCallSites = 0,
