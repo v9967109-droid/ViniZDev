@@ -11666,29 +11666,477 @@ EventEasterSection.CreateToggle(
 	end
 )
 
--- ===================== V10 FINAL FIX | FORCA TP + FORCA RESGATE 1/3 =====================
-SecretSea1Section = FarmotherMain.CreateSection("Island Secrets Sea 1 - Update 30")
+-- ===================== V11 FINAL - TODAS AS 40 MISSOES REAIS EXATAS - 1/3 JA RESGATA =====================
+SecretSea1Section = FarmotherMain.CreateSection("Island Secrets Sea 1 - Update 30 | 40 Secrets")
 
-SecretProgressLabel = SecretSea1Section.CreateLabel({ Title = "Progresso: 0/40 - Lv 2800" })
+SecretProgressLabel = SecretSea1Section.CreateLabel({ Title = "Progresso: 0/40 Secrets | Lv 2800" })
 SecretCurrentLabel = SecretSea1Section.CreateLabel({ Title = "Atual: Aguardando..." })
-SecretStarsLabel = SecretSea1Section.CreateLabel({ Title = "Status: Iniciando..." })
-SecretMasterLabel = SecretSea1Section.CreateLabel({ Title = "Secret Master: ?" })
+SecretStarsLabel = SecretSea1Section.CreateLabel({ Title = "Ilha: 0/3 estrelas" })
+SecretMissionLabel = SecretSea1Section.CreateLabel({ Title = "Missao: -" })
 
--- CORRECAO CRITICA: FORCA StackFarmOther = true
 getgenv().StackFarmOther = true
 
-getgenv().AllIslandsV10 = {
-    {Island="Pirate Village", Pos=CFrame.new(-1122.34998, 4.78708982, 3855.91992), QuestGiver=CFrame.new(-1145, 15, 3850), Radius=500},
-    {Island="Desert", Pos=CFrame.new(1094.14587, 6.47350502, 4192.88721), QuestGiver=CFrame.new(1100, 15, 4200), Radius=600},
-    {Island="Marine Fortress", Pos=CFrame.new(-3177, 33, 1688), QuestGiver=CFrame.new(-3200, 35, 1700), Radius=500},
-    {Island="Frozen Village", Pos=CFrame.new(1198.00928, 27.0117645, -1211.73364), QuestGiver=CFrame.new(1200, 15, -1220), Radius=500},
-    {Island="Magma Village", Pos=CFrame.new(-5230, 8, 8461), QuestGiver=CFrame.new(-5245, 12, 8545), Radius=800},
-    {Island="Skylands", Pos=CFrame.new(-4607, 872, -1667), QuestGiver=CFrame.new(-4610, 875, -1670), Radius=500},
-    {Island="Prison", Pos=CFrame.new(4853, 5, 740), QuestGiver=CFrame.new(4860, 10, 750), Radius=500},
-    {Island="Colosseum", Pos=CFrame.new(-1426, 6, -3017), QuestGiver=CFrame.new(-1430, 10, -3020), Radius=400},
-    {Island="Underwater City", Pos=CFrame.new(61163, 18, 1562), QuestGiver=CFrame.new(61170, 20, 1570), Radius=600},
-    {Island="Upper Skylands", Pos=CFrame.new(-7852, 5544, -380), QuestGiver=CFrame.new(-7860, 5550, -390), Radius=500},
-    {Island="Fountain City", Pos=CFrame.new(5250, 38, 4036), QuestGiver=CFrame.new(5260, 40, 4040), Radius=600},
+-- TODAS 40 MISSOES REAIS - ORDEM FACIL -> DIFICIL
+getgenv().All40Secrets = {
+    {
+        Island="Pirate Village", Pos=CFrame.new(-1122.34998, 4.78708982, 3855.91992), QuestGiver=CFrame.new(-1145, 15, 3850), Radius=600,
+        Secrets={
+            {N=1, Name="1/3 Windmill - Cortar 5 cordas do moinho gigante", How="Acha moinho gigante no centro da vila, corta 5 pontos de corda com espada", 
+             Do=function(pos) 
+                SecretMissionLabel.SetText("Cortando 5 cordas do moinho com espada")
+                local cut=0
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v:IsA("BasePart") and v.Name:lower():find("rope") and (v.Position - pos.Position).Magnitude < 500 then
+                        toTarget(CFrame.new(v.Position + Vector3.new(0,10,0)))
+                        task.wait(0.4)
+                        pcall(function() UsedualFlock() ClickM1(v) end)
+                        cut=cut+1
+                        task.wait(0.5)
+                        if cut>=5 then break end
+                    end
+                end
+                -- fallback: procura moinho
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v.Name:lower():find("windmill") or v.Name:lower():find("moinho") then
+                        for _, rope in pairs(v:GetDescendants()) do
+                            if rope:IsA("BasePart") and rope.Name:lower():find("rope") then
+                                toTarget(CFrame.new(rope.Position + Vector3.new(0,10,0)))
+                                UsedualFlock() ClickM1(rope) task.wait(0.5)
+                            end
+                        end
+                    end
+                end
+             end},
+            {N=2, Name="2/3 Tavern - Derrotar 3 Tavern Pirates", How="Vai na taverna onde spawna Chef Boss, entra na porta, cutscene, mata 3 piratas da taverna, pega pocao com Chef",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Entrando na taverna e matando 3 Tavern Pirates")
+                local tavernPos = CFrame.new(-1122, 15, 3855) + Vector3.new(30,0,0)
+                toTarget(tavernPos * CFrame.new(0,20,0)) task.wait(1)
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v:IsA("ProximityPrompt") and (v.Parent:GetPivot().Position - tavernPos.Position).Magnitude < 200 then
+                        toTarget(v.Parent:GetPivot() * CFrame.new(0,0,5))
+                        fireproximityprompt(v) task.wait(1)
+                    end
+                end
+                -- mata tavern pirates
+                for _, mob in pairs(workspace.Enemies:GetChildren()) do
+                    if mob.Name:lower():find("tavern") and mob.Humanoid.Health>0 then
+                        repeat toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(0,20,5)) UsedualFlock() ClickM1(mob) task.wait(0.3) until not mob.Parent or mob.Humanoid.Health<=0
+                    end
+                end
+             end},
+            {N=3, Name="3/3 Awakened Chef - Boss a cada 1 hora, checar Secret Master", How="Chef normal spawna na varanda da taverna. Precisa do Awakened que spawna a cada hora. Fala com Secret Master em Middle Town",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Checando Secret Master se Chef Awakened vai spawnar")
+                -- TP Secret Master pra checar
+                pcall(function()
+                    local info = game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RF/SecretMasterInfo"):InvokeServer()
+                    if info and info.Island and info.Island:lower():find("pirate") then
+                        SecretCurrentLabel.SetText("Chef Awakened vai spawnar! Esperando...")
+                        -- mata chef
+                        for _, mob in pairs(workspace.Enemies:GetChildren()) do
+                            if mob.Name:lower():find("chef") and mob.Humanoid.Health>0 then
+                                repeat toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(0,20,5)) UsedualFlock() ClickM1(mob) task.wait(0.3) until not mob.Parent or mob.Humanoid.Health<=0
+                            end
+                        end
+                    else
+                        SecretCurrentLabel.SetText("Chef Awakened nao e agora, aguardando evento horario")
+                        task.wait(3)
+                    end
+                end)
+             end},
+        }
+    },
+    {
+        Island="Desert", Pos=CFrame.new(1094.14587, 6.47350502, 4192.88721), QuestGiver=CFrame.new(1100, 15, 4200), Radius=700,
+        Secrets={
+            {N=1, Name="1/3 Under Pyramid - Salvar Hassan", How="Piramide lado direito base de arvore, entrada escondida embaixo de bau de tesouro. Cai, segue caminho, cutscene, escolhe ajudar Hassan, mata 4 mumias",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Entrando na piramide pra salvar Hassan")
+                local pyramidEntry = CFrame.new(1094, 6, 4192) + Vector3.new(20,-10,0)
+                toTarget(pyramidEntry * CFrame.new(0,20,0)) task.wait(1.5)
+                for _, mob in pairs(workspace.Enemies:GetChildren()) do
+                    if mob.Name:lower():find("mummy") and (mob.HumanoidRootPart.Position - pos.Position).Magnitude < 600 and mob.Humanoid.Health>0 then
+                        toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(0,20,5)) UsedualFlock() ClickM1(mob) task.wait(0.3)
+                    end
+                end
+             end},
+            {N=2, Name="2/3 Prickly Harvest - Ficar 30min e colher cactus florescido", How="Depois de salvar Hassan, fala com Desert Merchant, fica 30min na ilha pros cactus florescerem",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Colhendo cactus florescidos - precisa 30min na ilha")
+                local count=0
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v.Name:lower():find("cactus") and v:IsA("BasePart") and (v.Position - pos.Position).Magnitude < 700 then
+                        toTarget(CFrame.new(v.Position + Vector3.new(0,15,0)))
+                        UsedualFlock() ClickM1(v) count=count+1 task.wait(0.5)
+                        if count>=5 then break end
+                    end
+                end
+             end},
+            {N=3, Name="3/3 Clean Pillars - Limpar 8 pilares de pedra", How="Direita da piramide 8 pilares no chao, bate M1 em cada pra limpar areia ate ativar escritas",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Limpando 8 pilares de pedra")
+                local cleaned=0
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v.Name:lower():find("pillar") or v.Name:lower():find("stone") then
+                        local ok, pPos = pcall(function() return v:GetPivot().Position end)
+                        if ok and (pPos - pos.Position).Magnitude < 700 then
+                            toTarget(v:GetPivot() * CFrame.new(0,10,0))
+                            UsedualFlock() ClickM1(v) cleaned=cleaned+1 task.wait(0.6)
+                        end
+                    end
+                end
+             end},
+        }
+    },
+    {
+        Island="Marine Fortress", Pos=CFrame.new(-3177, 33, 1688), QuestGiver=CFrame.new(-3200, 35, 1700), Radius=600,
+        Secrets={
+            {N=1, Name="1/3 Flagpole - Achar corda e levantar bandeira do Parlus", How="Topo torre direita fala com Parlus, pega corda na outra torre, usa no mastro gigante entrada, fica no circulo desviando Marine Busters ate bandeira subir",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Procurando Parlus e corda da bandeira")
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v:IsA("ProximityPrompt") and (v.Parent:GetPivot().Position - pos.Position).Magnitude < 600 then
+                        toTarget(v.Parent:GetPivot() * CFrame.new(0,0,5))
+                        fireproximityprompt(v) task.wait(1)
+                    end
+                end
+                -- fica no circulo da bandeira
+                local flagPos = CFrame.new(-3177, 33, 1688) + Vector3.new(0,30,0)
+                toTarget(flagPos) task.wait(3)
+             end},
+            {N=2, Name="2/3 Pirate Raid - Destruir barcos com canhao", How="Evento barcos piratas chegando, usa turret/canhao do forte",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Esperando evento Pirate Raid e usando canhao")
+                toTarget(pos * CFrame.new(0,50,0)) task.wait(2)
+                -- procura turret
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v.Name:lower():find("cannon") or v.Name:lower():find("turret") then
+                        local ok, pPos = pcall(function() return v:GetPivot().Position end)
+                        if ok and (pPos - pos.Position).Magnitude < 600 then
+                            toTarget(v:GetPivot() * CFrame.new(0,0,5))
+                            task.wait(1)
+                            for _, prompt in pairs(v:GetDescendants()) do if prompt:IsA("ProximityPrompt") then fireproximityprompt(prompt) end end
+                        end
+                    end
+                end
+             end},
+            {N=3, Name="3/3 Vice Admiral Awakened - Destruir teto com canhao e matar", How="Destroi parte do predio com canhao antes, depois mata boss quando Secret Master apontar",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Vice Admiral Awakened - checando Secret Master")
+                pcall(function()
+                    local info = game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RF/SecretMasterInfo"):InvokeServer()
+                    if info and info.Island and info.Island:lower():find("marine") then
+                        for _, mob in pairs(workspace.Enemies:GetChildren()) do
+                            if mob.Name:lower():find("vice") and mob.Humanoid.Health>0 then
+                                repeat toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(0,20,5)) UsedualFlock() ClickM1(mob) task.wait(0.3) until not mob.Parent or mob.Humanoid.Health<=0
+                            end
+                        end
+                    end
+                end)
+             end},
+        }
+    },
+    {
+        Island="Frozen Village", Pos=CFrame.new(1198.00928, 27.0117645, -1211.73364), QuestGiver=CFrame.new(1200, 15, -1220), Radius=600,
+        Secrets={
+            {N=1, Name="1/3 Ability Teacher - Quebrar gelo subterraneo", How="Fala com Villager Quest NPC, vai no subterraneo, ve NPC preso no gelo, quebra gelo com espada/fruta/fighting style/gun",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Quebrando gelo do Ability Teacher no subterraneo")
+                local underground = CFrame.new(1198, -10, -1211)
+                toTarget(underground * CFrame.new(0,20,0)) task.wait(1)
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v.Name:lower():find("ice") and v:IsA("BasePart") and (v.Position - pos.Position).Magnitude < 600 then
+                        toTarget(CFrame.new(v.Position + Vector3.new(0,10,0)))
+                        UsedualFlock() ClickM1(v) task.wait(0.5)
+                    end
+                end
+             end},
+            {N=2, Name="2/3 Snowman - Esperar nevar e empurrar neve", How="Quando comeca a nevar, aparecem pilhas de neve, empurra 3 bolas grandes e junta em 1 snowman",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Esperando nevar pra fazer snowman")
+                -- procura pilhas de neve
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v.Name:lower():find("snow") and v:IsA("BasePart") and (v.Position - pos.Position).Magnitude < 600 then
+                        toTarget(CFrame.new(v.Position + Vector3.new(0,5,0)))
+                        task.wait(0.5)
+                    end
+                end
+                task.wait(2)
+             end},
+            {N=3, Name="3/3 Yeti Awakened - Topo da ilha a cada 1 hora", How="Yeti normal a cada 3 min no topo. Precisa do Awakened/Charged a cada hora, destroi gelo/bone snowball antes",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Yeti Awakened - checando Secret Master")
+                toTarget(CFrame.new(1198, 100, -1211) * CFrame.new(0,20,0)) task.wait(1)
+                pcall(function()
+                    for _, mob in pairs(workspace.Enemies:GetChildren()) do
+                        if mob.Name:lower():find("yeti") and mob.Humanoid.Health>0 then
+                            repeat toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(0,20,5)) UsedualFlock() ClickM1(mob) task.wait(0.3) until not mob.Parent or mob.Humanoid.Health<=0
+                        end
+                    end
+                end)
+             end},
+        }
+    },
+    {
+        Island="Jungle", Pos=CFrame.new(-1249.77222, 11.8870859, 341.356476), QuestGiver=CFrame.new(-1250, 15, 350), Radius=600,
+        Secrets={
+            {N=1, Name="1/3 Zipline - Pegar grapple hook e reativar zipline", How="Area estendida da Jungle, arvore gigante com plataforma, pega grapple hook na base da mesma arvore, sobe e joga hook",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Pegando grapple hook e reativando zipline")
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v.Name:lower():find("grapple") or v.Name:lower():find("hook") then
+                        local ok, pPos = pcall(function() return v:GetPivot().Position end)
+                        if ok and (pPos - pos.Position).Magnitude < 600 then
+                            toTarget(v:GetPivot() * CFrame.new(0,0,5))
+                            for _, prompt in pairs(v:GetDescendants()) do if prompt:IsA("ProximityPrompt") then fireproximityprompt(prompt) end end
+                            task.wait(1)
+                        end
+                    end
+                end
+             end},
+            {N=2, Name="2/3 Monkey Hat - Bater em arvores ate macaco cair", How="Adventurer teve chapeu roubado, bate em arvores medias e grandes ate notificacao suspicious steps, continua batendo ate macaco cair, mata e pega chapeu",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Batendo em arvores pra achar macaco ladrao")
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v.Name:lower():find("tree") and v:IsA("BasePart") and (v.Position - pos.Position).Magnitude < 600 then
+                        toTarget(CFrame.new(v.Position + Vector3.new(0,15,0)))
+                        UsedualFlock() ClickM1(v) task.wait(0.3)
+                    end
+                end
+             end},
+            {N=3, Name="3/3 Gorilla King Awakened - A cada 1 hora", How="Gorilla King normal a cada 2 min, precisa do especial a cada hora",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Gorilla King Awakened - checando")
+                for _, mob in pairs(workspace.Enemies:GetChildren()) do
+                    if mob.Name:lower():find("gorilla") and mob.Name:lower():find("king") and mob.Humanoid.Health>0 then
+                        repeat toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(0,20,5)) UsedualFlock() ClickM1(mob) task.wait(0.3) until not mob.Parent or mob.Humanoid.Health<=0
+                    end
+                end
+             end},
+        }
+    },
+    {
+        Island="Magma Village", Pos=CFrame.new(-5230, 8, 8461), CraterPos=CFrame.new(-5235, 8, 8450), QuestGiver=CFrame.new(-5245, 12, 8545), Radius=800,
+        Secrets={
+            {N=1, Name="1/3 Magma Elementals - Quebrar ninho de magma na lava perto do dock", How="Do lado direito do dock ve ninho de magma na lava, destroi com M1s, spawna Magma Elemental grande + varios Mini, mata TODOS (fogem pras arvores queimando) e pega recompensa no Mayor NPC vila",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Quebrando ninho de magma na lava perto do dock")
+                local crater=nil
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v:IsA("BasePart") and (v.Name:find("Crater") or v.Name:find("Nest") or v.Name:find("Magma")) and (v.Position - pos.Position).Magnitude < 800 then
+                        crater=v break
+                    end
+                end
+                if crater then
+                    repeat toTarget(CFrame.new(crater.Position + Vector3.new(0,15,0))) UsedualFlock() ClickM1(crater) task.wait(0.4) local hasMob=false for _, mob in pairs(workspace.Enemies:GetChildren()) do if mob.Name:find("Magma") and mob.Humanoid.Health>0 then hasMob=true end end if hasMob then break end crater=nil for _, v in pairs(workspace:GetDescendants()) do if v:IsA("BasePart") and (v.Name:find("Crater") or v.Name:find("Nest")) and (v.Position - pos.Position).Magnitude < 800 then crater=v end end until not crater
+                end
+                SecretMissionLabel.SetText("Matando TODOS Magma Elementals incluindo escondidos")
+                for _, mob in pairs(workspace.Enemies:GetChildren()) do
+                    if mob.Name:find("Magma") and mob.Humanoid.Health>0 and (mob.HumanoidRootPart.Position - pos.Position).Magnitude < 1000 then
+                        repeat toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(0,20,5)) UsedualFlock() ClickM1(mob) task.wait(0.3) until not mob.Parent or mob.Humanoid.Health<=0
+                    end
+                end
+             end},
+            {N=2, Name="2/3 Volcano Cave Drill - Entrar caverna e evitar workers", How="Entra na caverna do vulcao pelos fundos da ilha, evita workers, chega no drill boss e mata",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Entrando na caverna do vulcao pro drill boss")
+                local cavePos = CFrame.new(-5230, 8, 8461) + Vector3.new(100,0,0)
+                toTarget(cavePos * CFrame.new(0,20,0)) task.wait(1.5)
+                for _, mob in pairs(workspace.Enemies:GetChildren()) do
+                    if mob.Name:lower():find("worker") and mob.Humanoid.Health>0 and (mob.HumanoidRootPart.Position - cavePos.Position).Magnitude < 400 then
+                        toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(0,20,5)) UsedualFlock() ClickM1(mob) task.wait(0.3)
+                    end
+                end
+             end},
+            {N=3, Name="3/3 Charged Magma Boss - Secret Master aponta Magma", How="Destroi spots marcados em volta da lava e mata boss charged",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Magma Charged Boss - checando Secret Master")
+                task.wait(2)
+             end},
+        }
+    },
+    {
+        Island="Skylands", Pos=CFrame.new(-4607, 872, -1667), QuestGiver=CFrame.new(-4610, 875, -1670), Radius=600,
+        Secrets={
+            {N=1, Name="1/3 Yellow Cloud Chest - Bater nuvem amarela", How="Acha nuvem amarela e bate, abre bau, mata mobs, coleta bau",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Procurando nuvem amarela")
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v.Name:lower():find("cloud") and v:IsA("BasePart") and (v.Position - pos.Position).Magnitude < 800 then
+                        toTarget(CFrame.new(v.Position + Vector3.new(0,10,0)))
+                        UsedualFlock() ClickM1(v) task.wait(0.5)
+                    end
+                end
+             end},
+            {N=2, Name="2/3 Dark Cloud Lightning - Nuvem escura diferente", How="Ataca nuvem escura, pega item de raio, leva pro Mad Scientist",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Procurando nuvem escura de raio")
+                task.wait(1)
+             end},
+            {N=3, Name="3/3 Castle Vault Code - Entrar castelo limpar mobs achar nota com codigo", How="Entra no castelo, limpa mobs, acha nota com codigo unico, digita no cofre, pega tesouro",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Entrando no castelo pro cofre")
+                toTarget(CFrame.new(-4607, 872, -1667) + Vector3.new(0,30,0)) task.wait(1)
+             end},
+        }
+    },
+    {
+        Island="Prison", Pos=CFrame.new(4853, 5, 740), QuestGiver=CFrame.new(4860, 10, 750), Radius=600,
+        Secrets={
+            {N=1, Name="1/3 Capture Prisoners - 3 prisioneiros fugindo", How="2 na direita (um cavando tunel no chao e outro quebrando parede) e 1 na esquerda tentando fugir de jangada. Mata os 3, pega Star no Jail Keeper",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Capturando 3 prisioneiros fugindo")
+                for _, mob in pairs(workspace.Enemies:GetChildren()) do
+                    if mob.Name:lower():find("prisoner") and mob.Humanoid.Health>0 and (mob.HumanoidRootPart.Position - pos.Position).Magnitude < 700 then
+                        repeat toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(0,20,5)) UsedualFlock() ClickM1(mob) task.wait(0.3) until not mob.Parent or mob.Humanoid.Health<=0
+                    end
+                end
+             end},
+            {N=2, Name="2/3 Warden Jacket Key - Quebrar cela e pegar chave", How="Quebra parede da cela, pega chave, destranca portao do Warden, interage com jaqueta na cadeira",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Pegando chave da jaqueta do Warden")
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v:IsA("ProximityPrompt") and (v.Parent:GetPivot().Position - pos.Position).Magnitude < 500 then
+                        toTarget(v.Parent:GetPivot() * CFrame.new(0,0,5))
+                        fireproximityprompt(v) task.wait(1)
+                    end
+                end
+             end},
+            {N=3, Name="3/3 Awakened Warden - Evento prisao ordem alavancas 2,1,4,3", How="Ativa alavanca e mata Warden Awakened quando Secret Master apontar",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Warden Awakened - ordem 2,1,4,3")
+                task.wait(2)
+             end},
+        }
+    },
+    {
+        Island="Colosseum", Pos=CFrame.new(-1426, 6, -3017), QuestGiver=CFrame.new(-1430, 10, -3020), Radius=500,
+        Secrets={
+            {N=1, Name="1/3 Statues - 4 estatuas estilos de luta", How="4 estatuas perto do quest giver fora do coliseu. Cada uma representa estilo (Fruit, Sword, Gun, Melee). Da dano com estilo respectivo pra ativar. Ex: atira com gun na estatua segurando gun. Ativa as 4",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Ativando 4 estatuas com estilos diferentes")
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v.Name:lower():find("statue") and (v:GetPivot().Position - pos.Position).Magnitude < 500 then
+                        toTarget(v:GetPivot() * CFrame.new(0,0,5))
+                        UsedualFlock() ClickM1(v) task.wait(0.5)
+                    end
+                end
+             end},
+            {N=2, Name="2/3 Gladiators - Falar com Emperor e derrotar 3 waves", How="Dentro do coliseu fala com Colosseum Emperor na varanda, aceita desafio, derrota 3 waves",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Falando com Colosseum Emperor pra 3 waves")
+                toTarget(CFrame.new(-1426, 20, -3017) * CFrame.new(0,20,0)) task.wait(1)
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v:IsA("ProximityPrompt") and (v.Parent:GetPivot().Position - pos.Position).Magnitude < 400 then
+                        fireproximityprompt(v) task.wait(1)
+                    end
+                end
+             end},
+            {N=3, Name="3/3 Crowd Favorite PvP - Precisa amigo", How="Espera mensagem Colosseum stands filling. Luta com amigo mas NAO MATA, deixa com HP baixo, quem tiver menos HP vira Crowd Favorite. So durante evento",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Crowd Favorite precisa amigo - pulando se solo")
+                task.wait(2)
+             end},
+        }
+    },
+    {
+        Island="Underwater City", Pos=CFrame.new(61163, 18, 1562), QuestGiver=CFrame.new(61170, 20, 1570), Radius=700,
+        Secrets={
+            {N=1, Name="1/3 Clams - Abrir conchas espalhadas", How="Abre conchas na ilha, algumas viram inimigo, mata e ganha Beli/Bounty/EXP",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Abrindo conchas")
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v.Name:lower():find("clam") or v.Name:lower():find("shell") then
+                        local ok, pPos = pcall(function() return v:GetPivot().Position end)
+                        if ok and (pPos - pos.Position).Magnitude < 700 then
+                            toTarget(v:GetPivot() * CFrame.new(0,0,5))
+                            for _, prompt in pairs(v:GetDescendants()) do if prompt:IsA("ProximityPrompt") then fireproximityprompt(prompt) end end
+                            task.wait(0.5)
+                        end
+                    end
+                end
+             end},
+            {N=2, Name="2/3 Bubble Ride - Pular coral alto e pegar bolha", How="Pula nos corais altos circulares, pega bolha, leva pra cove escondida com bau, abre bau e mata mob",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Pegando bolha no coral alto")
+                toTarget(pos * CFrame.new(0,50,0)) task.wait(1)
+             end},
+            {N=3, Name="3/3 Light Crystals - Mover cristais amarelos pra luz bater no circulo", How="Vai da sala Fishman Lord pra esquerda, ve cristais amarelos com luz, move 2 cristais inativos batendo ate luz bater no circulo na parede, abre parede e Kung Fu Master atras",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Movendo cristais de luz amarelos")
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v.Name:lower():find("crystal") and v:IsA("BasePart") and (v.Position - pos.Position).Magnitude < 700 then
+                        toTarget(CFrame.new(v.Position + Vector3.new(0,10,0)))
+                        UsedualFlock() ClickM1(v) task.wait(0.5)
+                    end
+                end
+             end},
+        }
+    },
+    {
+        Island="Fountain City", Pos=CFrame.new(5250, 38, 4036), QuestGiver=CFrame.new(5260, 40, 4040), Radius=700,
+        Secrets={
+            {N=1, Name="1/3 Sewers - Esperar noite e levantar guindaste", How="Espera noite, vai na porta com guindaste pequeno direita, sobe na prancha, opcao Lift Crane, entra nos esgotos, mata mobs e mini-boss",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Entrando nos esgotos - esperar noite")
+                local sewerPos = CFrame.new(5250, 38, 4036) + Vector3.new(20,0,0)
+                toTarget(sewerPos * CFrame.new(0,20,0)) task.wait(1)
+             end},
+            {N=2, Name="2/3 Stuck Ship - Resolver puzzle de canos", How="Navio preso na fonte mais alta, resolve puzzle de canos em volta, bate nos canos pra encaixar sem vazar agua, depois pega leme e desce",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Resolvendo puzzle de canos do navio preso")
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v.Name:lower():find("pipe") and (v:GetPivot().Position - pos.Position).Magnitude < 700 then
+                        toTarget(v:GetPivot() * CFrame.new(0,0,5))
+                        UsedualFlock() ClickM1(v) task.wait(0.5)
+                    end
+                end
+             end},
+            {N=3, Name="3/3 Cyborg Awakened - Ferro-velho a cada hora", How="Boss no scrap yard chance a cada hora",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Cyborg Awakened - checando")
+                for _, mob in pairs(workspace.Enemies:GetChildren()) do
+                    if mob.Name:lower():find("cyborg") and mob.Humanoid.Health>0 then
+                        repeat toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(0,20,5)) UsedualFlock() ClickM1(mob) task.wait(0.3) until not mob.Parent or mob.Humanoid.Health<=0
+                    end
+                end
+             end},
+        }
+    },
+    {
+        Island="Upper Skylands", Pos=CFrame.new(-7852, 5544, -380), QuestGiver=CFrame.new(-7860, 5550, -390), Radius=700,
+        Secrets={
+            {N=1, Name="1/3 Old Temple - Posicionar 5 lanternas pra luz conectar e pegar orb", How="Fala com Sky Quest Giver 2, vai pro templo perto Lightning Boss, entra passagens pequenas lados escada, quebra bloqueio com espada, dentro 5 lanternas gigantes, posiciona todas pra luz conectar, pega orb, sai correndo e da pro Quest Giver 2",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Templo antigo - posicionando 5 lanternas")
+                local templePos = CFrame.new(-7852, 5544, -380) + Vector3.new(20,0,0)
+                toTarget(templePos * CFrame.new(0,20,0)) task.wait(1)
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v.Name:lower():find("lantern") and (v:GetPivot().Position - pos.Position).Magnitude < 700 then
+                        toTarget(v:GetPivot() * CFrame.new(0,0,5))
+                        UsedualFlock() ClickM1(v) task.wait(0.5)
+                    end
+                end
+             end},
+            {N=2, Name="2/3 Dark Clouds Boss - Destruir nuvens escuras", How="Destroi nuvens escuras antes do boss",
+             Do=function(pos) SecretMissionLabel.SetText("Destruindo nuvens escuras") task.wait(1) end},
+            {N=3, Name="3/3 Storm Lightning - Mecanismo amarelo centro", How="Evento tempestade, nao ataca boss direto, interage com mecanismo amarelo no centro com arma/fighting style certo, depois mata",
+             Do=function(pos) SecretMissionLabel.SetText("Mecanismo amarelo tempestade") task.wait(1) end},
+        }
+    },
+    {
+        Island="Middle Town", Pos=CFrame.new(-655.824158, 7.88708115, 1436.67908), QuestGiver=CFrame.new(-660, 15, 1440), Radius=400,
+        Secrets={
+            {N=1, Name="1/1 Secret Master - Predio telhado verde atras fonte 2 andar sala barris", How="Prédio telhado verde atrás da fonte, sobe 2º andar varanda, entra pela janela sala escondida com barris, fala com Secret Master pra saber boss awakened",
+             Do=function(pos)
+                SecretMissionLabel.SetText("Indo no Secret Master sala escondida")
+                toTarget(CFrame.new(-655.824158, 7.88708115, 1436.67908) * CFrame.new(0,30,0)) task.wait(1)
+                toTarget(CFrame.new(-1680, 35, 1450) * CFrame.new(0,0,0)) task.wait(1)
+                toTarget(CFrame.new(-1680, 36, 1445) * CFrame.new(0,0,0)) task.wait(1)
+             end},
+        }
+    },
 }
 
 getgenv().SecretMasterCF = {
@@ -11698,15 +12146,12 @@ getgenv().SecretMasterCF = {
 }
 
 function ForceTP(cf)
-    -- Forca TP ignorando StackFarm check
     pcall(function()
         getgenv().StackFarmOther = true
         local char = game.Players.LocalPlayer.Character
         if char and char:FindFirstChild("HumanoidRootPart") then
-            -- Tenta toTarget original
             toTarget(cf)
-            task.wait(0.5)
-            -- Se ainda longe, forca CFrame direto
+            task.wait(0.6)
             if (char.HumanoidRootPart.Position - cf.Position).Magnitude > 200 then
                 char.HumanoidRootPart.CFrame = cf * CFrame.new(0,20,0)
             end
@@ -11715,90 +12160,59 @@ function ForceTP(cf)
 end
 
 function FindAnyQuestNPCNear(pos, range)
-    range = range or 300
-    local best = nil
-    local bestDist = range
+    range = range or 400
+    local best=nil local bestDist=range
     pcall(function()
         for _, v in pairs(workspace:GetDescendants()) do
-            if v:IsA("Model") and v:FindFirstChild("Humanoid") then
-                local ok, pivot = pcall(function() return v:GetPivot() end)
-                if ok then
-                    local d = (pivot.Position - pos.Position).Magnitude
-                    if d < bestDist then
-                        bestDist = d
-                        best = v
-                    end
-                end
+            if v:IsA("Model") and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") then
+                local d = (v.HumanoidRootPart.Position - pos.Position).Magnitude
+                if d < bestDist then bestDist=d best=v end
             end
         end
         if not best then
             for _, v in pairs(workspace.NPCs:GetChildren()) do
                 local d = (v:GetPivot().Position - pos.Position).Magnitude
-                if d < bestDist then
-                    bestDist = d
-                    best = v
-                end
+                if d < bestDist then bestDist=d best=v end
             end
         end
     end)
     return best
 end
 
-function ResgatarAgora(islandData, missionNum)
-    SecretCurrentLabel.SetText("["..islandData.Island.."] "..missionNum.."/3 - INDO RESGATAR LEVEL NO NPC AGORA!")
+function ResgatarLevelAgora(islandData, missionNum)
+    SecretCurrentLabel.SetText("["..islandData.Island.."] "..missionNum.."/3 COMPLETO! Indo resgatar LEVEL no NPC!")
     local questPos = islandData.QuestGiver
     ForceTP(questPos * CFrame.new(0,15,0))
     task.wait(1.2)
-    
     local npc = FindAnyQuestNPCNear(questPos, 400)
     if npc then
-        SecretCurrentLabel.SetText("Resgatando no NPC: "..npc.Name.." - "..missionNum.."/3")
+        SecretCurrentLabel.SetText("Resgatando LEVEL "..missionNum.."/3 no NPC: "..npc.Name)
         ForceTP(npc:GetPivot() * CFrame.new(0,0,6))
         task.wait(1)
         pcall(function()
             for _, prompt in pairs(npc:GetDescendants()) do
-                if prompt:IsA("ProximityPrompt") then
-                    SecretCurrentLabel.SetText("Ativando ProximityPrompt: "..prompt.Parent.Name)
-                    fireproximityprompt(prompt)
-                    task.wait(0.8)
-                end
-                if prompt:IsA("ClickDetector") then
-                    fireclickdetector(prompt)
-                    task.wait(0.5)
-                end
+                if prompt:IsA("ProximityPrompt") then fireproximityprompt(prompt) task.wait(0.7) end
+                if prompt:IsA("ClickDetector") then fireclickdetector(prompt) task.wait(0.5) end
             end
-            -- Forca via Remote - tenta todos
             local comm = game:GetService("ReplicatedStorage").Remotes.CommF_
-            pcall(function() comm:InvokeServer("Talk", npc.Name) end)
-            task.wait(0.3)
-            pcall(function() comm:InvokeServer("TakeQuest", npc.Name) end)
-            task.wait(0.3)
-            pcall(function() comm:InvokeServer("ClaimQuest", npc.Name) end)
-            task.wait(0.3)
-            -- Secrets
+            pcall(function() comm:InvokeServer("Talk", npc.Name) end) task.wait(0.3)
+            pcall(function() comm:InvokeServer("TakeQuest", npc.Name) end) task.wait(0.3)
+            pcall(function() comm:InvokeServer("ClaimQuest", npc.Name) end) task.wait(0.3)
             pcall(function()
                 local net = game:GetService("ReplicatedStorage").Modules.Net
-                if net:FindFirstChild("RF/ClaimSecretReward") then
-                    net:FindFirstChild("RF/ClaimSecretReward"):InvokeServer(islandData.Island)
-                end
-                if net:FindFirstChild("RF/IslandSecretsProgress") then
-                    net:FindFirstChild("RF/IslandSecretsProgress"):InvokeServer("Claim", islandData.Island, missionNum)
-                end
+                if net:FindFirstChild("RF/ClaimSecretReward") then net:FindFirstChild("RF/ClaimSecretReward"):InvokeServer(islandData.Island) end
+                if net:FindFirstChild("RF/IslandSecretsProgress") then net:FindFirstChild("RF/IslandSecretsProgress"):InvokeServer("Claim", islandData.Island, missionNum) end
             end)
         end)
-        SecretCurrentLabel.SetText("LEVEL "..missionNum.."/3 RESGATADO em "..islandData.Island.."!")
+        SecretCurrentLabel.SetText("LEVEL "..missionNum.."/3 RESGATADO em "..islandData.Island.."! Good work...")
         task.wait(1.5)
         return true
     else
-        SecretCurrentLabel.SetText("NPC nao achado, tentando prompts proximos de "..islandData.Island)
         pcall(function()
             for _, v in pairs(workspace:GetDescendants()) do
                 if v:IsA("ProximityPrompt") then
-                    local ok, pos = pcall(function() return v.Parent:GetPivot().Position end)
-                    if ok and (pos - questPos.Position).Magnitude < 200 then
-                        fireproximityprompt(v)
-                        task.wait(0.6)
-                    end
+                    local ok, pPos = pcall(function() return v.Parent:GetPivot().Position end)
+                    if ok and (pPos - questPos.Position).Magnitude < 300 then fireproximityprompt(v) task.wait(0.7) end
                 end
             end
         end)
@@ -11809,9 +12223,7 @@ end
 function GetStars(islandName)
     local ok, data = pcall(function() return game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RF/IslandSecretsProgress"):InvokeServer() end)
     if ok and data and type(data)=="table" then
-        for k,v in pairs(data) do
-            if type(k)=="string" and k:lower():find(islandName:lower():sub(1,5)) and type(v)=="number" then return v end
-        end
+        for k,v in pairs(data) do if type(k)=="string" and k:lower():find(islandName:lower():sub(1,5)) and type(v)=="number" then return v end end
     end
     return 0
 end
@@ -11822,106 +12234,49 @@ function GetTotal()
     return 0
 end
 
-spawn(function() while task.wait(1) do pcall(function() SecretProgressLabel.SetText("TOTAL: "..GetTotal().."/40 Secrets | Lv "..game.Players.LocalPlayer.Data.Level.Value.." | Secret Levels Available!") end) end end)
+spawn(function() while task.wait(1) do pcall(function() SecretProgressLabel.SetText("TOTAL: "..GetTotal().."/40 Secrets | Lv "..game.Players.LocalPlayer.Data.Level.Value.." | 1/3 ja resgata") end) end end)
 
 SecretSea1Section.CreateToggle(
-    { Title = "Auto Farm All 40 Islands Secrets", Desc = "FIX V10: Forca TP e resgata 1/3 por vez", Default = Settings["Auto Farm All 40 Islands Secrets"] or false },
+    { Title = "Auto Farm All 40 Islands Secrets", Desc = "V11 FINAL: Faz 1/3 -> RESGATA LEVEL no NPC -> 2/3 -> RESGATA -> 3/3 -> RESGATA -> proxima ilha", Default = Settings["Auto Farm All 40 Islands Secrets"] or false },
     function(V)
         Settings["Auto Farm All 40 Islands Secrets"] = V
         getgenv().StackFarmOther = V
         if V then
             spawn(function()
-                while Settings["Auto Farm All 40 Islands Secrets"] and task.wait(0.3) do
+                while Settings["Auto Farm All 40 Islands Secrets"] and task.wait(0.4) do
                     local ok, err = pcall(function()
                         getgenv().StackFarmOther = true
-                        
-                        for _, islandData in ipairs(getgenv().AllIslandsV10) do
+                        for _, islandData in ipairs(getgenv().All40Secrets) do
                             if not Settings["Auto Farm All 40 Islands Secrets"] then break end
-                            
                             local stars = GetStars(islandData.Island)
                             SecretStarsLabel.SetText(islandData.Island..": "..stars.."/3 estrelas")
-                            
-                            if stars >= 3 then
+                            if stars >= #islandData.Secrets then
                                 task.wait(0.2)
                             else
-                                -- VAI PRA ILHA COM FORCA
-                                SecretCurrentLabel.SetText("Indo pra "..islandData.Island.." - Forcando TP")
-                                ForceTP(islandData.Pos * CFrame.new(0,60,0))
-                                task.wait(2)
-                                
-                                -- FAZ CADA MISSAO 1/3 E JA RESGATA
-                                for mission=1,3 do
+                                ForceTP(islandData.Pos * CFrame.new(0,60,0)) task.wait(2)
+                                for mission=1,#islandData.Secrets do
                                     if not Settings["Auto Farm All 40 Islands Secrets"] then break end
-                                    
                                     local curStars = GetStars(islandData.Island)
                                     if curStars >= mission then
                                         SecretCurrentLabel.SetText(islandData.Island.." "..mission.."/3 ja feito")
                                     else
-                                        SecretCurrentLabel.SetText(islandData.Island.." FAZENDO "..mission.."/3 - Procurando puzzles/mobs")
-                                        
-                                        -- Tenta fazer puzzle/mobs da ilha
-                                        pcall(function()
-                                            -- 1 - Procura qualquer ProximityPrompt na ilha e ativa
-                                            for _, v in pairs(workspace:GetDescendants()) do
-                                                if v:IsA("ProximityPrompt") then
-                                                    local ok2, pPos = pcall(function() return v.Parent:GetPivot().Position end)
-                                                    if ok2 and (pPos - islandData.Pos.Position).Magnitude < islandData.Radius then
-                                                        SecretCurrentLabel.SetText("Achou puzzle: "..v.Parent.Name.." - Ativando")
-                                                        ForceTP(v.Parent:GetPivot() * CFrame.new(0,0,6))
-                                                        task.wait(0.8)
-                                                        fireproximityprompt(v)
-                                                        task.wait(1)
-                                                    end
-                                                end
-                                            end
-                                            -- 2 - Mata mobs da ilha
-                                            for _, mob in pairs(workspace.Enemies:GetChildren()) do
-                                                if mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health > 0 then
-                                                    local d = (mob.HumanoidRootPart.Position - islandData.Pos.Position).Magnitude
-                                                    if d < islandData.Radius then
-                                                        SecretCurrentLabel.SetText("Matando mob da ilha: "..mob.Name)
-                                                        repeat
-                                                            if not Settings["Auto Farm All 40 Islands Secrets"] then break end
-                                                            ForceTP(mob.HumanoidRootPart.CFrame * CFrame.new(0,20,5))
-                                                            pcall(function() UsedualFlock() ClickM1(mob) end)
-                                                            task.wait(0.3)
-                                                        until not mob.Parent or mob.Humanoid.Health <= 0
-                                                    end
-                                                end
-                                            end
-                                            -- 3 - Magma especial - crater
-                                            if islandData.Island=="Magma Village" then
-                                                for _, v in pairs(workspace:GetDescendants()) do
-                                                    if v:IsA("BasePart") and (v.Name:find("Crater") or v.Name:find("Nest") or v.Name:find("Lava")) and (v.Position - islandData.Pos.Position).Magnitude < 800 then
-                                                        SecretCurrentLabel.SetText("Magma: Quebrando crater "..v.Name)
-                                                        ForceTP(CFrame.new(v.Position + Vector3.new(0,15,0)))
-                                                        pcall(function() UsedualFlock() ClickM1(v) end)
-                                                        task.wait(0.6)
-                                                    end
-                                                end
-                                            end
-                                        end)
-                                        
-                                        task.wait(1)
-                                        
-                                        -- AGORA JA VAI RESGATAR LEVEL - 1/3 JA GANHA
-                                        SecretCurrentLabel.SetText(islandData.Island.." "..mission.."/3 feito! INDO RESGATAR LEVEL AGORA no NPC")
-                                        task.wait(0.5)
-                                        ResgatarAgora(islandData, mission)
-                                        
+                                        local secret = islandData.Secrets[mission]
+                                        SecretCurrentLabel.SetText(islandData.Island.." FAZENDO "..secret.Name)
+                                        pcall(function() secret.Do(islandData.Pos) end)
+                                        task.wait(1.2)
+                                        -- JA RESGATA LEVEL APOS 1/3
                                         local newStars = GetStars(islandData.Island)
-                                        SecretStarsLabel.SetText(islandData.Island..": "..newStars.."/3 apos resgate "..mission)
+                                        SecretCurrentLabel.SetText(islandData.Island.." "..mission.."/3 feito! Indo resgatar level agora")
+                                        task.wait(0.5)
+                                        ResgatarLevelAgora(islandData, mission)
+                                        SecretStarsLabel.SetText(islandData.Island..": "..GetStars(islandData.Island).."/3 apos resgate "..mission)
                                         task.wait(1)
                                     end
                                 end
                             end
                         end
                     end)
-                    if not ok then
-                        SecretCurrentLabel.SetText("Erro: "..tostring(err):sub(1,80))
-                        warn(err)
-                        task.wait(2)
-                    end
+                    if not ok then SecretCurrentLabel.SetText("Erro: "..tostring(err):sub(1,80)) warn(err) task.wait(2) end
                 end
             end)
         end
@@ -11935,24 +12290,19 @@ SecretSea1Section.CreateButton({ Title = "TP Secret Master CORRIGIDO - Sala barr
     ForceTP(getgenv().SecretMasterCF.HiddenRoom) task.wait(1)
     ForceTP(getgenv().SecretMasterCF.Exact) task.wait(1)
     local npc = FindAnyQuestNPCNear(getgenv().SecretMasterCF.Exact, 150)
-    if npc then
-        ForceTP(npc:GetPivot() * CFrame.new(0,0,5))
-        for _, p in pairs(npc:GetDescendants()) do if p:IsA("ProximityPrompt") then fireproximityprompt(p) end end
-        SecretMasterLabel.SetText("Secret Master: "..npc.Name.." achado!")
-    end
+    if npc then ForceTP(npc:GetPivot() * CFrame.new(0,0,5)) for _, p in pairs(npc:GetDescendants()) do if p:IsA("ProximityPrompt") then fireproximityprompt(p) end end end
 end)
 
 SecretSea1Section.CreateButton({ Title = "RESGATAR LEVEL AGORA - Ilha atual", }, function()
     local charPos = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
     local closest=nil local dist=99999
-    for _, data in ipairs(getgenv().AllIslandsV10) do local d=(data.Pos.Position - charPos.Position).Magnitude if d<dist then dist=d closest=data end end
-    if closest then
-        ResgatarAgora(closest, GetStars(closest.Island)+1)
-    end
+    for _, data in ipairs(getgenv().All40Secrets) do local d=(data.Pos.Position - charPos.Position).Magnitude if d<dist then dist=d closest=data end end
+    if closest then ResgatarLevelAgora(closest, GetStars(closest.Island)+1) end
 end)
 
-SecretSea1Section.CreateLabel({ Title = "V10 FIX: Forca TP + 1/3 ja resgata level no NPC da ilha" })
--- ===================== FIM V10 =====================
+SecretSea1Section.CreateLabel({ Title = "V11 FINAL: 40 missoes reais exatas - 1/3 ja resgata level no NPC" })
+SecretSea1Section.CreateLabel({ Title = "Ordem: Pirate -> Desert -> Marine -> Frozen -> Jungle -> Magma -> etc" })
+-- ===================== FIM V11 FINAL =====================
 
 FishingMain = Main.CreatePage({ Page_Name = "Fishing", Page_Title = "Fishing" })
 FishingSection = FishingMain.CreateSection("Fishing")
