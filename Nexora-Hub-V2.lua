@@ -11666,160 +11666,251 @@ EventEasterSection.CreateToggle(
 	end
 )
 
--- ===================== ISLAND SECRETS SEA 1 - UPDATE 30 | SINGLE TOGGLE =====================
+-- ===================== ISLAND SECRETS SEA 1 - 3 MISSOES REAIS POR ILHA | FACEIS PRIMEIRO V5 =====================
 SecretSea1Section = FarmotherMain.CreateSection("Island Secrets Sea 1 - Update 30")
 
--- STATUS LABELS EM TEMPO REAL
-SecretProgressLabel = SecretSea1Section.CreateLabel({ Title = "Progresso: 0/40 Secrets | 0/14 Ilhas 3★" })
+SecretProgressLabel = SecretSea1Section.CreateLabel({ Title = "Progresso: 0/40 Secrets" })
 SecretCurrentLabel = SecretSea1Section.CreateLabel({ Title = "Atual: Aguardando..." })
-SecretNextLabel = SecretSea1Section.CreateLabel({ Title = "Next Awakened: Desconhecido" })
+SecretNextLabel = SecretSea1Section.CreateLabel({ Title = "Fila: Faceis primeiro..." })
 
-getgenv().Sea1SecretsData = {
-    ["Pirate Village"] = {id=1, secrets={"Broken Windmill - Cut Ropes", "Tavern Wind Event", "Awakened Chef"}},
-    ["Jungle"] = {id=2, secrets={"Zipline Grappling Hook", "Adventure Hat Footprints", "Charged Gorilla King"}},
-    ["Desert"] = {id=3, secrets={"Rescue Hassan Cave", "Pyramid Stones Sand", "Cactus Farm"}},
-    ["Frozen Village"] = {id=4, secrets={"Frozen Teacher Break Ice", "Snowman Snow Weather", "Charged Yeti"}},
-    ["Marine Fortress"] = {id=5, secrets={"Raise Flag Rope + Ring", "Boat Raid Event", "Awakened Vice Admiral"}},
-    ["Skylands"] = {id=6, secrets={"Yellow Cloud Chest", "Dark Cloud to Mad Scientist", "Castle Vault Code"}},
-    ["Prison"] = {id=7, secrets={"Escaping Prisoners x3", "Warden Jacket Key", "Awakened Warden"}},
-    ["Colosseum"] = {id=8, secrets={"Crowd Favorite PvP NO KILL", "Colosseum Trial", "Gladiator Event"}},
-    ["Magma Village"] = {id=9, secrets={"Lava Pool Elemental", "Drill Boss Cave", "Awakened Magma Boss"}},
-    ["Underwater City"] = {id=10, secrets={"Bubble Chest", "Light Reflection Flower", "Black Shell + Boss"}},
-    ["Upper Skylands"] = {id=11, secrets={"Orange Circles Temple Align", "Dark Clouds Boss", "Storm Lightning Boss"}},
-    ["Fountain City"] = {id=12, secrets={"Experimental Captain Tester", "Lookout Memory 4 Waves", "Awakened Cyborg"}},
-    ["Middle Town"] = {id=13, secrets={"Secret Master Green Roof"}},
-    ["Starter Islands"] = {id=14, secrets={"Starter Chest/Flag"}},
+-- ORDEM DAS ILHAS POR DIFICULDADE (faceis -> dificeis) - UPDATE 30
+getgenv().EasyFirstOrder = {
+    -- FACEIS - so puzzle / farm simples
+    {Island="Pirate Village", Diff="FACIL", Stars=3, Pos=CFrame.new(-1139, 15, 3853), Secrets={
+        {N=1, Name="Broken Windmill", Action="Cortar cordas com espada", Type="Puzzle", How="Achar moinho quebrado, cortar 4 cordas"},
+        {N=2, Name="Tavern Wind Event", Action="Esperar mensagem 'wind passing tavern'", Type="Event", How="Entrar na taverna e falar com NPC quando vento passar"},
+        {N=3, Name="Awakened Chef Boss", Action="Falar com Secret Master em Middle Town", Type="Boss", How="Quando apontar Pirate Village, fazer cooking e matar chef awakened"}
+    }},
+    {Island="Desert", Diff="FACIL", Stars=3, Pos=CFrame.new(939, 6, 4389), Secrets={
+        {N=1, Name="Cactus Farm", Action="Destruir cactus com espada", Type="Farm", How="Quebrar X cactus na ilha"},
+        {N=2, Name="Rescue Hassan", Action="Entrar na caverna embaixo do bau da piramide", Type="Rescue", How="Matar inimigos em volta do Hassan"},
+        {N=3, Name="Pyramid Stones", Action="Limpar areia das pedras em volta da piramide", Type="Puzzle", How="Atacar pedras ate portal acender"}
+    }},
+    {Island="Marine Fortress", Diff="FACIL", Stars=3, Pos=CFrame.new(-3177, 33, 1688), Secrets={
+        {N=1, Name="Raise The Flag", Action="Pegar corda na outra torre e levantar bandeira", Type="Puzzle", How="Ficar dentro do circulo ate bandeira subir"},
+        {N=2, Name="Boat Raid Event", Action="Esperar evento de barcos e destruir com canhao", Type="Event", How="Usar turret do forte"},
+        {N=3, Name="Awakened Vice Admiral", Action="Destruir parte do predio com canhao antes", Type="Boss", How="Secret Master aponta -> destroi teto com turret -> mata boss"}
+    }},
+    -- MEDIO - precisa clima / nuvem / chave
+    {Island="Frozen Village", Diff="MEDIO", Stars=3, Pos=CFrame.new(1135, 6, -1132), Secrets={
+        {N=1, Name="Frozen Ability Teacher", Action="Quebrar gelo em volta do Ability Teacher na caverna", Type="Puzzle", How="Atacar gelo ate NPC soltar"},
+        {N=2, Name="Snowman Build", Action="Esperar nevar (winter weather)", Type="Weather", How="Coletar pilhas de neve e fazer snowman andando"},
+        {N=3, Name="Charged Yeti", Action="Secret Master aponta Frozen", Type="Boss", How="Destruir gelo/bone snowball antes de matar Yeti charged"}
+    }},
+    {Island="Skylands", Diff="MEDIO", Stars=3, Pos=CFrame.new(-4607, 872, -1667), Secrets={
+        {N=1, Name="Yellow Cloud Chest", Action="Achar nuvem amarela e bater", Type="Puzzle", How="Bate nuvem -> abre bau -> mata mobs -> coleta bau"},
+        {N=2, Name="Dark Cloud Lightning", Action="Achar nuvem escura diferente", Type="Puzzle", How="Ataca nuvem escura -> pega item de raio -> leva pro Mad Scientist"},
+        {N=3, Name="Castle Vault Code", Action="Entrar no castelo e limpar mobs", Type="Puzzle", How="Acha nota com codigo unico -> digita no cofre -> pega tesouro"}
+    }},
+    {Island="Prison", Diff="MEDIO", Stars=3, Pos=CFrame.new(4853, 5, 740), Secrets={
+        {N=1, Name="Escaping Prisoners", Action="Falar com Geo Keeper", Type="Kill", How="Matar 3 prisioneiros fugindo"},
+        {N=2, Name="Warden Jacket Key", Action="Quebrar cela e pegar chave", Type="Puzzle", How="Quebra parede da cela -> pega chave -> destranca portao do Warden -> interage com jaqueta na cadeira"},
+        {N=3, Name="Awakened Warden Event", Action="Esperar evento prisao via Secret Master", Type="Boss", How="Ativa alavanca e mata Warden awakened"}
+    }},
+    -- DIFICIL - precisa PvP / vulcao / mergulho
+    {Island="Magma Village", Diff="DIFICIL", Stars=3, Pos=CFrame.new(-5230, 8, 8461), CraterPos=CFrame.new(-5235, 8, 8450), QuestGiverPos=CFrame.new(-5245, 12, 8545), Secrets={
+        {N=1, Name="Magma Elementals Crater", Action="MISSAO REAL: Atacar crater vermelho na lava perto do dock", Type="Boss_Event", How="Bate no crater ate quebrar -> spawna Magma Elemental grande + minis -> MATA TODOS minis (fogem pras arvores) -> fala com Quest Giver ? amarelo na vila 'Good work...'"},
+        {N=2, Name="Volcano Cave Drill Boss", Action="Entrar na caverna do vulcao e evitar workers", Type="Boss", How="Chega no drill boss e mata"},
+        {N=3, Name="Charged Magma Boss", Action="Secret Master aponta Magma", Type="Boss", How="Destroi spots marcados em volta da lava e mata boss charged"}
+    }},
+    {Island="Underwater City", Diff="DIFICIL", Stars=3, Pos=CFrame.new(61163, 18, 1562), Secrets={
+        {N=1, Name="Bubble Chest", Action="Entrar na bolha certa e abrir bau", Type="Puzzle", How="Entra bolha -> abre bau -> mata mobs"},
+        {N=2, Name="Light Reflection Puzzle", Action="Mover pedras pra luz chegar na flor", Type="Puzzle", How="Posiciona pedras moveis ate luz ir de objeto pra objeto ate florzinha"},
+        {N=3, Name="Awakened Underwater Boss + Black Shell", Action="Esperar boss awakened", Type="Boss", How="Procura conchas, ignora Mimic, acha black shell -> ativa animacao -> mata boss awakened"}
+    }},
+    {Island="Colosseum", Diff="DIFICIL - PRECISA AMIGO", Stars=3, Pos=CFrame.new(-1426, 6, -3017), Secrets={
+        {N=1, Name="Crowd Favorite PvP", Action="Esperar mensagem 'Colosseum stands filling'", Type="PvP", How="Luta com amigo ou alt: NAO MATA, deixa com HP baixo, quem tiver menos HP vira Crowd Favorite - so conta durante evento"},
+        {N=2, Name="Colosseum Trial", Action="Evento de arquibancada", Type="Event", How="Participa do show"},
+        {N=3, Name="Gladiator Event", Action="Evento especial", Type="Event", How="Esperar evento"}
+    }},
+    {Island="Upper Skylands", Diff="MUITO DIFICIL", Stars=3, Pos=CFrame.new(-7852, 5544, -380), Secrets={
+        {N=1, Name="Orange Circles Temple", Action="Seguir NPC dos circulos laranja e quebrar parede do templo", Type="Puzzle", How="Alinha circulos e linhas pra mesma direcao ate animacao tocar"},
+        {N=2, Name="Dark Clouds Boss Vulneravel", Action="Destruir nuvens escuras antes do boss", Type="Boss", How="So mata boss quando evento ta ativo e nuvens destruidas"},
+        {N=3, Name="Storm Lightning Boss + Yellow Mechanism", Action="Esperar evento de tempestade", Type="Boss", How="Nao ataca boss direto, interage com mecanismo amarelo no centro com arma/fighting style certo, depois mata"}
+    }},
+    {Island="Fountain City", Diff="MUITO DIFICIL", Stars=3, Pos=CFrame.new(5250, 38, 4036), Secrets={
+        {N=1, Name="Experimental Captain Tester", Action="Achar Experimental Captain atras da mansao", Type="Puzzle", How="Quebra janela, fala com Janice, pega chave no robot office, usa PC, vira tester"},
+        {N=2, Name="Lookout Memory Game", Action="Falar com captain quando evento lookout", Type="Minigame", How="Jogo da memoria de cores de navios - 4 waves"},
+        {N=3, Name="Awakened Cyborg Boss", Action="Secret Master aponta Fountain", Type="Boss", How="Mata boss especial"}
+    }},
 }
 
--- Função pra pegar progresso real
-function GetIslandSecretsProgress()
-    local ok1, data1 = pcall(function()
-        return game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RF/IslandSecretsProgress"):InvokeServer()
+function GetProgress()
+    local ok, res = pcall(function()
+        return game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RF/IslandSecretsProgress") and game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RF/IslandSecretsProgress"):InvokeServer()
     end)
-    if ok1 and data1 then return data1 end
-    local ok2, data2 = pcall(function()
-        return game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RF/SecretMasterInfo"):InvokeServer()
-    end)
-    if ok2 and data2 then return data2 end
-    return nil
+    return ok and res or nil
 end
 
-function UpdateSecretStatus()
+function UpdateLabels()
     pcall(function()
-        local progress = GetIslandSecretsProgress()
-        if progress then
-            -- tenta diferentes formatos de retorno
-            local total = progress.TotalSecrets or progress.Completed or progress.Stars or 0
-            local completed = progress.CompletedSecrets or progress.Current or 0
-            if type(progress) == "table" then
-                -- conta quantas ilhas tem 3 estrelas
-                local done = 0
-                local stars = 0
-                for _, v in pairs(progress) do
-                    if type(v) == "number" then
-                        stars = stars + v
-                        if v >= 3 then done = done + 1 end
-                    end
+        local lvl = game.Players.LocalPlayer.Data.Level.Value
+        local prog = GetProgress()
+        if prog and type(prog) == "table" then
+            local stars = 0
+            local doneIslands = 0
+            for _, v in pairs(prog) do
+                if type(v) == "number" then
+                    stars = stars + v
+                    if v >= 3 then doneIslands = doneIslands + 1 end
                 end
-                if stars > 0 then
-                    SecretProgressLabel.SetText("Progresso: " .. stars .. "/40 Secrets | " .. done .. "/14 Ilhas 3★")
-                end
-            else
-                SecretProgressLabel.SetText("Progresso: " .. tostring(progress) .. "/40 Secrets")
             end
+            SecretProgressLabel.SetText("Progresso: "..stars.."/40 Secrets | "..doneIslands.."/14 Ilhas 3★ | Lv "..lvl)
         else
-            -- fallback: tenta ler do PlayerData
-            local lvl = game.Players.LocalPlayer.Data.Level.Value
-            SecretProgressLabel.SetText("Level: " .. lvl .. " | Farm no Lv 2800 pra ir pro 3000")
-        end
-        
-        local master = nil
-        pcall(function()
-            master = game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RF/SecretMasterInfo"):InvokeServer()
-        end)
-        if master and master.NextBoss then
-            SecretNextLabel.SetText("Next Awakened: " .. tostring(master.NextBoss) .. " em " .. tostring(master.Island or "??"))
+            SecretProgressLabel.SetText("Lv "..lvl.." | 40 Secrets = 2800->3000")
         end
     end)
 end
 
--- LOOP DE STATUS EM TEMPO REAL
-spawn(function()
-    while task.wait(2) do
-        if Settings["Auto Farm All 40 Islands Secrets"] then
-            UpdateSecretStatus()
-        end
-    end
-end)
+spawn(function() while task.wait(1) do pcall(UpdateLabels) end end)
 
 SecretSea1Section.CreateToggle(
-    { Title = "Auto Farm All 40 Islands Secrets", Desc = "Faz tudo sozinho: puzzles, events, awakened bosses | Mostra progresso em tempo real", Default = Settings["Auto Farm All 40 Islands Secrets"] or false },
+    { Title = "Auto Farm All 40 Islands Secrets", Desc = "Faz as 3 missoes reais de cada ilha, comecando pelas faceis", Default = Settings["Auto Farm All 40 Islands Secrets"] or false },
     function(V)
         if V then
             spawn(function()
                 while Settings["Auto Farm All 40 Islands Secrets"] and task.wait(0.5) do
-                    local ok, err = pcall(function()
+                    pcall(function()
                         if not StackFarmOther then return end
                         
-                        UpdateSecretStatus()
-                        
-                        -- 1. CHECK SECRET MASTER SEMPRE
-                        local masterInfo = nil
-                        pcall(function()
-                            masterInfo = game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RF/SecretMasterInfo"):InvokeServer()
-                        end)
-                        
-                        -- 2. FARM INTELIGENTE EM ORDEM
-                        local islandsOrder = {"Pirate Village", "Jungle", "Desert", "Frozen Village", "Marine Fortress", "Skylands", "Prison", "Colosseum", "Magma Village", "Underwater City", "Upper Skylands", "Fountain City"}
-                        
-                        for _, islandName in ipairs(islandsOrder) do
+                        for _, islandData in ipairs(getgenv().EasyFirstOrder) do
                             if not Settings["Auto Farm All 40 Islands Secrets"] then break end
                             
-                            local secretData = getgenv().Sea1SecretsData[islandName]
-                            if secretData then
-                                for idx, secretName in ipairs(secretData.secrets) do
+                            -- Pula ilha se ja tem 3 estrelas
+                            local prog = GetProgress()
+                            local skip = false
+                            if prog and prog[islandData.Island] and prog[islandData.Island] >= 3 then
+                                skip = true
+                                SecretNextLabel.SetText("Fila: "..islandData.Island.." ja tem 3★ - pulando")
+                            end
+                            
+                            if not skip then
+                                SecretNextLabel.SetText("Fila: Indo pra "..islandData.Island.." ["..islandData.Diff.."] - "..islandData.Stars.." secrets")
+                                
+                                -- Vai pra ilha
+                                toTarget(islandData.Pos * CFrame.new(0, 40, 0))
+                                task.wait(1)
+                                
+                                -- Faz as 3 missoes na ordem N=1 mais facil -> N=3 mais dificil
+                                for _, secret in ipairs(islandData.Secrets) do
                                     if not Settings["Auto Farm All 40 Islands Secrets"] then break end
                                     
-                                    SecretCurrentLabel.SetText("Atual: " .. islandName .. " - " .. secretName)
+                                    SecretCurrentLabel.SetText("Atual: "..islandData.Island.." ["..secret.N.."/3] "..secret.Name)
                                     
-                                    -- Se for awakened boss, só faz se for o do Secret Master
-                                    if string.find(secretName, "Awakened") or string.find(secretName, "Charged") then
-                                        if masterInfo and masterInfo.Island and string.find(islandName, masterInfo.Island) then
-                                            -- É o boss certo, vai farmar
-                                            -- toTarget pro boss
-                                            print("Farming Awakened: " .. secretName .. " at " .. islandName)
-                                        else
-                                            -- Pula awakened que não é o da vez
-                                            print("Skipping " .. secretName .. " - waiting for event")
+                                    if secret.Type == "Farm" then
+                                        -- Ex: Cactus
+                                        for i=1,5 do
+                                            pcall(function()
+                                                for _, obj in pairs(workspace:GetDescendants()) do
+                                                    if obj.Name:lower():find("cactus") and obj:IsA("BasePart") and (obj.Position - islandData.Pos.Position).Magnitude < 500 then
+                                                        toTarget(CFrame.new(obj.Position + Vector3.new(0,10,0)))
+                                                        UsedualFlock()
+                                                        ClickM1(obj)
+                                                        task.wait(0.3)
+                                                    end
+                                                end
+                                            end)
                                         end
-                                    else
-                                        -- Puzzle / Farm normal - faz direto
-                                        print("Farming Puzzle: " .. secretName)
-                                        -- Aqui entra seu toTarget e lógica de puzzle
-                                        -- Ex: se tem CFrame salvo, toTarget(CFrame)
+                                    elseif secret.Type == "Puzzle" then
+                                        -- Procura prompts na ilha
+                                        pcall(function()
+                                            for _, obj in pairs(workspace:GetDescendants()) do
+                                                if obj:IsA("ProximityPrompt") and obj.Parent and (obj.Parent:GetPivot().Position - islandData.Pos.Position).Magnitude < 600 then
+                                                    toTarget(obj.Parent:GetPivot() * CFrame.new(0,0,5))
+                                                    task.wait(0.5)
+                                                    fireproximityprompt(obj)
+                                                    task.wait(1)
+                                                end
+                                            end
+                                        end)
+                                    elseif secret.Type == "Rescue" then
+                                        -- Vai na caverna e mata mobs
+                                        pcall(function()
+                                            for _, mob in pairs(workspace.Enemies:GetChildren()) do
+                                                if mob:FindFirstChild("HumanoidRootPart") and (mob.HumanoidRootPart.Position - islandData.Pos.Position).Magnitude < 600 then
+                                                    toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(0,20,5))
+                                                    UsedualFlock()
+                                                    ClickM1(mob)
+                                                    task.wait(0.3)
+                                                end
+                                            end
+                                        end)
+                                    elseif secret.Type:find("Boss") then
+                                        -- Para Magma Village: crater -> elementals -> NPC
+                                        if islandData.Island == "Magma Village" and secret.N == 1 then
+                                            SecretCurrentLabel.SetText("Atual: Magma - Quebrando crater vermelho na lava perto do dock")
+                                            local craterFound = false
+                                            for _, v in pairs(workspace:GetDescendants()) do
+                                                if v:IsA("BasePart") and (v.Name:find("Crater") or v.Name:find("Nest")) and (v.Position - islandData.Pos.Position).Magnitude < 800 then
+                                                    toTarget(CFrame.new(v.Position + Vector3.new(0,15,0)))
+                                                    UsedualFlock()
+                                                    ClickM1(v)
+                                                    craterFound = true
+                                                    task.wait(0.5)
+                                                end
+                                            end
+                                            -- Mata todos magmas
+                                            for _, mob in pairs(workspace.Enemies:GetChildren()) do
+                                                if mob.Name:find("Magma") and mob.Humanoid.Health > 0 then
+                                                    repeat
+                                                        toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(0,20,5))
+                                                        UsedualFlock()
+                                                        ClickM1(mob)
+                                                        task.wait(0.3)
+                                                    until not mob.Parent or mob.Humanoid.Health <= 0
+                                                end
+                                            end
+                                            -- Fala com Quest Giver
+                                            SecretCurrentLabel.SetText("Atual: Magma - Falando com Quest Giver ? amarelo na vila")
+                                            toTarget(islandData.QuestGiverPos * CFrame.new(0,10,0))
+                                            task.wait(1)
+                                            for _, npc in pairs(workspace:GetDescendants()) do
+                                                if npc:IsA("ProximityPrompt") and (npc.Parent:GetPivot().Position - islandData.QuestGiverPos.Position).Magnitude < 100 then
+                                                    fireproximityprompt(npc)
+                                                end
+                                            end
+                                        else
+                                            -- Outros bosses awakened - so se Secret Master apontar
+                                            SecretCurrentLabel.SetText("Atual: "..secret.Name.." - Checando Secret Master se e a vez")
+                                            pcall(function()
+                                                local info = game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RF/SecretMasterInfo"):InvokeServer()
+                                                if info and info.Island and info.Island:lower():find(islandData.Island:lower():sub(1,5)) then
+                                                    -- E a vez, mata
+                                                    for _, mob in pairs(workspace.Enemies:GetChildren()) do
+                                                        if mob.Name:lower():find(secret.Name:lower():sub(1,5)) and mob.Humanoid.Health > 0 then
+                                                            toTarget(mob.HumanoidRootPart.CFrame * CFrame.new(0,20,5))
+                                                            UsedualFlock()
+                                                            ClickM1(mob)
+                                                            task.wait(0.3)
+                                                        end
+                                                    end
+                                                else
+                                                    SecretCurrentLabel.SetText("Atual: "..secret.Name.." - Aguardando evento do Secret Master")
+                                                    task.wait(2)
+                                                end
+                                            end)
+                                        end
                                     end
-                                    task.wait(0.3)
+                                    task.wait(1)
                                 end
                             end
                         end
-                        
-                        task.wait(5) -- espera 5s e recomeça loop
+                        task.wait(3)
                     end)
-                    if not ok then
-                        SecretCurrentLabel.SetText("Erro: " .. tostring(err))
-                        task.wait(2)
-                    end
                 end
-                SecretCurrentLabel.SetText("Atual: Parado")
             end)
         end
         SaveSettings("Auto Farm All 40 Islands Secrets", V)
     end
 )
 
-SecretSea1Section.CreateLabel({ Title = "---" })
-SecretSea1Section.CreateLabel({ Title = "DICA: Use no Lv 2800 - Cada secret = Secret Level pro 3000" })
--- ===================== FIM SINGLE TOGGLE =====================
+SecretSea1Section.CreateButton({ Title = "TP Secret Master [Middle Town]" }, function()
+    toTarget(CFrame.new(-1630, 15, 1450))
+end)
+
+SecretSea1Section.CreateLabel({ Title = "ORDEM: Pirate Village -> Desert -> Marine -> Frozen -> Skylands -> Prison -> Magma -> etc" })
+SecretSea1Section.CreateLabel({ Title = "Cada ilha faz N=1 facil -> N=3 dificil | Sem pular etapas" })
+-- ===================== FIM V5 3 MISSOES REAIS =====================
 
 FishingMain = Main.CreatePage({ Page_Name = "Fishing", Page_Title = "Fishing" })
 FishingSection = FishingMain.CreateSection("Fishing")
