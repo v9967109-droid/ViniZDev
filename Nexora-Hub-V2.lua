@@ -332,7 +332,15 @@ end
 
 
 if getgenv().__BF_LOADED then
-	return getgenv().__BF_RESULT
+	-- Só interrompe se a interface realmente continua presente.
+	-- Se a flag ficou presa depois de uma falha, libera uma nova inicialização.
+	local _nexoraParent = (gethui and gethui()) or game:GetService("CoreGui")
+	local _nexoraExistingUI = _nexoraParent:FindFirstChild("NexoraUI")
+	if _nexoraExistingUI then
+		return getgenv().__BF_RESULT
+	end
+	getgenv().__BF_LOADED = nil
+	getgenv().__BF_RESULT = nil
 end
 
 Settings = {}
@@ -29936,3 +29944,141 @@ function UseDragonstormAllSeaEvents(Part)
 end
 
 print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZDev")
+
+
+-- ============================================================================
+-- NEXORA HUB | SECRET QUESTS — UPDATE 30 / FIRST SEA
+-- Módulo isolado no final do arquivo: o código original acima permanece intacto.
+-- 39 segredos de ilha; The Finale não está incluído. Guia e progresso manual.
+-- ============================================================================
+do
+    local ok, err = pcall(function()
+        if not FarmotherMain or type(FarmotherMain.CreateSection) ~= "function" then
+            error("A página existente Farming Other não está disponível")
+        end
+
+        local questData = {
+            ["Middle Town"] = {
+                ["Early Access"] = {"Quebre a janela acima do carrinho quebrado ao lado do Experienced Captain e entre no prédio.", "Espere Janus aparecer na sala adjacente e fale com ele para aceitar a tarefa do Sea Animation System.", "Vá ao prédio do Robotmega; pegue a chave atrás do Aura Editor, destranque a porta dos fundos, interaja com o computador e retorne a Janus."},
+                ["Lookout Duty"] = {"Fale com Experienced Captain e selecione a opção Rumor/Lookout Duty quando estiver disponível.", "Observe as quatro ondas de navios que passam e anote os tipos/quantidades; grave a tela se precisar rever.", "Responda às perguntas usando suas anotações e fale novamente com o NPC para confirmar a recompensa."},
+                ["Hidden Treasure"] = {"Procure as pistas do mapa escondidas em objetos de cenário, como árvores e barris, em Middle Town.", "Use as pistas reunidas para encontrar o ponto de escavação do tesouro.", "Desenterre/abra o baú, derrote os esqueletos que surgirem se necessário e confirme a estrela no World Map."},
+            },
+            ["Jungle"] = {
+                ["Zipline Repair"] = {"Na área estendida da Jungle, encontre o gancho no pé da árvore grande com a plataforma da tirolesa.", "Pegue o gancho, suba na plataforma e lance-o no ponto de ancoragem do outro lado para reparar a tirolesa.", "Volte ao NPC/objetivo que iniciou a tarefa e confirme a recompensa/estrela no World Map."},
+                ["The Thieving Monkey"] = {"Encontre o Adventurer na área do lago e aceite a tarefa do chapéu roubado.", "Siga as pistas/pegadas até a árvore indicada e interaja com o ponto que esconde o chapéu.", "Recupere o chapéu e devolva-o ao Adventurer para concluir."},
+                ["Awakened Gorilla King"] = {"Fale com o Secrets Master durante a janela de rumor para verificar a rotação do chefe despertado.", "Quando Gorilla King for o chefe ativo, localize a versão despertada na Jungle e derrote-a.", "Volte ao mapa do mundo e confirme que a terceira estrela da Jungle foi registrada."},
+            },
+            ["Pirate Village"] = {
+                ["Windmill Maintenance"] = {"Suba até o grande moinho acima da praça da vila e localize os cinco pontos de corda que prendem as pás.", "Use uma espada/ataque cortante para cortar as cinco cordas; o moinho começa a girar quando todas forem cortadas.", "Volte ao Quest Giver perto das docas e fale com ele para receber a recompensa."},
+                ["Tavern Brawl"] = {"Aproxime-se da porta da taverna perto do spawn do Chef e espere a porta reagir/iniciar a cena.", "Entre e derrote os três Tavern Pirates que causam confusão dentro da taverna.", "Fale com o Chef para receber a poção e depois com o NPC de missão nas docas para registrar a conclusão."},
+                ["Chef's Kiss"] = {"Verifique no Rumor/World Map se o segredo do Chef está disponível e se o chefe está na forma despertada.", "Vá à varanda/área elevada do Chef e derrote a versão despertada quando ela aparecer.", "Confirme a terceira estrela de Pirate Village no World Map; se não aparecer, fale com o NPC de recompensa novamente."},
+            },
+            ["Desert"] = {
+                ["Pyramid Trouble"] = {"Encontre o círculo de pedras próximo à pirâmide do Desert.", "Ataque cada uma das oito pedras/monólitos até a areia cair e revelar os símbolos; espere a placa central aparecer.", "Fale com o Desert Merchant para registrar a conclusão."},
+                ["Archaeologist's Tablet"] = {"Fale com o NPC relacionado ao rumor arqueológico e procure a entrada baixa na esquina da pirâmide voltada para a vila.", "Entre pela passagem escondida e elimine os Desert Skeletons que cercam Hasan; siga o diálogo/pistas dentro da câmara.", "Retorne ao NPC indicado pelo rumor/Desert Merchant e confirme a estrela no mapa."},
+                ["Prickly Harvest"] = {"Depois de liberar Hasan, fale com Desert Merchant e selecione Prickly Harvest.", "Quebre os dez cactos espalhados pelo Desert e recolha uma Cactus Flower de cada um.", "Entregue as dez flores ao Desert Merchant e confirme a recompensa."},
+            },
+            ["Frozen Village"] = {
+                ["Breaking the Ice"] = {"Entre na grande caverna na frente da ilha e localize o Ability Teacher preso no gelo.", "Use ataques corpo a corpo repetidos no bloco de gelo até libertar o NPC.", "Fale com o NPC/Quest Giver que iniciou o rumor e confirme a estrela."},
+                ["Build a Snowman"] = {"Espere o evento de neve/condição do segredo aparecer e recolha neve nos pontos indicados.", "Role as bolas de neve até os tamanhos exigidos e monte as partes do boneco na ordem pedida pelo objetivo.", "Interaja com o boneco terminado ou com o NPC do evento e verifique a estrela no World Map."},
+                ["Frozen Defense"] = {"Confira o rumor do Secrets Master e aguarde Frozen Village ser selecionada para o chefe despertado.", "Localize a versão despertada do Yeti/Frozen boss quando o evento começar e derrote-o.", "Retorne ao NPC de recompensa, se houver diálogo pendente, e confirme a terceira estrela."},
+            },
+            ["Marine Fortress"] = {
+                ["Fortress Flagpole"] = {"Fale com o NPC de rumor na Marine Fortress e localize a bandeira/cordame da fortaleza.", "Suba à estrutura e interaja com os pontos de corda/mecanismo até a bandeira ser levantada.", "Retorne ao NPC que iniciou o objetivo e confirme a estrela no mapa."},
+                ["Battle Plans"] = {"Aceite o rumor relacionado à invasão e procure os canhões buster nas guaritas acima das docas.", "Use os dois canhões frontais da fortaleza para atingir os barcos invasores, seguindo o objetivo até a onda terminar.", "Fale com o Quest Giver para confirmar a conclusão e a recompensa."},
+                ["The Tyrant Awakens"] = {"Confira no Secrets Master qual chefe despertado está programado para a hora seguinte.", "Quando Vice Admiral for o chefe ativo, vá à Marine Fortress e derrote sua forma despertada.", "Confirme a terceira estrela da Marine Fortress no World Map."},
+            },
+            ["Lower Skylands"] = {
+                ["Unexpected Guest"] = {"Explore as ilhas inferiores e procure o visitante/NPC que aparece de forma temporária; fale com ele assim que surgir.", "Siga exatamente o pedido do visitante, que pode variar conforme o spawn, e complete a tarefa solicitada.", "Fale novamente com o visitante para receber os níveis; esse segredo pode reaparecer para recuperar recompensa perdida."},
+                ["Missing Lightning Bolt"] = {"Procure o Mad Scientist/Quest Giver nas Skylands e aceite o rumor relacionado ao Lightning Bolt.", "Localize e recolha o raio/objeto elétrico indicado pelo objetivo, usando as pistas do NPC.", "Retorne ao NPC que pediu o item e confirme a recompensa/estrela."},
+                ["X Marks The Spot"] = {"Procure o Angel Knight atrás do prédio na extremidade da vila superior e aceite a pista sobre as riquezas de Skylands.", "Siga as pistas até o baú/tesouro escondido nas ilhas flutuantes e interaja com o local marcado.", "Retorne ao NPC que deu o rumor e confirme a estrela no World Map."},
+            },
+            ["Prison"] = {
+                ["Escape From Alcatraz"] = {"Fale com Jail Keeper e aceite o rumor sobre prisioneiros fugitivos.", "Interrompa as três fugas: o prisioneiro rompendo a parede externa, o que cava no gramado e o que constrói uma jangada na praia.", "Volte ao Jail Keeper e fale com ele para registrar a conclusão."},
+                ["The Clown's Jewels"] = {"Aceite o rumor da chave/joias e procure o NPC ou objeto indicado nas celas e corredores da Prison.", "Encontre a chave/joia seguindo as pistas do diálogo; interaja com a porta/baú correspondente para recuperar o item.", "Entregue o item ao NPC do rumor e confirme a estrela no mapa."},
+                ["Lever Jailbreak"] = {"Confira a rotação do chefe despertado e procure o mecanismo/alavanca na área da Prison quando o segredo estiver ativo.", "Acione a alavanca/mecanismo conforme a pista e enfrente o Warden despertado que surgir.", "Derrote o chefe e confirme a terceira estrela da Prison no World Map."},
+            },
+            ["Colosseum"] = {
+                ["King's Apprentice"] = {"Fale com Colosseum Emperor na varanda e aceite o desafio de combate.", "Complete as três ondas: Gladiators, depois Upgraded Gladiators e por fim três Gladiators, dois Upgraded Gladiators e um Supreme Gladiator conforme a etapa do desafio.", "Fale novamente com Colosseum Emperor para receber a recompensa e registrar a estrela."},
+                ["Legendary Creator Statues"] = {"Procure as estátuas de criadores/figuras lendárias no Colosseum e leia as pistas do rumor.", "Interaja/ative as estátuas na ordem indicada pelas pistas do jogo até o mecanismo reconhecer a sequência.", "Retorne ao NPC que iniciou o segredo e confirme a estrela no mapa."},
+                ["Crowded Favorite"] = {"Aceite o rumor do desafio de multidão/duelo no Colosseum.", "Entre na arena e vença o confronto individual ou as ondas de adversários exigidas pela missão, sem sair da área antes de terminar.", "Fale com o NPC do Colosseum para confirmar a conclusão."},
+            },
+            ["Magma Village"] = {
+                ["Evil Slimes"] = {"Vá até a piscina de lava perto das docas e localize a cratera/elemento de magma que reage a ataques.", "Ataque a cratera até surgir o grande Lava Elemental; derrote-o e todos os Mini Lava Elementals que aparecerem.", "Fale com o Mayor de Magma Village para receber a recompensa e registrar a estrela."},
+                ["Magma Ore Extraction"] = {"Fale com Living Skeleton e aceite a tarefa para desligar a broca.", "Entre na Volcano Cave pela entrada da mina na parte de trás da ilha e siga até a broca; interaja com o mecanismo de desligamento.", "Volte ao Living Skeleton e confirme a conclusão."},
+                ["One Last Eruption"] = {"Verifique o rumor/rotação do Magma General despertado.", "Quando estiver ativo, encontre e derrote a forma despertada do Magma General e conclua todos os inimigos menores gerados pela luta.", "Fale com o NPC de recompensa indicado e confirme a terceira estrela de Magma Village."},
+            },
+            ["Underwater City"] = {
+                ["Beyond The Bubble"] = {"Acesse Underwater City pelo Whirlpool/redemoinho e procure o ponto de rumor relacionado à bolha.", "Siga a rota de bolhas/cavidade indicada e interaja com o ponto final sem sair da área do desafio.", "Retorne ao NPC que iniciou o objetivo e confirme a estrela."},
+                ["Scattered Light"] = {"Procure o rumor relacionado a feixes/cristais de luz na Underwater City.", "Ative ou alinhe os pontos de luz espalhados pela área na ordem indicada, observando a direção dos feixes.", "Quando o mecanismo reconhecer o alinhamento, fale com o NPC de recompensa e confirme a estrela."},
+                ["Pearl Of The Deep"] = {"Confira o rumor e procure o desafio relacionado à pérola na área de King Neptune.", "Siga a pista até a pérola/objeto submerso e complete o confronto ou interação que surgir; elimine todos os inimigos exigidos.", "Retorne ao NPC indicado e confirme a terceira estrela da Underwater City."},
+            },
+            ["Upper Skylands"] = {
+                ["Temple Intel"] = {"Use o portal de Skylands para chegar à segunda ilha e fale com Sky Quest Giver 2; aceite The Ancient Temple.", "Destrua os blocos que bloqueiam as entradas do templo usando o tipo de ataque exigido; acerte os dispositivos do anel até os feixes formarem um círculo fechado.", "Pegue a informação do templo e retorne ao NPC durante a tempestade/raios, desviando dos impactos no caminho, para entregar a missão."},
+                ["Awakened Sky Warlord"] = {"Fale com Secrets Master durante a janela de rumor para verificar se Sky Warlord está na próxima rotação.", "Quando estiver ativo, localize e derrote a versão despertada do Sky Warlord em Upper Skylands.", "Confirme a estrela no World Map e recolha a recompensa com o NPC, se solicitado."},
+                ["Echoes Through the Clouds"] = {"Procure o rumor de Upper Skylands sobre sinos/eco e localize o Yellow Bell ou os pontos sonoros indicados.", "Interaja com os sinos/pontos na ordem indicada pelas pistas; complete o evento do Thunder God se ele for acionado.", "Retorne ao NPC que deu a pista e confirme a terceira estrela."},
+            },
+            ["Fountain City"] = {
+                ["Pipe Repairs"] = {"Espere a condição noturna e fale com Freezeburg Quest Giver em Fountain City.", "Suba até o navio preso no topo da fonte e acerte os segmentos de cano quebrados até conectarem a tubulação e parar o vazamento.", "Monte/embarque no navio liberado e retorne ao mesmo NPC para receber a recompensa."},
+                ["Sewer Gang"] = {"Procure a entrada dos esgotos ao lado da fonte e aceite o rumor sobre a gangue.", "Entre nos esgotos, siga o caminho até o grupo e derrote os inimigos exigidos pelo objetivo; acione o mecanismo/crank se estiver bloqueando a rota.", "Retorne ao Quest Giver e confirme a estrela."},
+                ["Fountain Wire Repairs"] = {"Procure os fios/mecanismos danificados nas estruturas de Fountain City e aceite o rumor relacionado ao Cyborg.", "Siga os fios e interaja/ataque os pontos de reparo na ordem indicada até o circuito se conectar.", "Complete a luta contra o Cyborg despertado se for acionada e confirme a terceira estrela no World Map."},
+            },
+        }
+
+        local islandNames = {"Middle Town", "Jungle", "Pirate Village", "Desert", "Frozen Village", "Marine Fortress", "Lower Skylands", "Prison", "Colosseum", "Magma Village", "Underwater City", "Upper Skylands", "Fountain City"}
+        local questOptions, lookup = {}, {}
+        for _, island in ipairs(islandNames) do
+            local names = {}
+            for questName in pairs(questData[island] or {}) do table.insert(names, questName) end
+            table.sort(names)
+            for _, questName in ipairs(names) do
+                local option = island .. " | " .. questName
+                table.insert(questOptions, option)
+                lookup[option] = {island=island, name=questName, steps=questData[island][questName]}
+            end
+        end
+        if #questOptions ~= 39 then error("Lista de Secret Quests inválida: " .. tostring(#questOptions)) end
+
+        -- Reutiliza a página existente Farming Other para evitar criar uma nova aba.
+        if not FarmotherMain or type(FarmotherMain.CreateSection) ~= "function" then
+            error("A seção Farming Other não está disponível")
+        end
+        local intro = FarmotherMain.CreateSection("Secret Quests · First Sea · Update 30")
+        intro.CreateLabel({Title="39 Secret Quests documentadas · The Finale excluída"})
+        intro.CreateLabel({Title="Este guia acompanha os objetivos; puzzles e eventos variáveis devem ser confirmados no jogo."})
+        local statusLabel = intro.CreateLabel({Title="Status: selecione uma missão abaixo"})
+        local objectiveLabel = intro.CreateLabel({Title="Missão: -"})
+        local stepLabels = {}
+        for i=1,3 do stepLabels[i] = intro.CreateLabel({Title="Etapa "..i..": -"}) end
+
+        local selectedOption = questOptions[1]
+        local currentStep = 1
+        local function updateLabels()
+            local data = lookup[selectedOption]
+            if not data then return end
+            objectiveLabel.SetText("Missão: " .. data.name .. " | Ilha: " .. data.island)
+            for i=1,3 do stepLabels[i].SetText("Etapa "..i..": "..tostring(data.steps[i] or "-")) end
+            statusLabel.SetText("Progresso do guia: etapa "..currentStep.."/3")
+        end
+        local selector = FarmotherMain.CreateSection("Secret Quests · Selecionar missão")
+        local dropdown = selector.CreateDropdown({Title="Ilha e missão", List=questOptions, Default=selectedOption}, function(value)
+            if lookup[value] then selectedOption=value; currentStep=1; updateLabels() end
+        end)
+        local progress = FarmotherMain.CreateSection("Secret Quests · Progresso")
+        progress.CreateButton({Title="Marcar etapa atual como concluída"}, function()
+            if currentStep < 3 then
+                currentStep = currentStep + 1
+                updateLabels()
+            else
+                statusLabel.SetText("Guia concluído. Confirme a estrela no World Map dentro do jogo.")
+            end
+        end)
+        progress.CreateButton({Title="Reiniciar progresso da missão"}, function()
+            currentStep = 1
+            updateLabels()
+        end)
+        updateLabels()
+    end)
+    if not ok then warn("[NEXORA Secret Quests] Não foi possível criar a aba: " .. tostring(err)) end
+end
+
