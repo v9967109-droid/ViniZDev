@@ -331,20 +331,16 @@ function ForceResetSchema(l, Q)
 end
 
 
--- Recuperação segura de uma execução anterior que deixou a flag ativa sem a UI.
--- Mantém todas as funções do script e recria apenas as GUIs Nexora já existentes.
 if getgenv().__BF_LOADED then
-    local _players = game:GetService("Players")
-    local _localPlayer = _players and _players.LocalPlayer
-    local _playerGui = _localPlayer and _localPlayer:FindFirstChildOfClass("PlayerGui")
-    if _playerGui then
-        for _, _guiName in ipairs({"NexoraUI", "NexoraFloat", "NexoraNotifs", "NexoraLoading"}) do
-            local _oldGui = _playerGui:FindFirstChild(_guiName)
-            if _oldGui then pcall(function() _oldGui:Destroy() end) end
-        end
-    end
-    getgenv().__BF_LOADED = nil
-    getgenv().__BF_RESULT = nil
+	-- Só interrompe se a interface realmente continua presente.
+	-- Se a flag ficou presa depois de uma falha, libera uma nova inicialização.
+	local _nexoraParent = (gethui and gethui()) or game:GetService("CoreGui")
+	local _nexoraExistingUI = _nexoraParent:FindFirstChild("NexoraUI")
+	if _nexoraExistingUI then
+		return getgenv().__BF_RESULT
+	end
+	getgenv().__BF_LOADED = nil
+	getgenv().__BF_RESULT = nil
 end
 
 Settings = {}
@@ -29957,8 +29953,8 @@ print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZDev")
 -- ============================================================================
 do
     local ok, err = pcall(function()
-        if not Main or type(Main.CreatePage) ~= "function" then
-            error("A interface principal do Nexora não está disponível")
+        if not FarmotherMain or type(FarmotherMain.CreateSection) ~= "function" then
+            error("A página existente Farming Other não está disponível")
         end
 
         local questData = {
@@ -30085,3 +30081,4 @@ do
     end)
     if not ok then warn("[NEXORA Secret Quests] Não foi possível criar a aba: " .. tostring(err)) end
 end
+
