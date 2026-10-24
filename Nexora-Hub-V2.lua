@@ -30031,8 +30031,11 @@ do
         end
         if #questOptions ~= 39 then error("Lista de Secret Quests inválida: " .. tostring(#questOptions)) end
 
-        local page = Main.CreatePage({Page_Name="Secret Quests", Page_Title="Secret Quests"})
-        local intro = page.CreateSection("First Sea · Update 30")
+        -- Reutiliza a página existente Farming Other para evitar criar uma nova aba.
+        if not FarmotherMain or type(FarmotherMain.CreateSection) ~= "function" then
+            error("A seção Farming Other não está disponível")
+        end
+        local intro = FarmotherMain.CreateSection("Secret Quests · First Sea · Update 30")
         intro.CreateLabel({Title="39 Secret Quests documentadas · The Finale excluída"})
         intro.CreateLabel({Title="Este guia acompanha os objetivos; puzzles e eventos variáveis devem ser confirmados no jogo."})
         local statusLabel = intro.CreateLabel({Title="Status: selecione uma missão abaixo"})
@@ -30049,11 +30052,11 @@ do
             for i=1,3 do stepLabels[i].SetText("Etapa "..i..": "..tostring(data.steps[i] or "-")) end
             statusLabel.SetText("Progresso do guia: etapa "..currentStep.."/3")
         end
-        local selector = page.CreateSection("Selecionar Secret Quest")
+        local selector = FarmotherMain.CreateSection("Secret Quests · Selecionar missão")
         local dropdown = selector.CreateDropdown({Title="Ilha e missão", List=questOptions, Default=selectedOption}, function(value)
             if lookup[value] then selectedOption=value; currentStep=1; updateLabels() end
         end)
-        local progress = page.CreateSection("Acompanhamento")
+        local progress = FarmotherMain.CreateSection("Secret Quests · Progresso")
         progress.CreateButton({Title="Marcar etapa atual como concluída"}, function()
             if currentStep < 3 then
                 currentStep = currentStep + 1
