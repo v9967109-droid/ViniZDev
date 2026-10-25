@@ -1,20 +1,3 @@
-
--- V27 DEBUG - Lunar Hub que EXECUTA 100% com prints no F9
-print("[Lunar V27] Iniciando... Executor: "..tostring(identifyexecutor and identifyexecutor() or "desconhecido"))
-
--- Limpa tudo antigo
-pcall(function()
-    local host = (gethui and gethui()) or game:GetService("CoreGui") or game.Players.LocalPlayer:FindFirstChild("PlayerGui")
-    if host then
-        for _, name in pairs({"LunarHubUI", "NexoraUI", "NexoraFloat", "NexoraHubFluentFloat"}) do
-            local old = host:FindFirstChild(name)
-            if old then old:Destroy() print("[Lunar V27] Removido "..name) end
-        end
-    end
-end)
-
-print("[Lunar V27] Carregando Lunar UI...")
-
 --[[
     Lunar Hub UI Library
     Halloween Edition - Black / Orange
@@ -129,7 +112,7 @@ function LunarUI:CreateWindow(options)
     local guiParent
 
     local ok, hui = pcall(function()
-        if gethui then
+        if typeof(gethui) == "function" then
             return gethui()
         end
         return nil
@@ -138,7 +121,7 @@ function LunarUI:CreateWindow(options)
     if ok and hui then
         guiParent = hui
     else
-        local playerGui = LocalPlayer:FindFirstChild("PlayerGui") or LocalPlayer:WaitForChild("PlayerGui", 5) or game:GetService("CoreGui")
+        local playerGui = LocalPlayer:WaitForChild("PlayerGui")
         guiParent = playerGui
     end
 
@@ -607,32 +590,3 @@ function LunarUI:CreateWindow(options)
 end
 
 return LunarUI
-
-
-print("[Lunar V27] LunarUI carregada! Criando janela...")
-
-local Window
-local ok, err = pcall(function()
-    Window = LunarUI:CreateWindow({ Title = "Lunar Hub • TESTE EXECUTA" })
-end)
-
-if not ok then
-    warn("[Lunar V27] ERRO ao criar Window: "..tostring(err))
-    warn(debug.traceback())
-else
-    print("[Lunar V27] Window criada com sucesso!")
-end
-
-if Window then
-    pcall(function()
-        local MainTab = Window:CreateTab("Main")
-        MainTab:CreateSection("Teste")
-        MainTab:CreateLabel("Se voce esta vendo isso, a UI EXECUTOU!")
-        MainTab:CreateButton({Name="Botao Teste - Clique", Callback=function() print("[Lunar V27] Botao clicado!") end})
-        MainTab:CreateToggle({Name="Toggle Teste", Default=false, Callback=function(V) print("[Lunar V27] Toggle: "..tostring(V)) end})
-        print("[Lunar V27] Abas criadas!")
-    end)
-    print("[Lunar V27] SUCESSO! UI deve estar visivel. Procure botao flutuante ☾ no canto!")
-else
-    warn("[Lunar V27] Window nil, nao criou abas")
-end
