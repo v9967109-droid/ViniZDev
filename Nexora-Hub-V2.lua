@@ -152,9 +152,13 @@ function LunarUI:CreateWindow(options)
     }, screen)
     corner(window, 12)
     local windowStroke = stroke(window, ORANGE, 1.5, 0.1)
-    -- Borda laranja fixa e limpa: sem pulsação contínua.
+    -- Borda premium: brilho laranja pulsante contínuo, sem alterar o layout.
     windowStroke.Transparency = 0.08
     windowStroke.Thickness = 1.5
+    tween(windowStroke, TweenInfo.new(1.35, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
+        Transparency = 0.42,
+        Thickness = 2.6,
+    })
 
     local topbar = make("Frame", {
         Name = "Topbar",
@@ -596,6 +600,15 @@ function LunarUI:CreateWindow(options)
     }, screen)
     corner(floating, 26)
     local floatingStroke = stroke(floating, ORANGE, 2, 0.05)
+    -- Pulso suave contínuo no contorno do botão flutuante.
+    tween(floatingStroke, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
+        Transparency = 0.48,
+        Thickness = 3.2,
+    })
+    -- Respiração discreta do botão; posição permanece fixa para não atrapalhar o toque.
+    tween(floating, TweenInfo.new(1.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
+        BackgroundColor3 = Color3.fromRGB(38, 21, 13),
+    })
     floating.MouseEnter:Connect(function()
         tween(floating, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.fromOffset(57, 57), BackgroundColor3 = Color3.fromRGB(47, 25, 13)})
         if floatingStroke then tween(floatingStroke, TweenInfo.new(0.18), {Thickness = 3, Transparency = 0}) end
