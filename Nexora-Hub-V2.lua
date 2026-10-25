@@ -818,23 +818,23 @@ end
 
 
 
-print("[V40] Só UI Lunar carregada! Biblioteca Nexora removida! Criando compatibilidade...")
+print("[V41] Só UI Lunar carregada! Biblioteca Nexora removida! Criando compatibilidade...")
 
 -- Cria Window só com UI Lunar (sem Nexora UI)
 local Window
 local ok, err = pcall(function()
-    Window = LunarUI:CreateWindow({ Title = "Lunar Hub • Blox Fruits • V40 Só Lunar + Source Completa" })
+    Window = LunarUI:CreateWindow({ Title = "Lunar Hub • Blox Fruits • V41 Só Lunar + Source Completa FIX Options" })
 end)
 
 if not ok or not Window then
-    warn("[V40] Erro criar Window: "..tostring(err))
+    warn("[V41] Erro criar Window: "..tostring(err))
     Window = LunarUI:CreateWindow({ Title = "Lunar Hub" })
 end
 
 getgenv().LunarWindow = Window
 getgenv().Window = Window
 
-print("[V40] Window Lunar criada! Criando API compatível pra source inteira...")
+print("[V41] Window Lunar criada! Criando API compatível pra source inteira...")
 
 -- API compatível - Main.CreatePage usando Window:CreateTab da UI Lunar (sem biblioteca Nexora)
 Options = {}
@@ -848,7 +848,7 @@ function Main.CreatePage(pageConfig)
     local ok, result = pcall(function()
         pageConfig = pageConfig or {}
         local pageName = pageConfig.Page_Name or pageConfig.Page_Title or "Page"
-        print("[V40] Criando aba: "..pageName.." (API Lunar)")
+        print("[V41] Criando aba: "..pageName.." (API Lunar)")
         local Tab = Window:CreateTab(pageName)
         local PageObj = {_tab=Tab, _name=pageName}
         
@@ -873,7 +873,7 @@ function Main.CreatePage(pageConfig)
                         end
                     })
                 end)
-                if not okT then warn("[V40] Erro Toggle "..tostring(cfg.Title)..": "..tostring(errT)) end
+                if not okT then warn("[V41] Erro Toggle "..tostring(cfg.Title)..": "..tostring(errT)) end
                 return {SetText=function() end}
             end
             
@@ -927,7 +927,7 @@ function Main.CreatePage(pageConfig)
     end)
     
     if not ok then
-        warn("[V40] Erro CreatePage "..tostring(pageConfig.Page_Name)..": "..tostring(result))
+        warn("[V41] Erro CreatePage "..tostring(pageConfig.Page_Name)..": "..tostring(result))
         warn(debug.traceback())
         return {CreateSection=function() return {CreateToggle=function() return {} end, CreateButton=function() return {} end, CreateLabel=function() return {} end, CreateDropdown=function() return {} end, CreateSlider=function() return {} end, CreateBox=function() return {} end, CreateNoti=function() end, CreatePriorityDropdown=function() return {} end, CreateMultiToggle=function() return {} end, CreateSliderDropdown=function() return {} end} end}
     end
@@ -938,7 +938,18 @@ end
 Main.CreateBind=function() end
 Main.CreateNoti=function(text) print(text) end
 
-print("[V40] API criada! Carregando source inteira completa do Nexora (sem biblioteca Nexora, só UI Lunar)...")
+print("[V41] API criada! Carregando source inteira completa do Nexora (sem biblioteca Nexora, só UI Lunar)...")
+
+
+-- FIX: A era a biblioteca antiga do Nexora que foi removida, agora recriamos A pra source nao quebrar
+A = {}
+A.Options = Options
+A.OptionOrder = {}
+function A.CreateMain(cfg)
+    -- Retorna nosso Main que usa UI Lunar (nao cria UI antiga)
+    print("[V41 FIX] A.CreateMain chamado, retornando Main Lunar")
+    return Main
+end
 
 local success, err = xpcall(function()
 PageShop = Main.CreatePage({ Page_Name = "Shop", Page_Title = "Shop" })
@@ -28000,13 +28011,13 @@ print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZDev")
 
 
 end, function(e)
-    warn("[V40] ERRO source inteira: "..tostring(e))
+    warn("[V41] ERRO source inteira: "..tostring(e))
     warn(debug.traceback())
     return e
 end)
 
 if not success then
-    warn("[V40] Source falhou: "..tostring(err))
+    warn("[V41] Source falhou: "..tostring(err))
     pcall(function()
         local tab = Window:CreateTab("ERRO")
         tab:CreateSection("Erro")
@@ -28014,8 +28025,8 @@ if not success then
         tab:CreateButton({Name="Copy Error", Callback=function() setclipboard(tostring(err)) print("Erro copiado! Manda F9") end})
     end)
 else
-    print("[V40] SUCESSO! Source inteira completa carregada só com UI Lunar!")
-    print("[V40] Biblioteca Nexora removida, só UI Lunar com todas as funcoes!")
+    print("[V41] SUCESSO! Source inteira completa carregada só com UI Lunar!")
+    print("[V41] Biblioteca Nexora removida, só UI Lunar com todas as funcoes!")
 end
 
-print("[V40] Finalizado! Só UI Lunar com source inteira completa!")
+print("[V41] Finalizado! Só UI Lunar com source inteira completa!")
