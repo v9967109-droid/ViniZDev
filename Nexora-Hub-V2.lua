@@ -177,8 +177,11 @@ function LunarUI:CreateWindow(options)
         }),
         Rotation = 0,
     }, topbar:FindFirstChildWhichIsA("Frame"))
-    -- Gradiente estático para uma linha elegante e sem animação exagerada.
+    -- Gradiente laranja fluido e discreto, sem pulsar a janela inteira.
     topbarGradient.Rotation = 0
+    tween(topbarGradient, TweenInfo.new(3.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
+        Rotation = 180
+    })
 
     local moon = make("TextLabel", {
         Size = UDim2.fromOffset(32, 34),
@@ -298,6 +301,7 @@ function LunarUI:CreateWindow(options)
         Position = UDim2.new(0, compact and 112 or 155, 0, 50),
         Size = UDim2.new(1, -(compact and 112 or 155), 1, -50),
         BackgroundColor3 = BG,
+        BackgroundTransparency = 1,
         BorderSizePixel = 0,
     }, window)
 
@@ -308,7 +312,7 @@ function LunarUI:CreateWindow(options)
         Position = UDim2.fromScale(0, 0),
         BackgroundTransparency = 1,
         Image = "rbxthumb://type=Asset&id=123816569263005&w=420&h=420",
-        ImageTransparency = 0.30,
+        ImageTransparency = 0.08,
         ScaleType = Enum.ScaleType.Crop,
         BorderSizePixel = 0,
         ZIndex = 1,
@@ -317,10 +321,11 @@ function LunarUI:CreateWindow(options)
     -- Soft dark overlay improves text readability while preserving the artwork.
     local backgroundShade = make("Frame", {
         Name = "BackgroundShade", Size = UDim2.fromScale(1, 1),
-        BackgroundColor3 = Color3.fromRGB(8, 7, 10), BackgroundTransparency = 0.48,
+        BackgroundColor3 = Color3.fromRGB(8, 7, 10), BackgroundTransparency = 0.78,
         BorderSizePixel = 0, ZIndex = 0,
     }, content)
-    -- Fundo estável para manter a leitura e evitar efeitos contínuos.
+    -- Deixa o artwork visível como no mockup, mantendo contraste leve para o texto.
+    backgroundShade.BackgroundTransparency = 0.78
 
     -- Halloween atmosphere: decorative pumpkin/moon art made from native UI,
     -- so no external image host is required.
@@ -357,7 +362,12 @@ function LunarUI:CreateWindow(options)
         TextXAlignment = Enum.TextXAlignment.Left,
     }, content)
 
-    -- Decoração estática, com contraste constante.
+    -- Animação suave de entrada para o título da página e faixa temática.
+    pageHeader.TextTransparency = 1
+    tween(pageHeader, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0})
+    tween(halloweenStrip, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Position = UDim2.new(1, -78, 0, 10), BackgroundTransparency = 0.12
+    })
 
     local pages = {}
     local activeTab = nil
@@ -617,6 +627,12 @@ function LunarUI:CreateWindow(options)
         ZIndex = 20,
     }, floating)
     floatingIcon:GetPropertyChangedSignal("Image"):Connect(function() end)
+    floatingIcon:GetPropertyChangedSignal("IsLoaded"):Connect(function()
+        if floatingIcon.IsLoaded then floatingFallback.Visible = false end
+    end)
+    task.delay(2, function()
+        if floatingIcon.Parent and not floatingIcon.IsLoaded then floatingFallback.Visible = true end
+    end)
 
     local floatingDragging = false
     local floatingStart, floatingPos
