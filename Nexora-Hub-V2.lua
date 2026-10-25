@@ -1,3 +1,4 @@
+-- V32 - SOURCE COMPLETA DO NEXORA COM NOVA UI LUNAR HUB
 -- ===================== NEXORA ANTI SHAKE SYSTEM (NO TREME TELA) =====================
 -- Trava o tremor de tela de Skull Guitar, Dragonstorm, Sanguine, Godhuman, etc
 do
@@ -1864,7 +1865,21 @@ local A = (function()
 
 
 
--- ===================== NOVA UI LUNAR HUB (sua nova interface atualizada) =====================
+-- C e helpers mantidos pra compatibilidade da source completa
+local Nexora = {}
+Nexora.Options = {}
+Nexora.OptionOrder = {}
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
+local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
+local parentGui = (gethui and gethui()) or CoreGui
+
+
+
+-- ===================== NOVA UI LUNAR HUB (sua nova interface) =====================
 --[[
     Lunar Hub UI Library
     Halloween Edition - Black / Orange
@@ -1988,7 +2003,7 @@ function LunarUI:CreateWindow(options)
     if ok and hui then
         guiParent = hui
     else
-        local playerGui = LocalPlayer:FindFirstChild("PlayerGui") or LocalPlayer:WaitForChild("PlayerGui", 5) or game:GetService("CoreGui")
+        local playerGui = LocalPlayer:FindFirstChild("PlayerGui") or game:GetService("CoreGui")
         guiParent = playerGui
     end
 
@@ -2661,19 +2676,18 @@ end
 -- ===================== FIM NOVA UI =====================
 
 
-print("[Lunar V30] Nova UI Lunar Hub carregada! Criando janela com todas as funcoes do Nexora...")
+print("[V32 Source Completa] Nova UI Lunar Hub carregada! Transferindo source completa do Nexora...")
 
 local Window
 local ok, err = pcall(function()
-    Window = LunarUI:CreateWindow({ Title = "Lunar Hub • Blox Fruits • Todas Funcoes Nexora" })
+    Window = LunarUI:CreateWindow({ Title = "Lunar Hub • Source Completa Nexora" })
 end)
 if not ok or not Window then
-    warn("[Lunar V30] Erro Window: "..tostring(err))
+    warn("[V32] Erro Window: "..tostring(err))
     Window = LunarUI:CreateWindow({ Title = "Lunar Hub" })
 end
-
 getgenv().LunarWindow = Window
-print("[Lunar V30] Window criada! Transferindo todas as funcoes...")
+print("[V32] Window criada!")
 
 Options = Options or {}
 Nexora = Nexora or {}
@@ -2686,7 +2700,10 @@ function Main.CreatePage(pageConfig)
     local pageName = pageConfig.Page_Name or pageConfig.Page_Title or "Page"
     local Tab
     pcall(function() Tab = Window:CreateTab(pageName) end)
-    if not Tab then Tab = Window:CreateTab("Main") end
+    if not Tab then
+        pcall(function() Tab = Window:CreateTab("Main") end)
+        if not Tab then return {CreateSection=function() return {CreateToggle=function() return {} end, CreateButton=function() return {} end, CreateLabel=function() return {} end, CreateDropdown=function() return {} end, CreateSlider=function() return {} end, CreateBox=function() return {} end, CreateNoti=function() end, CreatePriorityDropdown=function() return {} end, CreateMultiToggle=function() return {} end, CreateSliderDropdown=function() return {} end} end} end
+    end
     local PageObj = {_tab=Tab, _name=pageName}
     function PageObj.CreateSection(sectionName)
         local Section={}
@@ -2710,7 +2727,7 @@ function Main.CreatePage(pageConfig)
                 end})
             end)
             addOption(t,"toggle",val)
-            return {SetText=function() end, GetText=function() return t end, SetValue=function() end}
+            return {SetText=function() end, GetText=function() return t end, SetValue=function() end, SetDesc=function() end}
         end
         function Section.CreateButton(cfg, callback)
             cfg=cfg or{}
@@ -2723,7 +2740,7 @@ function Main.CreatePage(pageConfig)
             local content=type(cfg)=="table" and (cfg.Content or "") or ""
             local full = txt .. (content~="" and (" - "..content) or "")
             pcall(function() Tab:CreateLabel(full) end)
-            return {SetText=function(v) end, GetText=function() return txt end, SetDesc=function() end}
+            return {SetText=function(v) pcall(function() end) end, GetText=function() return txt end, SetDesc=function() end}
         end
         Section.CreateTextLabel=Section.CreateLabel
         function Section.CreateDropdown(cfg, callback)
@@ -2744,7 +2761,8 @@ function Main.CreatePage(pageConfig)
                     if callback then pcall(callback, current) end
                 end})
             end)
-            return {}
+            addOption(t,"dropdown",def)
+            return {SetText=function() end}
         end
         function Section.CreateSlider(cfg, callback)
             cfg=cfg or{}
@@ -2754,16 +2772,18 @@ function Main.CreatePage(pageConfig)
             local def=cfg.Default or min
             local current = def
             pcall(function()
-                Tab:CreateLabel(t..": "..tostring(current))
+                Tab:CreateLabel(t..": "..tostring(current).." ("..min.."-"..max..")")
                 Tab:CreateButton({Name="Aumentar "..t, Callback=function() current=math.min(max, current+1) if callback then pcall(callback, current) end end})
                 Tab:CreateButton({Name="Diminuir "..t, Callback=function() current=math.max(min, current-1) if callback then pcall(callback, current) end end})
             end)
+            addOption(t,"slider",def)
             return {}
         end
         function Section.CreateBox(cfg, callback)
             cfg=cfg or{}
             local t=cfg.Title or "Box"
             pcall(function() Tab:CreateButton({Name=t, Callback=function() if callback then pcall(callback, "") end end}) end)
+            addOption(t,"box",cfg.Default or "")
             return {SetText=function() end, GetText=function() return "" end}
         end
         function Section.CreateNoti(text, duration) print("[Lunar] "..tostring(text)) end
@@ -2777,10 +2797,10 @@ end
 Main.CreateBind=function() end
 Main.CreateNoti=function(text, dur) print("[Lunar] "..tostring(text)) end
 
-print("[Lunar V30] Compatibilidade pronta! Carregando todas as funcoes do Nexora (igual estava na UI do Nexora)...")
+print("[V32] Compatibilidade pronta! Carregando source completa do Nexora (1.1MB de funcoes)...")
 
--- ===================== TODAS AS FUNCOES DO NEXORA TRANSFERIDAS PRA NOVA UI =====================
-pcall(function()
+-- ===================== SOURCE COMPLETA DO NEXORA (toda a logica original) =====================
+local success, err = pcall(function()
 PageShop = Main.CreatePage({ Page_Name = "Shop", Page_Title = "Shop" })
 getgenv().Options = A.Options
 SectionShopMisc = PageShop.CreateSection("Misc Shop")
@@ -29839,4 +29859,32 @@ end
 print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZDev")
 
 end)
-print("[Lunar V30] Finalizado! Tudo transferido! Igual tava na UI do Nexora, so que com nova UI Lunar Hub preta/laranja com botao 🎃 nativo que abre/fecha!")
+
+if not success then
+    warn("[V32] Erro na source completa: "..tostring(err))
+    print("[V32] Criando abas fallback com funcoes basicas...")
+    pcall(function()
+        local ShopTab = Window:CreateTab("Shop")
+        ShopTab:CreateSection("Shop")
+        ShopTab:CreateButton({Name="Buy Dual Flintlock", Callback=function() game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyGun", "Dual Flintlock") end})
+        
+        local FarmTab = Window:CreateTab("Farming")
+        FarmTab:CreateSection("Farming")
+        FarmTab:CreateToggle({Name="Auto Farm Level", Default=false, Callback=function(V) Settings["Auto Farm Level"]=V SaveSettings("Auto Farm Level", V) end})
+        FarmTab:CreateToggle({Name="Auto Farm Bones", Default=false, Callback=function(V) Settings["Auto Farm Bones"]=V SaveSettings("Auto Farm Bones", V) end})
+        FarmTab:CreateToggle({Name="Auto Farm Katakuri", Default=false, Callback=function(V) Settings["Auto Farm Katakuri"]=V SaveSettings("Auto Farm Katakuri", V) end})
+        FarmTab:CreateToggle({Name="Aura Farm", Default=false, Callback=function(V) Settings["Aura Farm"]=V SaveSettings("Aura Farm", V) end})
+        FarmTab:CreateToggle({Name="Kill Mob", Default=false, Callback=function(V) Settings["Kill Mob"]=V SaveSettings("Kill Mob", V) end})
+        FarmTab:CreateToggle({Name="Bring Mob", Default=true, Callback=function(V) Settings["Bring Mob"]=V SaveSettings("Bring Mob", V) end})
+        
+        local ESPTab = Window:CreateTab("ESP")
+        ESPTab:CreateSection("ESP")
+        ESPTab:CreateToggle({Name="ESP Player", Default=false, Callback=function(V) Settings["ESP Player"]=V end})
+        
+        print("[V32] Abas fallback criadas!")
+    end)
+else
+    print("[V32] Source completa carregada com sucesso!")
+end
+
+print("[V32] Finalizado! Source completa do Nexora com nova UI Lunar Hub preta/laranja com botao 🎃 nativo!")
