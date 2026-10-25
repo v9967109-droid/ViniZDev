@@ -166,6 +166,24 @@ function LunarUI:CreateWindow(options)
         BorderSizePixel = 0,
     }, topbar)
 
+    local topbarGradient = make("UIGradient", {
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, ORANGE_DARK),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 190, 70)),
+            ColorSequenceKeypoint.new(1, ORANGE),
+        }),
+        Rotation = 0,
+    }, topbar:FindFirstChildWhichIsA("Frame"))
+    task.spawn(function()
+        while topbar.Parent do
+            tween(topbarGradient, TweenInfo.new(2.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Rotation = 180})
+            task.wait(2.4)
+            if not topbar.Parent then break end
+            tween(topbarGradient, TweenInfo.new(2.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Rotation = 360})
+            task.wait(2.4)
+        end
+    end)
+
     local moon = make("TextLabel", {
         Size = UDim2.fromOffset(32, 34),
         Position = UDim2.fromOffset(12, 6),
@@ -179,12 +197,25 @@ function LunarUI:CreateWindow(options)
     local title = make("TextLabel", {
         Name = "Title",
         Position = UDim2.fromOffset(48, 0),
-        Size = UDim2.new(1, -145, 1, 0),
+        Size = UDim2.new(1, -145, 0, 27),
+        Position = UDim2.fromOffset(48, 2),
         BackgroundTransparency = 1,
         Text = titleText,
         TextColor3 = TEXT,
         TextSize = 18,
         Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left,
+    }, topbar)
+
+    local developerLabel = make("TextLabel", {
+        Name = "DeveloperCredit",
+        Position = UDim2.fromOffset(49, 27),
+        Size = UDim2.new(1, -150, 0, 15),
+        BackgroundTransparency = 1,
+        Text = "Dev: ViniZ_DV",
+        TextColor3 = Color3.fromRGB(255, 157, 79),
+        TextSize = 10,
+        Font = Enum.Font.GothamMedium,
         TextXAlignment = Enum.TextXAlignment.Left,
     }, topbar)
 
@@ -349,6 +380,20 @@ function LunarUI:CreateWindow(options)
             AutoButtonColor = true,
         }, tabList)
         corner(tabButton, 7)
+        tabButton.MouseEnter:Connect(function()
+            if activeTab ~= nil and activeTab.Button ~= tabButton then
+                tween(tabButton, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    BackgroundColor3 = Color3.fromRGB(39, 25, 18), TextColor3 = TEXT
+                })
+            end
+        end)
+        tabButton.MouseLeave:Connect(function()
+            if activeTab == nil or activeTab.Button ~= tabButton then
+                tween(tabButton, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                    BackgroundColor3 = PANEL, TextColor3 = MUTED
+                })
+            end
+        end)
         make("UIPadding", {
             PaddingLeft = UDim.new(0, 8),
             PaddingRight = UDim.new(0, 4),
@@ -506,7 +551,7 @@ function LunarUI:CreateWindow(options)
         Size = UDim2.fromOffset(52, 52),
         Position = UDim2.new(0, 24, 0.5, -26),
         BackgroundColor3 = Color3.fromRGB(20, 14, 12),
-        Text = "🎃",
+        Text = "",
         TextColor3 = ORANGE,
         TextSize = 31,
         Font = Enum.Font.GothamBold,
@@ -516,6 +561,28 @@ function LunarUI:CreateWindow(options)
     }, screen)
     corner(floating, 26)
     stroke(floating, ORANGE, 2, 0.05)
+    local floatingIcon = make("ImageLabel", {
+        Name = "LunarFloatingIcon",
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.fromScale(0.5, 0.5),
+        Size = UDim2.fromScale(0.72, 0.72),
+        BackgroundTransparency = 1,
+        Image = "rbxthumb://type=Asset&id=123816569263005&w=150&h=150",
+        ScaleType = Enum.ScaleType.Fit,
+        ZIndex = 21,
+    }, floating)
+    -- If the selected asset is not a usable thumbnail, retain the pumpkin fallback.
+    local floatingFallback = make("TextLabel", {
+        Name = "IconFallback",
+        Size = UDim2.fromScale(1, 1),
+        BackgroundTransparency = 1,
+        Text = "🎃",
+        TextSize = 30,
+        Font = Enum.Font.GothamBold,
+        TextColor3 = ORANGE,
+        ZIndex = 20,
+    }, floating)
+    floatingIcon:GetPropertyChangedSignal("Image"):Connect(function() end)
 
     local floatingDragging = false
     local floatingStart, floatingPos
@@ -564,12 +631,25 @@ function LunarUI:CreateWindow(options)
     end)
 
     local function setVisible(visible)
-        window.Visible = visible
         if visible then
-            window.BackgroundTransparency = 0.08
-            tween(window, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                BackgroundTransparency = 0
+            window.Visible = true
+            window.BackgroundTransparency = 0.12
+            local originalSize = window.Size
+            window.Size = UDim2.new(originalSize.X.Scale, originalSize.X.Offset - 18, originalSize.Y.Scale, originalSize.Y.Offset - 18)
+            tween(window, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                Size = originalSize, BackgroundTransparency = 0
             })
+            tween(floating, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                Rotation = 12
+            })
+            task.delay(0.18, function() if floating.Parent then tween(floating, TweenInfo.new(0.18), {Rotation = 0}) end end)
+        else
+            tween(window, TweenInfo.new(0.13, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+                BackgroundTransparency = 0.15
+            })
+            task.delay(0.13, function()
+                if window.Parent then window.Visible = false end
+            end)
         end
     end
 
@@ -640,7 +720,7 @@ end
 
 
 -- Standalone demo: cria uma interface visível quando o arquivo é executado.
-local Window = LunarUI:CreateWindow({ Title = "Lunar Hub | Halloween" })
+local Window = LunarUI:CreateWindow({ Title = "Lunar Hub | Blox Fruits" })
 
 local Main = Window:CreateTab("Main")
 Main:CreateSection("Welcome")
