@@ -346,14 +346,14 @@ function LunarUI:CreateWindow(options)
         ScaleType = Enum.ScaleType.Crop,
         BorderSizePixel = 0,
         ZIndex = 1,
-    }, content)
+    }, window)
     halloweenBackground.ZIndex = 0
     -- Soft dark overlay improves text readability while preserving the artwork.
     local backgroundShade = make("Frame", {
         Name = "BackgroundShade", Size = UDim2.fromScale(1, 1),
         BackgroundColor3 = Color3.fromRGB(8, 7, 10), BackgroundTransparency = 0.78,
         BorderSizePixel = 0, ZIndex = 0,
-    }, content)
+    }, window)
     -- Deixa o artwork visível como no mockup, mantendo contraste leve para o texto.
     backgroundShade.BackgroundTransparency = 0.78
 
@@ -383,24 +383,7 @@ function LunarUI:CreateWindow(options)
         ZIndex = 2,
     }, halloweenStrip)
 
-    local pageHeader = make("TextLabel", {
-        Name = "PageTitle",
-        Position = UDim2.fromOffset(16, 12),
-        Size = UDim2.new(1, -32, 0, 32),
-        BackgroundTransparency = 1,
-        Text = "Lunar Hub | Blox Fruits",
-        TextColor3 = TEXT,
-        TextSize = compact and 16 or 19,
-        Font = Enum.Font.GothamBold,
-        TextXAlignment = Enum.TextXAlignment.Left,
-    }, content)
-
-    -- Animação suave de entrada para o título da página e faixa temática.
-    pageHeader.TextTransparency = 1
-    tween(pageHeader, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0})
-    tween(halloweenStrip, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-        Position = UDim2.new(1, -72, 0, 10), BackgroundTransparency = 0.12
-    })
+    -- O título da página foi removido para não duplicar o título da barra superior.
 
     local pages = {}
     local activeTab = nil
