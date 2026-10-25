@@ -151,7 +151,10 @@ function LunarUI:CreateWindow(options)
         ClipsDescendants = true,
     }, screen)
     corner(window, 12)
-    stroke(window, ORANGE, 1.5, 0.1)
+    local windowStroke = stroke(window, ORANGE, 1.5, 0.1)
+    -- Borda laranja fixa e limpa: sem pulsação contínua.
+    windowStroke.Transparency = 0.08
+    windowStroke.Thickness = 1.5
 
     local topbar = make("Frame", {
         Name = "Topbar",
@@ -174,15 +177,8 @@ function LunarUI:CreateWindow(options)
         }),
         Rotation = 0,
     }, topbar:FindFirstChildWhichIsA("Frame"))
-    task.spawn(function()
-        while topbar.Parent do
-            tween(topbarGradient, TweenInfo.new(2.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Rotation = 180})
-            task.wait(2.4)
-            if not topbar.Parent then break end
-            tween(topbarGradient, TweenInfo.new(2.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Rotation = 360})
-            task.wait(2.4)
-        end
-    end)
+    -- Gradiente estático para uma linha elegante e sem animação exagerada.
+    topbarGradient.Rotation = 0
 
     local moon = make("TextLabel", {
         Size = UDim2.fromOffset(32, 34),
@@ -231,6 +227,8 @@ function LunarUI:CreateWindow(options)
         AutoButtonColor = true,
     }, topbar)
     corner(hideButton, 8)
+    hideButton.MouseEnter:Connect(function() tween(hideButton, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(63, 32, 16), Rotation = -8}) end)
+    hideButton.MouseLeave:Connect(function() tween(hideButton, TweenInfo.new(0.18), {BackgroundColor3 = PANEL_2, Rotation = 0}) end)
 
     local closeButton = make("TextButton", {
         Name = "CloseButton",
@@ -244,6 +242,8 @@ function LunarUI:CreateWindow(options)
         AutoButtonColor = true,
     }, topbar)
     corner(closeButton, 8)
+    closeButton.MouseEnter:Connect(function() tween(closeButton, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(95, 32, 20), Rotation = 8}) end)
+    closeButton.MouseLeave:Connect(function() tween(closeButton, TweenInfo.new(0.18), {BackgroundColor3 = PANEL_2, Rotation = 0}) end)
 
     local sidebar = make("Frame", {
         Name = "Sidebar",
@@ -313,6 +313,14 @@ function LunarUI:CreateWindow(options)
         BorderSizePixel = 0,
         ZIndex = 1,
     }, content)
+    halloweenBackground.ZIndex = 0
+    -- Soft dark overlay improves text readability while preserving the artwork.
+    local backgroundShade = make("Frame", {
+        Name = "BackgroundShade", Size = UDim2.fromScale(1, 1),
+        BackgroundColor3 = Color3.fromRGB(8, 7, 10), BackgroundTransparency = 0.48,
+        BorderSizePixel = 0, ZIndex = 0,
+    }, content)
+    -- Fundo estável para manter a leitura e evitar efeitos contínuos.
 
     -- Halloween atmosphere: decorative pumpkin/moon art made from native UI,
     -- so no external image host is required.
@@ -349,6 +357,8 @@ function LunarUI:CreateWindow(options)
         TextXAlignment = Enum.TextXAlignment.Left,
     }, content)
 
+    -- Decoração estática, com contraste constante.
+
     local pages = {}
     local activeTab = nil
     local api = { Screen = screen, Frame = window, Tabs = pages }
@@ -357,10 +367,17 @@ function LunarUI:CreateWindow(options)
         activeTab = tab
         for _, item in ipairs(pages) do
             item.Page.Visible = item == tab
-            item.Button.BackgroundColor3 = item == tab and Color3.fromRGB(74, 35, 12) or PANEL
-            item.Button.TextColor3 = item == tab and ORANGE or MUTED
+            tween(item.Button, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                BackgroundColor3 = item == tab and Color3.fromRGB(74, 35, 12) or PANEL,
+                TextColor3 = item == tab and ORANGE or MUTED,
+            })
             item.Button.BorderSizePixel = item == tab and 1 or 0
             item.Button.BorderColor3 = ORANGE
+            if item == tab then
+                item.Button.Size = UDim2.new(1, -5, 0, compact and 32 or 36)
+                tween(item.Button, TweenInfo.new(0.16, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(1, 0, 0, compact and 32 or 36)})
+                tab.Page.CanvasPosition = Vector2.new(0, 0)
+            end
         end
         pageHeader.Text = "🎃  " .. tab.Name
     end
@@ -485,7 +502,15 @@ function LunarUI:CreateWindow(options)
                 BorderSizePixel = 0,
             }, page)
             corner(row, 8)
-            stroke(row, BORDER, 1, 0.45)
+            local rowStroke = stroke(row, BORDER, 1, 0.45)
+            row.MouseEnter:Connect(function()
+                tween(row, TweenInfo.new(0.16), {BackgroundColor3 = Color3.fromRGB(27, 22, 21)})
+                if rowStroke then tween(rowStroke, TweenInfo.new(0.16), {Color = ORANGE, Transparency = 0.12}) end
+            end)
+            row.MouseLeave:Connect(function()
+                tween(row, TweenInfo.new(0.2), {BackgroundColor3 = PANEL})
+                if rowStroke then tween(rowStroke, TweenInfo.new(0.2), {Color = BORDER, Transparency = 0.45}) end
+            end)
 
             local name = make("TextLabel", {
                 Position = UDim2.fromOffset(12, 0),
@@ -560,7 +585,16 @@ function LunarUI:CreateWindow(options)
         ZIndex = 20,
     }, screen)
     corner(floating, 26)
-    stroke(floating, ORANGE, 2, 0.05)
+    local floatingStroke = stroke(floating, ORANGE, 2, 0.05)
+    floating.MouseEnter:Connect(function()
+        tween(floating, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.fromOffset(57, 57), BackgroundColor3 = Color3.fromRGB(47, 25, 13)})
+        if floatingStroke then tween(floatingStroke, TweenInfo.new(0.18), {Thickness = 3, Transparency = 0}) end
+    end)
+    floating.MouseLeave:Connect(function()
+        tween(floating, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.fromOffset(52, 52), BackgroundColor3 = Color3.fromRGB(20, 14, 12)})
+        if floatingStroke then tween(floatingStroke, TweenInfo.new(0.2), {Thickness = 2, Transparency = 0.05}) end
+    end)
+    -- O botão só anima em interações, sem movimento automático contínuo.
     local floatingIcon = make("ImageLabel", {
         Name = "LunarFloatingIcon",
         AnchorPoint = Vector2.new(0.5, 0.5),
@@ -644,11 +678,16 @@ function LunarUI:CreateWindow(options)
             })
             task.delay(0.18, function() if floating.Parent then tween(floating, TweenInfo.new(0.18), {Rotation = 0}) end end)
         else
-            tween(window, TweenInfo.new(0.13, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-                BackgroundTransparency = 0.15
+            local originalSize = window.Size
+            tween(window, TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+                BackgroundTransparency = 0.15,
+                Size = UDim2.new(originalSize.X.Scale, math.max(260, originalSize.X.Offset - 12), originalSize.Y.Scale, math.max(240, originalSize.Y.Offset - 12)),
             })
-            task.delay(0.13, function()
-                if window.Parent then window.Visible = false end
+            task.delay(0.14, function()
+                if window.Parent then
+                    window.Visible = false
+                    window.Size = originalSize
+                end
             end)
         end
     end
