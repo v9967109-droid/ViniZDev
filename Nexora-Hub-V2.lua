@@ -589,4 +589,50 @@ function LunarUI:CreateWindow(options)
     return api
 end
 
-return LunarUI
+
+-- Standalone demo: cria uma interface visível quando o arquivo é executado.
+local Window = LunarUI:CreateWindow({ Title = "Lunar Hub | Halloween" })
+
+local Main = Window:CreateTab("Main")
+Main:CreateSection("Welcome")
+Main:CreateLabel("Lunar Hub UI carregada. Conecte suas funções aos callbacks.")
+Main:CreateButton({
+    Name = "Teste de interface",
+    Callback = function()
+        print("[Lunar Hub] Interface funcionando.")
+    end,
+})
+Main:CreateToggle({
+    Name = "Toggle de teste",
+    Default = false,
+    Callback = function(enabled)
+        print("[Lunar Hub] Toggle de teste:", enabled)
+    end,
+})
+
+local SeaEvents = Window:CreateTab("Sea Events")
+SeaEvents:CreateSection("Sea Events")
+SeaEvents:CreateLabel("Adicione aqui os controles das suas funções de Sea Events.")
+
+local Prehistoric = Window:CreateTab("Prehistoric Island")
+Prehistoric:CreateSection("Prehistoric Island")
+Prehistoric:CreateLabel("Adicione aqui os controles do evento pré-histórico.")
+
+local Shop = Window:CreateTab("Shop")
+Shop:CreateSection("Shop")
+Shop:CreateLabel("Adicione aqui os controles da loja.")
+
+local Teleports = Window:CreateTab("Teleports")
+Teleports:CreateSection("Teleports")
+Teleports:CreateLabel("Adicione aqui os controles de teleporte.")
+
+local Settings = Window:CreateTab("Settings")
+Settings:CreateSection("Interface")
+Settings:CreateButton({
+    Name = "Ocultar janela (botão flutuante continua)",
+    Callback = function()
+        Window:SetVisible(false)
+    end,
+})
+
+return Window
