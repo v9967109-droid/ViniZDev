@@ -270,6 +270,19 @@ function LunarUI:CreateWindow(options)
         BorderSizePixel = 0,
     }, window)
 
+    -- User-provided Halloween background asset. Keep it subtle so text/buttons remain readable.
+    local halloweenBackground = make("ImageLabel", {
+        Name = "HalloweenBackground",
+        Size = UDim2.fromScale(1, 1),
+        Position = UDim2.fromScale(0, 0),
+        BackgroundTransparency = 1,
+        Image = "rbxassetid://123816569263005",
+        ImageTransparency = 0.58,
+        ScaleType = Enum.ScaleType.Crop,
+        BorderSizePixel = 0,
+        ZIndex = 1,
+    }, content)
+
     -- Halloween atmosphere: decorative pumpkin/moon art made from native UI,
     -- so no external image host is required.
     local halloweenStrip = make("Frame", {
