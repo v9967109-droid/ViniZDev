@@ -2457,8 +2457,7 @@ end)
 local A = (function()
     local Nexora = { Options = {}, OptionOrder = {} }
     local ui = LunarUI:CreateWindow({Title = "Lunar Hub | Blox Fruits", Credit = "Dev: ViniZ_DV"})
-    local mainTab = ui:CreateTab("Main")
-    local activePage = nil
+    local activePageTab = nil
     local pageCount = 0
     local function titleOf(cfg, fallback)
         if type(cfg) == "table" then return tostring(cfg.Title or cfg.Name or cfg.Text or fallback or "Option") end
@@ -2484,15 +2483,16 @@ local A = (function()
                 pageConfig = pageConfig or {}
                 pageCount = pageCount + 1
                 local pageName = tostring(pageConfig.Page_Name or pageConfig.Page_Title or ("Page " .. pageCount))
-                -- One Lunar page only: legacy pages become section headings instead of sidebar tabs.
-                mainTab:CreateSection("✦ " .. pageName)
-                local page = {name=pageName}
+                -- Cada página original vira uma aba Lunar própria; os controles ficam na área rolável dessa aba.
+                local pageTab = ui:CreateTab(pageName)
+                activePageTab = pageTab
+                local page = {name=pageName, Tab=pageTab}
                 function page.CreateSection(sectionName)
-                    mainTab:CreateSection(tostring(sectionName or "Section"))
+                    pageTab:CreateSection(tostring(sectionName or "Section"))
                     local section = {name=tostring(sectionName or "Section")}
                     function section.CreateToggle(cfg, callback)
                         cfg = cfg or {}; local name = titleOf(cfg, "Toggle")
-                        local control = mainTab:CreateToggle({Name=name, Default=cfg.Default == true, Callback=function(v)
+                        local control = pageTab:CreateToggle({Name=name, Default=cfg.Default == true, Callback=function(v)
                             Settings = Settings or {}; Settings[name] = v
                             pcall(function() if SaveSettings then SaveSettings(name, v) end end)
                             if callback then callback(v) end
@@ -2501,12 +2501,12 @@ local A = (function()
                     end
                     function section.CreateButton(cfg, callback)
                         local name = titleOf(cfg, "Button")
-                        local control = mainTab:CreateButton({Name=name, Callback=function() if callback then callback() end end})
+                        local control = pageTab:CreateButton({Name=name, Callback=function() if callback then callback() end end})
                         return register(name, "button", false, callback, control)
                     end
                     function section.CreateLabel(cfg)
                         local name = titleOf(cfg, "Label")
-                        local object = mainTab:CreateLabel(name)
+                        local object = pageTab:CreateLabel(name)
                         local handle = {Object=object}
                         handle.SetText = function(v) if object and object.Text ~= nil then object.Text=tostring(v or "") end end
                         handle.GetText = function() return object and object.Text or name end
@@ -2517,7 +2517,7 @@ local A = (function()
                         local min=tonumber(cfg.Min or cfg.MinValue) or 0; local max=tonumber(cfg.Max or cfg.MaxValue) or 100
                         local value=math.clamp(tonumber(cfg.Default or cfg.Value) or min,min,max)
                         local control
-                        control=mainTab:CreateButton({Name=name..": "..tostring(value).." (tap to increase)",Callback=function()
+                        control=pageTab:CreateButton({Name=name..": "..tostring(value).." (tap to increase)",Callback=function()
                             local step=tonumber(cfg.Increment or cfg.Step) or 1; value=value+step; if value>max then value=min end
                             if control and control:IsA("TextButton") then control.Text="  "..name..": "..tostring(value).." (tap to increase)" end
                             if callback then callback(value) end
@@ -2532,7 +2532,7 @@ local A = (function()
                         local list={}; if type(values)=="table" then if #values>0 then for _,v in ipairs(values) do table.insert(list,v) else for k in pairs(values) do table.insert(list,k) end; table.sort(list,function(a,b) return tostring(a)<tostring(b) end) end end
                         local index=0; local selected=cfg.Default
                         for i,v in ipairs(list) do if v==selected then index=i end end
-                        local control=mainTab:CreateButton({Name=name..": "..tostring(selected or (list[1] or "None")),Callback=function()
+                        local control=pageTab:CreateButton({Name=name..": "..tostring(selected or (list[1] or "None")),Callback=function()
                             if #list==0 then return end; index=index%#list+1; selected=list[index]
                             if control and control:IsA("TextButton") then control.Text="  "..name..": "..tostring(selected).."     ›" end
                             if callback then callback(selected) end
@@ -2541,7 +2541,7 @@ local A = (function()
                     end
                     function section.CreateBox(cfg, callback)
                         local name=titleOf(cfg,"Text input")
-                        local control=mainTab:CreateButton({Name=name.." (input unavailable in this UI build)",Callback=function() end})
+                        local control=pageTab:CreateButton({Name=name.." (input unavailable in this UI build)",Callback=function() end})
                         local opt=register(name,"box",type(cfg)=="table" and (cfg.Default or "") or "",callback,control)
                         opt.FunctionCreate.GetText=function() return tostring(opt.value or "") end
                         return opt
@@ -2563,7 +2563,7 @@ local A = (function()
     function Nexora.CreateNoti(config, duration)
         local message
         if type(config)=="table" then message=tostring(config.Title or "Lunar Hub").."\n"..tostring(config.Desc or config.Text or "") else message=tostring(config or "") end
-        pcall(function() mainTab:CreateLabel(message) end)
+        pcall(function() pageTab:CreateLabel(message) end)
         return nil
     end
     Nexora.RestoreSavedToggles=function()
