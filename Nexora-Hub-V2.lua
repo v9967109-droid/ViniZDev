@@ -342,7 +342,7 @@ function LunarUI:CreateWindow(options)
         Position = UDim2.fromScale(0, 0),
         BackgroundTransparency = 1,
         Image = "rbxthumb://type=Asset&id=123816569263005&w=420&h=420",
-        ImageTransparency = 0.08,
+        ImageTransparency = 0,
         ScaleType = Enum.ScaleType.Crop,
         BorderSizePixel = 0,
         ZIndex = 1,
@@ -351,11 +351,11 @@ function LunarUI:CreateWindow(options)
     -- Soft dark overlay improves text readability while preserving the artwork.
     local backgroundShade = make("Frame", {
         Name = "BackgroundShade", Size = UDim2.fromScale(1, 1),
-        BackgroundColor3 = Color3.fromRGB(8, 7, 10), BackgroundTransparency = 0.78,
+        BackgroundColor3 = Color3.fromRGB(8, 7, 10), BackgroundTransparency = 0.88,
         BorderSizePixel = 0, ZIndex = 0,
     }, window)
     -- Deixa o artwork visível como no mockup, mantendo contraste leve para o texto.
-    backgroundShade.BackgroundTransparency = 0.78
+    backgroundShade.BackgroundTransparency = 0.88
 
     -- Halloween atmosphere: decorative pumpkin/moon art made from native UI,
     -- so no external image host is required.
