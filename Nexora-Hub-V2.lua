@@ -170,7 +170,7 @@ function LunarUI:CreateWindow(options)
         Size = UDim2.fromOffset(32, 34),
         Position = UDim2.fromOffset(12, 6),
         BackgroundTransparency = 1,
-        Text = "☾",
+        Text = "🎃",
         TextColor3 = ORANGE,
         TextSize = 30,
         Font = Enum.Font.GothamBold,
@@ -226,11 +226,24 @@ function LunarUI:CreateWindow(options)
         Size = UDim2.new(1, -12, 0, 36),
         Position = UDim2.fromOffset(6, 8),
         BackgroundTransparency = 1,
-        Text = "☾  LUNAR",
+        Text = "🎃  LUNAR",
         TextColor3 = ORANGE,
         TextSize = compact and 13 or 16,
         Font = Enum.Font.GothamBold,
         TextXAlignment = Enum.TextXAlignment.Center,
+    }, sidebar)
+
+    local sidebarFooter = make("TextLabel", {
+        Name = "HalloweenFooter",
+        AnchorPoint = Vector2.new(0.5, 1),
+        Position = UDim2.new(0.5, 0, 1, -5),
+        Size = UDim2.new(1, -12, 0, 24),
+        BackgroundTransparency = 1,
+        Text = "☠  SPOOKY SEASON",
+        TextColor3 = ORANGE_DARK,
+        TextSize = compact and 8 or 10,
+        Font = Enum.Font.GothamBold,
+        TextWrapped = true,
     }, sidebar)
 
     local tabList = make("ScrollingFrame", {
@@ -257,12 +270,35 @@ function LunarUI:CreateWindow(options)
         BorderSizePixel = 0,
     }, window)
 
+    -- Halloween atmosphere: decorative pumpkin/moon art made from native UI,
+    -- so no external image host is required.
+    local halloweenStrip = make("Frame", {
+        Name = "HalloweenAccent",
+        Position = UDim2.new(1, -78, 0, 10),
+        Size = UDim2.fromOffset(62, 32),
+        BackgroundColor3 = Color3.fromRGB(37, 20, 12),
+        BackgroundTransparency = 0.12,
+        BorderSizePixel = 0,
+        ZIndex = 1,
+    }, content)
+    corner(halloweenStrip, 9)
+    stroke(halloweenStrip, ORANGE_DARK, 1, 0.25)
+    make("TextLabel", {
+        Size = UDim2.fromScale(1, 1),
+        BackgroundTransparency = 1,
+        Text = "🎃 🦇",
+        TextColor3 = ORANGE,
+        TextSize = 17,
+        Font = Enum.Font.GothamBold,
+        ZIndex = 2,
+    }, halloweenStrip)
+
     local pageHeader = make("TextLabel", {
         Name = "PageTitle",
         Position = UDim2.fromOffset(16, 12),
         Size = UDim2.new(1, -32, 0, 32),
         BackgroundTransparency = 1,
-        Text = "☠  Main",
+        Text = "🎃  Main",
         TextColor3 = TEXT,
         TextSize = compact and 16 or 19,
         Font = Enum.Font.GothamBold,
@@ -282,7 +318,7 @@ function LunarUI:CreateWindow(options)
             item.Button.BorderSizePixel = item == tab and 1 or 0
             item.Button.BorderColor3 = ORANGE
         end
-        pageHeader.Text = "☾  " .. tab.Name
+        pageHeader.Text = "🎃  " .. tab.Name
     end
 
     function api:CreateTab(tabName)
@@ -457,7 +493,7 @@ function LunarUI:CreateWindow(options)
         Size = UDim2.fromOffset(52, 52),
         Position = UDim2.new(0, 24, 0.5, -26),
         BackgroundColor3 = Color3.fromRGB(20, 14, 12),
-        Text = "☾",
+        Text = "🎃",
         TextColor3 = ORANGE,
         TextSize = 31,
         Font = Enum.Font.GothamBold,
