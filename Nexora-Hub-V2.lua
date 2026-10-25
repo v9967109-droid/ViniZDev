@@ -1,9 +1,9 @@
--- V40 - SÓ UI LUNAR + SOURCE INTEIRA COMPLETA (BIBLIOTECA NEXORA REMOVIDA)
+-- V43 - NOVA BIBLIOTECA LUNAR UI + API NEXORA + SOURCE INTEIRA COMPLETA
 
 getgenv().__BF_LOADED = false
 pcall(function()
     local host = (gethui and gethui()) or game:GetService("CoreGui")
-    for _, n in pairs({"LunarHubUI", "NexoraUI", "Nexora Hub"}) do local o=host:FindFirstChild(n) if o then o:Destroy() end end
+    for _, n in pairs({"LunarHubUI", "NexoraUI"}) do local o=host:FindFirstChild(n) if o then o:Destroy() end end
 end)
 Settings = Settings or {}
 FolderName = "Nexora Hub"
@@ -22,7 +22,7 @@ _G.toTarget=toTarget
 pcall(function() local cs=require(game.ReplicatedStorage.Util.CameraShaker) cs.Shake=function() return end end)
 
 
--- SÓ UI LUNAR (biblioteca Nexora removida)
+-- NOVA BIBLIOTECA LUNAR UI (biblioteca nova, sem Nexora)
 --[[
     Lunar Hub UI Library
     Halloween Edition - Black / Orange
@@ -177,11 +177,13 @@ function LunarUI:CreateWindow(options)
     }, screen)
     corner(window, 12)
     local windowStroke = stroke(window, ORANGE, 1.5, 0.1)
-    local windowStrokePulse = TweenService:Create(windowStroke, TweenInfo.new(1.25, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Transparency = 0.05, Thickness = 3})
-    windowStrokePulse:Play()
-    -- Borda laranja fixa e limpa: sem pulsação contínua.
+    -- Borda premium: brilho laranja pulsante contínuo, sem alterar o layout.
     windowStroke.Transparency = 0.08
     windowStroke.Thickness = 1.5
+    tween(windowStroke, TweenInfo.new(1.35, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
+        Transparency = 0.42,
+        Thickness = 2.6,
+    })
 
     local topbar = make("Frame", {
         Name = "Topbar",
@@ -222,8 +224,9 @@ function LunarUI:CreateWindow(options)
 
     local title = make("TextLabel", {
         Name = "Title",
-        Position = UDim2.fromOffset(48, 2),
+        Position = UDim2.fromOffset(48, 0),
         Size = UDim2.new(1, -145, 0, 27),
+        Position = UDim2.fromOffset(48, 2),
         BackgroundTransparency = 1,
         Text = titleText,
         TextColor3 = TEXT,
@@ -276,9 +279,8 @@ function LunarUI:CreateWindow(options)
 
     local sidebar = make("Frame", {
         Name = "Sidebar",
-        Visible = true,
         Position = UDim2.fromOffset(0, 50),
-        Size = UDim2.new(0, 42, 1, -50),
+        Size = UDim2.new(0, compact and 112 or 155, 1, -50),
         BackgroundColor3 = Color3.fromRGB(13, 13, 17),
         BorderSizePixel = 0,
     }, window)
@@ -287,9 +289,9 @@ function LunarUI:CreateWindow(options)
         Size = UDim2.new(1, -12, 0, 36),
         Position = UDim2.fromOffset(6, 8),
         BackgroundTransparency = 1,
-        Text = "🎃",
+        Text = "🎃  LUNAR",
         TextColor3 = ORANGE,
-        TextSize = 22,
+        TextSize = compact and 13 or 16,
         Font = Enum.Font.GothamBold,
         TextXAlignment = Enum.TextXAlignment.Center,
     }, sidebar)
@@ -300,16 +302,16 @@ function LunarUI:CreateWindow(options)
         Position = UDim2.new(0.5, 0, 1, -5),
         Size = UDim2.new(1, -12, 0, 24),
         BackgroundTransparency = 1,
-        Text = "☠",
+        Text = "☠  SPOOKY SEASON",
         TextColor3 = ORANGE_DARK,
-        TextSize = 17,
+        TextSize = compact and 8 or 10,
         Font = Enum.Font.GothamBold,
         TextWrapped = true,
     }, sidebar)
+    tween(sidebarFooter, TweenInfo.new(1.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {TextColor3 = ORANGE})
 
     local tabList = make("ScrollingFrame", {
         Name = "TabList",
-        Visible = true,
         Position = UDim2.fromOffset(7, 49),
         Size = UDim2.new(1, -14, 1, -58),
         BackgroundTransparency = 1,
@@ -324,37 +326,10 @@ function LunarUI:CreateWindow(options)
         SortOrder = Enum.SortOrder.LayoutOrder,
     }, tabList)
 
-    -- Trilho lateral decorativo sem abas: detalhes animados para preencher a barra.
-    local railTop = make("Frame", {
-        Name = "RailTopAccent",
-        Position = UDim2.new(0.5, -2, 0, 55),
-        Size = UDim2.new(0, 4, 0, 34),
-        BackgroundColor3 = ORANGE,
-        BorderSizePixel = 0,
-    }, sidebar)
-    corner(railTop, 4)
-    tween(railTop, TweenInfo.new(1.3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
-        BackgroundColor3 = Color3.fromRGB(255, 190, 95), Size = UDim2.new(0, 4, 0, 52)
-    })
-    for i = 1, 4 do
-        local railDot = make("Frame", {
-            Name = "RailDot" .. i,
-            Position = UDim2.new(0.5, -2, 0, 112 + (i - 1) * 17),
-            Size = UDim2.fromOffset(4, 4),
-            BackgroundColor3 = ORANGE_DARK,
-            BackgroundTransparency = 0.15 + (i * 0.12),
-            BorderSizePixel = 0,
-        }, sidebar)
-        corner(railDot, 4)
-        tween(railDot, TweenInfo.new(0.8 + i * 0.15, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
-            BackgroundTransparency = 0.05
-        })
-    end
-
     local content = make("Frame", {
         Name = "Content",
-        Position = UDim2.new(0, 42, 0, 50),
-        Size = UDim2.new(1, -42, 1, -50),
+        Position = UDim2.new(0, compact and 112 or 155, 0, 50),
+        Size = UDim2.new(1, -(compact and 112 or 155), 1, -50),
         BackgroundColor3 = BG,
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
@@ -367,37 +342,34 @@ function LunarUI:CreateWindow(options)
         Position = UDim2.fromScale(0, 0),
         BackgroundTransparency = 1,
         Image = "rbxthumb://type=Asset&id=123816569263005&w=420&h=420",
-        ImageTransparency = 0,
+        ImageTransparency = 0.08,
         ScaleType = Enum.ScaleType.Crop,
         BorderSizePixel = 0,
         ZIndex = 1,
-    }, window)
+    }, content)
     halloweenBackground.ZIndex = 0
     -- Soft dark overlay improves text readability while preserving the artwork.
     local backgroundShade = make("Frame", {
         Name = "BackgroundShade", Size = UDim2.fromScale(1, 1),
-        BackgroundColor3 = Color3.fromRGB(8, 7, 10), BackgroundTransparency = 0.88,
+        BackgroundColor3 = Color3.fromRGB(8, 7, 10), BackgroundTransparency = 0.78,
         BorderSizePixel = 0, ZIndex = 0,
-    }, window)
+    }, content)
     -- Deixa o artwork visível como no mockup, mantendo contraste leve para o texto.
-    backgroundShade.BackgroundTransparency = 0.88
+    backgroundShade.BackgroundTransparency = 0.78
 
     -- Halloween atmosphere: decorative pumpkin/moon art made from native UI,
     -- so no external image host is required.
     local halloweenStrip = make("Frame", {
         Name = "HalloweenAccent",
-        Position = UDim2.new(1, -72, 0, 10),
-        Size = UDim2.fromOffset(58, 30),
+        Position = UDim2.new(1, -78, 0, 10),
+        Size = UDim2.fromOffset(62, 32),
         BackgroundColor3 = Color3.fromRGB(37, 20, 12),
         BackgroundTransparency = 0.12,
         BorderSizePixel = 0,
         ZIndex = 1,
     }, content)
     corner(halloweenStrip, 9)
-    local stripStroke = stroke(halloweenStrip, ORANGE_DARK, 1, 0.25)
-    if stripStroke then
-        TweenService:Create(stripStroke, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Transparency = 0.02, Thickness = 2}):Play()
-    end
+    stroke(halloweenStrip, ORANGE_DARK, 1, 0.25)
     make("TextLabel", {
         Size = UDim2.fromScale(1, 1),
         BackgroundTransparency = 1,
@@ -408,7 +380,27 @@ function LunarUI:CreateWindow(options)
         ZIndex = 2,
     }, halloweenStrip)
 
-    -- O título da página foi removido para não duplicar o título da barra superior.
+    local pageHeader = make("TextLabel", {
+        Name = "PageTitle",
+        Position = UDim2.fromOffset(16, 12),
+        Size = UDim2.new(1, -32, 0, 32),
+        BackgroundTransparency = 1,
+        Text = "🎃  Main",
+        TextColor3 = TEXT,
+        TextSize = compact and 16 or 19,
+        Font = Enum.Font.GothamBold,
+        TextXAlignment = Enum.TextXAlignment.Left,
+    }, content)
+
+    -- Animação suave de entrada para o título da página e faixa temática.
+    pageHeader.TextTransparency = 1
+    tween(pageHeader, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0})
+    local headerUnderline = make("Frame", {Name = "HeaderUnderline", Position = UDim2.fromOffset(16, 46), Size = UDim2.new(0, 34, 0, 2), BackgroundColor3 = ORANGE, BorderSizePixel = 0, ZIndex = 2}, content)
+    corner(headerUnderline, 2)
+    tween(headerUnderline, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Size = UDim2.new(0, 94, 0, 2), BackgroundColor3 = Color3.fromRGB(255, 190, 70)})
+    tween(halloweenStrip, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+        Position = UDim2.new(1, -78, 0, 10), BackgroundTransparency = 0.12
+    })
 
     local pages = {}
     local activeTab = nil
@@ -418,6 +410,11 @@ function LunarUI:CreateWindow(options)
         activeTab = tab
         for _, item in ipairs(pages) do
             item.Page.Visible = item == tab
+            if item == tab then
+                item.Page.Position = UDim2.fromOffset(18, 52)
+                item.Page.BackgroundTransparency = 1
+                tween(item.Page, TweenInfo.new(0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position = UDim2.fromOffset(12, 52)})
+            end
             tween(item.Button, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 BackgroundColor3 = item == tab and Color3.fromRGB(74, 35, 12) or PANEL,
                 TextColor3 = item == tab and ORANGE or MUTED,
@@ -500,6 +497,8 @@ function LunarUI:CreateWindow(options)
                 Font = Enum.Font.GothamBold,
                 TextXAlignment = Enum.TextXAlignment.Left,
             }, page)
+            label.TextTransparency = 1
+            tween(label, TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0})
             return label
         end
 
@@ -515,6 +514,17 @@ function LunarUI:CreateWindow(options)
                 TextWrapped = true,
             }, page)
             corner(label, 7)
+            local labelStroke = stroke(label, BORDER, 1, 0.75)
+            label.MouseEnter:Connect(function()
+                tween(label, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(35, 25, 20)})
+                if labelStroke then tween(labelStroke, TweenInfo.new(0.16), {Transparency = 0.25, Color = ORANGE_DARK}) end
+            end)
+            label.MouseLeave:Connect(function()
+                tween(label, TweenInfo.new(0.18), {BackgroundColor3 = PANEL})
+                if labelStroke then tween(labelStroke, TweenInfo.new(0.18), {Transparency = 0.75, Color = BORDER}) end
+            end)
+            label.BackgroundTransparency = 1
+            tween(label, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0})
             return label
         end
 
@@ -532,8 +542,20 @@ function LunarUI:CreateWindow(options)
                 AutoButtonColor = true,
             }, page)
             corner(button, 8)
-            stroke(button, BORDER, 1, 0.35)
+            local buttonStroke = stroke(button, BORDER, 1, 0.35)
+            button.MouseEnter:Connect(function()
+                tween(button, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(54, 29, 17), Position = UDim2.new(0, 2, 0, 0)})
+                if buttonStroke then tween(buttonStroke, TweenInfo.new(0.16), {Color = ORANGE, Transparency = 0.05, Thickness = 1.5}) end
+            end)
+            button.MouseLeave:Connect(function()
+                tween(button, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = PANEL_2, Position = UDim2.new(0, 0, 0, 0)})
+                if buttonStroke then tween(buttonStroke, TweenInfo.new(0.18), {Color = BORDER, Transparency = 0.35, Thickness = 1}) end
+            end)
+            button.BackgroundTransparency = 1
+            tween(button, TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0})
             button.MouseButton1Click:Connect(function()
+                tween(button, TweenInfo.new(0.08), {Size = UDim2.new(1, -8, 0, 36)})
+                task.delay(0.09, function() if button.Parent then tween(button, TweenInfo.new(0.16, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(1, -2, 0, 39)}) end end)
                 if type(config.Callback) == "function" then
                     task.spawn(function()
                         local success, err = pcall(config.Callback)
@@ -637,6 +659,27 @@ function LunarUI:CreateWindow(options)
     }, screen)
     corner(floating, 26)
     local floatingStroke = stroke(floating, ORANGE, 2, 0.05)
+    -- Pulso suave contínuo no contorno do botão flutuante.
+    tween(floatingStroke, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
+        Transparency = 0.48,
+        Thickness = 3.2,
+    })
+    -- Respiração discreta do botão; posição permanece fixa para não atrapalhar o toque.
+    tween(floating, TweenInfo.new(1.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
+        BackgroundColor3 = Color3.fromRGB(38, 21, 13),
+    })
+    task.spawn(function()
+        while floating.Parent do
+            tween(floating, TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Rotation = 5})
+            task.wait(0.9)
+            if not floating.Parent then break end
+            tween(floating, TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Rotation = -5})
+            task.wait(0.9)
+            if not floating.Parent then break end
+            tween(floating, TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Rotation = 0})
+            task.wait(0.9)
+        end
+    end)
     floating.MouseEnter:Connect(function()
         tween(floating, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.fromOffset(57, 57), BackgroundColor3 = Color3.fromRGB(47, 25, 13)})
         if floatingStroke then tween(floatingStroke, TweenInfo.new(0.18), {Thickness = 3, Transparency = 0}) end
@@ -818,25 +861,20 @@ end
 
 
 
-print("[V41] Só UI Lunar carregada! Biblioteca Nexora removida! Criando compatibilidade...")
+print("[V43] Nova biblioteca Lunar UI carregada! Biblioteca nova!")
 
--- Cria Window só com UI Lunar (sem Nexora UI)
 local Window
-local ok, err = pcall(function()
-    Window = LunarUI:CreateWindow({ Title = "Lunar Hub • Blox Fruits • V41 Só Lunar + Source Completa FIX Options" })
+pcall(function()
+    Window = LunarUI:CreateWindow({ Title = "Lunar Hub • Blox Fruits • V43 Nova Biblioteca" })
 end)
-
-if not ok or not Window then
-    warn("[V41] Erro criar Window: "..tostring(err))
-    Window = LunarUI:CreateWindow({ Title = "Lunar Hub" })
-end
+if not Window then Window = LunarUI:CreateWindow({ Title = "Lunar Hub" }) end
 
 getgenv().LunarWindow = Window
 getgenv().Window = Window
 
-print("[V41] Window Lunar criada! Criando API compatível pra source inteira...")
+print("[V43] Window nova biblioteca criada! Criando API Nexora com nova biblioteca...")
 
--- API compatível - Main.CreatePage usando Window:CreateTab da UI Lunar (sem biblioteca Nexora)
+-- API DO NEXORA usando nova biblioteca Lunar UI
 Options = {}
 Nexora = {}
 Nexora.Options = Options
@@ -844,112 +882,62 @@ Nexora.OptionOrder = {}
 Main = {}
 Main.Window = Window
 
-function Main.CreatePage(pageConfig)
-    local ok, result = pcall(function()
-        pageConfig = pageConfig or {}
-        local pageName = pageConfig.Page_Name or pageConfig.Page_Title or "Page"
-        print("[V41] Criando aba: "..pageName.." (API Lunar)")
-        local Tab = Window:CreateTab(pageName)
-        local PageObj = {_tab=Tab, _name=pageName}
-        
-        function PageObj.CreateSection(sectionName)
-            local Section = {}
-            local secName = sectionName or "Section"
-            pcall(function() Tab:CreateSection(secName) end)
-            
-            function Section.CreateToggle(cfg, callback)
-                local okT, errT = pcall(function()
-                    cfg=cfg or{}
-                    local t=cfg.Title or cfg.Text or "Toggle"
-                    local val = Settings[t]
-                    if type(val)~="boolean" then val = (cfg.Default==true) end
-                    Tab:CreateToggle({
-                        Name=t,
-                        Default=val,
-                        Callback=function(V)
-                            Settings[t]=V
-                            pcall(function() SaveSettings(t,V) end)
-                            if callback then pcall(callback,V) end
-                        end
-                    })
-                end)
-                if not okT then warn("[V41] Erro Toggle "..tostring(cfg.Title)..": "..tostring(errT)) end
-                return {SetText=function() end}
-            end
-            
-            function Section.CreateButton(cfg, callback)
-                pcall(function()
-                    cfg=cfg or{}
-                    Tab:CreateButton({Name=cfg.Title or "Button", Callback=function() if callback then pcall(callback) end end})
-                end)
-                return {SetText=function() end}
-            end
-            
-            function Section.CreateLabel(cfg)
-                pcall(function()
-                    local txt = type(cfg)=="table" and (cfg.Title or cfg.Text or "") or tostring(cfg or "")
-                    Tab:CreateLabel(txt)
-                end)
-                return {SetText=function() end}
-            end
-            Section.CreateTextLabel=Section.CreateLabel
-            
-            function Section.CreateDropdown(cfg, cb)
-                pcall(function()
-                    cfg=cfg or{}
-                    local t=cfg.Title or "Dropdown"
-                    local list = cfg.List or cfg.Values or {"Option1"}
-                    if #list==0 then list={"Option1"} end
-                    Tab:CreateButton({Name=t..": "..tostring(list[1]), Callback=function() if cb then pcall(cb, list[1]) end end})
-                end)
-                return {}
-            end
-            
-            function Section.CreateSlider(cfg, cb)
-                pcall(function() Tab:CreateLabel(cfg.Title or "Slider") end)
-                return {}
-            end
-            
-            function Section.CreateBox(cfg, cb)
-                pcall(function() Tab:CreateButton({Name=cfg.Title or "Box", Callback=function() if cb then pcall(cb, "") end end}) end)
-                return {SetText=function() end}
-            end
-            
-            function Section.CreateNoti(text) print(text) end
-            function Section.CreatePriorityDropdown(cfg, cb) return Section.CreateDropdown(cfg, cb) end
-            function Section.CreateMultiToggle(cfg, cb) pcall(function() Tab:CreateButton({Name=cfg.Title or "Multi", Callback=function() if cb then pcall(cb, {}) end end}) end) return {} end
-            function Section.CreateSliderDropdown(cfg, cb) return Section.CreateDropdown(cfg, cb) end
-            
-            return Section
-        end
-        
-        return PageObj
-    end)
-    
-    if not ok then
-        warn("[V41] Erro CreatePage "..tostring(pageConfig.Page_Name)..": "..tostring(result))
-        warn(debug.traceback())
-        return {CreateSection=function() return {CreateToggle=function() return {} end, CreateButton=function() return {} end, CreateLabel=function() return {} end, CreateDropdown=function() return {} end, CreateSlider=function() return {} end, CreateBox=function() return {} end, CreateNoti=function() end, CreatePriorityDropdown=function() return {} end, CreateMultiToggle=function() return {} end, CreateSliderDropdown=function() return {} end} end}
-    end
-    
-    return result
-end
-
-Main.CreateBind=function() end
-Main.CreateNoti=function(text) print(text) end
-
-print("[V41] API criada! Carregando source inteira completa do Nexora (sem biblioteca Nexora, só UI Lunar)...")
-
-
--- FIX: A era a biblioteca antiga do Nexora que foi removida, agora recriamos A pra source nao quebrar
+-- FIX: A era biblioteca antiga
 A = {}
 A.Options = Options
 A.OptionOrder = {}
 function A.CreateMain(cfg)
-    -- Retorna nosso Main que usa UI Lunar (nao cria UI antiga)
-    print("[V41 FIX] A.CreateMain chamado, retornando Main Lunar")
     return Main
 end
+
+function Main.CreatePage(pageConfig)
+    local ok, result = pcall(function()
+        pageConfig = pageConfig or {}
+        local pageName = pageConfig.Page_Name or pageConfig.Page_Title or "Page"
+        print("[V43] Main.CreatePage: "..pageName.." (API Nexora -> Nova Biblioteca Lunar)")
+        local Tab = Window:CreateTab(pageName)
+        local PageObj = {_tab=Tab, _name=pageName}
+        function PageObj.CreateSection(sectionName)
+            local Section = {}
+            local secName = sectionName or "Section"
+            pcall(function() Tab:CreateSection(secName) end)
+            function Section.CreateToggle(cfg, callback)
+                pcall(function()
+                    cfg=cfg or{}
+                    local t=cfg.Title or cfg.Text or "Toggle"
+                    local val = Settings[t]
+                    if type(val)~="boolean" then val = (cfg.Default==true) end
+                    Tab:CreateToggle({Name=t, Default=val, Callback=function(V) Settings[t]=V pcall(function() SaveSettings(t,V) end) if callback then pcall(callback,V) end end})
+                end)
+                return {SetText=function() end}
+            end
+            function Section.CreateButton(cfg, callback)
+                pcall(function() Tab:CreateButton({Name=cfg.Title or "Button", Callback=function() if callback then pcall(callback) end end}) end)
+                return {SetText=function() end}
+            end
+            function Section.CreateLabel(cfg)
+                pcall(function() Tab:CreateLabel(type(cfg)=="table" and (cfg.Title or "") or tostring(cfg or "")) end)
+                return {SetText=function() end}
+            end
+            Section.CreateTextLabel=Section.CreateLabel
+            function Section.CreateDropdown(cfg, cb) pcall(function() Tab:CreateButton({Name=cfg.Title or "Dropdown", Callback=function() if cb then pcall(cb, cfg.List and cfg.List[1] or "Option1") end end}) end) return {} end
+            function Section.CreateSlider(cfg, cb) pcall(function() Tab:CreateLabel(cfg.Title or "Slider") end) return {} end
+            function Section.CreateBox(cfg, cb) pcall(function() Tab:CreateButton({Name=cfg.Title or "Box", Callback=function() if cb then pcall(cb, "") end end}) end) return {SetText=function() end} end
+            function Section.CreateNoti(text) print(text) end
+            function Section.CreatePriorityDropdown(cfg, cb) return Section.CreateDropdown(cfg, cb) end
+            function Section.CreateMultiToggle(cfg, cb) pcall(function() Tab:CreateButton({Name=cfg.Title or "Multi", Callback=function() if cb then pcall(cb, {}) end end}) end) return {} end
+            function Section.CreateSliderDropdown(cfg, cb) return Section.CreateDropdown(cfg, cb) end
+            return Section
+        end
+        return PageObj
+    end)
+    if not ok then warn("[V43] Erro CreatePage: "..tostring(result)) return {CreateSection=function() return {CreateToggle=function() return {} end, CreateButton=function() return {} end, CreateLabel=function() return {} end, CreateDropdown=function() return {} end, CreateSlider=function() return {} end, CreateBox=function() return {} end, CreateNoti=function() end, CreatePriorityDropdown=function() return {} end, CreateMultiToggle=function() return {} end, CreateSliderDropdown=function() return {} end} end} end
+    return result
+end
+Main.CreateBind=function() end
+Main.CreateNoti=function(text) print(text) end
+
+print("[V43] API Nexora com nova biblioteca criada! Carregando source inteira completa...")
 
 local success, err = xpcall(function()
 PageShop = Main.CreatePage({ Page_Name = "Shop", Page_Title = "Shop" })
@@ -28011,22 +27999,21 @@ print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZDev")
 
 
 end, function(e)
-    warn("[V41] ERRO source inteira: "..tostring(e))
+    warn("[V43] ERRO source: "..tostring(e))
     warn(debug.traceback())
     return e
 end)
 
 if not success then
-    warn("[V41] Source falhou: "..tostring(err))
+    warn("[V43] Source falhou: "..tostring(err))
     pcall(function()
         local tab = Window:CreateTab("ERRO")
         tab:CreateSection("Erro")
         tab:CreateLabel("Erro: "..tostring(err):sub(1,300))
-        tab:CreateButton({Name="Copy Error", Callback=function() setclipboard(tostring(err)) print("Erro copiado! Manda F9") end})
+        tab:CreateButton({Name="Copy Error", Callback=function() setclipboard(tostring(err)) end})
     end)
 else
-    print("[V41] SUCESSO! Source inteira completa carregada só com UI Lunar!")
-    print("[V41] Biblioteca Nexora removida, só UI Lunar com todas as funcoes!")
+    print("[V43] SUCESSO! Nova biblioteca Lunar UI + API Nexora + Source Inteira Completa!")
 end
 
-print("[V41] Finalizado! Só UI Lunar com source inteira completa!")
+print("[V43] Finalizado! Nova biblioteca Lunar UI com todas as funcoes!")
