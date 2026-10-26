@@ -5213,30 +5213,14 @@ end)
 
 LocalPlayerMain = Main.CreatePage({ Page_Name = "LocalPlayer", Page_Title = "LocalPlayer" })
 SectionLocalPlayerMain = LocalPlayerMain.CreateSection("Local Player")
-SectionLocalPlayerMain.CreateDropdown(
-	{
-		Title = "Select Language",
-		List = { "English", "Portuguese", "Spanish", "French", "German", "Italian", "Japanese", "Chinese", "Korean", "Russian", "Arabic", "Hindi", "Turkish", "Dutch", "Polish", "Indonesian", "Thai", "Vietnamese", "Filipino", "Greek", "Hebrew", "Swedish", "Norwegian", "Danish", "Finnish", "Czech", "Romanian", "Hungarian", "Ukrainian", "Bengali", "Malay", "Persian", "Urdu", "Tamil", "Telugu", "Marathi", "Gujarati", "Kannada", "Malayalam", "Punjabi", "Burmese", "Khmer", "Lao", "Sinhala", "Nepali", "Swahili", "Zulu", "Afrikaans" },
-		Search = true,
-		Selected = false,
-		Default = Settings["Select Language"] or "English",
-	},
-	function(lang)
-		SaveSettings("Select Language", lang)
-		if Settings["Auto Translate"] then
-			pcall(function() getgenv().ForceRetranslate = true end)
-		end
-	end
-)
 SectionLocalPlayerMain.CreateToggle(
 	{
 		Title = "Auto Translate",
-		Desc = "First time English, after change saved. Select language then enable.",
+		Desc = "It may take a bit longer to translate the first time.",
 		Default = Settings["Auto Translate"] or false,
 	},
 	function(K)
 		SaveSettings("Auto Translate", K)
-		if K then pcall(function() getgenv().ForceRetranslate = true end) end
 	end
 )
 SectionLocalPlayerMain.CreateButton({ Title = "Stop Tween" }, function()
@@ -27977,7 +27961,6 @@ function addToggle(section, title)
 
 -- [PASS31 SOURCE BODY] batchTranslateParallel
 function batchTranslateParallel(messages, targetLang)
-    if not targetLang or #targetLang > 3 then targetLang = GetLanguageCode(targetLang or Settings["Select Language"] or "English") end
     local results = {}
     local toTranslate = {}
     local indices = {}
@@ -28305,72 +28288,7 @@ function time()
 -- [BANANA CAT RECOVERED] CheckQuest
 
 -- [PASS31 SOURCE BODY] translateSingle
-
-local LanguageCodes = {
-    ["English"] = "en",
-    ["Portuguese"] = "pt",
-    ["Spanish"] = "es",
-    ["French"] = "fr",
-    ["German"] = "de",
-    ["Italian"] = "it",
-    ["Japanese"] = "ja",
-    ["Chinese"] = "zh",
-    ["Korean"] = "ko",
-    ["Russian"] = "ru",
-    ["Arabic"] = "ar",
-    ["Hindi"] = "hi",
-    ["Turkish"] = "tr",
-    ["Dutch"] = "nl",
-    ["Polish"] = "pl",
-    ["Indonesian"] = "id",
-    ["Thai"] = "th",
-    ["Vietnamese"] = "vi",
-    ["Filipino"] = "tl",
-    ["Greek"] = "el",
-    ["Hebrew"] = "he",
-    ["Swedish"] = "sv",
-    ["Norwegian"] = "no",
-    ["Danish"] = "da",
-    ["Finnish"] = "fi",
-    ["Czech"] = "cs",
-    ["Romanian"] = "ro",
-    ["Hungarian"] = "hu",
-    ["Ukrainian"] = "uk",
-    ["Bengali"] = "bn",
-    ["Malay"] = "ms",
-    ["Persian"] = "fa",
-    ["Urdu"] = "ur",
-    ["Tamil"] = "ta",
-    ["Telugu"] = "te",
-    ["Marathi"] = "mr",
-    ["Gujarati"] = "gu",
-    ["Kannada"] = "kn",
-    ["Malayalam"] = "ml",
-    ["Punjabi"] = "pa",
-    ["Burmese"] = "my",
-    ["Khmer"] = "km",
-    ["Lao"] = "lo",
-    ["Sinhala"] = "si",
-    ["Nepali"] = "ne",
-    ["Swahili"] = "sw",
-    ["Zulu"] = "zu",
-    ["Afrikaans"] = "af"
-}
-function GetLanguageCode(displayName)
-    if not displayName or displayName == "" then return "en" end
-    if LanguageCodes[displayName] then return LanguageCodes[displayName] end
-    return "en"
-end
-pcall(function()
-    if not Settings["Select Language"] then
-        Settings["Select Language"] = "English"
-        SaveSettings("Select Language", "English")
-    end
-end)
-
-
 function translateSingle(text, targetLang)
-    if not targetLang or #targetLang > 3 then targetLang = GetLanguageCode(targetLang or Settings["Select Language"] or "English") end
     if not http_request and not request then return nil, true end
     local httpFunc = http_request or request
 
