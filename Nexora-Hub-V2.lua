@@ -1,4 +1,11 @@
 
+-- V52 SUPER SIMPLE - Hub Vxeze [grátis] Verdadeiro v2 - TESTE EXECUÇÃO
+pcall(function()
+    local host = (gethui and gethui()) or game:GetService("CoreGui")
+    for _, n in pairs({"VxezeGratisUI", "LunarHubUI", "NexoraUI", "NexoraLoading"}) do local o=host:FindFirstChild(n) if o then o:Destroy() end end
+end)
+
+
 --[[
     Hub Vxeze [grátis] Verdadeiro v2 UI Library
     Recriado exatamente como na imagem enviada
@@ -660,10 +667,6 @@ function VxezeGratis:CreateWindow(options)
             return secObj
         end
         
-        function tabApi:CreateSection(name)
-            return tabApi:CreateSection(name)
-        end
-        
         return tabApi
     end
     
@@ -732,3 +735,33 @@ function VxezeGratis:CreateWindow(options)
 end
 
 return VxezeGratis
+
+
+print("[V52] Biblioteca carregada, criando window...")
+
+local ok, Window = pcall(function()
+    return VxezeGratis:CreateWindow({ Title = "Hub Vxeze [grátis]", Subtitle = "Verdadeiro v2" })
+end)
+
+if ok and Window then
+    print("[V52] Window criada! Criando abas...")
+    local ok2, Tab = pcall(function() return Window:CreateTab("Teste") end)
+    if ok2 and Tab then
+        print("[V52] Tab criada!")
+        local ok3 = pcall(function()
+            local Sec = Tab:CreateSection("Principal")
+            Sec.CreateToggle({Title="Auto Factory", Default=false}, function(V) print("Auto Factory: "..tostring(V)) end)
+            Sec.CreateToggle({Title="Auto Pirate Raid", Default=false}, function(V) print("Auto Pirate Raid: "..tostring(V)) end)
+            Sec.CreateLabel("Secret Quest 24/39")
+        end)
+        if ok3 then
+            print("[V52] Toggles criados! UI funcionando igual imagem!")
+        else
+            warn("[V52] Erro toggles")
+        end
+    else
+        warn("[V52] Erro tab: "..tostring(Tab))
+    end
+else
+    warn("[V52] Erro window: "..tostring(Window))
+end
