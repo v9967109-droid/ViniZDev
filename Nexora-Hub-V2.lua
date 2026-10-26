@@ -15,25 +15,33 @@ do
 			o.Parent = parent
 			return o
 		end
-		local function sfx(id, vol, speed) return end -- SFX REMOVIDO DIRETO
+		local function sfx(id, vol, speed)
+			pcall(function()
+				local snd = Instance.new("Sound")
+				snd.SoundId = id; snd.Volume = vol or 0.5; snd.PlaybackSpeed = speed or 1
+				snd.Parent = game:GetService("SoundService")
+				snd:Play()
+				game:GetService("Debris"):AddItem(snd, 4)
+			end)
+		end
 		local card = mk("CanvasGroup", {AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.fromOffset(230,128), BackgroundColor3=Color3.fromRGB(8,8,11), BorderSizePixel=0, GroupTransparency=1}, gui)
-		mk("UICorner", {CornerRadius = UDim.new(0, 24)}, card)
+		mk("UICorner", {CornerRadius=UDim.new(0,16)}, card)
 		mk("UIStroke", {Color=GOLD, Thickness=1, Transparency=0.55}, card)
 		local sc = mk("UIScale", {Scale=0.9}, card)
 		local logo = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,12), Size=UDim2.fromOffset(46,46), BackgroundColor3=Color3.fromRGB(8,8,10), BorderSizePixel=0}, card)
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, logo)
 		mk("UIStroke", {Color=GOLD, Thickness=2}, logo)
-		mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,2), Size=UDim2.new(1,0,0,13), Text="♛", TextColor3=Color3.fromRGB(80, 180, 255), Font=Enum.Font.Fantasy, TextSize=12}, logo)
-		local n = mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,10), Size=UDim2.new(1,0,1,-12), Text="N", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.Arcade, TextSize=26}, logo)
+		mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,2), Size=UDim2.new(1,0,0,13), Text="♛", TextColor3=Color3.fromRGB(80, 180, 255), Font=Enum.Font.GothamBold, TextSize=12}, logo)
+		local n = mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,10), Size=UDim2.new(1,0,1,-12), Text="N", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.GothamBlack, TextSize=26}, logo)
 		mk("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 140, 255))}, n)
-		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,62), Size=UDim2.fromOffset(220,20), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.Arcade, TextSize=16}, card)
-		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,80), Size=UDim2.fromOffset(220,14), BackgroundTransparency=1, Text="BLOX FRUITS • ViniZDev", TextColor3=Color3.fromRGB(165,165,174), Font=Enum.Font.Code, TextSize=11}, card)
+		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,62), Size=UDim2.fromOffset(220,20), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.GothamBlack, TextSize=16}, card)
+		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,80), Size=UDim2.fromOffset(220,14), BackgroundTransparency=1, Text="BLOX FRUITS • ViniZDev", TextColor3=Color3.fromRGB(165,165,174), Font=Enum.Font.GothamMedium, TextSize=11}, card)
 		local track = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,92), Size=UDim2.fromOffset(150,3), BackgroundColor3=Color3.fromRGB(30,28,24), BorderSizePixel=0}, card)
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, track)
 		local fill = mk("Frame", {Size=UDim2.new(0,0,1,0), BackgroundColor3=GOLD, BorderSizePixel=0}, track)
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, fill)
 		mk("UIGradient", {Color=ColorSequence.new(Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255))}, fill)
-		local status = mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,102), Size=UDim2.fromOffset(220,14), BackgroundTransparency=1, Text="Carregando...", TextColor3=GRAY, Font=Enum.Font.SourceSansBold, TextSize=10}, card)
+		local status = mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,102), Size=UDim2.fromOffset(220,14), BackgroundTransparency=1, Text="Carregando...", TextColor3=GRAY, Font=Enum.Font.Gotham, TextSize=10}, card)
 		-- entrada rápida + som de abertura
 		TS:Create(card, TweenInfo.new(.18, Enum.EasingStyle.Quad), {GroupTransparency=0}):Play()
 		TS:Create(sc, TweenInfo.new(.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale=1}):Play()
@@ -1972,7 +1980,7 @@ end
 local function label(parent, text, size, color, font)
     return make("TextLabel", {
         BackgroundTransparency = 1, Text = tostring(text or ""), TextColor3 = color or C.text,
-        Font = font or Enum.Font.SourceSansBold, TextSize = size or 12, TextXAlignment = Enum.TextXAlignment.Left,
+        Font = font or Enum.Font.Gotham, TextSize = size or 12, TextXAlignment = Enum.TextXAlignment.Left,
         TextYAlignment = Enum.TextYAlignment.Center, Size = UDim2.new(1, 0, 1, 0),
         TextWrapped = true,
     }, parent)
@@ -1981,7 +1989,7 @@ local function button(parent, text, height)
     local b = make("TextButton", {
         AutoButtonColor = false, BackgroundColor3 = C.panel2, BorderSizePixel = 0,
         Size = UDim2.new(1, 0, 0, height or 34), Text = text or "", TextColor3 = C.text,
-        Font = Enum.Font.SourceSansBold, TextSize = 12,
+        Font = Enum.Font.Gotham, TextSize = 12,
     }, parent)
     corner(b, 7)
     b.MouseEnter:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.12), {BackgroundColor3 = Color3.fromRGB(36, 34, 31)}):Play() end end)
@@ -1993,16 +2001,30 @@ end
 -- Sons da UI. Para usar os seus: getgenv().NexoraSounds = { ping="rbxassetid://ID", switch="rbxassetid://ID", click="rbxassetid://ID" } antes de executar.
 local SND = { ping = "rbxasset://sounds/electronicpingshort.wav", switch = "rbxasset://sounds/switch.wav", click = "rbxasset://sounds/button.wav" }
 pcall(function() for k, v in pairs(getgenv().NexoraSounds or {}) do SND[k] = v end end)
-local function playUISound(id, vol, speed) return end -- SFX REMOVIDO DIRETO
+local function playUISound(id, vol, speed)
+    pcall(function()
+        local snd = Instance.new("Sound")
+        snd.SoundId = id; snd.Volume = vol or 0.5; snd.PlaybackSpeed = speed or 1
+        snd.Parent = game:GetService("SoundService")
+        snd:Play()
+        game:GetService("Debris"):AddItem(snd, 3)
+    end)
+end
 -- Cada efeito é uma sequência curta de camadas {som, volume, velocidade, atraso}.
 local SFX = {
-    open  = {},
-    close = {},
-    on    = {},
-    off   = {},
-    tab   = {},
+    open  = { {"ping",.5,1.25,0}, {"ping",.35,1.7,.07}, {"click",.25,1.4,0} },
+    close = { {"ping",.45,1.0,0}, {"ping",.3,.75,.07} },
+    on    = { {"switch",.6,1.05,0}, {"ping",.35,1.9,.03}, {"ping",.22,2.4,.09} },
+    off   = { {"switch",.35,.8,0}, {"ping",.2,.9,.04} },
+    tab   = { {"click",.3,1.35,0} },
 }
-local function sfxPlay(name) return end -- SFX REMOVIDO DIRETO
+local function sfxPlay(name)
+    local seq = SFX[name]
+    if not seq then return end
+    for _, n in ipairs(seq) do
+        task.delay(n[4], function() playUISound(SND[n[1]], n[2], n[3]) end)
+    end
+end
 local function addOption(title, typ, value, page, section, callback)
     local opt = {Title = title, name = title, type = typ, value = value, Page_Name = page, Section_Name = section, Callback = callback}
     local control = {}
@@ -2095,9 +2117,9 @@ function Nexora.CreateMain(config)
             end
         end)
     end
-    local title = make("TextLabel", {Position=UDim2.new(0,18,0,10), Size=UDim2.new(0,300,0,26), BackgroundTransparency=1, RichText=true, Text='<font color="#FFFFFF">NEXORA</font> <font color="#008CFF">HUB</font>', TextColor3=Color3.fromRGB(255,255,255), Font=Enum.Font.Arcade, TextSize=22, TextXAlignment=Enum.TextXAlignment.Left}, top)
+    local title = make("TextLabel", {Position=UDim2.new(0,18,0,10), Size=UDim2.new(0,300,0,26), BackgroundTransparency=1, RichText=true, Text='<font color="#FFFFFF">NEXORA</font> <font color="#008CFF">HUB</font>', TextColor3=Color3.fromRGB(255,255,255), Font=Enum.Font.GothamBlack, TextSize=22, TextXAlignment=Enum.TextXAlignment.Left}, top)
     local function tracked(t) return (string.gsub(string.upper(t), "(%S)", "%1\u{2009}")) end
-    local desc = make("TextLabel", {Position=UDim2.new(0,19,0,37), Size=UDim2.new(0,300,0,16), BackgroundTransparency=1, Text=tracked("BLOX FRUITS • ViniZDev"), TextColor3=GRAY, Font=Enum.Font.Code, TextSize=10, TextXAlignment=Enum.TextXAlignment.Left}, top)
+    local desc = make("TextLabel", {Position=UDim2.new(0,19,0,37), Size=UDim2.new(0,300,0,16), BackgroundTransparency=1, Text=tracked("BLOX FRUITS • ViniZDev"), TextColor3=GRAY, Font=Enum.Font.GothamMedium, TextSize=10, TextXAlignment=Enum.TextXAlignment.Left}, top)
     -- 3 tracinhos removidos da UI como você pediu
     local hamburger = make("TextButton", {Name="Menu", AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,-12,0.5,0), Size=UDim2.new(0,36,0,36), BackgroundTransparency=1, Text="", TextTransparency=1, Visible=false, AutoButtonColor=false}, top)
     -- ScreenGui separado: o botão fica fora da janela e não some junto com a UI (nem com o keybind Toggle GUI).
@@ -2131,7 +2153,7 @@ function Nexora.CreateMain(config)
         Position=UDim2.new(0, 0, 0, 0),
         Text="N",
         TextColor3=Color3.fromRGB(255, 255, 255),
-        Font=Enum.Font.Arcade,
+        Font=Enum.Font.GothamBlack,
         TextSize=19,
         TextStrokeTransparency=0,
         ZIndex=102
@@ -2181,7 +2203,7 @@ function Nexora.CreateMain(config)
         Text="Nexora Hub",
         TextColor3=Color3.fromRGB(255, 255, 255),
         TextSize=13,
-        Font=Enum.Font.Code,
+        Font=Enum.Font.GothamMedium,
         TextXAlignment=Enum.TextXAlignment.Left,
         ZIndex=101
     }, reopen)
@@ -2358,7 +2380,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
     local sidebar = make("Frame", {Name="Sidebar", Position=UDim2.new(0,0,0,HEADER_H), Size=UDim2.new(0,SIDEBAR_W,1,-HEADER_H), BackgroundColor3=Color3.fromRGB(9,9,12), BorderSizePixel=0}, shell)
     make("Frame", {Position=UDim2.new(1,-1,0,0), Size=UDim2.new(0,1,1,0), BackgroundColor3=C.line, BorderSizePixel=0}, sidebar)
     make("UIStroke", {Color=Color3.fromRGB(245,245,245), Transparency=0.94, Thickness=1}, sidebar)
-    local search = make("TextBox", {Position=UDim2.new(0,12,0,12), Size=UDim2.new(1,-24,0,32), BackgroundColor3=C.bg, BorderSizePixel=0, PlaceholderText="Pesquisar...", Text="", TextColor3=C.text, PlaceholderColor3=C.muted, Font=Enum.Font.SourceSansBold, TextSize=11, ClearTextOnFocus=false}, sidebar); corner(search,7); stroke(search,C.line)
+    local search = make("TextBox", {Position=UDim2.new(0,12,0,12), Size=UDim2.new(1,-24,0,32), BackgroundColor3=C.bg, BorderSizePixel=0, PlaceholderText="Pesquisar...", Text="", TextColor3=C.text, PlaceholderColor3=C.muted, Font=Enum.Font.Gotham, TextSize=11, ClearTextOnFocus=false}, sidebar); corner(search,7); stroke(search,C.line)
     local nav = make("ScrollingFrame", {Position=UDim2.new(0,8,0,54), Size=UDim2.new(1,-16,1,-62), BackgroundTransparency=1, BorderSizePixel=0, ScrollBarThickness=2, ScrollBarImageColor3=C.gold, CanvasSize=UDim2.new()}, sidebar)
     local navLayout = make("UIListLayout", {Padding=UDim.new(0,5), SortOrder=Enum.SortOrder.LayoutOrder}, nav)
     navLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
@@ -2373,7 +2395,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
         content.Size = UDim2.new(1, sidebarOpen and -SIDEBAR_W or 0, 1, -HEADER_H)
     end)
     -- Alça de redimensionamento no canto inferior direito (mouse e toque).
-    local grip = make("TextButton", {Name="ResizeGrip", AnchorPoint=Vector2.new(1,1), Position=UDim2.new(1,-4,1,-4), Size=UDim2.new(0,22,0,22), BackgroundColor3=C.panel2, BorderSizePixel=0, Text="◢", TextColor3=C.gold, Font=Enum.Font.Fantasy, TextSize=14, AutoButtonColor=false}, shell)
+    local grip = make("TextButton", {Name="ResizeGrip", AnchorPoint=Vector2.new(1,1), Position=UDim2.new(1,-4,1,-4), Size=UDim2.new(0,22,0,22), BackgroundColor3=C.panel2, BorderSizePixel=0, Text="◢", TextColor3=C.gold, Font=Enum.Font.GothamBold, TextSize=14, AutoButtonColor=false}, shell)
     corner(grip, 5)
     local resizing, resizeStart, sizeStart = false, nil, nil
     grip.InputBegan:Connect(function(input)
@@ -2490,7 +2512,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
         corner(nb, 8)
         local bar = make("Frame", {Name="Bar", Position=UDim2.new(0,0,0,7), Size=UDim2.new(0,3,1,-14), BackgroundColor3=GOLD, BorderSizePixel=0, Visible=false}, nb); corner(bar, 2)
             do local ic = drawIcon(nb, iconKind(navText)); tintIcon(ic, GRAY, 0.4) end
-        make("TextLabel", {Name="Txt", BackgroundTransparency=1, Position=UDim2.new(0,46,0,0), Size=UDim2.new(1,-52,1,0), Text=navText, TextColor3=GRAY, Font=Enum.Font.Fantasy, TextSize=12, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd}, nb)
+        make("TextLabel", {Name="Txt", BackgroundTransparency=1, Position=UDim2.new(0,46,0,0), Size=UDim2.new(1,-52,1,0), Text=navText, TextColor3=GRAY, Font=Enum.Font.GothamBold, TextSize=12, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd}, nb)
         nb.MouseEnter:Connect(function() if not nb:GetAttribute("NexoraActive") then nb.BackgroundTransparency = 0.55 end end)
         nb.MouseLeave:Connect(function() if not nb:GetAttribute("NexoraActive") then nb.BackgroundTransparency = 1 end end)
         navButtons[p]=nb
@@ -2502,7 +2524,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
             corner(card,10); stroke(card,C.line,0.35)
             make("UIPadding", {PaddingTop=UDim.new(0,11),PaddingBottom=UDim.new(0,11),PaddingLeft=UDim.new(0,11),PaddingRight=UDim.new(0,11)}, card)
             local list=make("UIListLayout", {Padding=UDim.new(0,7),SortOrder=Enum.SortOrder.LayoutOrder}, card)
-            local head=make("TextLabel", {Size=UDim2.new(1,0,0,22),BackgroundTransparency=1,Text=sectionName,TextColor3=Color3.fromRGB(245,245,250),Font=Enum.Font.Fantasy,TextSize=12,TextXAlignment=Enum.TextXAlignment.Left},card)
+            local head=make("TextLabel", {Size=UDim2.new(1,0,0,22),BackgroundTransparency=1,Text=sectionName,TextColor3=Color3.fromRGB(245,245,250),Font=Enum.Font.GothamBold,TextSize=12,TextXAlignment=Enum.TextXAlignment.Left},card)
             make("UIPadding", {PaddingLeft=UDim.new(0,10)}, head)
             do local hb=make("Frame", {Position=UDim2.new(0,-10,.5,-7),Size=UDim2.new(0,3,0,14),BackgroundColor3=C.gold,BorderSizePixel=0},head); corner(hb,2) end
             make("Frame", {Size=UDim2.new(1,0,0,1), BackgroundColor3=Color3.fromRGB(255,255,255), BackgroundTransparency=0.92, BorderSizePixel=0}, card)
@@ -2520,7 +2542,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
                 local r=row(35); local txt=label(make("Frame",{Size=UDim2.new(1,-62,1,0),BackgroundTransparency=1},r),t,12,C.text)
                 local b=button(r,"",24); b:SetAttribute("NexoraKeepColor", true)
                 b.Size=UDim2.new(0,44,0,24); b.Position=UDim2.new(1,-44,.5,-12)
-                local bc=b:FindFirstChildOfClass("UICorner"); if bc then bc.CornerRadius = UDim.new(0, 22) end
+                local bc=b:FindFirstChildOfClass("UICorner"); if bc then bc.CornerRadius=UDim.new(0,12) end
                 local bs=make("UIStroke",{Color=C.line,Thickness=1,Transparency=0.2},b)
                 local knob=make("Frame",{Size=UDim2.new(0,18,0,18),Position=UDim2.new(0,3,.5,-9),BackgroundColor3=Color3.fromRGB(165,160,149),BorderSizePixel=0,ZIndex=2},b); corner(knob,9)
                 local function paint(animate)
@@ -2550,7 +2572,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
                 return opt
             end
             function Section.CreateButton(cfg, callback)
-                cfg=cfg or {}; local t=cfg.Title or "Button"; local b=button(card,t,34); b.TextColor3=C.goldLight; b.Font=Enum.Font.Fantasy; stroke(b,C.line,0.25); addOption(t,"button",false,pageName,sectionName,callback); b.MouseButton1Click:Connect(function() if callback then task.spawn(callback) end end); return b
+                cfg=cfg or {}; local t=cfg.Title or "Button"; local b=button(card,t,34); b.TextColor3=C.goldLight; b.Font=Enum.Font.GothamBold; stroke(b,C.line,0.25); addOption(t,"button",false,pageName,sectionName,callback); b.MouseButton1Click:Connect(function() if callback then task.spawn(callback) end end); return b
             end
             function Section.CreateLabel(cfg)
                 local t=type(cfg)=="table" and (cfg.Title or cfg.Text or "") or tostring(cfg or "")
@@ -2714,7 +2736,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
                 local t = cfg.Title or "Text input"
                 local r = row(58)
                 label(make("Frame", {Size=UDim2.new(1,0,0,20), BackgroundTransparency=1}, r), t, 11, C.text)
-                local input = make("TextBox", {Position=UDim2.new(0,0,0,25), Size=UDim2.new(1,0,0,30), BackgroundColor3=C.bg, BorderSizePixel=0, Text=tostring(cfg.Default or ""), PlaceholderText=cfg.Placeholder or "Digite aqui...", TextColor3=C.text, PlaceholderColor3=C.muted, Font=Enum.Font.SourceSansBold, TextSize=11, ClearTextOnFocus=false}, r)
+                local input = make("TextBox", {Position=UDim2.new(0,0,0,25), Size=UDim2.new(1,0,0,30), BackgroundColor3=C.bg, BorderSizePixel=0, Text=tostring(cfg.Default or ""), PlaceholderText=cfg.Placeholder or "Digite aqui...", TextColor3=C.text, PlaceholderColor3=C.muted, Font=Enum.Font.Gotham, TextSize=11, ClearTextOnFocus=false}, r)
                 corner(input, 7); stroke(input, C.line)
                 local opt = addOption(t, "box", input.Text, pageName, sectionName, callback)
                 local function setText(v, fire)
@@ -2727,7 +2749,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
                 return opt
             end
             function Section.CreateNoti(text, duration)
-                local note=make("TextLabel",{AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-15,1,-15),Size=UDim2.new(0,260,0,48),BackgroundColor3=C.panel,Text=tostring(text),TextColor3=C.text,Font=Enum.Font.SourceSansBold,TextSize=12,TextWrapped=true},gui); corner(note,8); stroke(note,C.gold,0); make("UIStroke", {Color=C.goldLight, Transparency=0.35, Thickness=2}, note); task.delay(duration or 3,function() if note then note:Destroy() end end); return note
+                local note=make("TextLabel",{AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-15,1,-15),Size=UDim2.new(0,260,0,48),BackgroundColor3=C.panel,Text=tostring(text),TextColor3=C.text,Font=Enum.Font.Gotham,TextSize=12,TextWrapped=true},gui); corner(note,8); stroke(note,C.gold,0); make("UIStroke", {Color=C.goldLight, Transparency=0.35, Thickness=2}, note); task.delay(duration or 3,function() if note then note:Destroy() end end); return note
             end
             return Section
         end
@@ -2784,10 +2806,10 @@ local fScale = make("UIScale", {Scale=1}, reopen)
         local iconBg = make("Frame", {BackgroundColor3=Color3.fromRGB(28,28,40), Size=UDim2.new(0,36,0,36), Position=UDim2.new(0,14,0,10), BorderSizePixel=0}, card)
         corner(iconBg, 10)
         make("UIStroke", {Color=Color3.fromRGB(0,140,255), Transparency=0.6, Thickness=1}, iconBg)
-        local iconText = make("TextLabel", {BackgroundTransparency=1, Size=UDim2.new(1,0,1,0), Text="N", TextColor3=Color3.fromRGB(0,140,255), Font=Enum.Font.Arcade, TextSize=20}, iconBg)
+        local iconText = make("TextLabel", {BackgroundTransparency=1, Size=UDim2.new(1,0,1,0), Text="N", TextColor3=Color3.fromRGB(0,140,255), Font=Enum.Font.GothamBlack, TextSize=20}, iconBg)
         make("UIGradient", {Color=ColorSequence.new(Color3.fromRGB(80,180,255), Color3.fromRGB(0,140,255)), Rotation=90}, iconText)
-        make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,62,0,8), Size=UDim2.new(1,-70,0,18), Text=string.upper(title), TextColor3=Color3.fromRGB(255,255,255), Font=Enum.Font.Fantasy, TextSize=12, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd}, card)
-        make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,62,0,28), Size=UDim2.new(1,-70,0,32), Text=desc, TextColor3=Color3.fromRGB(180,190,210), Font=Enum.Font.SourceSansBold, TextSize=11, TextXAlignment=Enum.TextXAlignment.Left, TextYAlignment=Enum.TextYAlignment.Top, TextWrapped=true}, card)
+        make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,62,0,8), Size=UDim2.new(1,-70,0,18), Text=string.upper(title), TextColor3=Color3.fromRGB(255,255,255), Font=Enum.Font.GothamBold, TextSize=12, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd}, card)
+        make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,62,0,28), Size=UDim2.new(1,-70,0,32), Text=desc, TextColor3=Color3.fromRGB(180,190,210), Font=Enum.Font.Gotham, TextSize=11, TextXAlignment=Enum.TextXAlignment.Left, TextYAlignment=Enum.TextYAlignment.Top, TextWrapped=true}, card)
         local progressBg = make("Frame", {BackgroundColor3=Color3.fromRGB(30,30,40), BorderSizePixel=0, Size=UDim2.new(1,-16,0,2), Position=UDim2.new(0,8,1,-6)}, card)
         corner(progressBg, 1)
         local progressBar = make("Frame", {BackgroundColor3=Color3.fromRGB(0,140,255), BorderSizePixel=0, Size=UDim2.new(1,0,1,0)}, progressBg)
@@ -3626,7 +3648,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 			BackgroundTransparency = 1,
 			Text = "SERVER BROWSER",
 			TextColor3 = Q.TEXT_PRI,
-			Font = Enum.Font.Fantasy,
+			Font = Enum.Font.GothamBold,
 			TextSize = 13,
 			TextXAlignment = Enum.TextXAlignment.Left,
 		},
@@ -3640,7 +3662,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 			BackgroundTransparency = 1,
 			Text = "CACHE PAGE \194\183 LOAD MORE \194\183 LOWEST PLAYER / PING",
 			TextColor3 = Q.TEXT_DIM,
-			Font = Enum.Font.SourceSansBold,
+			Font = Enum.Font.Gotham,
 			TextSize = 10,
 			TextXAlignment = Enum.TextXAlignment.Left,
 		},
@@ -3655,7 +3677,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 			BorderSizePixel = 0,
 			Text = "X",
 			TextColor3 = Q.RED,
-			Font = Enum.Font.Fantasy,
+			Font = Enum.Font.GothamBold,
 			TextSize = 11,
 		},
 		f
@@ -3695,7 +3717,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 				BackgroundTransparency = 1,
 				Text = "READY",
 				TextColor3 = Q.TEXT_SEC,
-				Font = Enum.Font.SourceSansBold,
+				Font = Enum.Font.Gotham,
 				TextSize = 11,
 				TextXAlignment = Enum.TextXAlignment.Left,
 			},
@@ -3710,7 +3732,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 				BorderSizePixel = 0,
 				Text = "REFRESH",
 				TextColor3 = Color3.fromRGB(100, 140, 200),
-				Font = Enum.Font.Fantasy,
+				Font = Enum.Font.GothamBold,
 				TextSize = 10,
 			},
 			f
@@ -3726,7 +3748,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 			BorderSizePixel = 0,
 			Text = "LOAD MORE",
 			TextColor3 = Q.GREEN,
-			Font = Enum.Font.Fantasy,
+			Font = Enum.Font.GothamBold,
 			TextSize = 10,
 		},
 		f
@@ -3742,7 +3764,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 			BorderSizePixel = 0,
 			Text = "RESET",
 			TextColor3 = Q.RED,
-			Font = Enum.Font.Fantasy,
+			Font = Enum.Font.GothamBold,
 			TextSize = 10,
 		},
 		f
@@ -3768,7 +3790,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 				BackgroundTransparency = 1,
 				Text = Y,
 				TextColor3 = Q.TEXT_DIM,
-				Font = Enum.Font.Fantasy,
+				Font = Enum.Font.GothamBold,
 				TextSize = 9,
 				TextXAlignment = Enum.TextXAlignment.Left,
 			},
@@ -3822,7 +3844,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 				BackgroundTransparency = 1,
 				Text = "PLACE \194\183 " .. tostring(R),
 				TextColor3 = Q.TEXT_DIM,
-				Font = Enum.Font.SourceSansBold,
+				Font = Enum.Font.Gotham,
 				TextSize = 9,
 				TextXAlignment = Enum.TextXAlignment.Left,
 			},
@@ -3836,7 +3858,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 				BackgroundTransparency = 1,
 				Text = "SHOWING 0 / 0",
 				TextColor3 = Q.TEXT_DIM,
-				Font = Enum.Font.SourceSansBold,
+				Font = Enum.Font.Gotham,
 				TextSize = 9,
 				TextXAlignment = Enum.TextXAlignment.Right,
 			},
@@ -3863,7 +3885,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 				BackgroundTransparency = 1,
 				Text = "SCANNING SERVERS...",
 				TextColor3 = Q.CYAN,
-				Font = Enum.Font.Fantasy,
+				Font = Enum.Font.GothamBold,
 				TextSize = 10,
 				TextXAlignment = Enum.TextXAlignment.Center,
 				TextWrapped = true,
@@ -3893,7 +3915,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 			BackgroundTransparency = 1,
 			Text = "\226\143\179 429 RATE LIMITED \226\128\148 WAITING...",
 			TextColor3 = Q.AMBER,
-			Font = Enum.Font.Fantasy,
+			Font = Enum.Font.GothamBold,
 			TextSize = 10,
 			TextXAlignment = Enum.TextXAlignment.Center,
 			ZIndex = 16,
@@ -3932,7 +3954,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 			BackgroundTransparency = 1,
 			Text = "READY",
 			TextColor3 = Q.CYAN,
-			Font = Enum.Font.Fantasy,
+			Font = Enum.Font.GothamBold,
 			TextSize = 10,
 			TextWrapped = true,
 			ZIndex = 31,
@@ -4107,7 +4129,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 				BackgroundTransparency = 1,
 				Text = string.format("%02d", r),
 				TextColor3 = n and Q.CYAN or Q.TEXT_DIM,
-				Font = Enum.Font.Fantasy,
+				Font = Enum.Font.GothamBold,
 				TextSize = 11,
 				TextXAlignment = Enum.TextXAlignment.Left,
 			},
@@ -4137,7 +4159,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 				BackgroundTransparency = 1,
 				Text = d .. "/" .. I .. " players",
 				TextColor3 = Q.TEXT_DIM,
-				Font = Enum.Font.SourceSansBold,
+				Font = Enum.Font.Gotham,
 				TextSize = 9,
 				TextXAlignment = Enum.TextXAlignment.Left,
 			},
@@ -4151,7 +4173,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 				BackgroundTransparency = 1,
 				Text = tostring(d),
 				TextColor3 = Q.TEXT_PRI,
-				Font = Enum.Font.Fantasy,
+				Font = Enum.Font.GothamBold,
 				TextSize = 15,
 				TextXAlignment = Enum.TextXAlignment.Left,
 			},
@@ -4185,7 +4207,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 				BackgroundTransparency = 1,
 				Text = d .. "ms",
 				TextColor3 = Z(d),
-				Font = Enum.Font.Fantasy,
+				Font = Enum.Font.GothamBold,
 				TextSize = 13,
 				TextXAlignment = Enum.TextXAlignment.Left,
 			},
@@ -4200,7 +4222,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 				BorderSizePixel = 0,
 				Text = "JOIN",
 				TextColor3 = Q.GREEN,
-				Font = Enum.Font.Fantasy,
+				Font = Enum.Font.GothamBold,
 				TextSize = 10,
 			},
 			W
@@ -5211,460 +5233,29 @@ task.spawn(function()
     end
 end)
 
-
--- ===== PATCH AUTO TRANSLATE V2 START =====
--- ============================================================================
--- NEXORA HUB - AUTO TRANSLATE V2 COMPLETO
--- Feito por ViniZDev - Sistema com lista de TODOS os países/línguas
--- Funciona: Primeira vez = Inglês, depois salva a língua escolhida
--- ============================================================================
-
--- COLOQUE ISSO LOGO DEPOIS DO ReadSetting() / Settings = ReadSetting()
-
--- ====== LISTA COMPLETA DE TODAS AS LÍNGUAS DO MUNDO ======
-local LanguageList = {
-    {Name = "Afrikaans - South Africa", Code = "af"},
-    {Name = "Albanian - Albania", Code = "sq"},
-    {Name = "Amharic - Ethiopia", Code = "am"},
-    {Name = "Arabic - Saudi Arabia", Code = "ar"},
-    {Name = "Armenian - Armenia", Code = "hy"},
-    {Name = "Azerbaijani - Azerbaijan", Code = "az"},
-    {Name = "Basque - Spain", Code = "eu"},
-    {Name = "Belarusian - Belarus", Code = "be"},
-    {Name = "Bengali - Bangladesh", Code = "bn"},
-    {Name = "Bosnian - Bosnia", Code = "bs"},
-    {Name = "Bulgarian - Bulgaria", Code = "bg"},
-    {Name = "Catalan - Spain", Code = "ca"},
-    {Name = "Cebuano - Philippines", Code = "ceb"},
-    {Name = "Chinese (Simplified) - China", Code = "zh-CN"},
-    {Name = "Chinese (Traditional) - Taiwan", Code = "zh-TW"},
-    {Name = "Corsican - France", Code = "co"},
-    {Name = "Croatian - Croatia", Code = "hr"},
-    {Name = "Czech - Czech Republic", Code = "cs"},
-    {Name = "Danish - Denmark", Code = "da"},
-    {Name = "Dutch - Netherlands", Code = "nl"},
-    {Name = "English - USA / UK (Default)", Code = "en"},
-    {Name = "Esperanto", Code = "eo"},
-    {Name = "Estonian - Estonia", Code = "et"},
-    {Name = "Finnish - Finland", Code = "fi"},
-    {Name = "French - France", Code = "fr"},
-    {Name = "Frisian - Netherlands", Code = "fy"},
-    {Name = "Galician - Spain", Code = "gl"},
-    {Name = "Georgian - Georgia", Code = "ka"},
-    {Name = "German - Germany", Code = "de"},
-    {Name = "Greek - Greece", Code = "el"},
-    {Name = "Gujarati - India", Code = "gu"},
-    {Name = "Haitian Creole - Haiti", Code = "ht"},
-    {Name = "Hausa - Nigeria", Code = "ha"},
-    {Name = "Hawaiian - USA", Code = "haw"},
-    {Name = "Hebrew - Israel", Code = "he"},
-    {Name = "Hindi - India", Code = "hi"},
-    {Name = "Hmong - China", Code = "hmn"},
-    {Name = "Hungarian - Hungary", Code = "hu"},
-    {Name = "Icelandic - Iceland", Code = "is"},
-    {Name = "Igbo - Nigeria", Code = "ig"},
-    {Name = "Indonesian - Indonesia", Code = "id"},
-    {Name = "Irish - Ireland", Code = "ga"},
-    {Name = "Italian - Italy", Code = "it"},
-    {Name = "Japanese - Japan", Code = "ja"},
-    {Name = "Javanese - Indonesia", Code = "jw"},
-    {Name = "Kannada - India", Code = "kn"},
-    {Name = "Kazakh - Kazakhstan", Code = "kk"},
-    {Name = "Khmer - Cambodia", Code = "km"},
-    {Name = "Kinyarwanda - Rwanda", Code = "rw"},
-    {Name = "Korean - South Korea", Code = "ko"},
-    {Name = "Kurdish - Kurdistan", Code = "ku"},
-    {Name = "Kyrgyz - Kyrgyzstan", Code = "ky"},
-    {Name = "Lao - Laos", Code = "lo"},
-    {Name = "Latin", Code = "la"},
-    {Name = "Latvian - Latvia", Code = "lv"},
-    {Name = "Lithuanian - Lithuania", Code = "lt"},
-    {Name = "Luxembourgish", Code = "lb"},
-    {Name = "Macedonian - North Macedonia", Code = "mk"},
-    {Name = "Malagasy - Madagascar", Code = "mg"},
-    {Name = "Malay - Malaysia", Code = "ms"},
-    {Name = "Malayalam - India", Code = "ml"},
-    {Name = "Maltese - Malta", Code = "mt"},
-    {Name = "Maori - New Zealand", Code = "mi"},
-    {Name = "Marathi - India", Code = "mr"},
-    {Name = "Mongolian - Mongolia", Code = "mn"},
-    {Name = "Myanmar - Burma", Code = "my"},
-    {Name = "Nepali - Nepal", Code = "ne"},
-    {Name = "Norwegian - Norway", Code = "no"},
-    {Name = "Nyanja - Malawi", Code = "ny"},
-    {Name = "Odia - India", Code = "or"},
-    {Name = "Pashto - Afghanistan", Code = "ps"},
-    {Name = "Persian - Iran", Code = "fa"},
-    {Name = "Polish - Poland", Code = "pl"},
-    {Name = "Portuguese - Brazil / Portugal", Code = "pt"},
-    {Name = "Punjabi - India", Code = "pa"},
-    {Name = "Romanian - Romania", Code = "ro"},
-    {Name = "Russian - Russia", Code = "ru"},
-    {Name = "Samoan - Samoa", Code = "sm"},
-    {Name = "Scots Gaelic - Scotland", Code = "gd"},
-    {Name = "Serbian - Serbia", Code = "sr"},
-    {Name = "Sesotho - Lesotho", Code = "st"},
-    {Name = "Shona - Zimbabwe", Code = "sn"},
-    {Name = "Sindhi - Pakistan", Code = "sd"},
-    {Name = "Sinhala - Sri Lanka", Code = "si"},
-    {Name = "Slovak - Slovakia", Code = "sk"},
-    {Name = "Slovenian - Slovenia", Code = "sl"},
-    {Name = "Somali - Somalia", Code = "so"},
-    {Name = "Spanish - Spain / LATAM", Code = "es"},
-    {Name = "Sundanese - Indonesia", Code = "su"},
-    {Name = "Swahili - Tanzania", Code = "sw"},
-    {Name = "Swedish - Sweden", Code = "sv"},
-    {Name = "Tagalog - Philippines", Code = "tl"},
-    {Name = "Tajik - Tajikistan", Code = "tg"},
-    {Name = "Tamil - India", Code = "ta"},
-    {Name = "Tatar - Russia", Code = "tt"},
-    {Name = "Telugu - India", Code = "te"},
-    {Name = "Thai - Thailand", Code = "th"},
-    {Name = "Turkish - Turkey", Code = "tr"},
-    {Name = "Turkmen - Turkmenistan", Code = "tk"},
-    {Name = "Ukrainian - Ukraine", Code = "uk"},
-    {Name = "Urdu - Pakistan", Code = "ur"},
-    {Name = "Uyghur - China", Code = "ug"},
-    {Name = "Uzbek - Uzbekistan", Code = "uz"},
-    {Name = "Vietnamese - Vietnam", Code = "vi"},
-    {Name = "Welsh - Wales", Code = "cy"},
-    {Name = "Xhosa - South Africa", Code = "xh"},
-    {Name = "Yiddish", Code = "yi"},
-    {Name = "Yoruba - Nigeria", Code = "yo"},
-    {Name = "Zulu - South Africa", Code = "zu"},
-}
-
--- Cria lista só com nomes para o Dropdown
-local LanguageNames = {}
-local CodeByName = {}
-local NameByCode = {}
-for _, v in ipairs(LanguageList) do
-    table.insert(LanguageNames, v.Name)
-    CodeByName[v.Name] = v.Code
-    NameByCode[v.Code] = v.Name
-end
-table.sort(LanguageNames)
-
--- ====== CONFIGURAÇÃO INICIAL - PRIMEIRA VEZ INGLÊS ======
-if Settings["Translate Language"] == nil then
-    Settings["Translate Language"] = "English - USA / UK (Default)" -- Nome salvo
-    Settings["Translate Language Code"] = "en" -- Código salvo
-    SaveSettings()
-end
-if Settings["Auto Translate"] == nil then
-    Settings["Auto Translate"] = false
-end
-
--- Garante que tem código
-if Settings["Translate Language Code"] == nil then
-    Settings["Translate Language Code"] = CodeByName[Settings["Translate Language"]] or "en"
-    SaveSettings()
-end
-
--- Variável global da língua atual
-getgenv().NexoraCurrentLangCode = Settings["Translate Language Code"] or "en"
-getgenv().NexoraCurrentLangName = Settings["Translate Language"] or "English - USA / UK (Default)"
-
--- ====== SISTEMA DE CACHE POR LÍNGUA ======
--- Cache agora é separado por língua: Cache[langCode][original] = traduzido
-if not getgenv().NexoraTranslateCache then
-    getgenv().NexoraTranslateCache = {}
-end
-local Cache = getgenv().NexoraTranslateCache
-
--- Função para pegar cache da língua atual
-local function GetCacheForLang(langCode)
-    langCode = langCode or getgenv().NexoraCurrentLangCode or "en"
-    if not Cache[langCode] then
-        Cache[langCode] = {}
-    end
-    return Cache[langCode]
-end
-
--- ====== FUNÇÃO DE TRADUÇÃO MELHORADA ======
--- Esta função substitui a sua translateSingle antiga, já com suporte a qualquer língua
-function translateSingle(text, targetLang)
-    if not text or text == "" then return text, true end
-    targetLang = targetLang or getgenv().NexoraCurrentLangCode or "en"
-    -- Se for inglês, não traduz (original)
-    if targetLang == "en" then return text, true end
-
-    if not http_request and not request then return nil, true end
-    local httpFunc = http_request or request
-
-    local url = string.format(
-        "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=%s&dt=t&q=%s",
-        targetLang,
-        HttpService:UrlEncode(text)
-    )
-
-    local success, response = pcall(function()
-        return httpFunc({ Url = url, Method = "GET" })
-    end)
-
-    if not success or not response then return nil, false end
-    local status = tonumber(response.StatusCode or response.Status or 0) or 0
-    if status == 429 or status >= 500 then return nil, false end
-    if status ~= 0 and status ~= 200 then return nil, false end
-    if not response.Body or response.Body == "" then return nil, false end
-
-    local ok, data = pcall(HttpService.JSONDecode, HttpService, response.Body)
-    if not ok or not data then return nil, false end
-    if data[1] and data[1][1] and data[1][1][1] then
-        return data[1][1][1], true
-    end
-    return nil, true
-end
-
-function batchTranslateParallel(messages, targetLang)
-    targetLang = targetLang or getgenv().NexoraCurrentLangCode or "en"
-    if targetLang == "en" then return messages end -- Inglês = original
-
-    local langCache = GetCacheForLang(targetLang)
-    local results = {}
-    local toTranslate = {}
-    local indices = {}
-
-    for i, msg in ipairs(messages) do
-        if langCache[msg] then
-            results[i] = langCache[msg]
-        else
-            table.insert(toTranslate, msg)
-            table.insert(indices, i)
-        end
-    end
-
-    local total = #toTranslate
-    if total == 0 then return results end
-
-    local MAX_RETRIES = 3
-    local BASE_DELAY = 0.5
-    local active = 0
-    local completed = 0
-    local nextIdx = 1
-
-    local function worker(taskIdx)
-        local original = toTranslate[taskIdx]
-        local resultIdx = indices[taskIdx]
-        local translated
-        for attempt = 1, MAX_RETRIES do
-            local text, done = translateSingle(original, targetLang)
-            if text then translated = text break end
-            if done then break end
-            task.wait(BASE_DELAY * attempt)
-        end
-        if translated then
-            results[resultIdx] = translated
-            langCache[original] = translated
-        else
-            results[resultIdx] = original
-        end
-        active = active - 1
-        completed = completed + 1
-    end
-
-    while completed < total do
-        if active < 5 and nextIdx <= total then
-            active = active + 1
-            local idx = nextIdx
-            nextIdx = nextIdx + 1
-            task.spawn(worker, idx)
-        else
-            task.wait(0.05)
-        end
-    end
-
-    -- Salva cache no arquivo
-    pcall(function()
-        if isfolder and writefile then
-            if not isfolder("Nexora Hub") then makefolder("Nexora Hub") end
-            writefile("Nexora Hub/TranslateCache_"..targetLang..".json", HttpService:JSONEncode(langCache))
-        end
-    end)
-
-    return results
-end
-
--- Função que aplica tradução na GUI toda
-function ApplyCacheToGUI()
-    if not Options then return false end
-    local langCode = getgenv().NexoraCurrentLangCode or "en"
-    if langCode == "en" then
-        -- Se voltou pra inglês, restaura originais? Precisa recarregar UI ou manter backup
-        -- Por simplicidade, não faz nada no en (original já é en)
-        return true
-    end
-    local langCache = GetCacheForLang(langCode)
-    for i, v in next, Options do 
-        if v then
-            local success, getTextFunc = pcall(function() return v.FunctionCreate.GetText end)
-            if success and getTextFunc then
-                local ok, label = pcall(function() return getTextFunc() end)
-                if ok and label and label.ClassName == "TextLabel" then
-                    local text = label.Text
-                    if text and text ~= "" then
-                        local cachedText = langCache[text]
-                        if cachedText and cachedText ~= "" then 
-                            label.Text = cachedText
-                        end
-                    end
-                end
-            end
-        end
-    end
-    return true
-end
-
--- Função principal para traduzir tudo quando muda língua
-function TranslateAllToLanguage(langCode, langName)
-    langCode = langCode or "en"
-    langName = langName or NameByCode[langCode] or langCode
-
-    -- Salva
-    Settings["Translate Language"] = langName
-    Settings["Translate Language Code"] = langCode
-    getgenv().NexoraCurrentLangCode = langCode
-    getgenv().NexoraCurrentLangName = langName
-    SaveSettings("Translate Language", langName)
-    SaveSettings("Translate Language Code", langCode)
-
-    if langCode == "en" then
-        if Main and Main.CreateNoti then
-            Main.CreateNoti({Title="Nexora Hub", Desc="Language set to English (Default)", ShowTime=3})
-        end
-        return
-    end
-
-    if not Settings["Auto Translate"] then
-        if Main and Main.CreateNoti then
-            Main.CreateNoti({Title="Nexora Hub", Desc="Language saved: "..langName..". Enable Auto Translate to apply.", ShowTime=4})
-        end
-        return
-    end
-
-    -- Se auto translate ligado, traduz na hora
-    task.spawn(function()
-        if Main and Main.CreateNoti then
-            Main.CreateNoti({Title="Nexora Hub", Desc="Translating to "..langName.."...", ShowTime=5})
-        end
-
-        -- Coleta todos os textos da UI
-        local allTexts = {}
-        if Options then
-            for _, opt in pairs(Options) do
-                if opt and opt.FunctionCreate and opt.FunctionCreate.GetText then
-                    local ok, lbl = pcall(function() return opt.FunctionCreate.GetText() end)
-                    if ok and lbl and lbl.Text and lbl.Text ~= "" then
-                        table.insert(allTexts, lbl.Text)
-                    end
-                end
-            end
-        end
-
-        if #allTexts > 0 then
-            batchTranslateParallel(allTexts, langCode)
-            ApplyCacheToGUI()
-            task.wait(0.5)
-            ApplyCacheToGUI() -- segunda passada pra garantir
-        end
-
-        if Main and Main.CreateNoti then
-            Main.CreateNoti({Title="Nexora Hub", Desc="Translated to "..langName.."!", ShowTime=3})
-        end
-    end)
-end
-
--- Carrega cache salvo da língua atual ao iniciar
-task.spawn(function()
-    pcall(function()
-        if isfolder and readfile and isfile then
-            local lang = getgenv().NexoraCurrentLangCode or "en"
-            local path = "Nexora Hub/TranslateCache_"..lang..".json"
-            if isfile(path) then
-                local data = HttpService:JSONDecode(readfile(path))
-                if data then
-                    Cache[lang] = data
-                end
-            end
-        end
-    end)
-end)
-
--- ============================================================================
--- AGORA A PARTE DA UI - SUBSTITUA SEU LocalPlayerMain ANTIGO POR ESTE:
--- ============================================================================
-
-
 LocalPlayerMain = Main.CreatePage({ Page_Name = "LocalPlayer", Page_Title = "LocalPlayer" })
 SectionLocalPlayerMain = LocalPlayerMain.CreateSection("Local Player")
-
--- 1. DROPDOWN COM TODAS AS LÍNGUAS
-SectionLocalPlayerMain.CreateDropdown(
-    {
-        Title = "Select Language",
-        Desc = "Choose your language - Saved automatically",
-        List = LanguageNames,
-        Search = true,
-        Default = Settings["Translate Language"] or "English - USA / UK (Default)",
-    },
-    function(selectedName)
-        local code = CodeByName[selectedName] or "en"
-        TranslateAllToLanguage(code, selectedName)
-    end
-)
-
--- 2. TOGGLE AUTO TRANSLATE MELHORADO
 SectionLocalPlayerMain.CreateToggle(
-    {
-        Title = "Auto Translate",
-        Desc = "Auto translate entire script to selected language",
-        Default = Settings["Auto Translate"] or false,
-    },
-    function(K)
-        SaveSettings("Auto Translate", K)
-        if K then
-            -- Ativou: traduz imediatamente para a língua salva
-            local code = Settings["Translate Language Code"] or "en"
-            local name = Settings["Translate Language"] or "English - USA / UK (Default)"
-            if code ~= "en" then
-                TranslateAllToLanguage(code, name)
-            else
-                if Main and Main.CreateNoti then
-                    Main.CreateNoti({Title="Nexora Hub", Desc="Select a language first (not English) to translate", ShowTime=3})
-                end
-            end
-        else
-            if Main and Main.CreateNoti then
-                Main.CreateNoti({Title="Nexora Hub", Desc="Auto Translate Disabled - Back to English", ShowTime=3})
-            end
-        end
-    end
+	{
+		Title = "Auto Translate",
+		Desc = "It may take a bit longer to translate the first time.",
+		Default = Settings["Auto Translate"] or false,
+	},
+	function(K)
+		SaveSettings("Auto Translate", K)
+	end
 )
-
 SectionLocalPlayerMain.CreateButton({ Title = "Stop Tween" }, function()
-    getgenv().noclip = false
-    TweenManager.CancelCurrent()
+	getgenv().noclip = false
+	TweenManager.CancelCurrent()
 end)
-
 SectionLocalPlayerMain.CreateButton({ Title = "Fix UI Button Game" }, function()
-    require(game:GetService("ReplicatedStorage").Modules.LastInput).IsMobile = function()
-        return true
-    end
-    wait(0.5)
-    t.Character.Humanoid.Health = 0
+	require(game:GetService("ReplicatedStorage").Modules.LastInput).IsMobile = function()
+		return true
+	end
+	wait(0.5)
+	t.Character.Humanoid.Health = 0
 end)
-
--- AUTO TRADUÇÃO AO INICIAR SE JÁ ESTIVER ATIVADO E NÃO FOR INGLÊS
-task.spawn(function()
-    repeat task.wait(1) until Options and next(Options) ~= nil
-    task.wait(2)
-    if Settings["Auto Translate"] and Settings["Translate Language Code"] and Settings["Translate Language Code"] ~= "en" then
-        TranslateAllToLanguage(Settings["Translate Language Code"], Settings["Translate Language"])
-    end
-end)
-
--- ===== PATCH AUTO TRANSLATE V2 END =====
-
 SectionLocalPlayerMain.CreateButton({ Title = "Load config in Web" }, function()
 	local K = game:GetService("HttpService")
 	game:GetService("RunService")
@@ -5972,7 +5563,7 @@ SectionLocalPlayerMain.CreateButton({ Title = "Show Item" }, function()
 			L.BackgroundTransparency = 1
 			L.Size = UDim2.new(0.5, 0, 0.5, 0)
 			L.Position = UDim2.new(0.5, 0, 0.5, 0)
-			L.Font = Enum.Font.Fantasy
+			L.Font = Enum.Font.GothamBold
 			L.TextColor3 = Color3.fromRGB(255, 255, 255)
 			L.TextSize = 10
 			L.TextXAlignment = Enum.TextXAlignment.Right
@@ -25784,79 +25375,25 @@ SettingsAimbotSection.CreateToggle(
 	end
 )
 function ClosestPartaimbot()
-	-- V65 - ULTRA CONFIÁVEL - Player mais próximo, sempre mira
-	local closestDist, closestTarget = math.huge, nil
-	local localPlayer = game.Players.LocalPlayer
-	local localChar = localPlayer.Character or workspace:FindFirstChild(localPlayer.Name) or game.Players.LocalPlayer.Character
-	local localRoot = localChar and (localChar:FindFirstChild("HumanoidRootPart") or localChar:FindFirstChild("Torso") or localChar:FindFirstChild("UpperTorso"))
-	if not localRoot then
-		-- Tenta pegar via PrimaryPart ou GetPivot
-		pcall(function()
-			if localChar and localChar.PrimaryPart then
-				localRoot = localChar.PrimaryPart
-			end
-		end)
-	end
-	if not localRoot then return nil end
-	
-	-- Função para verificar e adicionar target
-	local function checkChar(char)
-		if not char or not char:IsA("Model") then return end
-		if char.Name == localPlayer.Name then return end
-		local hrp = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
-		local hum = char:FindFirstChildOfClass("Humanoid") or char:FindFirstChild("Humanoid")
-		if not hrp then return end
-		if hum and hum.Health <= 0 then return end
-		-- Team check - mais flexível
-		local enemyPlayer = game.Players:FindFirstChild(char.Name)
-		if enemyPlayer and localPlayer.Team and enemyPlayer.Team and localPlayer.Team ~= game.Teams.Pirates then
-			if enemyPlayer.Team == localPlayer.Team then
-				return -- Mesmo time, ignora
-			end
-		end
-		local dist = (localRoot.Position - hrp.Position).Magnitude
-		if dist < closestDist then
-			closestDist = dist
-			closestTarget = char
-		end
-	end
-	
-	-- Procura em workspace.Characters
-	pcall(function()
-		local charsFolder = workspace:FindFirstChild("Characters") or game.Workspace.Characters
-		if charsFolder then
-			for _, char in pairs(charsFolder:GetChildren()) do
-				checkChar(char)
-			end
-		end
-	end)
-	
-	-- Fallback: procura em Players se não achou
-	if not closestTarget then
-		pcall(function()
-			for _, plr in pairs(game.Players:GetPlayers()) do
-				if plr.Name ~= localPlayer.Name then
-					local char = plr.Character or workspace:FindFirstChild(plr.Name) or (workspace.Characters and workspace.Characters:FindFirstChild(plr.Name))
-					if char then
-						checkChar(char)
-					end
+	local b, s = 1 / 0
+	for X, g in pairs(game.Workspace.Characters:GetChildren()) do
+		if g:IsA("Model") then
+			if
+				g.Name ~= t.Name
+				and (
+					game.Players.LocalPlayer.Team == game.Teams.Marines
+						and game.Players[g.Name].Team ~= game.Teams.Marines
+					or game.Players.LocalPlayer.Team ~= game.Teams.Marines
+				)
+			then
+				X = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - g.HumanoidRootPart.Position).Magnitude
+				if X < b then
+					b, s = X, g
 				end
 			end
-		end)
+		end
 	end
-	
-	-- Fallback 2: procura direto no workspace
-	if not closestTarget then
-		pcall(function()
-			for _, obj in pairs(workspace:GetChildren()) do
-				if obj:IsA("Model") and game.Players:FindFirstChild(obj.Name) then
-					checkChar(obj)
-				end
-			end
-		end)
-	end
-	
-	return closestTarget
+	return s
 end
 SettingsAimbotSection.CreateToggle(
 	{ Title = "Auto Aimbot", Desc = nil, Default = Settings["Auto Aimbot"] or false },
@@ -25868,80 +25405,20 @@ SettingsAimbotSection.CreateToggle(
 						if Settings["Select Method Aimbot"] == "Select Player" then
 							local s, s =
 								workspace.CurrentCamera, game.Workspace.Characters[Settings["Select Player PVP"]]
-							-- AIMBOT V65 ULTRA CONFIÁVEL - Sempre mira no mais próximo
-							pcall(function()
-								local hrp = s:FindFirstChild("HumanoidRootPart") or s:FindFirstChild("Torso") or s:FindFirstChild("UpperTorso")
-								local head = s:FindFirstChild("Head")
-								local upperTorso = s:FindFirstChild("UpperTorso") or s:FindFirstChild("Torso")
-								local hum = s:FindFirstChildOfClass("Humanoid")
-								if hrp then
-									local targetPart = head or upperTorso or hrp
-									local vel = hrp.Velocity
-									local moveDir = hum and hum.MoveDirection or Vector3.new(0,0,0)
-									local ping = 0
-									pcall(function()
-										ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
-									end)
-									local predictionFactor = 0.4 + ping * 1.5
-									local predictedPos = targetPart.Position + (vel * predictionFactor)
-									if moveDir.Magnitude > 0.1 then
-										predictedPos = predictedPos + (moveDir * 2.5)
-									end
-									if vel.Y > 8 or vel.Y < -8 then
-										predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.2, 0)
-									end
-									if getgenv().LastAimPos then
-										predictedPos = getgenv().LastAimPos:Lerp(predictedPos, 0.8)
-									end
-									getgenv().LastAimPos = predictedPos
-									G.Hit = CFrame.new(predictedPos)
-									G.Target = s
-									getgenv().AimPos = CFrame.new(predictedPos)
-								else
-									local pos = s:GetPivot().Position
-									G.Hit = CFrame.new(pos)
-									G.Target = s
-									getgenv().AimPos = CFrame.new(pos)
-								end
-							end)
+							G.Hit = s.HumanoidRootPart.CFrame
+							G.Target = s
+							getgenv().AimPos = CFrame.new(
+								s.HumanoidRootPart.CFrame.p,
+								s.HumanoidRootPart.Position + s.HumanoidRootPart.Velocity / 0.5
+							)
 						else
 							local s, s = workspace.CurrentCamera, ClosestPartaimbot()
-							-- AIMBOT V65 ULTRA CONFIÁVEL - Sempre mira no mais próximo
-							pcall(function()
-								local hrp = s:FindFirstChild("HumanoidRootPart") or s:FindFirstChild("Torso") or s:FindFirstChild("UpperTorso")
-								local head = s:FindFirstChild("Head")
-								local upperTorso = s:FindFirstChild("UpperTorso") or s:FindFirstChild("Torso")
-								local hum = s:FindFirstChildOfClass("Humanoid")
-								if hrp then
-									local targetPart = head or upperTorso or hrp
-									local vel = hrp.Velocity
-									local moveDir = hum and hum.MoveDirection or Vector3.new(0,0,0)
-									local ping = 0
-									pcall(function()
-										ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
-									end)
-									local predictionFactor = 0.4 + ping * 1.5
-									local predictedPos = targetPart.Position + (vel * predictionFactor)
-									if moveDir.Magnitude > 0.1 then
-										predictedPos = predictedPos + (moveDir * 2.5)
-									end
-									if vel.Y > 8 or vel.Y < -8 then
-										predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.2, 0)
-									end
-									if getgenv().LastAimPos then
-										predictedPos = getgenv().LastAimPos:Lerp(predictedPos, 0.8)
-									end
-									getgenv().LastAimPos = predictedPos
-									G.Hit = CFrame.new(predictedPos)
-									G.Target = s
-									getgenv().AimPos = CFrame.new(predictedPos)
-								else
-									local pos = s:GetPivot().Position
-									G.Hit = CFrame.new(pos)
-									G.Target = s
-									getgenv().AimPos = CFrame.new(pos)
-								end
-							end)
+							G.Hit = s.HumanoidRootPart.CFrame
+							G.Target = s
+							getgenv().AimPos = CFrame.new(
+								s.HumanoidRootPart.CFrame.p,
+								s.HumanoidRootPart.Position + s.HumanoidRootPart.Velocity / 0.5
+							)
 						end
 					end)
 				end
@@ -26144,63 +25621,11 @@ SettingsAimbotSection.CreateToggle(
 local b = require(game:GetService("ReplicatedStorage").Modules.CombatUtil).GetTargetPosition
 require(game:GetService("ReplicatedStorage").Modules.CombatUtil).GetTargetPosition = function(s, X, g, f, R)
 	if Settings["Auto Aimbot Gun"] then
-		local m = nil
-		pcall(function()
-			if Settings["Select Method Aimbot"] == "Select Player" and Settings["Select Player PVP"] then
-				m = game.Workspace.Characters:FindFirstChild(Settings["Select Player PVP"]) or game.Workspace:FindFirstChild(Settings["Select Player PVP"]) or (game.Players:FindFirstChild(Settings["Select Player PVP"]) and game.Players[Settings["Select Player PVP"]].Character)
-			else
-				m = ClosestPartaimbot()
-			end
-		end)
-		if m then
-			local hrp = m:FindFirstChild("HumanoidRootPart") or m:FindFirstChild("Torso") or m:FindFirstChild("UpperTorso")
-			local head = m:FindFirstChild("Head")
-			local upperTorso = m:FindFirstChild("UpperTorso") or m:FindFirstChild("Torso")
-			local hum = m:FindFirstChildOfClass("Humanoid")
-			if hrp then
-				local targetPart = head or upperTorso or hrp
-				local vel = hrp.Velocity
-				local moveDir = hum and hum.MoveDirection or Vector3.new(0,0,0)
-				-- AIMBOT GUN V65 ULTRA CONFIÁVEL - Sempre mira
-				local ping = 0
-				pcall(function()
-					ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
-				end)
-				local dist = 0
-				pcall(function()
-					local localChar = game.Players.LocalPlayer.Character or workspace:FindFirstChild(game.Players.LocalPlayer.Name)
-					local localRoot = localChar and (localChar:FindFirstChild("HumanoidRootPart") or localChar:FindFirstChild("Torso"))
-					if localRoot then
-						dist = (localRoot.Position - hrp.Position).Magnitude
-					end
-				end)
-				local predictionFactor = 0.5 + ping * 1.8 + (dist / 1000) * 0.15
-				local predictedPos = targetPart.Position + (vel * predictionFactor)
-				if moveDir.Magnitude > 0.1 then
-					predictedPos = predictedPos + (moveDir * 4)
-				end
-				if vel.Y > 8 then
-					predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.25, 0)
-				elseif vel.Y < -8 then
-					predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.12, 0)
-				end
-				if head and targetPart == head then
-					predictedPos = predictedPos + Vector3.new(0, 0.3, 0)
-				end
-				if dist > 80 then
-					predictedPos = predictedPos + Vector3.new(0, (dist / 180), 0)
-				end
-				if getgenv().LastGunAimPos then
-					predictedPos = getgenv().LastGunAimPos:Lerp(predictedPos, 0.75)
-				end
-				getgenv().LastGunAimPos = predictedPos
-				return predictedPos
-			else
-				-- Fallback se não tem HRP
-				pcall(function()
-					return m:GetPivot().Position
-				end)
-			end
+		local m = if Settings["Select Method Aimbot"] == "Select Player"
+			then game.Workspace.Characters[Settings["Select Player PVP"]]
+			else (ClosestPartaimbot())
+		if m and (m:FindFirstChild("HumanoidRootPart")) then
+			return m.HumanoidRootPart.Position
 		end
 	end
 	return b(s, X, g, f, R)
@@ -27250,45 +26675,12 @@ do
 					else (ClosestPartaimbot())
 				if T and (T:FindFirstChild("HumanoidRootPart")) then
 					local b = workspace.CurrentCamera
-					
-					-- AIMBOT V65 ULTRA CONFIÁVEL - Sempre mira, fallback garantido
-					pcall(function()
-						local hrp = T:FindFirstChild("HumanoidRootPart") or T:FindFirstChild("Torso") or T:FindFirstChild("UpperTorso")
-						local head = T:FindFirstChild("Head")
-						local upperTorso = T:FindFirstChild("UpperTorso") or T:FindFirstChild("Torso")
-						local hum = T:FindFirstChildOfClass("Humanoid")
-						if hrp then
-							local targetPart = head or upperTorso or hrp
-							local vel = hrp.Velocity
-							local moveDir = hum and hum.MoveDirection or Vector3.new(0,0,0)
-							local ping = 0
-							pcall(function()
-								ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
-							end)
-							local predictionFactor = 0.4 + ping * 1.5
-							local predictedPos = targetPart.Position + (vel * predictionFactor)
-							if moveDir.Magnitude > 0.1 then
-								predictedPos = predictedPos + (moveDir * 2.5)
-							end
-							if vel.Y > 8 or vel.Y < -8 then
-								predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.2, 0)
-							end
-							if getgenv().LastAimPos then
-								predictedPos = getgenv().LastAimPos:Lerp(predictedPos, 0.8)
-							end
-							getgenv().LastAimPos = predictedPos
-							G.Hit = CFrame.new(predictedPos)
-							G.Target = T
-							getgenv().AimPos = CFrame.new(predictedPos)
-						else
-							-- Fallback se não tem HRP
-							local pos = T:GetPivot().Position
-							G.Hit = CFrame.new(pos)
-							G.Target = T
-							getgenv().AimPos = CFrame.new(pos)
-						end
-					end)
-
+					G.Hit = T.HumanoidRootPart.CFrame
+					G.Target = T
+					getgenv().AimPos = CFrame.new(
+						T.HumanoidRootPart.Position,
+						T.HumanoidRootPart.Position + T.HumanoidRootPart.Velocity / 0.5
+					)
 				end
 			end
 			local T = t.Character:FindFirstChild("HumanoidRootPart")
@@ -30544,3 +29936,20 @@ function UseDragonstormAllSeaEvents(Part)
 end
 
 print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZDev")
+
+
+pcall(function()
+    task.spawn(function()
+        task.wait(1)
+        local host = (gethui and gethui()) or game:GetService("CoreGui")
+        for _, gui in pairs(host:GetChildren()) do
+            if gui.Name:lower():find("nexora") then
+                for _, v in pairs(gui:GetDescendants()) do
+                    if v:IsA("UICorner") then
+                        v.CornerRadius = UDim.new(0, 22)
+                    end
+                end
+            end
+        end
+    end)
+end)
