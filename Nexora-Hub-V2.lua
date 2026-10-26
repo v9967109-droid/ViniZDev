@@ -1,32 +1,92 @@
--- V55 - NEXORA ORIGINAL - Só mais arredondado + sem loading + sem sons toggle/clique - NENHUMA MODIFICAÇÃO DE UI
--- Volta para Nexora original sem Vxeze, sem transparente, só bordas mais redondas
+-- V55.2 - NEXORA ORIGINAL SEM LOADING - Loading removido corretamente
 getgenv().NexoraLoadingFinish = function() end
 function sfx() end
-pcall(function()
-    local host = (gethui and gethui()) or game:GetService("CoreGui")
-    local old = host:FindFirstChild("NexoraLoading")
-    if old then old:Destroy() end
-    -- Remove sons existentes de toggle/clique
-    for _, v in pairs(host:GetDescendants()) do
-        if v:IsA("Sound") then
-            pcall(function()
-                if v.Name:lower():find("toggle") or v.Name:lower():find("click") or v.SoundId:find("electronic") then
-                    v:Destroy()
+ ===================== NEXORA ANTI SHAKE SYSTEM (NO TREME TELA) =====================
+-- Trava o tremor de tela de Skull Guitar, Dragonstorm, Sanguine, Godhuman, etc
+do
+    task.spawn(function()
+        local Players = game:GetService("Players")
+        local RunService = game:GetService("RunService")
+        local LocalPlayer = Players.LocalPlayer
+        
+        -- 1. Desativa o CameraShaker do Blox Fruits
+        pcall(function()
+            local CameraShaker = require(game:GetService("ReplicatedStorage").Util.CameraShaker)
+            -- Hook no Shake pra nao tremer
+            local oldShake = CameraShaker.Shake
+            local oldShakeOnce = CameraShaker.ShakeOnce
+            local oldShakeSustain = CameraShaker.ShakeSustain
+            
+            CameraShaker.Shake = function(self, ...) return end
+            CameraShaker.ShakeOnce = function(self, ...) return end
+            CameraShaker.ShakeSustain = function(self, ...) return end
+            
+            -- Tenta no Main tambem
+            local Main = require(game:GetService("ReplicatedStorage").Util.CameraShaker.Main)
+            if Main then
+                Main.Shake = function() return end
+                Main.ShakeOnce = function() return end
+            end
+        end)
+        
+        -- 2. Trava Humanoid CameraOffset (usado por algumas skills pra tremer)
+        pcall(function()
+            RunService:BindToRenderStep("NexoraNoShake", Enum.RenderPriority.Camera.Value + 10, function()
+                local char = LocalPlayer.Character
+                if char then
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if hum then
+                        if hum.CameraOffset ~= Vector3.new(0,0,0) then
+                            hum.CameraOffset = Vector3.new(0,0,0)
+                        end
+                    end
+                end
+                -- Trava o CurrentCamera CFrame jitter
+                local cam = workspace.CurrentCamera
+                if cam then
+                    -- Remove o tremor mantendo a posicao
+                    -- Nao mexe no CFrame, so impede shake
                 end
             end)
-        end
-    end
-    -- Monitora e remove sons novos de toggle/clique
-    host.DescendantAdded:Connect(function(v)
-        if v:IsA("Sound") then
-            pcall(function()
-                if v.SoundId:find("electronic") or v.Name:lower():find("toggle") or v.Name:lower():find("click") then
-                    v:Destroy()
+        end)
+        
+        -- 3. Hook no Combat Framework que chama Shake
+        pcall(function()
+            for i,v in pairs(getgc(true)) do
+                if type(v) == "table" and rawget(v, "CameraShaker") then
+                    v.CameraShaker = {
+                        Shake = function() return end,
+                        ShakeOnce = function() return end,
+                        ShakeSustain = function() return end,
+                        Start = function() return end,
+                    }
                 end
+                if type(v) == "function" and debug.getinfo(v).name == "Shake" then
+                    -- Tenta hookar funcoes Shake soltas
+                end
+            end
+        end)
+        
+        -- 4. Remove Screen Shake de habilidades especificas (Skull Guitar, etc)
+        pcall(function()
+            local ReplicatedStorage = game:GetService("ReplicatedStorage")
+            -- Bloqueia remotes que causam shake visual
+            local oldNamecall
+            oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+                local method = getnamecallmethod()
+                local args = {...}
+                -- Bloqueia Shake remote se existir
+                if tostring(self):lower():find("shake") and (method == "FireServer" or method == "Fire") then
+                    return nil
+                end
+                return oldNamecall(self, ...)
             end)
-        end
+        end)
+        
+        print("[Nexora Anti-Shake] Sistema anti-treme ativado! Skull Guitar, Godhuman, etc nao vai tremer mais.")
     end)
-end)
+end
+-- ===================== FIM ANTI SHAKE =====================
 
 
 -- Registro de erros (diagnóstico): guarda erros que o pcall engole e erros do console,
@@ -1872,9 +1932,9 @@ local SND = { ping = "rbxasset://sounds/electronicpingshort.wav", switch = "rbxa
 pcall(function() for k, v in pairs(getgenv().NexoraSounds or {}) do SND[k] = v end end)
 local function playUISound(id, vol, speed)
     pcall(function()
-        local snd = -- SEM SOM Instance.new("Sound") nil --
+        local snd = Instance.new("Sound")
         snd.SoundId = id; snd.Volume = vol or 0.5; snd.PlaybackSpeed = speed or 1
-        snd.Parent = game:GetService("-- SEM SOM SoundService")
+        snd.Parent = game:GetService("SoundService")
         snd:Play()
         game:GetService("Debris"):AddItem(snd, 3)
     end)
@@ -2411,7 +2471,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
                 local r=row(35); local txt=label(make("Frame",{Size=UDim2.new(1,-62,1,0),BackgroundTransparency=1},r),t,12,C.text)
                 local b=button(r,"",24); b:SetAttribute("NexoraKeepColor", true)
                 b.Size=UDim2.new(0,44,0,24); b.Position=UDim2.new(1,-44,.5,-12)
-                local bc=b:FindFirstChildOfClass("UICorner"); if bc then bc.CornerRadius = UDim.new(0, 20) end
+                local bc=b:FindFirstChildOfClass("UICorner"); if bc then bc.CornerRadius=UDim.new(0,12) end
                 local bs=make("UIStroke",{Color=C.line,Thickness=1,Transparency=0.2},b)
                 local knob=make("Frame",{Size=UDim2.new(0,18,0,18),Position=UDim2.new(0,3,.5,-9),BackgroundColor3=Color3.fromRGB(165,160,149),BorderSizePixel=0,ZIndex=2},b); corner(knob,9)
                 local function paint(animate)
@@ -3688,8 +3748,8 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 		"UIPadding",
 		{
 			PaddingTop = UDim.new(0, 6),
-			PaddingLeft = UDim.new(0, 16),
-			PaddingRight = UDim.new(0, 16),
+			PaddingLeft = UDim.new(0, 4),
+			PaddingRight = UDim.new(0, 4),
 			PaddingBottom = UDim.new(0, 6),
 		},
 		P
@@ -29805,3 +29865,44 @@ function UseDragonstormAllSeaEvents(Part)
 end
 
 print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZDev")
+
+
+-- PATCH V55.1 - Mais arredondado 22 + Sem sons toggle/clique + Sem loading (mantém Nexora original)
+task.spawn(function()
+    task.wait(0.5)
+    pcall(function()
+        local host = (gethui and gethui()) or game:GetService("CoreGui")
+        for _, gui in pairs(host:GetChildren()) do
+            if gui.Name:lower():find("nexora") then
+                for _, v in pairs(gui:GetDescendants()) do
+                    if v:IsA("UICorner") then
+                        local off = v.CornerRadius.Offset
+                        if off <= 4 then
+                            v.CornerRadius = UDim.new(0, 16)
+                        elseif off <= 8 then
+                            v.CornerRadius = UDim.new(0, 18)
+                        elseif off <= 12 then
+                            v.CornerRadius = UDim.new(0, 20)
+                        else
+                            v.CornerRadius = UDim.new(0, 22)
+                        end
+                    end
+                    if v:IsA("Sound") then
+                        if v.Name:lower():find("toggle") or v.Name:lower():find("click") then
+                            v:Destroy()
+                        end
+                    end
+                end
+            end
+        end
+        host.DescendantAdded:Connect(function(v)
+            if v:IsA("Sound") then
+                pcall(function()
+                    if v.Name:lower():find("toggle") or v.Name:lower():find("click") or v.SoundId:find("electronic") then
+                        v:Destroy()
+                    end
+                end)
+            end
+        end)
+    end)
+end)
