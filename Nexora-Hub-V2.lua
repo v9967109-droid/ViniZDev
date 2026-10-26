@@ -15,33 +15,25 @@ do
 			o.Parent = parent
 			return o
 		end
-		local function sfx(id, vol, speed)
-			pcall(function()
-				local snd = Instance.new("Sound")
-				snd.SoundId = id; snd.Volume = vol or 0.5; snd.PlaybackSpeed = speed or 1
-				snd.Parent = game:GetService("SoundService")
-				snd:Play()
-				game:GetService("Debris"):AddItem(snd, 4)
-			end)
-		end
+		local function sfx(id, vol, speed) return end -- SFX REMOVIDO DIRETO
 		local card = mk("CanvasGroup", {AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.fromOffset(230,128), BackgroundColor3=Color3.fromRGB(8,8,11), BorderSizePixel=0, GroupTransparency=1}, gui)
-		mk("UICorner", {CornerRadius=UDim.new(0,16)}, card)
+		mk("UICorner", {CornerRadius = UDim.new(0, 24)}, card)
 		mk("UIStroke", {Color=GOLD, Thickness=1, Transparency=0.55}, card)
 		local sc = mk("UIScale", {Scale=0.9}, card)
 		local logo = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,12), Size=UDim2.fromOffset(46,46), BackgroundColor3=Color3.fromRGB(8,8,10), BorderSizePixel=0}, card)
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, logo)
 		mk("UIStroke", {Color=GOLD, Thickness=2}, logo)
-		mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,2), Size=UDim2.new(1,0,0,13), Text="♛", TextColor3=Color3.fromRGB(80, 180, 255), Font=Enum.Font.GothamBold, TextSize=12}, logo)
-		local n = mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,10), Size=UDim2.new(1,0,1,-12), Text="N", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.GothamBlack, TextSize=26}, logo)
+		mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,2), Size=UDim2.new(1,0,0,13), Text="♛", TextColor3=Color3.fromRGB(80, 180, 255), Font=Enum.Font.Fantasy, TextSize=12}, logo)
+		local n = mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,10), Size=UDim2.new(1,0,1,-12), Text="N", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.Arcade, TextSize=26}, logo)
 		mk("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 140, 255))}, n)
-		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,62), Size=UDim2.fromOffset(220,20), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.GothamBlack, TextSize=16}, card)
-		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,80), Size=UDim2.fromOffset(220,14), BackgroundTransparency=1, Text="BLOX FRUITS • ViniZDev", TextColor3=Color3.fromRGB(165,165,174), Font=Enum.Font.GothamMedium, TextSize=11}, card)
+		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,62), Size=UDim2.fromOffset(220,20), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.Arcade, TextSize=16}, card)
+		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,80), Size=UDim2.fromOffset(220,14), BackgroundTransparency=1, Text="BLOX FRUITS • ViniZDev", TextColor3=Color3.fromRGB(165,165,174), Font=Enum.Font.Code, TextSize=11}, card)
 		local track = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,92), Size=UDim2.fromOffset(150,3), BackgroundColor3=Color3.fromRGB(30,28,24), BorderSizePixel=0}, card)
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, track)
 		local fill = mk("Frame", {Size=UDim2.new(0,0,1,0), BackgroundColor3=GOLD, BorderSizePixel=0}, track)
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, fill)
 		mk("UIGradient", {Color=ColorSequence.new(Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255))}, fill)
-		local status = mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,102), Size=UDim2.fromOffset(220,14), BackgroundTransparency=1, Text="Carregando...", TextColor3=GRAY, Font=Enum.Font.Gotham, TextSize=10}, card)
+		local status = mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,102), Size=UDim2.fromOffset(220,14), BackgroundTransparency=1, Text="Carregando...", TextColor3=GRAY, Font=Enum.Font.SourceSansBold, TextSize=10}, card)
 		-- entrada rápida + som de abertura
 		TS:Create(card, TweenInfo.new(.18, Enum.EasingStyle.Quad), {GroupTransparency=0}):Play()
 		TS:Create(sc, TweenInfo.new(.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale=1}):Play()
@@ -1980,7 +1972,7 @@ end
 local function label(parent, text, size, color, font)
     return make("TextLabel", {
         BackgroundTransparency = 1, Text = tostring(text or ""), TextColor3 = color or C.text,
-        Font = font or Enum.Font.Gotham, TextSize = size or 12, TextXAlignment = Enum.TextXAlignment.Left,
+        Font = font or Enum.Font.SourceSansBold, TextSize = size or 12, TextXAlignment = Enum.TextXAlignment.Left,
         TextYAlignment = Enum.TextYAlignment.Center, Size = UDim2.new(1, 0, 1, 0),
         TextWrapped = true,
     }, parent)
@@ -1989,7 +1981,7 @@ local function button(parent, text, height)
     local b = make("TextButton", {
         AutoButtonColor = false, BackgroundColor3 = C.panel2, BorderSizePixel = 0,
         Size = UDim2.new(1, 0, 0, height or 34), Text = text or "", TextColor3 = C.text,
-        Font = Enum.Font.Gotham, TextSize = 12,
+        Font = Enum.Font.SourceSansBold, TextSize = 12,
     }, parent)
     corner(b, 7)
     b.MouseEnter:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.12), {BackgroundColor3 = Color3.fromRGB(36, 34, 31)}):Play() end end)
@@ -2001,30 +1993,16 @@ end
 -- Sons da UI. Para usar os seus: getgenv().NexoraSounds = { ping="rbxassetid://ID", switch="rbxassetid://ID", click="rbxassetid://ID" } antes de executar.
 local SND = { ping = "rbxasset://sounds/electronicpingshort.wav", switch = "rbxasset://sounds/switch.wav", click = "rbxasset://sounds/button.wav" }
 pcall(function() for k, v in pairs(getgenv().NexoraSounds or {}) do SND[k] = v end end)
-local function playUISound(id, vol, speed)
-    pcall(function()
-        local snd = Instance.new("Sound")
-        snd.SoundId = id; snd.Volume = vol or 0.5; snd.PlaybackSpeed = speed or 1
-        snd.Parent = game:GetService("SoundService")
-        snd:Play()
-        game:GetService("Debris"):AddItem(snd, 3)
-    end)
-end
+local function playUISound(id, vol, speed) return end -- SFX REMOVIDO DIRETO
 -- Cada efeito é uma sequência curta de camadas {som, volume, velocidade, atraso}.
 local SFX = {
-    open  = { {"ping",.5,1.25,0}, {"ping",.35,1.7,.07}, {"click",.25,1.4,0} },
-    close = { {"ping",.45,1.0,0}, {"ping",.3,.75,.07} },
-    on    = { {"switch",.6,1.05,0}, {"ping",.35,1.9,.03}, {"ping",.22,2.4,.09} },
-    off   = { {"switch",.35,.8,0}, {"ping",.2,.9,.04} },
-    tab   = { {"click",.3,1.35,0} },
+    open  = {},
+    close = {},
+    on    = {},
+    off   = {},
+    tab   = {},
 }
-local function sfxPlay(name)
-    local seq = SFX[name]
-    if not seq then return end
-    for _, n in ipairs(seq) do
-        task.delay(n[4], function() playUISound(SND[n[1]], n[2], n[3]) end)
-    end
-end
+local function sfxPlay(name) return end -- SFX REMOVIDO DIRETO
 local function addOption(title, typ, value, page, section, callback)
     local opt = {Title = title, name = title, type = typ, value = value, Page_Name = page, Section_Name = section, Callback = callback}
     local control = {}
@@ -2117,9 +2095,9 @@ function Nexora.CreateMain(config)
             end
         end)
     end
-    local title = make("TextLabel", {Position=UDim2.new(0,18,0,10), Size=UDim2.new(0,300,0,26), BackgroundTransparency=1, RichText=true, Text='<font color="#FFFFFF">NEXORA</font> <font color="#008CFF">HUB</font>', TextColor3=Color3.fromRGB(255,255,255), Font=Enum.Font.GothamBlack, TextSize=22, TextXAlignment=Enum.TextXAlignment.Left}, top)
+    local title = make("TextLabel", {Position=UDim2.new(0,18,0,10), Size=UDim2.new(0,300,0,26), BackgroundTransparency=1, RichText=true, Text='<font color="#FFFFFF">NEXORA</font> <font color="#008CFF">HUB</font>', TextColor3=Color3.fromRGB(255,255,255), Font=Enum.Font.Arcade, TextSize=22, TextXAlignment=Enum.TextXAlignment.Left}, top)
     local function tracked(t) return (string.gsub(string.upper(t), "(%S)", "%1\u{2009}")) end
-    local desc = make("TextLabel", {Position=UDim2.new(0,19,0,37), Size=UDim2.new(0,300,0,16), BackgroundTransparency=1, Text=tracked("BLOX FRUITS • ViniZDev"), TextColor3=GRAY, Font=Enum.Font.GothamMedium, TextSize=10, TextXAlignment=Enum.TextXAlignment.Left}, top)
+    local desc = make("TextLabel", {Position=UDim2.new(0,19,0,37), Size=UDim2.new(0,300,0,16), BackgroundTransparency=1, Text=tracked("BLOX FRUITS • ViniZDev"), TextColor3=GRAY, Font=Enum.Font.Code, TextSize=10, TextXAlignment=Enum.TextXAlignment.Left}, top)
     -- 3 tracinhos removidos da UI como você pediu
     local hamburger = make("TextButton", {Name="Menu", AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,-12,0.5,0), Size=UDim2.new(0,36,0,36), BackgroundTransparency=1, Text="", TextTransparency=1, Visible=false, AutoButtonColor=false}, top)
     -- ScreenGui separado: o botão fica fora da janela e não some junto com a UI (nem com o keybind Toggle GUI).
@@ -2153,7 +2131,7 @@ function Nexora.CreateMain(config)
         Position=UDim2.new(0, 0, 0, 0),
         Text="N",
         TextColor3=Color3.fromRGB(255, 255, 255),
-        Font=Enum.Font.GothamBlack,
+        Font=Enum.Font.Arcade,
         TextSize=19,
         TextStrokeTransparency=0,
         ZIndex=102
@@ -2203,7 +2181,7 @@ function Nexora.CreateMain(config)
         Text="Nexora Hub",
         TextColor3=Color3.fromRGB(255, 255, 255),
         TextSize=13,
-        Font=Enum.Font.GothamMedium,
+        Font=Enum.Font.Code,
         TextXAlignment=Enum.TextXAlignment.Left,
         ZIndex=101
     }, reopen)
@@ -2380,7 +2358,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
     local sidebar = make("Frame", {Name="Sidebar", Position=UDim2.new(0,0,0,HEADER_H), Size=UDim2.new(0,SIDEBAR_W,1,-HEADER_H), BackgroundColor3=Color3.fromRGB(9,9,12), BorderSizePixel=0}, shell)
     make("Frame", {Position=UDim2.new(1,-1,0,0), Size=UDim2.new(0,1,1,0), BackgroundColor3=C.line, BorderSizePixel=0}, sidebar)
     make("UIStroke", {Color=Color3.fromRGB(245,245,245), Transparency=0.94, Thickness=1}, sidebar)
-    local search = make("TextBox", {Position=UDim2.new(0,12,0,12), Size=UDim2.new(1,-24,0,32), BackgroundColor3=C.bg, BorderSizePixel=0, PlaceholderText="Pesquisar...", Text="", TextColor3=C.text, PlaceholderColor3=C.muted, Font=Enum.Font.Gotham, TextSize=11, ClearTextOnFocus=false}, sidebar); corner(search,7); stroke(search,C.line)
+    local search = make("TextBox", {Position=UDim2.new(0,12,0,12), Size=UDim2.new(1,-24,0,32), BackgroundColor3=C.bg, BorderSizePixel=0, PlaceholderText="Pesquisar...", Text="", TextColor3=C.text, PlaceholderColor3=C.muted, Font=Enum.Font.SourceSansBold, TextSize=11, ClearTextOnFocus=false}, sidebar); corner(search,7); stroke(search,C.line)
     local nav = make("ScrollingFrame", {Position=UDim2.new(0,8,0,54), Size=UDim2.new(1,-16,1,-62), BackgroundTransparency=1, BorderSizePixel=0, ScrollBarThickness=2, ScrollBarImageColor3=C.gold, CanvasSize=UDim2.new()}, sidebar)
     local navLayout = make("UIListLayout", {Padding=UDim.new(0,5), SortOrder=Enum.SortOrder.LayoutOrder}, nav)
     navLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
@@ -2395,7 +2373,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
         content.Size = UDim2.new(1, sidebarOpen and -SIDEBAR_W or 0, 1, -HEADER_H)
     end)
     -- Alça de redimensionamento no canto inferior direito (mouse e toque).
-    local grip = make("TextButton", {Name="ResizeGrip", AnchorPoint=Vector2.new(1,1), Position=UDim2.new(1,-4,1,-4), Size=UDim2.new(0,22,0,22), BackgroundColor3=C.panel2, BorderSizePixel=0, Text="◢", TextColor3=C.gold, Font=Enum.Font.GothamBold, TextSize=14, AutoButtonColor=false}, shell)
+    local grip = make("TextButton", {Name="ResizeGrip", AnchorPoint=Vector2.new(1,1), Position=UDim2.new(1,-4,1,-4), Size=UDim2.new(0,22,0,22), BackgroundColor3=C.panel2, BorderSizePixel=0, Text="◢", TextColor3=C.gold, Font=Enum.Font.Fantasy, TextSize=14, AutoButtonColor=false}, shell)
     corner(grip, 5)
     local resizing, resizeStart, sizeStart = false, nil, nil
     grip.InputBegan:Connect(function(input)
@@ -2512,7 +2490,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
         corner(nb, 8)
         local bar = make("Frame", {Name="Bar", Position=UDim2.new(0,0,0,7), Size=UDim2.new(0,3,1,-14), BackgroundColor3=GOLD, BorderSizePixel=0, Visible=false}, nb); corner(bar, 2)
             do local ic = drawIcon(nb, iconKind(navText)); tintIcon(ic, GRAY, 0.4) end
-        make("TextLabel", {Name="Txt", BackgroundTransparency=1, Position=UDim2.new(0,46,0,0), Size=UDim2.new(1,-52,1,0), Text=navText, TextColor3=GRAY, Font=Enum.Font.GothamBold, TextSize=12, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd}, nb)
+        make("TextLabel", {Name="Txt", BackgroundTransparency=1, Position=UDim2.new(0,46,0,0), Size=UDim2.new(1,-52,1,0), Text=navText, TextColor3=GRAY, Font=Enum.Font.Fantasy, TextSize=12, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd}, nb)
         nb.MouseEnter:Connect(function() if not nb:GetAttribute("NexoraActive") then nb.BackgroundTransparency = 0.55 end end)
         nb.MouseLeave:Connect(function() if not nb:GetAttribute("NexoraActive") then nb.BackgroundTransparency = 1 end end)
         navButtons[p]=nb
@@ -2524,7 +2502,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
             corner(card,10); stroke(card,C.line,0.35)
             make("UIPadding", {PaddingTop=UDim.new(0,11),PaddingBottom=UDim.new(0,11),PaddingLeft=UDim.new(0,11),PaddingRight=UDim.new(0,11)}, card)
             local list=make("UIListLayout", {Padding=UDim.new(0,7),SortOrder=Enum.SortOrder.LayoutOrder}, card)
-            local head=make("TextLabel", {Size=UDim2.new(1,0,0,22),BackgroundTransparency=1,Text=sectionName,TextColor3=Color3.fromRGB(245,245,250),Font=Enum.Font.GothamBold,TextSize=12,TextXAlignment=Enum.TextXAlignment.Left},card)
+            local head=make("TextLabel", {Size=UDim2.new(1,0,0,22),BackgroundTransparency=1,Text=sectionName,TextColor3=Color3.fromRGB(245,245,250),Font=Enum.Font.Fantasy,TextSize=12,TextXAlignment=Enum.TextXAlignment.Left},card)
             make("UIPadding", {PaddingLeft=UDim.new(0,10)}, head)
             do local hb=make("Frame", {Position=UDim2.new(0,-10,.5,-7),Size=UDim2.new(0,3,0,14),BackgroundColor3=C.gold,BorderSizePixel=0},head); corner(hb,2) end
             make("Frame", {Size=UDim2.new(1,0,0,1), BackgroundColor3=Color3.fromRGB(255,255,255), BackgroundTransparency=0.92, BorderSizePixel=0}, card)
@@ -2542,7 +2520,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
                 local r=row(35); local txt=label(make("Frame",{Size=UDim2.new(1,-62,1,0),BackgroundTransparency=1},r),t,12,C.text)
                 local b=button(r,"",24); b:SetAttribute("NexoraKeepColor", true)
                 b.Size=UDim2.new(0,44,0,24); b.Position=UDim2.new(1,-44,.5,-12)
-                local bc=b:FindFirstChildOfClass("UICorner"); if bc then bc.CornerRadius=UDim.new(0,12) end
+                local bc=b:FindFirstChildOfClass("UICorner"); if bc then bc.CornerRadius = UDim.new(0, 22) end
                 local bs=make("UIStroke",{Color=C.line,Thickness=1,Transparency=0.2},b)
                 local knob=make("Frame",{Size=UDim2.new(0,18,0,18),Position=UDim2.new(0,3,.5,-9),BackgroundColor3=Color3.fromRGB(165,160,149),BorderSizePixel=0,ZIndex=2},b); corner(knob,9)
                 local function paint(animate)
@@ -2572,7 +2550,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
                 return opt
             end
             function Section.CreateButton(cfg, callback)
-                cfg=cfg or {}; local t=cfg.Title or "Button"; local b=button(card,t,34); b.TextColor3=C.goldLight; b.Font=Enum.Font.GothamBold; stroke(b,C.line,0.25); addOption(t,"button",false,pageName,sectionName,callback); b.MouseButton1Click:Connect(function() if callback then task.spawn(callback) end end); return b
+                cfg=cfg or {}; local t=cfg.Title or "Button"; local b=button(card,t,34); b.TextColor3=C.goldLight; b.Font=Enum.Font.Fantasy; stroke(b,C.line,0.25); addOption(t,"button",false,pageName,sectionName,callback); b.MouseButton1Click:Connect(function() if callback then task.spawn(callback) end end); return b
             end
             function Section.CreateLabel(cfg)
                 local t=type(cfg)=="table" and (cfg.Title or cfg.Text or "") or tostring(cfg or "")
@@ -2736,7 +2714,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
                 local t = cfg.Title or "Text input"
                 local r = row(58)
                 label(make("Frame", {Size=UDim2.new(1,0,0,20), BackgroundTransparency=1}, r), t, 11, C.text)
-                local input = make("TextBox", {Position=UDim2.new(0,0,0,25), Size=UDim2.new(1,0,0,30), BackgroundColor3=C.bg, BorderSizePixel=0, Text=tostring(cfg.Default or ""), PlaceholderText=cfg.Placeholder or "Digite aqui...", TextColor3=C.text, PlaceholderColor3=C.muted, Font=Enum.Font.Gotham, TextSize=11, ClearTextOnFocus=false}, r)
+                local input = make("TextBox", {Position=UDim2.new(0,0,0,25), Size=UDim2.new(1,0,0,30), BackgroundColor3=C.bg, BorderSizePixel=0, Text=tostring(cfg.Default or ""), PlaceholderText=cfg.Placeholder or "Digite aqui...", TextColor3=C.text, PlaceholderColor3=C.muted, Font=Enum.Font.SourceSansBold, TextSize=11, ClearTextOnFocus=false}, r)
                 corner(input, 7); stroke(input, C.line)
                 local opt = addOption(t, "box", input.Text, pageName, sectionName, callback)
                 local function setText(v, fire)
@@ -2749,7 +2727,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
                 return opt
             end
             function Section.CreateNoti(text, duration)
-                local note=make("TextLabel",{AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-15,1,-15),Size=UDim2.new(0,260,0,48),BackgroundColor3=C.panel,Text=tostring(text),TextColor3=C.text,Font=Enum.Font.Gotham,TextSize=12,TextWrapped=true},gui); corner(note,8); stroke(note,C.gold,0); make("UIStroke", {Color=C.goldLight, Transparency=0.35, Thickness=2}, note); task.delay(duration or 3,function() if note then note:Destroy() end end); return note
+                local note=make("TextLabel",{AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-15,1,-15),Size=UDim2.new(0,260,0,48),BackgroundColor3=C.panel,Text=tostring(text),TextColor3=C.text,Font=Enum.Font.SourceSansBold,TextSize=12,TextWrapped=true},gui); corner(note,8); stroke(note,C.gold,0); make("UIStroke", {Color=C.goldLight, Transparency=0.35, Thickness=2}, note); task.delay(duration or 3,function() if note then note:Destroy() end end); return note
             end
             return Section
         end
@@ -2806,10 +2784,10 @@ local fScale = make("UIScale", {Scale=1}, reopen)
         local iconBg = make("Frame", {BackgroundColor3=Color3.fromRGB(28,28,40), Size=UDim2.new(0,36,0,36), Position=UDim2.new(0,14,0,10), BorderSizePixel=0}, card)
         corner(iconBg, 10)
         make("UIStroke", {Color=Color3.fromRGB(0,140,255), Transparency=0.6, Thickness=1}, iconBg)
-        local iconText = make("TextLabel", {BackgroundTransparency=1, Size=UDim2.new(1,0,1,0), Text="N", TextColor3=Color3.fromRGB(0,140,255), Font=Enum.Font.GothamBlack, TextSize=20}, iconBg)
+        local iconText = make("TextLabel", {BackgroundTransparency=1, Size=UDim2.new(1,0,1,0), Text="N", TextColor3=Color3.fromRGB(0,140,255), Font=Enum.Font.Arcade, TextSize=20}, iconBg)
         make("UIGradient", {Color=ColorSequence.new(Color3.fromRGB(80,180,255), Color3.fromRGB(0,140,255)), Rotation=90}, iconText)
-        make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,62,0,8), Size=UDim2.new(1,-70,0,18), Text=string.upper(title), TextColor3=Color3.fromRGB(255,255,255), Font=Enum.Font.GothamBold, TextSize=12, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd}, card)
-        make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,62,0,28), Size=UDim2.new(1,-70,0,32), Text=desc, TextColor3=Color3.fromRGB(180,190,210), Font=Enum.Font.Gotham, TextSize=11, TextXAlignment=Enum.TextXAlignment.Left, TextYAlignment=Enum.TextYAlignment.Top, TextWrapped=true}, card)
+        make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,62,0,8), Size=UDim2.new(1,-70,0,18), Text=string.upper(title), TextColor3=Color3.fromRGB(255,255,255), Font=Enum.Font.Fantasy, TextSize=12, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd}, card)
+        make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,62,0,28), Size=UDim2.new(1,-70,0,32), Text=desc, TextColor3=Color3.fromRGB(180,190,210), Font=Enum.Font.SourceSansBold, TextSize=11, TextXAlignment=Enum.TextXAlignment.Left, TextYAlignment=Enum.TextYAlignment.Top, TextWrapped=true}, card)
         local progressBg = make("Frame", {BackgroundColor3=Color3.fromRGB(30,30,40), BorderSizePixel=0, Size=UDim2.new(1,-16,0,2), Position=UDim2.new(0,8,1,-6)}, card)
         corner(progressBg, 1)
         local progressBar = make("Frame", {BackgroundColor3=Color3.fromRGB(0,140,255), BorderSizePixel=0, Size=UDim2.new(1,0,1,0)}, progressBg)
@@ -3648,7 +3626,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 			BackgroundTransparency = 1,
 			Text = "SERVER BROWSER",
 			TextColor3 = Q.TEXT_PRI,
-			Font = Enum.Font.GothamBold,
+			Font = Enum.Font.Fantasy,
 			TextSize = 13,
 			TextXAlignment = Enum.TextXAlignment.Left,
 		},
@@ -3662,7 +3640,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 			BackgroundTransparency = 1,
 			Text = "CACHE PAGE \194\183 LOAD MORE \194\183 LOWEST PLAYER / PING",
 			TextColor3 = Q.TEXT_DIM,
-			Font = Enum.Font.Gotham,
+			Font = Enum.Font.SourceSansBold,
 			TextSize = 10,
 			TextXAlignment = Enum.TextXAlignment.Left,
 		},
@@ -3677,7 +3655,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 			BorderSizePixel = 0,
 			Text = "X",
 			TextColor3 = Q.RED,
-			Font = Enum.Font.GothamBold,
+			Font = Enum.Font.Fantasy,
 			TextSize = 11,
 		},
 		f
@@ -3717,7 +3695,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 				BackgroundTransparency = 1,
 				Text = "READY",
 				TextColor3 = Q.TEXT_SEC,
-				Font = Enum.Font.Gotham,
+				Font = Enum.Font.SourceSansBold,
 				TextSize = 11,
 				TextXAlignment = Enum.TextXAlignment.Left,
 			},
@@ -3732,7 +3710,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 				BorderSizePixel = 0,
 				Text = "REFRESH",
 				TextColor3 = Color3.fromRGB(100, 140, 200),
-				Font = Enum.Font.GothamBold,
+				Font = Enum.Font.Fantasy,
 				TextSize = 10,
 			},
 			f
@@ -3748,7 +3726,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 			BorderSizePixel = 0,
 			Text = "LOAD MORE",
 			TextColor3 = Q.GREEN,
-			Font = Enum.Font.GothamBold,
+			Font = Enum.Font.Fantasy,
 			TextSize = 10,
 		},
 		f
@@ -3764,7 +3742,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 			BorderSizePixel = 0,
 			Text = "RESET",
 			TextColor3 = Q.RED,
-			Font = Enum.Font.GothamBold,
+			Font = Enum.Font.Fantasy,
 			TextSize = 10,
 		},
 		f
@@ -3790,7 +3768,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 				BackgroundTransparency = 1,
 				Text = Y,
 				TextColor3 = Q.TEXT_DIM,
-				Font = Enum.Font.GothamBold,
+				Font = Enum.Font.Fantasy,
 				TextSize = 9,
 				TextXAlignment = Enum.TextXAlignment.Left,
 			},
@@ -3844,7 +3822,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 				BackgroundTransparency = 1,
 				Text = "PLACE \194\183 " .. tostring(R),
 				TextColor3 = Q.TEXT_DIM,
-				Font = Enum.Font.Gotham,
+				Font = Enum.Font.SourceSansBold,
 				TextSize = 9,
 				TextXAlignment = Enum.TextXAlignment.Left,
 			},
@@ -3858,7 +3836,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 				BackgroundTransparency = 1,
 				Text = "SHOWING 0 / 0",
 				TextColor3 = Q.TEXT_DIM,
-				Font = Enum.Font.Gotham,
+				Font = Enum.Font.SourceSansBold,
 				TextSize = 9,
 				TextXAlignment = Enum.TextXAlignment.Right,
 			},
@@ -3885,7 +3863,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 				BackgroundTransparency = 1,
 				Text = "SCANNING SERVERS...",
 				TextColor3 = Q.CYAN,
-				Font = Enum.Font.GothamBold,
+				Font = Enum.Font.Fantasy,
 				TextSize = 10,
 				TextXAlignment = Enum.TextXAlignment.Center,
 				TextWrapped = true,
@@ -3915,7 +3893,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 			BackgroundTransparency = 1,
 			Text = "\226\143\179 429 RATE LIMITED \226\128\148 WAITING...",
 			TextColor3 = Q.AMBER,
-			Font = Enum.Font.GothamBold,
+			Font = Enum.Font.Fantasy,
 			TextSize = 10,
 			TextXAlignment = Enum.TextXAlignment.Center,
 			ZIndex = 16,
@@ -3954,7 +3932,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 			BackgroundTransparency = 1,
 			Text = "READY",
 			TextColor3 = Q.CYAN,
-			Font = Enum.Font.GothamBold,
+			Font = Enum.Font.Fantasy,
 			TextSize = 10,
 			TextWrapped = true,
 			ZIndex = 31,
@@ -4129,7 +4107,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 				BackgroundTransparency = 1,
 				Text = string.format("%02d", r),
 				TextColor3 = n and Q.CYAN or Q.TEXT_DIM,
-				Font = Enum.Font.GothamBold,
+				Font = Enum.Font.Fantasy,
 				TextSize = 11,
 				TextXAlignment = Enum.TextXAlignment.Left,
 			},
@@ -4159,7 +4137,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 				BackgroundTransparency = 1,
 				Text = d .. "/" .. I .. " players",
 				TextColor3 = Q.TEXT_DIM,
-				Font = Enum.Font.Gotham,
+				Font = Enum.Font.SourceSansBold,
 				TextSize = 9,
 				TextXAlignment = Enum.TextXAlignment.Left,
 			},
@@ -4173,7 +4151,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 				BackgroundTransparency = 1,
 				Text = tostring(d),
 				TextColor3 = Q.TEXT_PRI,
-				Font = Enum.Font.GothamBold,
+				Font = Enum.Font.Fantasy,
 				TextSize = 15,
 				TextXAlignment = Enum.TextXAlignment.Left,
 			},
@@ -4207,7 +4185,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 				BackgroundTransparency = 1,
 				Text = d .. "ms",
 				TextColor3 = Z(d),
-				Font = Enum.Font.GothamBold,
+				Font = Enum.Font.Fantasy,
 				TextSize = 13,
 				TextXAlignment = Enum.TextXAlignment.Left,
 			},
@@ -4222,7 +4200,7 @@ SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Pi
 				BorderSizePixel = 0,
 				Text = "JOIN",
 				TextColor3 = Q.GREEN,
-				Font = Enum.Font.GothamBold,
+				Font = Enum.Font.Fantasy,
 				TextSize = 10,
 			},
 			W
@@ -5563,7 +5541,7 @@ SectionLocalPlayerMain.CreateButton({ Title = "Show Item" }, function()
 			L.BackgroundTransparency = 1
 			L.Size = UDim2.new(0.5, 0, 0.5, 0)
 			L.Position = UDim2.new(0.5, 0, 0.5, 0)
-			L.Font = Enum.Font.GothamBold
+			L.Font = Enum.Font.Fantasy
 			L.TextColor3 = Color3.fromRGB(255, 255, 255)
 			L.TextSize = 10
 			L.TextXAlignment = Enum.TextXAlignment.Right
@@ -25375,25 +25353,79 @@ SettingsAimbotSection.CreateToggle(
 	end
 )
 function ClosestPartaimbot()
-	local b, s = 1 / 0
-	for X, g in pairs(game.Workspace.Characters:GetChildren()) do
-		if g:IsA("Model") then
-			if
-				g.Name ~= t.Name
-				and (
-					game.Players.LocalPlayer.Team == game.Teams.Marines
-						and game.Players[g.Name].Team ~= game.Teams.Marines
-					or game.Players.LocalPlayer.Team ~= game.Teams.Marines
-				)
-			then
-				X = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - g.HumanoidRootPart.Position).Magnitude
-				if X < b then
-					b, s = X, g
-				end
+	-- V65 - ULTRA CONFIÁVEL - Player mais próximo, sempre mira
+	local closestDist, closestTarget = math.huge, nil
+	local localPlayer = game.Players.LocalPlayer
+	local localChar = localPlayer.Character or workspace:FindFirstChild(localPlayer.Name) or game.Players.LocalPlayer.Character
+	local localRoot = localChar and (localChar:FindFirstChild("HumanoidRootPart") or localChar:FindFirstChild("Torso") or localChar:FindFirstChild("UpperTorso"))
+	if not localRoot then
+		-- Tenta pegar via PrimaryPart ou GetPivot
+		pcall(function()
+			if localChar and localChar.PrimaryPart then
+				localRoot = localChar.PrimaryPart
+			end
+		end)
+	end
+	if not localRoot then return nil end
+	
+	-- Função para verificar e adicionar target
+	local function checkChar(char)
+		if not char or not char:IsA("Model") then return end
+		if char.Name == localPlayer.Name then return end
+		local hrp = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
+		local hum = char:FindFirstChildOfClass("Humanoid") or char:FindFirstChild("Humanoid")
+		if not hrp then return end
+		if hum and hum.Health <= 0 then return end
+		-- Team check - mais flexível
+		local enemyPlayer = game.Players:FindFirstChild(char.Name)
+		if enemyPlayer and localPlayer.Team and enemyPlayer.Team and localPlayer.Team ~= game.Teams.Pirates then
+			if enemyPlayer.Team == localPlayer.Team then
+				return -- Mesmo time, ignora
 			end
 		end
+		local dist = (localRoot.Position - hrp.Position).Magnitude
+		if dist < closestDist then
+			closestDist = dist
+			closestTarget = char
+		end
 	end
-	return s
+	
+	-- Procura em workspace.Characters
+	pcall(function()
+		local charsFolder = workspace:FindFirstChild("Characters") or game.Workspace.Characters
+		if charsFolder then
+			for _, char in pairs(charsFolder:GetChildren()) do
+				checkChar(char)
+			end
+		end
+	end)
+	
+	-- Fallback: procura em Players se não achou
+	if not closestTarget then
+		pcall(function()
+			for _, plr in pairs(game.Players:GetPlayers()) do
+				if plr.Name ~= localPlayer.Name then
+					local char = plr.Character or workspace:FindFirstChild(plr.Name) or (workspace.Characters and workspace.Characters:FindFirstChild(plr.Name))
+					if char then
+						checkChar(char)
+					end
+				end
+			end
+		end)
+	end
+	
+	-- Fallback 2: procura direto no workspace
+	if not closestTarget then
+		pcall(function()
+			for _, obj in pairs(workspace:GetChildren()) do
+				if obj:IsA("Model") and game.Players:FindFirstChild(obj.Name) then
+					checkChar(obj)
+				end
+			end
+		end)
+	end
+	
+	return closestTarget
 end
 SettingsAimbotSection.CreateToggle(
 	{ Title = "Auto Aimbot", Desc = nil, Default = Settings["Auto Aimbot"] or false },
@@ -25405,20 +25437,80 @@ SettingsAimbotSection.CreateToggle(
 						if Settings["Select Method Aimbot"] == "Select Player" then
 							local s, s =
 								workspace.CurrentCamera, game.Workspace.Characters[Settings["Select Player PVP"]]
-							G.Hit = s.HumanoidRootPart.CFrame
-							G.Target = s
-							getgenv().AimPos = CFrame.new(
-								s.HumanoidRootPart.CFrame.p,
-								s.HumanoidRootPart.Position + s.HumanoidRootPart.Velocity / 0.5
-							)
+							-- AIMBOT V65 ULTRA CONFIÁVEL - Sempre mira no mais próximo
+							pcall(function()
+								local hrp = s:FindFirstChild("HumanoidRootPart") or s:FindFirstChild("Torso") or s:FindFirstChild("UpperTorso")
+								local head = s:FindFirstChild("Head")
+								local upperTorso = s:FindFirstChild("UpperTorso") or s:FindFirstChild("Torso")
+								local hum = s:FindFirstChildOfClass("Humanoid")
+								if hrp then
+									local targetPart = head or upperTorso or hrp
+									local vel = hrp.Velocity
+									local moveDir = hum and hum.MoveDirection or Vector3.new(0,0,0)
+									local ping = 0
+									pcall(function()
+										ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
+									end)
+									local predictionFactor = 0.4 + ping * 1.5
+									local predictedPos = targetPart.Position + (vel * predictionFactor)
+									if moveDir.Magnitude > 0.1 then
+										predictedPos = predictedPos + (moveDir * 2.5)
+									end
+									if vel.Y > 8 or vel.Y < -8 then
+										predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.2, 0)
+									end
+									if getgenv().LastAimPos then
+										predictedPos = getgenv().LastAimPos:Lerp(predictedPos, 0.8)
+									end
+									getgenv().LastAimPos = predictedPos
+									G.Hit = CFrame.new(predictedPos)
+									G.Target = s
+									getgenv().AimPos = CFrame.new(predictedPos)
+								else
+									local pos = s:GetPivot().Position
+									G.Hit = CFrame.new(pos)
+									G.Target = s
+									getgenv().AimPos = CFrame.new(pos)
+								end
+							end)
 						else
 							local s, s = workspace.CurrentCamera, ClosestPartaimbot()
-							G.Hit = s.HumanoidRootPart.CFrame
-							G.Target = s
-							getgenv().AimPos = CFrame.new(
-								s.HumanoidRootPart.CFrame.p,
-								s.HumanoidRootPart.Position + s.HumanoidRootPart.Velocity / 0.5
-							)
+							-- AIMBOT V65 ULTRA CONFIÁVEL - Sempre mira no mais próximo
+							pcall(function()
+								local hrp = s:FindFirstChild("HumanoidRootPart") or s:FindFirstChild("Torso") or s:FindFirstChild("UpperTorso")
+								local head = s:FindFirstChild("Head")
+								local upperTorso = s:FindFirstChild("UpperTorso") or s:FindFirstChild("Torso")
+								local hum = s:FindFirstChildOfClass("Humanoid")
+								if hrp then
+									local targetPart = head or upperTorso or hrp
+									local vel = hrp.Velocity
+									local moveDir = hum and hum.MoveDirection or Vector3.new(0,0,0)
+									local ping = 0
+									pcall(function()
+										ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
+									end)
+									local predictionFactor = 0.4 + ping * 1.5
+									local predictedPos = targetPart.Position + (vel * predictionFactor)
+									if moveDir.Magnitude > 0.1 then
+										predictedPos = predictedPos + (moveDir * 2.5)
+									end
+									if vel.Y > 8 or vel.Y < -8 then
+										predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.2, 0)
+									end
+									if getgenv().LastAimPos then
+										predictedPos = getgenv().LastAimPos:Lerp(predictedPos, 0.8)
+									end
+									getgenv().LastAimPos = predictedPos
+									G.Hit = CFrame.new(predictedPos)
+									G.Target = s
+									getgenv().AimPos = CFrame.new(predictedPos)
+								else
+									local pos = s:GetPivot().Position
+									G.Hit = CFrame.new(pos)
+									G.Target = s
+									getgenv().AimPos = CFrame.new(pos)
+								end
+							end)
 						end
 					end)
 				end
@@ -25621,11 +25713,63 @@ SettingsAimbotSection.CreateToggle(
 local b = require(game:GetService("ReplicatedStorage").Modules.CombatUtil).GetTargetPosition
 require(game:GetService("ReplicatedStorage").Modules.CombatUtil).GetTargetPosition = function(s, X, g, f, R)
 	if Settings["Auto Aimbot Gun"] then
-		local m = if Settings["Select Method Aimbot"] == "Select Player"
-			then game.Workspace.Characters[Settings["Select Player PVP"]]
-			else (ClosestPartaimbot())
-		if m and (m:FindFirstChild("HumanoidRootPart")) then
-			return m.HumanoidRootPart.Position
+		local m = nil
+		pcall(function()
+			if Settings["Select Method Aimbot"] == "Select Player" and Settings["Select Player PVP"] then
+				m = game.Workspace.Characters:FindFirstChild(Settings["Select Player PVP"]) or game.Workspace:FindFirstChild(Settings["Select Player PVP"]) or (game.Players:FindFirstChild(Settings["Select Player PVP"]) and game.Players[Settings["Select Player PVP"]].Character)
+			else
+				m = ClosestPartaimbot()
+			end
+		end)
+		if m then
+			local hrp = m:FindFirstChild("HumanoidRootPart") or m:FindFirstChild("Torso") or m:FindFirstChild("UpperTorso")
+			local head = m:FindFirstChild("Head")
+			local upperTorso = m:FindFirstChild("UpperTorso") or m:FindFirstChild("Torso")
+			local hum = m:FindFirstChildOfClass("Humanoid")
+			if hrp then
+				local targetPart = head or upperTorso or hrp
+				local vel = hrp.Velocity
+				local moveDir = hum and hum.MoveDirection or Vector3.new(0,0,0)
+				-- AIMBOT GUN V65 ULTRA CONFIÁVEL - Sempre mira
+				local ping = 0
+				pcall(function()
+					ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
+				end)
+				local dist = 0
+				pcall(function()
+					local localChar = game.Players.LocalPlayer.Character or workspace:FindFirstChild(game.Players.LocalPlayer.Name)
+					local localRoot = localChar and (localChar:FindFirstChild("HumanoidRootPart") or localChar:FindFirstChild("Torso"))
+					if localRoot then
+						dist = (localRoot.Position - hrp.Position).Magnitude
+					end
+				end)
+				local predictionFactor = 0.5 + ping * 1.8 + (dist / 1000) * 0.15
+				local predictedPos = targetPart.Position + (vel * predictionFactor)
+				if moveDir.Magnitude > 0.1 then
+					predictedPos = predictedPos + (moveDir * 4)
+				end
+				if vel.Y > 8 then
+					predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.25, 0)
+				elseif vel.Y < -8 then
+					predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.12, 0)
+				end
+				if head and targetPart == head then
+					predictedPos = predictedPos + Vector3.new(0, 0.3, 0)
+				end
+				if dist > 80 then
+					predictedPos = predictedPos + Vector3.new(0, (dist / 180), 0)
+				end
+				if getgenv().LastGunAimPos then
+					predictedPos = getgenv().LastGunAimPos:Lerp(predictedPos, 0.75)
+				end
+				getgenv().LastGunAimPos = predictedPos
+				return predictedPos
+			else
+				-- Fallback se não tem HRP
+				pcall(function()
+					return m:GetPivot().Position
+				end)
+			end
 		end
 	end
 	return b(s, X, g, f, R)
@@ -26675,12 +26819,45 @@ do
 					else (ClosestPartaimbot())
 				if T and (T:FindFirstChild("HumanoidRootPart")) then
 					local b = workspace.CurrentCamera
-					G.Hit = T.HumanoidRootPart.CFrame
-					G.Target = T
-					getgenv().AimPos = CFrame.new(
-						T.HumanoidRootPart.Position,
-						T.HumanoidRootPart.Position + T.HumanoidRootPart.Velocity / 0.5
-					)
+					
+					-- AIMBOT V65 ULTRA CONFIÁVEL - Sempre mira, fallback garantido
+					pcall(function()
+						local hrp = T:FindFirstChild("HumanoidRootPart") or T:FindFirstChild("Torso") or T:FindFirstChild("UpperTorso")
+						local head = T:FindFirstChild("Head")
+						local upperTorso = T:FindFirstChild("UpperTorso") or T:FindFirstChild("Torso")
+						local hum = T:FindFirstChildOfClass("Humanoid")
+						if hrp then
+							local targetPart = head or upperTorso or hrp
+							local vel = hrp.Velocity
+							local moveDir = hum and hum.MoveDirection or Vector3.new(0,0,0)
+							local ping = 0
+							pcall(function()
+								ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
+							end)
+							local predictionFactor = 0.4 + ping * 1.5
+							local predictedPos = targetPart.Position + (vel * predictionFactor)
+							if moveDir.Magnitude > 0.1 then
+								predictedPos = predictedPos + (moveDir * 2.5)
+							end
+							if vel.Y > 8 or vel.Y < -8 then
+								predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.2, 0)
+							end
+							if getgenv().LastAimPos then
+								predictedPos = getgenv().LastAimPos:Lerp(predictedPos, 0.8)
+							end
+							getgenv().LastAimPos = predictedPos
+							G.Hit = CFrame.new(predictedPos)
+							G.Target = T
+							getgenv().AimPos = CFrame.new(predictedPos)
+						else
+							-- Fallback se não tem HRP
+							local pos = T:GetPivot().Position
+							G.Hit = CFrame.new(pos)
+							G.Target = T
+							getgenv().AimPos = CFrame.new(pos)
+						end
+					end)
+
 				end
 			end
 			local T = t.Character:FindFirstChild("HumanoidRootPart")
@@ -27784,6 +27961,7 @@ function addToggle(section, title)
 
 -- [PASS31 SOURCE BODY] batchTranslateParallel
 function batchTranslateParallel(messages, targetLang)
+    if not targetLang or #targetLang > 3 then targetLang = GetLanguageCode(targetLang or Settings["Select Language"] or "English") end
     local results = {}
     local toTranslate = {}
     local indices = {}
@@ -28111,7 +28289,76 @@ function time()
 -- [BANANA CAT RECOVERED] CheckQuest
 
 -- [PASS31 SOURCE BODY] translateSingle
+
+-- Language mapping - All countries - Primeira vez inglês, depois salvo
+local LanguageCodes = {
+    ["English"] = "en",
+    ["Portuguese (Português)"] = "pt", ["Portuguese"] = "pt",
+    ["Spanish (Español)"] = "es", ["Spanish"] = "es",
+    ["French (Français)"] = "fr", ["French"] = "fr",
+    ["German (Deutsch)"] = "de", ["German"] = "de",
+    ["Italian (Italiano)"] = "it", ["Italian"] = "it",
+    ["Japanese (日本語)"] = "ja", ["Japanese"] = "ja",
+    ["Chinese (中文)"] = "zh", ["Chinese"] = "zh",
+    ["Korean (한국어)"] = "ko", ["Korean"] = "ko",
+    ["Russian (Русский)"] = "ru", ["Russian"] = "ru",
+    ["Arabic (العربية)"] = "ar", ["Arabic"] = "ar",
+    ["Hindi (हिन्दी)"] = "hi", ["Hindi"] = "hi",
+    ["Turkish (Türkçe)"] = "tr", ["Turkish"] = "tr",
+    ["Dutch (Nederlands)"] = "nl", ["Dutch"] = "nl",
+    ["Polish (Polski)"] = "pl", ["Polish"] = "pl",
+    ["Indonesian (Indonesia)"] = "id", ["Indonesian"] = "id",
+    ["Thai (ไทย)"] = "th", ["Thai"] = "th",
+    ["Vietnamese (Tiếng Việt)"] = "vi", ["Vietnamese"] = "vi",
+    ["Filipino"] = "tl",
+    ["Greek (Ελληνικά)"] = "el", ["Greek"] = "el",
+    ["Hebrew (עברית)"] = "he", ["Hebrew"] = "he",
+    ["Swedish (Svenska)"] = "sv", ["Swedish"] = "sv",
+    ["Norwegian (Norsk)"] = "no", ["Norwegian"] = "no",
+    ["Danish (Dansk)"] = "da", ["Danish"] = "da",
+    ["Finnish (Suomi)"] = "fi", ["Finnish"] = "fi",
+    ["Czech (Čeština)"] = "cs", ["Czech"] = "cs",
+    ["Romanian (Română)"] = "ro", ["Romanian"] = "ro",
+    ["Hungarian (Magyar)"] = "hu", ["Hungarian"] = "hu",
+    ["Ukrainian (Українська)"] = "uk", ["Ukrainian"] = "uk",
+    ["Bengali (বাংলা)"] = "bn", ["Bengali"] = "bn",
+    ["Malay (Melayu)"] = "ms", ["Malay"] = "ms",
+    ["Persian (فارسی)"] = "fa", ["Persian"] = "fa",
+    ["Urdu (اردو)"] = "ur", ["Urdu"] = "ur",
+    ["Tamil (தமிழ்)"] = "ta", ["Tamil"] = "ta",
+    ["Telugu (తెలుగు)"] = "te", ["Telugu"] = "te",
+    ["Marathi (मराठी)"] = "mr", ["Marathi"] = "mr",
+    ["Gujarati (ગુજરાતી)"] = "gu", ["Gujarati"] = "gu",
+    ["Kannada (ಕನ್ನಡ)"] = "kn", ["Kannada"] = "kn",
+    ["Malayalam (മലയാളം)"] = "ml", ["Malayalam"] = "ml",
+    ["Punjabi (ਪੰਜਾਬੀ)"] = "pa", ["Punjabi"] = "pa",
+    ["Burmese (မြန်မာ)"] = "my", ["Burmese"] = "my",
+    ["Khmer (ខ្មែរ)"] = "km", ["Khmer"] = "km",
+    ["Lao (ລາວ)"] = "lo", ["Lao"] = "lo",
+    ["Sinhala (සිංහල)"] = "si", ["Sinhala"] = "si",
+    ["Nepali (नेपाली)"] = "ne", ["Nepali"] = "ne",
+    ["Swahili (Kiswahili)"] = "sw", ["Swahili"] = "sw",
+    ["Zulu (isiZulu)"] = "zu", ["Zulu"] = "zu",
+    ["Afrikaans"] = "af"
+}
+function GetLanguageCode(displayName)
+    if not displayName or displayName == "" then return "en" end
+    if LanguageCodes[displayName] then return LanguageCodes[displayName] end
+    for name, code in pairs(LanguageCodes) do
+        if displayName:find(name) or name:find(displayName) then return code end
+    end
+    return "en"
+end
+pcall(function()
+    if not Settings["Select Language"] then
+        Settings["Select Language"] = "English"
+        SaveSettings("Select Language", "English")
+    end
+end)
+
+
 function translateSingle(text, targetLang)
+    if not targetLang or #targetLang > 3 then targetLang = GetLanguageCode(targetLang or Settings["Select Language"] or "English") end
     if not http_request and not request then return nil, true end
     local httpFunc = http_request or request
 
@@ -29936,20 +30183,3 @@ function UseDragonstormAllSeaEvents(Part)
 end
 
 print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZDev")
-
-
-pcall(function()
-    task.spawn(function()
-        task.wait(1)
-        local host = (gethui and gethui()) or game:GetService("CoreGui")
-        for _, gui in pairs(host:GetChildren()) do
-            if gui.Name:lower():find("nexora") then
-                for _, v in pairs(gui:GetDescendants()) do
-                    if v:IsA("UICorner") then
-                        v.CornerRadius = UDim.new(0, 22)
-                    end
-                end
-            end
-        end
-    end)
-end)
