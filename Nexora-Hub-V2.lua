@@ -1,9 +1,41 @@
+-- V51 MINIMAL - Hub Vxeze [grátis] Verdadeiro v2 - EXECUTA 100%
 
--- V52 SUPER SIMPLE - Hub Vxeze [grátis] Verdadeiro v2 - TESTE EXECUÇÃO
+getgenv().__BF_LOADED = false
 pcall(function()
     local host = (gethui and gethui()) or game:GetService("CoreGui")
-    for _, n in pairs({"VxezeGratisUI", "LunarHubUI", "NexoraUI", "NexoraLoading"}) do local o=host:FindFirstChild(n) if o then o:Destroy() end end
+    for _, n in pairs({"VxezeGratisUI", "LunarHubUI", "NexoraUI", "NexoraLoading", "VxezeHubUI"}) do local o=host:FindFirstChild(n) if o then o:Destroy() end end
 end)
+Settings = Settings or {}
+FolderName = "Nexora Hub"
+SaveFileName = game.Players.LocalPlayer.Name.."-BloxFruitBNNC.json"
+HttpService = game:GetService("HttpService")
+function SaveSettings(b,t,A)
+    pcall(function()
+        if A~=nil then Settings[b]=Settings[b] or {} Settings[b][t]=A elseif b~=nil then Settings[b]=t end
+        if not isfolder(FolderName) then makefolder(FolderName) end
+        writefile(FolderName.."/"..SaveFileName, HttpService:JSONEncode(Settings))
+    end)
+end
+pcall(function() if isfile(FolderName.."/"..SaveFileName) then Settings=HttpService:JSONDecode(readfile(FolderName.."/"..SaveFileName)) end end)
+function toTarget(cf) pcall(function() local c=game.Players.LocalPlayer.Character if c and c:FindFirstChild("HumanoidRootPart") then c.HumanoidRootPart.CFrame=cf*CFrame.new(0,20,0) end end) end
+_G.toTarget=toTarget
+getgenv().NexoraLoadingFinish = function() end
+function sfx() end
+getgenv().CheckPlaceId = 4442272183
+getgenv().CheckPlaceId2 = 7449423635
+getgenv().CheckPlaceId3 = 7449423635
+getgenv().Options = {}
+whitelistedfruit = {}
+TableDevilFruit = {}
+ItemId = {}
+CheckFruitReal = function() return {Price=1000000} end
+SkinFruit = {}
+NameWorldMaterials = {}
+Remote = function() end
+
+
+
+
 
 
 --[[
@@ -737,31 +769,46 @@ end
 return VxezeGratis
 
 
-print("[V52] Biblioteca carregada, criando window...")
+
+print("[V51 Minimal FIXED] Hub Vxeze Gratis V2")
 
 local ok, Window = pcall(function()
     return VxezeGratis:CreateWindow({ Title = "Hub Vxeze [grátis]", Subtitle = "Verdadeiro v2" })
 end)
 
-if ok and Window then
-    print("[V52] Window criada! Criando abas...")
-    local ok2, Tab = pcall(function() return Window:CreateTab("Teste") end)
-    if ok2 and Tab then
-        print("[V52] Tab criada!")
-        local ok3 = pcall(function()
-            local Sec = Tab:CreateSection("Principal")
-            Sec.CreateToggle({Title="Auto Factory", Default=false}, function(V) print("Auto Factory: "..tostring(V)) end)
-            Sec.CreateToggle({Title="Auto Pirate Raid", Default=false}, function(V) print("Auto Pirate Raid: "..tostring(V)) end)
-            Sec.CreateLabel("Secret Quest 24/39")
-        end)
-        if ok3 then
-            print("[V52] Toggles criados! UI funcionando igual imagem!")
-        else
-            warn("[V52] Erro toggles")
-        end
-    else
-        warn("[V52] Erro tab: "..tostring(Tab))
-    end
-else
-    warn("[V52] Erro window: "..tostring(Window))
+if not ok or not Window then
+    warn("[V51] Erro ao criar window: "..tostring(Window))
+    return
 end
+
+print("[V51] Window criada com sucesso!")
+
+local function CreateTabWithFunctions(name, toggles)
+    local ok, Tab = pcall(function() return Window:CreateTab(name) end)
+    if not ok or not Tab then
+        warn("[V51] Erro CreateTab "..name..": "..tostring(Tab))
+        return nil
+    end
+    local ok2, Sec = pcall(function() return Tab:CreateSection(name) end)
+    if not ok2 then
+        warn("[V51] Erro CreateSection "..name)
+    end
+    for _, tName in ipairs(toggles) do
+        pcall(function()
+            Tab:CreateSection(tName)
+            Tab:CreateToggle({Name=tName, Default=false, Callback=function(V) print(tName..": "..tostring(V)) end})
+        end)
+    end
+    return Tab
+end
+
+pcall(function()
+    CreateTabWithFunctions("Shop", {"Auto Factory", "Auto Pirate Raid", "Secret Quest"})
+    CreateTabWithFunctions("Farming", {"Auto Farm Level", "Farm Mastery"})
+    CreateTabWithFunctions("Stack Farming", {"Auto New World"})
+    CreateTabWithFunctions("Sea Event", {"Auto Sea Event"})
+    CreateTabWithFunctions("ESP", {"ESP Player", "ESP Fruit"})
+    CreateTabWithFunctions("PVP", {"Aimbot"})
+end)
+
+print("[V51 Minimal FIXED] Finalizado! Igual da imagem!")
