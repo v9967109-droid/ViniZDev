@@ -1,7 +1,79 @@
--- V55.2 - NEXORA ORIGINAL SEM LOADING - Loading removido corretamente
-getgenv().NexoraLoadingFinish = function() end
-function sfx() end
- ===================== NEXORA ANTI SHAKE SYSTEM (NO TREME TELA) =====================
+-- V56.1 - NEXORA ORIGINAL - Mantém loading, mais arredondado 22-28, sem sons toggle/clique - EDITADO NA SOURCE
+-- Tela de carregamento (Nexora Hub): pequena e rápida. O resto do script só roda depois dela terminar.
+do
+	pcall(function()
+		local TS = game:GetService("TweenService")
+		local host = (gethui and gethui()) or game:GetService("CoreGui")
+		local oldLoad = host:FindFirstChild("NexoraLoading")
+		if oldLoad then oldLoad:Destroy() end
+		local gui = Instance.new("ScreenGui")
+		gui.Name = "NexoraLoading"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true; gui.DisplayOrder = 10000
+		gui.Parent = host
+		local GOLD, GOLD_L, GRAY = Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255), Color3.fromRGB(165,165,174)
+		local function mk(class, props, parent)
+			local o = Instance.new(class)
+			for k, v in pairs(props) do o[k] = v end
+			o.Parent = parent
+			return o
+		end
+		local function sfx(id, vol, speed)
+			pcall(function()
+				local snd = Instance.new("Sound")
+				snd.SoundId = id; snd.Volume = vol or 0.5; snd.PlaybackSpeed = speed or 1
+				snd.Parent = game:GetService("SoundService")
+				snd:Play()
+				game:GetService("Debris"):AddItem(snd, 4)
+			end)
+		end
+		local card = mk("CanvasGroup", {AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.fromOffset(230,128), BackgroundColor3=Color3.fromRGB(8,8,11), BorderSizePixel=0, GroupTransparency=1}, gui)
+		mk("UICorner", {CornerRadius = UDim.new(0, 24)}, card)
+		mk("UIStroke", {Color=GOLD, Thickness=1, Transparency=0.55}, card)
+		local sc = mk("UIScale", {Scale=0.9}, card)
+		local logo = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,12), Size=UDim2.fromOffset(46,46), BackgroundColor3=Color3.fromRGB(8,8,10), BorderSizePixel=0}, card)
+		mk("UICorner", {CornerRadius=UDim.new(1,0)}, logo)
+		mk("UIStroke", {Color=GOLD, Thickness=2}, logo)
+		mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,2), Size=UDim2.new(1,0,0,13), Text="♛", TextColor3=Color3.fromRGB(80, 180, 255), Font=Enum.Font.GothamBold, TextSize=12}, logo)
+		local n = mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,10), Size=UDim2.new(1,0,1,-12), Text="N", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.GothamBlack, TextSize=26}, logo)
+		mk("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 140, 255))}, n)
+		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,62), Size=UDim2.fromOffset(220,20), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.GothamBlack, TextSize=16}, card)
+		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,80), Size=UDim2.fromOffset(220,14), BackgroundTransparency=1, Text="BLOX FRUITS • ViniZDev", TextColor3=Color3.fromRGB(165,165,174), Font=Enum.Font.GothamMedium, TextSize=11}, card)
+		local track = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,92), Size=UDim2.fromOffset(150,3), BackgroundColor3=Color3.fromRGB(30,28,24), BorderSizePixel=0}, card)
+		mk("UICorner", {CornerRadius=UDim.new(1,0)}, track)
+		local fill = mk("Frame", {Size=UDim2.new(0,0,1,0), BackgroundColor3=GOLD, BorderSizePixel=0}, track)
+		mk("UICorner", {CornerRadius=UDim.new(1,0)}, fill)
+		mk("UIGradient", {Color=ColorSequence.new(Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255))}, fill)
+		local status = mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,102), Size=UDim2.fromOffset(220,14), BackgroundTransparency=1, Text="Carregando...", TextColor3=GRAY, Font=Enum.Font.Gotham, TextSize=10}, card)
+		-- entrada rápida + som de abertura
+		TS:Create(card, TweenInfo.new(.18, Enum.EasingStyle.Quad), {GroupTransparency=0}):Play()
+		TS:Create(sc, TweenInfo.new(.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale=1}):Play()
+		local PING = "rbxasset://sounds/electronicpingshort.wav"
+		sfx(PING, 0.5, 1.0)
+		task.delay(.09, function() sfx(PING, 0.45, 1.26) end)
+		task.delay(.18, function() sfx(PING, 0.4, 1.5) end)
+		-- progresso curto (~1,3s) bloqueando o resto do script até terminar
+		local steps = { {0,"Carregando..."}, {0.45,"Preparando interface..."}, {0.8,"Quase pronto..."} }
+		local DURATION, startT = 1.3, tick()
+		while true do
+			local p = math.clamp((tick() - startT) / DURATION, 0, 1)
+			fill.Size = UDim2.new(1 - (1 - p) ^ 2, 0, 1, 0)
+			for _, st in ipairs(steps) do if p >= st[1] then status.Text = st[2] end end
+			if p >= 1 then break end
+			task.wait()
+		end
+		status.Text = "Pronto!"
+		sfx(PING, 0.55, 1.5)
+		task.delay(.1, function() sfx(PING, 0.5, 2.0) end)
+		task.wait(0.12)
+		local out = TS:Create(card, TweenInfo.new(.22, Enum.EasingStyle.Quad), {GroupTransparency=1})
+		out:Play()
+		TS:Create(sc, TweenInfo.new(.22, Enum.EasingStyle.Quad), {Scale=0.94}):Play()
+		task.delay(.3, function() gui:Destroy() end)
+	end)
+	-- compatibilidade: o fim do script ainda chama isto, mas a tela já terminou.
+	getgenv().NexoraLoadingFinish = function() end
+end
+
+-- ===================== NEXORA ANTI SHAKE SYSTEM (NO TREME TELA) =====================
 -- Trava o tremor de tela de Skull Guitar, Dragonstorm, Sanguine, Godhuman, etc
 do
     task.spawn(function()
@@ -2471,7 +2543,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
                 local r=row(35); local txt=label(make("Frame",{Size=UDim2.new(1,-62,1,0),BackgroundTransparency=1},r),t,12,C.text)
                 local b=button(r,"",24); b:SetAttribute("NexoraKeepColor", true)
                 b.Size=UDim2.new(0,44,0,24); b.Position=UDim2.new(1,-44,.5,-12)
-                local bc=b:FindFirstChildOfClass("UICorner"); if bc then bc.CornerRadius=UDim.new(0,12) end
+                local bc=b:FindFirstChildOfClass("UICorner"); if bc then bc.CornerRadius = UDim.new(0, 22) end
                 local bs=make("UIStroke",{Color=C.line,Thickness=1,Transparency=0.2},b)
                 local knob=make("Frame",{Size=UDim2.new(0,18,0,18),Position=UDim2.new(0,3,.5,-9),BackgroundColor3=Color3.fromRGB(165,160,149),BorderSizePixel=0,ZIndex=2},b); corner(knob,9)
                 local function paint(animate)
@@ -29867,42 +29939,86 @@ end
 print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZDev")
 
 
--- PATCH V55.1 - Mais arredondado 22 + Sem sons toggle/clique + Sem loading (mantém Nexora original)
+-- PATCH V56 - Mantém tela de carregamento, deixa tudo mais arredondado 22-28, sem sons de toggle/clique
+-- Esse patch é aplicado no final e NÃO quebra a execução
 task.spawn(function()
-    task.wait(0.5)
+    task.wait(1) -- espera hub carregar
     pcall(function()
         local host = (gethui and gethui()) or game:GetService("CoreGui")
+        
+        -- Deixa tudo mais arredondado
         for _, gui in pairs(host:GetChildren()) do
             if gui.Name:lower():find("nexora") then
                 for _, v in pairs(gui:GetDescendants()) do
                     if v:IsA("UICorner") then
                         local off = v.CornerRadius.Offset
                         if off <= 4 then
-                            v.CornerRadius = UDim.new(0, 16)
-                        elseif off <= 8 then
                             v.CornerRadius = UDim.new(0, 18)
-                        elseif off <= 12 then
+                        elseif off <= 8 then
                             v.CornerRadius = UDim.new(0, 20)
-                        else
+                        elseif off <= 12 then
                             v.CornerRadius = UDim.new(0, 22)
-                        end
-                    end
-                    if v:IsA("Sound") then
-                        if v.Name:lower():find("toggle") or v.Name:lower():find("click") then
-                            v:Destroy()
+                        elseif off <= 16 then
+                            v.CornerRadius = UDim.new(0, 24)
+                        else
+                            v.CornerRadius = UDim.new(0, 28)
                         end
                     end
                 end
             end
         end
-        host.DescendantAdded:Connect(function(v)
+        
+        -- Remove sons de toggle/clique existentes
+        for _, v in pairs(host:GetDescendants()) do
             if v:IsA("Sound") then
                 pcall(function()
-                    if v.Name:lower():find("toggle") or v.Name:lower():find("click") or v.SoundId:find("electronic") then
+                    if v.Name:lower():find("toggle") or v.Name:lower():find("click") then
+                        v:Destroy()
+                    end
+                end)
+            end
+        end
+        
+        -- Monitora e remove sons novos de toggle/clique (mantém sons de loading)
+        host.DescendantAdded:Connect(function(v)
+            if v:IsA("Sound") then
+                task.wait(0.05)
+                pcall(function()
+                    -- Só remove se for toggle/clique, NÃO remove electronic (que é do loading)
+                    if v.Name:lower():find("toggle") or v.Name:lower():find("click") then
                         v:Destroy()
                     end
                 end)
             end
         end)
+        
+        -- Silencia função sfx de toggle se existir no global
+        -- Não mexe no sfx local do loading
+        if getgenv().sfx then
+            -- Mantém original mas vamos interceptar toggle sounds via hook se possível
+        end
+        
+        print("[V56] Mais arredondado 22-28 + Sem sons toggle/clique + Tela de carregamento mantida!")
     end)
 end)
+
+-- Sobrescreve sfx global de toggle (se houver) - deixa vazio só para toggle
+local old_sfx = getgenv().sfx
+if old_sfx then
+    getgenv().sfx = function(...)
+        -- Se for chamado com toggle/click, não faz nada
+        -- Se for do loading (electronic), deixa passar
+        local args = {...}
+        local id = tostring(args[1] or "")
+        if id:lower():find("toggle") or id:lower():find("click") then
+            return
+        end
+        -- Para outros sons, chama original se quiser, ou silencia também
+        -- Vamos silenciar toggle/clique mas manter loading
+        if id:find("electronic") then
+            return old_sfx(...)
+        end
+        -- Silencia toggle
+        return
+    end
+end
