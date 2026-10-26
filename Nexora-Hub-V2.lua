@@ -25353,6 +25353,7 @@ SettingsAimbotSection.CreateToggle(
 	end
 )
 function ClosestPartaimbot()
+	-- V64 - PLAYER MAIS PRÓXIMO DE MIM (por distancia, nao por vida)
 	local closestDist, closestTarget = math.huge, nil
 	local localPlayer = game.Players.LocalPlayer
 	local localChar = localPlayer.Character
@@ -25363,7 +25364,7 @@ function ClosestPartaimbot()
 			local hrp = char:FindFirstChild("HumanoidRootPart")
 			local hum = char:FindFirstChildOfClass("Humanoid")
 			if hrp and hum and hum.Health > 0 then
-				-- Team check melhorado
+				-- Team check
 				local enemyPlayer = game.Players:FindFirstChild(char.Name)
 				local isEnemy = true
 				if enemyPlayer and localPlayer.Team and enemyPlayer.Team then
@@ -25372,12 +25373,10 @@ function ClosestPartaimbot()
 					end
 				end
 				if isEnemy then
+					-- Calcula distancia do player mais proximo de mim
 					local dist = (localRoot.Position - hrp.Position).Magnitude
-					-- Prioriza mais perto e com menos vida
-					local healthFactor = hum.Health / hum.MaxHealth
-					local score = dist * (0.5 + healthFactor * 0.5)
-					if score < closestDist then
-						closestDist = score
+					if dist < closestDist then
+						closestDist = dist
 						closestTarget = char
 					end
 				end
@@ -25396,45 +25395,73 @@ SettingsAimbotSection.CreateToggle(
 						if Settings["Select Method Aimbot"] == "Select Player" then
 							local s, s =
 								workspace.CurrentCamera, game.Workspace.Characters[Settings["Select Player PVP"]]
-							-- AIMBOT MELHORADO V62 - Predição avançada + mira na cabeça
-							local targetPart = s:FindFirstChild("Head") or s:FindFirstChild("HumanoidRootPart")
+							-- AIMBOT ULTRA V63 - Predição avançada + ping + anti shake
 							local hrp = s:FindFirstChild("HumanoidRootPart")
-							if targetPart and hrp then
-								-- Predição de velocidade melhorada com ping
+							local head = s:FindFirstChild("Head")
+							local upperTorso = s:FindFirstChild("UpperTorso") or s:FindFirstChild("Torso")
+							local hum = s:FindFirstChildOfClass("Humanoid")
+							if hrp and hum then
+								local targetPart = head or upperTorso or hrp
 								local vel = hrp.Velocity
-								local predictedPos = targetPart.Position + (vel * 0.35) -- 0.35 predição
-								-- Se estiver pulando, ajusta Y
-								if vel.Y > 5 then
-									predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.1, 0)
+								local moveDir = hum.MoveDirection
+								local ping = 0
+								pcall(function()
+									ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
+								end)
+								local predictionFactor = 0.35 + ping * 1.2
+								local predictedPos = targetPart.Position + (vel * predictionFactor)
+								if moveDir.Magnitude > 0.1 then
+									predictedPos = predictedPos + (moveDir * 2)
 								end
+								if vel.Y > 8 or vel.Y < -8 then
+									predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.18, 0)
+								end
+								if getgenv().LastAimPos then
+									predictedPos = getgenv().LastAimPos:Lerp(predictedPos, 0.85)
+								end
+								getgenv().LastAimPos = predictedPos
 								G.Hit = CFrame.new(predictedPos)
 								G.Target = s
 								getgenv().AimPos = CFrame.new(predictedPos)
 							else
 								G.Hit = s.HumanoidRootPart.CFrame
 								G.Target = s
-								getgenv().AimPos = CFrame.new(s.HumanoidRootPart.Position + s.HumanoidRootPart.Velocity * 0.35)
+								getgenv().AimPos = CFrame.new(s.HumanoidRootPart.Position)
 							end
 						else
 							local s, s = workspace.CurrentCamera, ClosestPartaimbot()
-							-- AIMBOT MELHORADO V62 - Predição avançada + mira na cabeça
-							local targetPart = s:FindFirstChild("Head") or s:FindFirstChild("HumanoidRootPart")
+							-- AIMBOT ULTRA V63 - Predição avançada + ping + anti shake
 							local hrp = s:FindFirstChild("HumanoidRootPart")
-							if targetPart and hrp then
-								-- Predição de velocidade melhorada com ping
+							local head = s:FindFirstChild("Head")
+							local upperTorso = s:FindFirstChild("UpperTorso") or s:FindFirstChild("Torso")
+							local hum = s:FindFirstChildOfClass("Humanoid")
+							if hrp and hum then
+								local targetPart = head or upperTorso or hrp
 								local vel = hrp.Velocity
-								local predictedPos = targetPart.Position + (vel * 0.35) -- 0.35 predição
-								-- Se estiver pulando, ajusta Y
-								if vel.Y > 5 then
-									predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.1, 0)
+								local moveDir = hum.MoveDirection
+								local ping = 0
+								pcall(function()
+									ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
+								end)
+								local predictionFactor = 0.35 + ping * 1.2
+								local predictedPos = targetPart.Position + (vel * predictionFactor)
+								if moveDir.Magnitude > 0.1 then
+									predictedPos = predictedPos + (moveDir * 2)
 								end
+								if vel.Y > 8 or vel.Y < -8 then
+									predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.18, 0)
+								end
+								if getgenv().LastAimPos then
+									predictedPos = getgenv().LastAimPos:Lerp(predictedPos, 0.85)
+								end
+								getgenv().LastAimPos = predictedPos
 								G.Hit = CFrame.new(predictedPos)
 								G.Target = s
 								getgenv().AimPos = CFrame.new(predictedPos)
 							else
 								G.Hit = s.HumanoidRootPart.CFrame
 								G.Target = s
-								getgenv().AimPos = CFrame.new(s.HumanoidRootPart.Position + s.HumanoidRootPart.Velocity * 0.35)
+								getgenv().AimPos = CFrame.new(s.HumanoidRootPart.Position)
 							end
 						end
 					end)
@@ -25644,19 +25671,50 @@ require(game:GetService("ReplicatedStorage").Modules.CombatUtil).GetTargetPositi
 		if m then
 			local hrp = m:FindFirstChild("HumanoidRootPart")
 			local head = m:FindFirstChild("Head")
-			local targetPart = head or hrp
-			if targetPart and hrp then
-				-- AIMBOT GUN MELHORADO - Predição + mira cabeça
+			local upperTorso = m:FindFirstChild("UpperTorso") or m:FindFirstChild("Torso")
+			local hum = m:FindFirstChildOfClass("Humanoid")
+			if hrp and hum then
+				local targetPart = head or upperTorso or hrp
 				local vel = hrp.Velocity
-				local predictedPos = targetPart.Position + (vel * 0.45) -- predição maior para gun
-				-- Compensa gravidade e ping
-				if vel.Y > 5 then
-					predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.15, 0)
+				local moveDir = hum.MoveDirection
+				-- AIMBOT GUN ULTRA V63 - Predição extrema + compensação ping + gravidade + balística
+				local ping = 0
+				pcall(function()
+					ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
+				end)
+				local dist = 0
+				pcall(function()
+					local localRoot = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+					if localRoot then
+						dist = (localRoot.Position - hrp.Position).Magnitude
+					end
+				end)
+				-- Predição baseada em distancia + ping + velocidade
+				local predictionFactor = 0.45 + ping * 1.5 + (dist / 1000) * 0.1
+				local predictedPos = targetPart.Position + (vel * predictionFactor)
+				-- Prediz direção do movimento
+				if moveDir.Magnitude > 0.1 then
+					predictedPos = predictedPos + (moveDir * 3.5)
 				end
-				-- Mira na cabeça para mais dano
-				if head then
-					predictedPos = predictedPos + Vector3.new(0, 0.5, 0)
+				-- Compensa pulo/queda
+				if vel.Y > 8 then
+					predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.22, 0)
+				elseif vel.Y < -8 then
+					predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.1, 0)
 				end
+				-- Mira na cabeça sempre para gun (mais dano)
+				if head and targetPart == head then
+					predictedPos = predictedPos + Vector3.new(0, 0.3, 0)
+				end
+				-- Compensa gravidade da bala baseado na distancia
+				if dist > 100 then
+					predictedPos = predictedPos + Vector3.new(0, (dist / 200), 0)
+				end
+				-- Anti shake para gun tambem
+				if getgenv().LastGunAimPos then
+					predictedPos = getgenv().LastGunAimPos:Lerp(predictedPos, 0.8)
+				end
+				getgenv().LastGunAimPos = predictedPos
 				return predictedPos
 			end
 		end
@@ -26709,21 +26767,43 @@ do
 				if T and (T:FindFirstChild("HumanoidRootPart")) then
 					local b = workspace.CurrentCamera
 					
-					local targetPart = T:FindFirstChild("Head") or T:FindFirstChild("HumanoidRootPart")
+					-- AIMBOT ULTRA V63 - Predição avançada com ping + gravidade + mira cabeça
 					local hrp = T:FindFirstChild("HumanoidRootPart")
-					if targetPart and hrp then
+					local head = T:FindFirstChild("Head")
+					local upperTorso = T:FindFirstChild("UpperTorso") or T:FindFirstChild("Torso")
+					local hum = T:FindFirstChildOfClass("Humanoid")
+					if hrp and hum then
+						local targetPart = head or upperTorso or hrp
 						local vel = hrp.Velocity
-						local predictedPos = targetPart.Position + (vel * 0.35)
-						if vel.Y > 5 then
-							predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.1, 0)
+						local moveDir = hum.MoveDirection
+						-- Pega ping do player para compensar
+						local ping = 0
+						pcall(function()
+							ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
+						end)
+						-- Predição ultra com ping + velocidade + direção
+						local predictionFactor = 0.35 + ping * 1.2 -- Compensa ping
+						local predictedPos = targetPart.Position + (vel * predictionFactor)
+						-- Se estiver correndo, prediz mais
+						if moveDir.Magnitude > 0.1 then
+							predictedPos = predictedPos + (moveDir * 2)
 						end
+						-- Ajusta altura se pulando/caindo
+						if vel.Y > 8 or vel.Y < -8 then
+							predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.18, 0)
+						end
+						-- Anti shake - suaviza movimento
+						if getgenv().LastAimPos then
+							predictedPos = getgenv().LastAimPos:Lerp(predictedPos, 0.85)
+						end
+						getgenv().LastAimPos = predictedPos
 						G.Hit = CFrame.new(predictedPos)
 						G.Target = T
 						getgenv().AimPos = CFrame.new(predictedPos)
 					else
 						G.Hit = T.HumanoidRootPart.CFrame
 						G.Target = T
-						getgenv().AimPos = CFrame.new(T.HumanoidRootPart.Position + T.HumanoidRootPart.Velocity * 0.35)
+						getgenv().AimPos = CFrame.new(T.HumanoidRootPart.Position)
 					end
 
 				end
