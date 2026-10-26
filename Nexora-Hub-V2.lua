@@ -5211,29 +5211,460 @@ task.spawn(function()
     end
 end)
 
+
+-- ===== PATCH AUTO TRANSLATE V2 START =====
+-- ============================================================================
+-- NEXORA HUB - AUTO TRANSLATE V2 COMPLETO
+-- Feito por ViniZDev - Sistema com lista de TODOS os países/línguas
+-- Funciona: Primeira vez = Inglês, depois salva a língua escolhida
+-- ============================================================================
+
+-- COLOQUE ISSO LOGO DEPOIS DO ReadSetting() / Settings = ReadSetting()
+
+-- ====== LISTA COMPLETA DE TODAS AS LÍNGUAS DO MUNDO ======
+local LanguageList = {
+    {Name = "Afrikaans - South Africa", Code = "af"},
+    {Name = "Albanian - Albania", Code = "sq"},
+    {Name = "Amharic - Ethiopia", Code = "am"},
+    {Name = "Arabic - Saudi Arabia", Code = "ar"},
+    {Name = "Armenian - Armenia", Code = "hy"},
+    {Name = "Azerbaijani - Azerbaijan", Code = "az"},
+    {Name = "Basque - Spain", Code = "eu"},
+    {Name = "Belarusian - Belarus", Code = "be"},
+    {Name = "Bengali - Bangladesh", Code = "bn"},
+    {Name = "Bosnian - Bosnia", Code = "bs"},
+    {Name = "Bulgarian - Bulgaria", Code = "bg"},
+    {Name = "Catalan - Spain", Code = "ca"},
+    {Name = "Cebuano - Philippines", Code = "ceb"},
+    {Name = "Chinese (Simplified) - China", Code = "zh-CN"},
+    {Name = "Chinese (Traditional) - Taiwan", Code = "zh-TW"},
+    {Name = "Corsican - France", Code = "co"},
+    {Name = "Croatian - Croatia", Code = "hr"},
+    {Name = "Czech - Czech Republic", Code = "cs"},
+    {Name = "Danish - Denmark", Code = "da"},
+    {Name = "Dutch - Netherlands", Code = "nl"},
+    {Name = "English - USA / UK (Default)", Code = "en"},
+    {Name = "Esperanto", Code = "eo"},
+    {Name = "Estonian - Estonia", Code = "et"},
+    {Name = "Finnish - Finland", Code = "fi"},
+    {Name = "French - France", Code = "fr"},
+    {Name = "Frisian - Netherlands", Code = "fy"},
+    {Name = "Galician - Spain", Code = "gl"},
+    {Name = "Georgian - Georgia", Code = "ka"},
+    {Name = "German - Germany", Code = "de"},
+    {Name = "Greek - Greece", Code = "el"},
+    {Name = "Gujarati - India", Code = "gu"},
+    {Name = "Haitian Creole - Haiti", Code = "ht"},
+    {Name = "Hausa - Nigeria", Code = "ha"},
+    {Name = "Hawaiian - USA", Code = "haw"},
+    {Name = "Hebrew - Israel", Code = "he"},
+    {Name = "Hindi - India", Code = "hi"},
+    {Name = "Hmong - China", Code = "hmn"},
+    {Name = "Hungarian - Hungary", Code = "hu"},
+    {Name = "Icelandic - Iceland", Code = "is"},
+    {Name = "Igbo - Nigeria", Code = "ig"},
+    {Name = "Indonesian - Indonesia", Code = "id"},
+    {Name = "Irish - Ireland", Code = "ga"},
+    {Name = "Italian - Italy", Code = "it"},
+    {Name = "Japanese - Japan", Code = "ja"},
+    {Name = "Javanese - Indonesia", Code = "jw"},
+    {Name = "Kannada - India", Code = "kn"},
+    {Name = "Kazakh - Kazakhstan", Code = "kk"},
+    {Name = "Khmer - Cambodia", Code = "km"},
+    {Name = "Kinyarwanda - Rwanda", Code = "rw"},
+    {Name = "Korean - South Korea", Code = "ko"},
+    {Name = "Kurdish - Kurdistan", Code = "ku"},
+    {Name = "Kyrgyz - Kyrgyzstan", Code = "ky"},
+    {Name = "Lao - Laos", Code = "lo"},
+    {Name = "Latin", Code = "la"},
+    {Name = "Latvian - Latvia", Code = "lv"},
+    {Name = "Lithuanian - Lithuania", Code = "lt"},
+    {Name = "Luxembourgish", Code = "lb"},
+    {Name = "Macedonian - North Macedonia", Code = "mk"},
+    {Name = "Malagasy - Madagascar", Code = "mg"},
+    {Name = "Malay - Malaysia", Code = "ms"},
+    {Name = "Malayalam - India", Code = "ml"},
+    {Name = "Maltese - Malta", Code = "mt"},
+    {Name = "Maori - New Zealand", Code = "mi"},
+    {Name = "Marathi - India", Code = "mr"},
+    {Name = "Mongolian - Mongolia", Code = "mn"},
+    {Name = "Myanmar - Burma", Code = "my"},
+    {Name = "Nepali - Nepal", Code = "ne"},
+    {Name = "Norwegian - Norway", Code = "no"},
+    {Name = "Nyanja - Malawi", Code = "ny"},
+    {Name = "Odia - India", Code = "or"},
+    {Name = "Pashto - Afghanistan", Code = "ps"},
+    {Name = "Persian - Iran", Code = "fa"},
+    {Name = "Polish - Poland", Code = "pl"},
+    {Name = "Portuguese - Brazil / Portugal", Code = "pt"},
+    {Name = "Punjabi - India", Code = "pa"},
+    {Name = "Romanian - Romania", Code = "ro"},
+    {Name = "Russian - Russia", Code = "ru"},
+    {Name = "Samoan - Samoa", Code = "sm"},
+    {Name = "Scots Gaelic - Scotland", Code = "gd"},
+    {Name = "Serbian - Serbia", Code = "sr"},
+    {Name = "Sesotho - Lesotho", Code = "st"},
+    {Name = "Shona - Zimbabwe", Code = "sn"},
+    {Name = "Sindhi - Pakistan", Code = "sd"},
+    {Name = "Sinhala - Sri Lanka", Code = "si"},
+    {Name = "Slovak - Slovakia", Code = "sk"},
+    {Name = "Slovenian - Slovenia", Code = "sl"},
+    {Name = "Somali - Somalia", Code = "so"},
+    {Name = "Spanish - Spain / LATAM", Code = "es"},
+    {Name = "Sundanese - Indonesia", Code = "su"},
+    {Name = "Swahili - Tanzania", Code = "sw"},
+    {Name = "Swedish - Sweden", Code = "sv"},
+    {Name = "Tagalog - Philippines", Code = "tl"},
+    {Name = "Tajik - Tajikistan", Code = "tg"},
+    {Name = "Tamil - India", Code = "ta"},
+    {Name = "Tatar - Russia", Code = "tt"},
+    {Name = "Telugu - India", Code = "te"},
+    {Name = "Thai - Thailand", Code = "th"},
+    {Name = "Turkish - Turkey", Code = "tr"},
+    {Name = "Turkmen - Turkmenistan", Code = "tk"},
+    {Name = "Ukrainian - Ukraine", Code = "uk"},
+    {Name = "Urdu - Pakistan", Code = "ur"},
+    {Name = "Uyghur - China", Code = "ug"},
+    {Name = "Uzbek - Uzbekistan", Code = "uz"},
+    {Name = "Vietnamese - Vietnam", Code = "vi"},
+    {Name = "Welsh - Wales", Code = "cy"},
+    {Name = "Xhosa - South Africa", Code = "xh"},
+    {Name = "Yiddish", Code = "yi"},
+    {Name = "Yoruba - Nigeria", Code = "yo"},
+    {Name = "Zulu - South Africa", Code = "zu"},
+}
+
+-- Cria lista só com nomes para o Dropdown
+local LanguageNames = {}
+local CodeByName = {}
+local NameByCode = {}
+for _, v in ipairs(LanguageList) do
+    table.insert(LanguageNames, v.Name)
+    CodeByName[v.Name] = v.Code
+    NameByCode[v.Code] = v.Name
+end
+table.sort(LanguageNames)
+
+-- ====== CONFIGURAÇÃO INICIAL - PRIMEIRA VEZ INGLÊS ======
+if Settings["Translate Language"] == nil then
+    Settings["Translate Language"] = "English - USA / UK (Default)" -- Nome salvo
+    Settings["Translate Language Code"] = "en" -- Código salvo
+    SaveSettings()
+end
+if Settings["Auto Translate"] == nil then
+    Settings["Auto Translate"] = false
+end
+
+-- Garante que tem código
+if Settings["Translate Language Code"] == nil then
+    Settings["Translate Language Code"] = CodeByName[Settings["Translate Language"]] or "en"
+    SaveSettings()
+end
+
+-- Variável global da língua atual
+getgenv().NexoraCurrentLangCode = Settings["Translate Language Code"] or "en"
+getgenv().NexoraCurrentLangName = Settings["Translate Language"] or "English - USA / UK (Default)"
+
+-- ====== SISTEMA DE CACHE POR LÍNGUA ======
+-- Cache agora é separado por língua: Cache[langCode][original] = traduzido
+if not getgenv().NexoraTranslateCache then
+    getgenv().NexoraTranslateCache = {}
+end
+local Cache = getgenv().NexoraTranslateCache
+
+-- Função para pegar cache da língua atual
+local function GetCacheForLang(langCode)
+    langCode = langCode or getgenv().NexoraCurrentLangCode or "en"
+    if not Cache[langCode] then
+        Cache[langCode] = {}
+    end
+    return Cache[langCode]
+end
+
+-- ====== FUNÇÃO DE TRADUÇÃO MELHORADA ======
+-- Esta função substitui a sua translateSingle antiga, já com suporte a qualquer língua
+function translateSingle(text, targetLang)
+    if not text or text == "" then return text, true end
+    targetLang = targetLang or getgenv().NexoraCurrentLangCode or "en"
+    -- Se for inglês, não traduz (original)
+    if targetLang == "en" then return text, true end
+
+    if not http_request and not request then return nil, true end
+    local httpFunc = http_request or request
+
+    local url = string.format(
+        "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=%s&dt=t&q=%s",
+        targetLang,
+        HttpService:UrlEncode(text)
+    )
+
+    local success, response = pcall(function()
+        return httpFunc({ Url = url, Method = "GET" })
+    end)
+
+    if not success or not response then return nil, false end
+    local status = tonumber(response.StatusCode or response.Status or 0) or 0
+    if status == 429 or status >= 500 then return nil, false end
+    if status ~= 0 and status ~= 200 then return nil, false end
+    if not response.Body or response.Body == "" then return nil, false end
+
+    local ok, data = pcall(HttpService.JSONDecode, HttpService, response.Body)
+    if not ok or not data then return nil, false end
+    if data[1] and data[1][1] and data[1][1][1] then
+        return data[1][1][1], true
+    end
+    return nil, true
+end
+
+function batchTranslateParallel(messages, targetLang)
+    targetLang = targetLang or getgenv().NexoraCurrentLangCode or "en"
+    if targetLang == "en" then return messages end -- Inglês = original
+
+    local langCache = GetCacheForLang(targetLang)
+    local results = {}
+    local toTranslate = {}
+    local indices = {}
+
+    for i, msg in ipairs(messages) do
+        if langCache[msg] then
+            results[i] = langCache[msg]
+        else
+            table.insert(toTranslate, msg)
+            table.insert(indices, i)
+        end
+    end
+
+    local total = #toTranslate
+    if total == 0 then return results end
+
+    local MAX_RETRIES = 3
+    local BASE_DELAY = 0.5
+    local active = 0
+    local completed = 0
+    local nextIdx = 1
+
+    local function worker(taskIdx)
+        local original = toTranslate[taskIdx]
+        local resultIdx = indices[taskIdx]
+        local translated
+        for attempt = 1, MAX_RETRIES do
+            local text, done = translateSingle(original, targetLang)
+            if text then translated = text break end
+            if done then break end
+            task.wait(BASE_DELAY * attempt)
+        end
+        if translated then
+            results[resultIdx] = translated
+            langCache[original] = translated
+        else
+            results[resultIdx] = original
+        end
+        active = active - 1
+        completed = completed + 1
+    end
+
+    while completed < total do
+        if active < 5 and nextIdx <= total then
+            active = active + 1
+            local idx = nextIdx
+            nextIdx = nextIdx + 1
+            task.spawn(worker, idx)
+        else
+            task.wait(0.05)
+        end
+    end
+
+    -- Salva cache no arquivo
+    pcall(function()
+        if isfolder and writefile then
+            if not isfolder("Nexora Hub") then makefolder("Nexora Hub") end
+            writefile("Nexora Hub/TranslateCache_"..targetLang..".json", HttpService:JSONEncode(langCache))
+        end
+    end)
+
+    return results
+end
+
+-- Função que aplica tradução na GUI toda
+function ApplyCacheToGUI()
+    if not Options then return false end
+    local langCode = getgenv().NexoraCurrentLangCode or "en"
+    if langCode == "en" then
+        -- Se voltou pra inglês, restaura originais? Precisa recarregar UI ou manter backup
+        -- Por simplicidade, não faz nada no en (original já é en)
+        return true
+    end
+    local langCache = GetCacheForLang(langCode)
+    for i, v in next, Options do 
+        if v then
+            local success, getTextFunc = pcall(function() return v.FunctionCreate.GetText end)
+            if success and getTextFunc then
+                local ok, label = pcall(function() return getTextFunc() end)
+                if ok and label and label.ClassName == "TextLabel" then
+                    local text = label.Text
+                    if text and text ~= "" then
+                        local cachedText = langCache[text]
+                        if cachedText and cachedText ~= "" then 
+                            label.Text = cachedText
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return true
+end
+
+-- Função principal para traduzir tudo quando muda língua
+function TranslateAllToLanguage(langCode, langName)
+    langCode = langCode or "en"
+    langName = langName or NameByCode[langCode] or langCode
+
+    -- Salva
+    Settings["Translate Language"] = langName
+    Settings["Translate Language Code"] = langCode
+    getgenv().NexoraCurrentLangCode = langCode
+    getgenv().NexoraCurrentLangName = langName
+    SaveSettings("Translate Language", langName)
+    SaveSettings("Translate Language Code", langCode)
+
+    if langCode == "en" then
+        if Main and Main.CreateNoti then
+            Main.CreateNoti({Title="Nexora Hub", Desc="Language set to English (Default)", ShowTime=3})
+        end
+        return
+    end
+
+    if not Settings["Auto Translate"] then
+        if Main and Main.CreateNoti then
+            Main.CreateNoti({Title="Nexora Hub", Desc="Language saved: "..langName..". Enable Auto Translate to apply.", ShowTime=4})
+        end
+        return
+    end
+
+    -- Se auto translate ligado, traduz na hora
+    task.spawn(function()
+        if Main and Main.CreateNoti then
+            Main.CreateNoti({Title="Nexora Hub", Desc="Translating to "..langName.."...", ShowTime=5})
+        end
+
+        -- Coleta todos os textos da UI
+        local allTexts = {}
+        if Options then
+            for _, opt in pairs(Options) do
+                if opt and opt.FunctionCreate and opt.FunctionCreate.GetText then
+                    local ok, lbl = pcall(function() return opt.FunctionCreate.GetText() end)
+                    if ok and lbl and lbl.Text and lbl.Text ~= "" then
+                        table.insert(allTexts, lbl.Text)
+                    end
+                end
+            end
+        end
+
+        if #allTexts > 0 then
+            batchTranslateParallel(allTexts, langCode)
+            ApplyCacheToGUI()
+            task.wait(0.5)
+            ApplyCacheToGUI() -- segunda passada pra garantir
+        end
+
+        if Main and Main.CreateNoti then
+            Main.CreateNoti({Title="Nexora Hub", Desc="Translated to "..langName.."!", ShowTime=3})
+        end
+    end)
+end
+
+-- Carrega cache salvo da língua atual ao iniciar
+task.spawn(function()
+    pcall(function()
+        if isfolder and readfile and isfile then
+            local lang = getgenv().NexoraCurrentLangCode or "en"
+            local path = "Nexora Hub/TranslateCache_"..lang..".json"
+            if isfile(path) then
+                local data = HttpService:JSONDecode(readfile(path))
+                if data then
+                    Cache[lang] = data
+                end
+            end
+        end
+    end)
+end)
+
+-- ============================================================================
+-- AGORA A PARTE DA UI - SUBSTITUA SEU LocalPlayerMain ANTIGO POR ESTE:
+-- ============================================================================
+
+
 LocalPlayerMain = Main.CreatePage({ Page_Name = "LocalPlayer", Page_Title = "LocalPlayer" })
 SectionLocalPlayerMain = LocalPlayerMain.CreateSection("Local Player")
-SectionLocalPlayerMain.CreateToggle(
-	{
-		Title = "Auto Translate",
-		Desc = "It may take a bit longer to translate the first time.",
-		Default = Settings["Auto Translate"] or false,
-	},
-	function(K)
-		SaveSettings("Auto Translate", K)
-	end
+
+-- 1. DROPDOWN COM TODAS AS LÍNGUAS
+SectionLocalPlayerMain.CreateDropdown(
+    {
+        Title = "Select Language",
+        Desc = "Choose your language - Saved automatically",
+        List = LanguageNames,
+        Search = true,
+        Default = Settings["Translate Language"] or "English - USA / UK (Default)",
+    },
+    function(selectedName)
+        local code = CodeByName[selectedName] or "en"
+        TranslateAllToLanguage(code, selectedName)
+    end
 )
+
+-- 2. TOGGLE AUTO TRANSLATE MELHORADO
+SectionLocalPlayerMain.CreateToggle(
+    {
+        Title = "Auto Translate",
+        Desc = "Auto translate entire script to selected language",
+        Default = Settings["Auto Translate"] or false,
+    },
+    function(K)
+        SaveSettings("Auto Translate", K)
+        if K then
+            -- Ativou: traduz imediatamente para a língua salva
+            local code = Settings["Translate Language Code"] or "en"
+            local name = Settings["Translate Language"] or "English - USA / UK (Default)"
+            if code ~= "en" then
+                TranslateAllToLanguage(code, name)
+            else
+                if Main and Main.CreateNoti then
+                    Main.CreateNoti({Title="Nexora Hub", Desc="Select a language first (not English) to translate", ShowTime=3})
+                end
+            end
+        else
+            if Main and Main.CreateNoti then
+                Main.CreateNoti({Title="Nexora Hub", Desc="Auto Translate Disabled - Back to English", ShowTime=3})
+            end
+        end
+    end
+)
+
 SectionLocalPlayerMain.CreateButton({ Title = "Stop Tween" }, function()
-	getgenv().noclip = false
-	TweenManager.CancelCurrent()
+    getgenv().noclip = false
+    TweenManager.CancelCurrent()
 end)
+
 SectionLocalPlayerMain.CreateButton({ Title = "Fix UI Button Game" }, function()
-	require(game:GetService("ReplicatedStorage").Modules.LastInput).IsMobile = function()
-		return true
-	end
-	wait(0.5)
-	t.Character.Humanoid.Health = 0
+    require(game:GetService("ReplicatedStorage").Modules.LastInput).IsMobile = function()
+        return true
+    end
+    wait(0.5)
+    t.Character.Humanoid.Health = 0
 end)
+
+-- AUTO TRADUÇÃO AO INICIAR SE JÁ ESTIVER ATIVADO E NÃO FOR INGLÊS
+task.spawn(function()
+    repeat task.wait(1) until Options and next(Options) ~= nil
+    task.wait(2)
+    if Settings["Auto Translate"] and Settings["Translate Language Code"] and Settings["Translate Language Code"] ~= "en" then
+        TranslateAllToLanguage(Settings["Translate Language Code"], Settings["Translate Language"])
+    end
+end)
+
+-- ===== PATCH AUTO TRANSLATE V2 END =====
+
 SectionLocalPlayerMain.CreateButton({ Title = "Load config in Web" }, function()
 	local K = game:GetService("HttpService")
 	game:GetService("RunService")
