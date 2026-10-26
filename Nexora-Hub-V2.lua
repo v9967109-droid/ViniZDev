@@ -25,7 +25,7 @@ do
 			end)
 		end
 		local card = mk("CanvasGroup", {AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.fromOffset(230,128), BackgroundColor3=Color3.fromRGB(8,8,11), BorderSizePixel=0, GroupTransparency=1}, gui)
-		mk("UICorner", {CornerRadius = UDim.new(0, 24)}, card)
+		mk("UICorner", {CornerRadius=UDim.new(0,16)}, card)
 		mk("UIStroke", {Color=GOLD, Thickness=1, Transparency=0.55}, card)
 		local sc = mk("UIScale", {Scale=0.9}, card)
 		local logo = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,12), Size=UDim2.fromOffset(46,46), BackgroundColor3=Color3.fromRGB(8,8,10), BorderSizePixel=0}, card)
@@ -71,27 +71,6 @@ do
 	-- compatibilidade: o fim do script ainda chama isto, mas a tela já terminou.
 	getgenv().NexoraLoadingFinish = function() end
 end
-
--- PATCH V57 - Remove sons de toggle/clique mas mantém loading e deixa mais arredondado
--- Esse patch intercepta sons de toggle sem quebrar execução
-pcall(function()
-    local host = (gethui and gethui()) or game:GetService("CoreGui")
-    -- Monitora sons de toggle/clique e remove
-    host.DescendantAdded:Connect(function(v)
-        if v:IsA("Sound") then
-            pcall(function()
-                local name = v.Name:lower()
-                if name:find("toggle") or name:find("click") then
-                    v:Destroy()
-                end
-            end)
-        end
-    end)
-end)
--- Flag para desabilitar sons de toggle na lib
-getgenv().__DISABLE_TOGGLE_SOUNDS = true
-
-
 
 -- ===================== NEXORA ANTI SHAKE SYSTEM (NO TREME TELA) =====================
 -- Trava o tremor de tela de Skull Guitar, Dragonstorm, Sanguine, Godhuman, etc
@@ -2156,7 +2135,7 @@ function Nexora.CreateMain(config)
         ZIndex=100
     }, floatGui)
     reopen:SetAttribute("NexoraKeepColor", true)
-    make("UICorner", {CornerRadius = UDim.new(0, 26)}, reopen)
+    make("UICorner", {CornerRadius=UDim.new(0, 18)}, reopen)
     make("UIStroke", {Color=Color3.fromRGB(60, 60, 65), Thickness=1, Transparency=0.3}, reopen)
     -- Icone N TOP - 100% seguro, sem frames extras que quebram UI
     local iconFrame = make("Frame", {
@@ -2563,7 +2542,7 @@ local fScale = make("UIScale", {Scale=1}, reopen)
                 local r=row(35); local txt=label(make("Frame",{Size=UDim2.new(1,-62,1,0),BackgroundTransparency=1},r),t,12,C.text)
                 local b=button(r,"",24); b:SetAttribute("NexoraKeepColor", true)
                 b.Size=UDim2.new(0,44,0,24); b.Position=UDim2.new(1,-44,.5,-12)
-                local bc=b:FindFirstChildOfClass("UICorner"); if bc then bc.CornerRadius = UDim.new(0, 22) end
+                local bc=b:FindFirstChildOfClass("UICorner"); if bc then bc.CornerRadius=UDim.new(0,12) end
                 local bs=make("UIStroke",{Color=C.line,Thickness=1,Transparency=0.2},b)
                 local knob=make("Frame",{Size=UDim2.new(0,18,0,18),Position=UDim2.new(0,3,.5,-9),BackgroundColor3=Color3.fromRGB(165,160,149),BorderSizePixel=0,ZIndex=2},b); corner(knob,9)
                 local function paint(animate)
@@ -29959,37 +29938,18 @@ end
 print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZDev")
 
 
-
-
--- PATCH FINAL V57 - Garante mais arredondado 22-28 e sem sons toggle/clique (mantém loading)
-task.spawn(function()
-    task.wait(1.5)
-    pcall(function()
+pcall(function()
+    task.spawn(function()
+        task.wait(1)
         local host = (gethui and gethui()) or game:GetService("CoreGui")
         for _, gui in pairs(host:GetChildren()) do
             if gui.Name:lower():find("nexora") then
                 for _, v in pairs(gui:GetDescendants()) do
                     if v:IsA("UICorner") then
-                        local off = v.CornerRadius.Offset
-                        if off < 18 then
-                            v.CornerRadius = UDim.new(0, 22)
-                        elseif off < 22 then
-                            v.CornerRadius = UDim.new(0, 24)
-                        else
-                            v.CornerRadius = UDim.new(0, 28)
-                        end
-                    end
-                    -- Remove sons de toggle/clique que ainda existirem
-                    if v:IsA("Sound") then
-                        pcall(function()
-                            if v.Name:lower():find("toggle") or v.Name:lower():find("click") then
-                                v:Destroy()
-                            end
-                        end)
+                        v.CornerRadius = UDim.new(0, 22)
                     end
                 end
             end
         end
-        print("[V57] Nexora original - Loading mantido - Mais arredondado 22-28 - Sem sons toggle/clique")
     end)
 end)
