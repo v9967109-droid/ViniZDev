@@ -29938,18 +29938,41 @@ end
 print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZDev")
 
 
+-- V59 COMBINADO - Mais arredondado visivel + Sem sons toggle/clique
 pcall(function()
     task.spawn(function()
-        task.wait(1)
+        task.wait(2)
         local host = (gethui and gethui()) or game:GetService("CoreGui")
         for _, gui in pairs(host:GetChildren()) do
-            if gui.Name:lower():find("nexora") then
+            if gui:IsA("ScreenGui") then
                 for _, v in pairs(gui:GetDescendants()) do
                     if v:IsA("UICorner") then
-                        v.CornerRadius = UDim.new(0, 22)
+                        v.CornerRadius = UDim.new(0, 24)
+                    end
+                    if v:IsA("Sound") then
+                        pcall(function()
+                            if v.Name:lower():find("toggle") or v.Name:lower():find("click") then
+                                v:Destroy()
+                            end
+                        end)
                     end
                 end
             end
         end
+        host.DescendantAdded:Connect(function(v)
+            if v:IsA("UICorner") then
+                task.wait(0.05)
+                pcall(function() v.CornerRadius = UDim.new(0, 24) end)
+            end
+            if v:IsA("Sound") then
+                task.wait(0.05)
+                pcall(function()
+                    if v.Name:lower():find("toggle") or v.Name:lower():find("click") then
+                        v:Destroy()
+                    end
+                end)
+            end
+        end)
+        print("[V59 COMBINADO] Arredondado 24 + Sem som toggle")
     end)
 end)
