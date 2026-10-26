@@ -29938,20 +29938,31 @@ end
 print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZDev")
 
 
--- V59 COMBINADO - Mais arredondado visivel + Sem sons toggle/clique
+-- V60 PATCH SEGURO - Sem som click, fonte Arcade/Fantasy, arredondado, fix Store e Translate
 pcall(function()
     task.spawn(function()
         task.wait(2)
         local host = (gethui and gethui()) or game:GetService("CoreGui")
         for _, gui in pairs(host:GetChildren()) do
-            if gui:IsA("ScreenGui") then
+            if gui:IsA("ScreenGui") and gui.Name:lower():find("nexora") then
                 for _, v in pairs(gui:GetDescendants()) do
                     if v:IsA("UICorner") then
-                        v.CornerRadius = UDim.new(0, 24)
+                        pcall(function() v.CornerRadius = UDim.new(0, 24) end)
+                    end
+                    if v:IsA("TextLabel") or v:IsA("TextButton") then
+                        pcall(function()
+                            if v.Font == Enum.Font.GothamBlack then
+                                v.Font = Enum.Font.Arcade
+                            elseif v.Font == Enum.Font.GothamBold then
+                                v.Font = Enum.Font.Fantasy
+                            elseif v.Font == Enum.Font.GothamMedium then
+                                v.Font = Enum.Font.Code
+                            end
+                        end)
                     end
                     if v:IsA("Sound") then
                         pcall(function()
-                            if v.Name:lower():find("toggle") or v.Name:lower():find("click") then
+                            if v.Name:lower():find("click") or v.Name:lower():find("toggle") then
                                 v:Destroy()
                             end
                         end)
@@ -29959,20 +29970,43 @@ pcall(function()
                 end
             end
         end
-        host.DescendantAdded:Connect(function(v)
-            if v:IsA("UICorner") then
-                task.wait(0.05)
-                pcall(function() v.CornerRadius = UDim.new(0, 24) end)
-            end
-            if v:IsA("Sound") then
-                task.wait(0.05)
+        print("[V60] Fonte Arcade/Fantasy, arredondado 24, sem som click")
+    end)
+end)
+
+-- Fix Auto Store Fruit - sobrescreve com versao mais robusta
+pcall(function()
+    if StoreFruit then
+        local OldStore = StoreFruit
+        StoreFruit = function(container)
+            if not container or not container.GetChildren then return end
+            local Players = game:GetService("Players")
+            local LocalPlayer = Players.LocalPlayer
+            local CommF = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
+            CommF = CommF and CommF:FindFirstChild("CommF_")
+            if not CommF or not LocalPlayer then return end
+            for _, tool in ipairs(container:GetChildren()) do
                 pcall(function()
-                    if v.Name:lower():find("toggle") or v.Name:lower():find("click") then
-                        v:Destroy()
+                    if IsFruitTool(tool) then
+                        local fruitName = GetFruitOriginalName(tool)
+                        if fruitName then
+                            if tool.Parent == LocalPlayer.Character then
+                                local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+                                if hum then pcall(function() hum:UnequipTools() end) task.wait(0.15) end
+                            end
+                            pcall(function() CommF:InvokeServer("StoreFruit", fruitName, tool) end)
+                            task.wait(0.3)
+                            if tool.Parent == LocalPlayer.Backpack or tool.Parent == LocalPlayer.Character then
+                                pcall(function() CommF:InvokeServer("StoreFruit", fruitName) end)
+                                task.wait(0.3)
+                                pcall(function() CommF:InvokeServer("StoreFruit", tool) end)
+                                task.wait(0.3)
+                            end
+                        end
                     end
                 end)
             end
-        end)
-        print("[V59 COMBINADO] Arredondado 24 + Sem som toggle")
-    end)
+        end
+        print("[V60] Auto Store Fruit fix aplicado")
+    end
 end)
