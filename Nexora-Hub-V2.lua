@@ -15,7 +15,7 @@ do
 			o.Parent = parent
 			return o
 		end
-		local function sfx(id, vol, speed) return end -- SFX REMOVIDO DIRETO
+		local function sfx(id, vol, speed) return end -- SFX REMOVIDO
 		local card = mk("CanvasGroup", {AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.fromOffset(230,128), BackgroundColor3=Color3.fromRGB(8,8,11), BorderSizePixel=0, GroupTransparency=1}, gui)
 		mk("UICorner", {CornerRadius = UDim.new(0, 24)}, card)
 		mk("UIStroke", {Color=GOLD, Thickness=1, Transparency=0.55}, card)
@@ -1993,7 +1993,7 @@ end
 -- Sons da UI. Para usar os seus: getgenv().NexoraSounds = { ping="rbxassetid://ID", switch="rbxassetid://ID", click="rbxassetid://ID" } antes de executar.
 local SND = { ping = "rbxasset://sounds/electronicpingshort.wav", switch = "rbxasset://sounds/switch.wav", click = "rbxasset://sounds/button.wav" }
 pcall(function() for k, v in pairs(getgenv().NexoraSounds or {}) do SND[k] = v end end)
-local function playUISound(id, vol, speed) return end -- SFX REMOVIDO DIRETO
+local function playUISound(id, vol, speed) return end -- SFX REMOVIDO
 -- Cada efeito é uma sequência curta de camadas {som, volume, velocidade, atraso}.
 local SFX = {
     open  = {},
@@ -2002,7 +2002,7 @@ local SFX = {
     off   = {},
     tab   = {},
 }
-local function sfxPlay(name) return end -- SFX REMOVIDO DIRETO
+local function sfxPlay(name) return end -- SFX REMOVIDO
 local function addOption(title, typ, value, page, section, callback)
     local opt = {Title = title, name = title, type = typ, value = value, Page_Name = page, Section_Name = section, Callback = callback}
     local control = {}
@@ -2692,12 +2692,11 @@ local fScale = make("UIScale", {Scale=1}, reopen)
                                 optb.TextColor3 = Color3.fromRGB(255,255,255)
                                 refreshButton()
                                 if callback then task.spawn(function() pcall(callback, value, selected[value]) end) end
-                                -- Close after each choice; tap the dropdown again to choose another item.
-                                menu:Destroy()
+                                -- NÃO FECHA MAIS - só fecha quando clicar fora ou no Done
                             else
                                 selected = value
                                 refreshButton()
-                                menu:Destroy()
+                                -- NÃO FECHA AUTOMATICAMENTE - só fecha quando clicar fora
                                 if callback then task.spawn(function() pcall(callback, value) end) end
                             end
                         end)
@@ -25353,13 +25352,12 @@ SettingsAimbotSection.CreateToggle(
 	end
 )
 function ClosestPartaimbot()
-	-- V65 - ULTRA CONFIÁVEL - Player mais próximo, sempre mira
+	-- V66 - Player mais próximo + lista não fecha
 	local closestDist, closestTarget = math.huge, nil
 	local localPlayer = game.Players.LocalPlayer
-	local localChar = localPlayer.Character or workspace:FindFirstChild(localPlayer.Name) or game.Players.LocalPlayer.Character
+	local localChar = localPlayer.Character or workspace:FindFirstChild(localPlayer.Name)
 	local localRoot = localChar and (localChar:FindFirstChild("HumanoidRootPart") or localChar:FindFirstChild("Torso") or localChar:FindFirstChild("UpperTorso"))
 	if not localRoot then
-		-- Tenta pegar via PrimaryPart ou GetPivot
 		pcall(function()
 			if localChar and localChar.PrimaryPart then
 				localRoot = localChar.PrimaryPart
@@ -25367,21 +25365,16 @@ function ClosestPartaimbot()
 		end)
 	end
 	if not localRoot then return nil end
-	
-	-- Função para verificar e adicionar target
 	local function checkChar(char)
 		if not char or not char:IsA("Model") then return end
 		if char.Name == localPlayer.Name then return end
 		local hrp = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
-		local hum = char:FindFirstChildOfClass("Humanoid") or char:FindFirstChild("Humanoid")
+		local hum = char:FindFirstChildOfClass("Humanoid")
 		if not hrp then return end
 		if hum and hum.Health <= 0 then return end
-		-- Team check - mais flexível
 		local enemyPlayer = game.Players:FindFirstChild(char.Name)
 		if enemyPlayer and localPlayer.Team and enemyPlayer.Team and localPlayer.Team ~= game.Teams.Pirates then
-			if enemyPlayer.Team == localPlayer.Team then
-				return -- Mesmo time, ignora
-			end
+			if enemyPlayer.Team == localPlayer.Team then return end
 		end
 		local dist = (localRoot.Position - hrp.Position).Magnitude
 		if dist < closestDist then
@@ -25389,42 +25382,22 @@ function ClosestPartaimbot()
 			closestTarget = char
 		end
 	end
-	
-	-- Procura em workspace.Characters
 	pcall(function()
 		local charsFolder = workspace:FindFirstChild("Characters") or game.Workspace.Characters
 		if charsFolder then
-			for _, char in pairs(charsFolder:GetChildren()) do
-				checkChar(char)
-			end
+			for _, char in pairs(charsFolder:GetChildren()) do checkChar(char) end
 		end
 	end)
-	
-	-- Fallback: procura em Players se não achou
 	if not closestTarget then
 		pcall(function()
 			for _, plr in pairs(game.Players:GetPlayers()) do
 				if plr.Name ~= localPlayer.Name then
 					local char = plr.Character or workspace:FindFirstChild(plr.Name) or (workspace.Characters and workspace.Characters:FindFirstChild(plr.Name))
-					if char then
-						checkChar(char)
-					end
+					if char then checkChar(char) end
 				end
 			end
 		end)
 	end
-	
-	-- Fallback 2: procura direto no workspace
-	if not closestTarget then
-		pcall(function()
-			for _, obj in pairs(workspace:GetChildren()) do
-				if obj:IsA("Model") and game.Players:FindFirstChild(obj.Name) then
-					checkChar(obj)
-				end
-			end
-		end)
-	end
-	
 	return closestTarget
 end
 SettingsAimbotSection.CreateToggle(
@@ -25437,80 +25410,20 @@ SettingsAimbotSection.CreateToggle(
 						if Settings["Select Method Aimbot"] == "Select Player" then
 							local s, s =
 								workspace.CurrentCamera, game.Workspace.Characters[Settings["Select Player PVP"]]
-							-- AIMBOT V65 ULTRA CONFIÁVEL - Sempre mira no mais próximo
-							pcall(function()
-								local hrp = s:FindFirstChild("HumanoidRootPart") or s:FindFirstChild("Torso") or s:FindFirstChild("UpperTorso")
-								local head = s:FindFirstChild("Head")
-								local upperTorso = s:FindFirstChild("UpperTorso") or s:FindFirstChild("Torso")
-								local hum = s:FindFirstChildOfClass("Humanoid")
-								if hrp then
-									local targetPart = head or upperTorso or hrp
-									local vel = hrp.Velocity
-									local moveDir = hum and hum.MoveDirection or Vector3.new(0,0,0)
-									local ping = 0
-									pcall(function()
-										ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
-									end)
-									local predictionFactor = 0.4 + ping * 1.5
-									local predictedPos = targetPart.Position + (vel * predictionFactor)
-									if moveDir.Magnitude > 0.1 then
-										predictedPos = predictedPos + (moveDir * 2.5)
-									end
-									if vel.Y > 8 or vel.Y < -8 then
-										predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.2, 0)
-									end
-									if getgenv().LastAimPos then
-										predictedPos = getgenv().LastAimPos:Lerp(predictedPos, 0.8)
-									end
-									getgenv().LastAimPos = predictedPos
-									G.Hit = CFrame.new(predictedPos)
-									G.Target = s
-									getgenv().AimPos = CFrame.new(predictedPos)
-								else
-									local pos = s:GetPivot().Position
-									G.Hit = CFrame.new(pos)
-									G.Target = s
-									getgenv().AimPos = CFrame.new(pos)
-								end
-							end)
+							G.Hit = s.HumanoidRootPart.CFrame
+							G.Target = s
+							getgenv().AimPos = CFrame.new(
+								s.HumanoidRootPart.CFrame.p,
+								s.HumanoidRootPart.Position + s.HumanoidRootPart.Velocity / 0.5
+							)
 						else
 							local s, s = workspace.CurrentCamera, ClosestPartaimbot()
-							-- AIMBOT V65 ULTRA CONFIÁVEL - Sempre mira no mais próximo
-							pcall(function()
-								local hrp = s:FindFirstChild("HumanoidRootPart") or s:FindFirstChild("Torso") or s:FindFirstChild("UpperTorso")
-								local head = s:FindFirstChild("Head")
-								local upperTorso = s:FindFirstChild("UpperTorso") or s:FindFirstChild("Torso")
-								local hum = s:FindFirstChildOfClass("Humanoid")
-								if hrp then
-									local targetPart = head or upperTorso or hrp
-									local vel = hrp.Velocity
-									local moveDir = hum and hum.MoveDirection or Vector3.new(0,0,0)
-									local ping = 0
-									pcall(function()
-										ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
-									end)
-									local predictionFactor = 0.4 + ping * 1.5
-									local predictedPos = targetPart.Position + (vel * predictionFactor)
-									if moveDir.Magnitude > 0.1 then
-										predictedPos = predictedPos + (moveDir * 2.5)
-									end
-									if vel.Y > 8 or vel.Y < -8 then
-										predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.2, 0)
-									end
-									if getgenv().LastAimPos then
-										predictedPos = getgenv().LastAimPos:Lerp(predictedPos, 0.8)
-									end
-									getgenv().LastAimPos = predictedPos
-									G.Hit = CFrame.new(predictedPos)
-									G.Target = s
-									getgenv().AimPos = CFrame.new(predictedPos)
-								else
-									local pos = s:GetPivot().Position
-									G.Hit = CFrame.new(pos)
-									G.Target = s
-									getgenv().AimPos = CFrame.new(pos)
-								end
-							end)
+							G.Hit = s.HumanoidRootPart.CFrame
+							G.Target = s
+							getgenv().AimPos = CFrame.new(
+								s.HumanoidRootPart.CFrame.p,
+								s.HumanoidRootPart.Position + s.HumanoidRootPart.Velocity / 0.5
+							)
 						end
 					end)
 				end
@@ -25713,63 +25626,11 @@ SettingsAimbotSection.CreateToggle(
 local b = require(game:GetService("ReplicatedStorage").Modules.CombatUtil).GetTargetPosition
 require(game:GetService("ReplicatedStorage").Modules.CombatUtil).GetTargetPosition = function(s, X, g, f, R)
 	if Settings["Auto Aimbot Gun"] then
-		local m = nil
-		pcall(function()
-			if Settings["Select Method Aimbot"] == "Select Player" and Settings["Select Player PVP"] then
-				m = game.Workspace.Characters:FindFirstChild(Settings["Select Player PVP"]) or game.Workspace:FindFirstChild(Settings["Select Player PVP"]) or (game.Players:FindFirstChild(Settings["Select Player PVP"]) and game.Players[Settings["Select Player PVP"]].Character)
-			else
-				m = ClosestPartaimbot()
-			end
-		end)
-		if m then
-			local hrp = m:FindFirstChild("HumanoidRootPart") or m:FindFirstChild("Torso") or m:FindFirstChild("UpperTorso")
-			local head = m:FindFirstChild("Head")
-			local upperTorso = m:FindFirstChild("UpperTorso") or m:FindFirstChild("Torso")
-			local hum = m:FindFirstChildOfClass("Humanoid")
-			if hrp then
-				local targetPart = head or upperTorso or hrp
-				local vel = hrp.Velocity
-				local moveDir = hum and hum.MoveDirection or Vector3.new(0,0,0)
-				-- AIMBOT GUN V65 ULTRA CONFIÁVEL - Sempre mira
-				local ping = 0
-				pcall(function()
-					ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
-				end)
-				local dist = 0
-				pcall(function()
-					local localChar = game.Players.LocalPlayer.Character or workspace:FindFirstChild(game.Players.LocalPlayer.Name)
-					local localRoot = localChar and (localChar:FindFirstChild("HumanoidRootPart") or localChar:FindFirstChild("Torso"))
-					if localRoot then
-						dist = (localRoot.Position - hrp.Position).Magnitude
-					end
-				end)
-				local predictionFactor = 0.5 + ping * 1.8 + (dist / 1000) * 0.15
-				local predictedPos = targetPart.Position + (vel * predictionFactor)
-				if moveDir.Magnitude > 0.1 then
-					predictedPos = predictedPos + (moveDir * 4)
-				end
-				if vel.Y > 8 then
-					predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.25, 0)
-				elseif vel.Y < -8 then
-					predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.12, 0)
-				end
-				if head and targetPart == head then
-					predictedPos = predictedPos + Vector3.new(0, 0.3, 0)
-				end
-				if dist > 80 then
-					predictedPos = predictedPos + Vector3.new(0, (dist / 180), 0)
-				end
-				if getgenv().LastGunAimPos then
-					predictedPos = getgenv().LastGunAimPos:Lerp(predictedPos, 0.75)
-				end
-				getgenv().LastGunAimPos = predictedPos
-				return predictedPos
-			else
-				-- Fallback se não tem HRP
-				pcall(function()
-					return m:GetPivot().Position
-				end)
-			end
+		local m = if Settings["Select Method Aimbot"] == "Select Player"
+			then game.Workspace.Characters[Settings["Select Player PVP"]]
+			else (ClosestPartaimbot())
+		if m and (m:FindFirstChild("HumanoidRootPart")) then
+			return m.HumanoidRootPart.Position
 		end
 	end
 	return b(s, X, g, f, R)
@@ -26819,45 +26680,12 @@ do
 					else (ClosestPartaimbot())
 				if T and (T:FindFirstChild("HumanoidRootPart")) then
 					local b = workspace.CurrentCamera
-					
-					-- AIMBOT V65 ULTRA CONFIÁVEL - Sempre mira, fallback garantido
-					pcall(function()
-						local hrp = T:FindFirstChild("HumanoidRootPart") or T:FindFirstChild("Torso") or T:FindFirstChild("UpperTorso")
-						local head = T:FindFirstChild("Head")
-						local upperTorso = T:FindFirstChild("UpperTorso") or T:FindFirstChild("Torso")
-						local hum = T:FindFirstChildOfClass("Humanoid")
-						if hrp then
-							local targetPart = head or upperTorso or hrp
-							local vel = hrp.Velocity
-							local moveDir = hum and hum.MoveDirection or Vector3.new(0,0,0)
-							local ping = 0
-							pcall(function()
-								ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
-							end)
-							local predictionFactor = 0.4 + ping * 1.5
-							local predictedPos = targetPart.Position + (vel * predictionFactor)
-							if moveDir.Magnitude > 0.1 then
-								predictedPos = predictedPos + (moveDir * 2.5)
-							end
-							if vel.Y > 8 or vel.Y < -8 then
-								predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.2, 0)
-							end
-							if getgenv().LastAimPos then
-								predictedPos = getgenv().LastAimPos:Lerp(predictedPos, 0.8)
-							end
-							getgenv().LastAimPos = predictedPos
-							G.Hit = CFrame.new(predictedPos)
-							G.Target = T
-							getgenv().AimPos = CFrame.new(predictedPos)
-						else
-							-- Fallback se não tem HRP
-							local pos = T:GetPivot().Position
-							G.Hit = CFrame.new(pos)
-							G.Target = T
-							getgenv().AimPos = CFrame.new(pos)
-						end
-					end)
-
+					G.Hit = T.HumanoidRootPart.CFrame
+					G.Target = T
+					getgenv().AimPos = CFrame.new(
+						T.HumanoidRootPart.Position,
+						T.HumanoidRootPart.Position + T.HumanoidRootPart.Velocity / 0.5
+					)
 				end
 			end
 			local T = t.Character:FindFirstChild("HumanoidRootPart")
@@ -27961,6 +27789,17 @@ function addToggle(section, title)
 
 -- [PASS31 SOURCE BODY] batchTranslateParallel
 function batchTranslateParallel(messages, targetLang)
+    -- Usa linguagem selecionada se não fornecida
+    if not targetLang or targetLang == "" then
+        local selected = Settings and Settings["Select Language"] or "English"
+        targetLang = GetLanguageCode(selected)
+    else
+        -- Se for nome display, converte para código
+        if #targetLang > 3 then
+            targetLang = GetLanguageCode(targetLang)
+        end
+    end
+
     local results = {}
     local toTranslate = {}
     local indices = {}
@@ -28288,7 +28127,93 @@ function time()
 -- [BANANA CAT RECOVERED] CheckQuest
 
 -- [PASS31 SOURCE BODY] translateSingle
+
+-- Language mapping for Auto Translate - Todos os países
+local LanguageCodes = {
+    ["English"] = "en",
+    ["Portuguese (Português)"] = "pt", ["Portuguese"] = "pt",
+    ["Spanish (Español)"] = "es", ["Spanish"] = "es",
+    ["French (Français)"] = "fr", ["French"] = "fr",
+    ["German (Deutsch)"] = "de", ["German"] = "de",
+    ["Italian (Italiano)"] = "it", ["Italian"] = "it",
+    ["Japanese (日本語)"] = "ja", ["Japanese"] = "ja",
+    ["Chinese (中文)"] = "zh", ["Chinese"] = "zh",
+    ["Korean (한국어)"] = "ko", ["Korean"] = "ko",
+    ["Russian (Русский)"] = "ru", ["Russian"] = "ru",
+    ["Arabic (العربية)"] = "ar", ["Arabic"] = "ar",
+    ["Hindi (हिन्दी)"] = "hi", ["Hindi"] = "hi",
+    ["Turkish (Türkçe)"] = "tr", ["Turkish"] = "tr",
+    ["Dutch (Nederlands)"] = "nl", ["Dutch"] = "nl",
+    ["Polish (Polski)"] = "pl", ["Polish"] = "pl",
+    ["Indonesian (Indonesia)"] = "id", ["Indonesian"] = "id",
+    ["Thai (ไทย)"] = "th", ["Thai"] = "th",
+    ["Vietnamese (Tiếng Việt)"] = "vi", ["Vietnamese"] = "vi",
+    ["Filipino"] = "tl",
+    ["Greek (Ελληνικά)"] = "el", ["Greek"] = "el",
+    ["Hebrew (עברית)"] = "he", ["Hebrew"] = "he",
+    ["Swedish (Svenska)"] = "sv", ["Swedish"] = "sv",
+    ["Norwegian (Norsk)"] = "no", ["Norwegian"] = "no",
+    ["Danish (Dansk)"] = "da", ["Danish"] = "da",
+    ["Finnish (Suomi)"] = "fi", ["Finnish"] = "fi",
+    ["Czech (Čeština)"] = "cs", ["Czech"] = "cs",
+    ["Romanian (Română)"] = "ro", ["Romanian"] = "ro",
+    ["Hungarian (Magyar)"] = "hu", ["Hungarian"] = "hu",
+    ["Ukrainian (Українська)"] = "uk", ["Ukrainian"] = "uk",
+    ["Bengali (বাংলা)"] = "bn", ["Bengali"] = "bn",
+    ["Malay (Melayu)"] = "ms", ["Malay"] = "ms",
+    ["Persian (فارسی)"] = "fa", ["Persian"] = "fa",
+    ["Urdu (اردو)"] = "ur", ["Urdu"] = "ur",
+    ["Tamil (தமிழ்)"] = "ta", ["Tamil"] = "ta",
+    ["Telugu (తెలుగు)"] = "te", ["Telugu"] = "te",
+    ["Marathi (मराठी)"] = "mr", ["Marathi"] = "mr",
+    ["Gujarati (ગુજરાતી)"] = "gu", ["Gujarati"] = "gu",
+    ["Kannada (ಕನ್ನಡ)"] = "kn", ["Kannada"] = "kn",
+    ["Malayalam (മലയാളം)"] = "ml", ["Malayalam"] = "ml",
+    ["Punjabi (ਪੰਜਾਬੀ)"] = "pa", ["Punjabi"] = "pa",
+    ["Burmese (မြန်မာ)"] = "my", ["Burmese"] = "my",
+    ["Khmer (ខ្មែរ)"] = "km", ["Khmer"] = "km",
+    ["Lao (ລາວ)"] = "lo", ["Lao"] = "lo",
+    ["Sinhala (සිංහල)"] = "si", ["Sinhala"] = "si",
+    ["Nepali (नेपाली)"] = "ne", ["Nepali"] = "ne",
+    ["Swahili (Kiswahili)"] = "sw", ["Swahili"] = "sw",
+    ["Zulu (isiZulu)"] = "zu", ["Zulu"] = "zu",
+    ["Afrikaans"] = "af"
+}
+
+function GetLanguageCode(displayName)
+    if not displayName or displayName == "" then return "en" end
+    -- Tenta mapear direto
+    if LanguageCodes[displayName] then
+        return LanguageCodes[displayName]
+    end
+    -- Tenta por substring (ex: "Portuguese" dentro de "Portuguese (Português)")
+    for name, code in pairs(LanguageCodes) do
+        if displayName:find(name) or name:find(displayName) then
+            return code
+        end
+    end
+    return "en" -- Default Inglês primeira vez
+end
+
+
+-- Auto Translate: Usa linguagem selecionada, primeira vez inglês, depois salva
+pcall(function()
+    if not Settings["Select Language"] then
+        Settings["Select Language"] = "English" -- Primeira vez inglês
+        SaveSettings("Select Language", "English")
+    end
+end)
+
+
 function translateSingle(text, targetLang)
+    -- Converte nome display para código se necessário
+    if targetLang and #targetLang > 3 then
+        targetLang = GetLanguageCode(targetLang)
+    end
+    if not targetLang or targetLang == "" then
+        targetLang = "en"
+    end
+
     if not http_request and not request then return nil, true end
     local httpFunc = http_request or request
 
