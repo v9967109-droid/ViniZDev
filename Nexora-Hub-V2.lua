@@ -27961,6 +27961,7 @@ function addToggle(section, title)
 
 -- [PASS31 SOURCE BODY] batchTranslateParallel
 function batchTranslateParallel(messages, targetLang)
+    if not targetLang or #targetLang > 3 then targetLang = GetLanguageCode(targetLang or Settings["Select Language"] or "English") end
     local results = {}
     local toTranslate = {}
     local indices = {}
@@ -28288,7 +28289,76 @@ function time()
 -- [BANANA CAT RECOVERED] CheckQuest
 
 -- [PASS31 SOURCE BODY] translateSingle
+
+-- Language mapping - All countries - Primeira vez inglês, depois salvo
+local LanguageCodes = {
+    ["English"] = "en",
+    ["Portuguese (Português)"] = "pt", ["Portuguese"] = "pt",
+    ["Spanish (Español)"] = "es", ["Spanish"] = "es",
+    ["French (Français)"] = "fr", ["French"] = "fr",
+    ["German (Deutsch)"] = "de", ["German"] = "de",
+    ["Italian (Italiano)"] = "it", ["Italian"] = "it",
+    ["Japanese (日本語)"] = "ja", ["Japanese"] = "ja",
+    ["Chinese (中文)"] = "zh", ["Chinese"] = "zh",
+    ["Korean (한국어)"] = "ko", ["Korean"] = "ko",
+    ["Russian (Русский)"] = "ru", ["Russian"] = "ru",
+    ["Arabic (العربية)"] = "ar", ["Arabic"] = "ar",
+    ["Hindi (हिन्दी)"] = "hi", ["Hindi"] = "hi",
+    ["Turkish (Türkçe)"] = "tr", ["Turkish"] = "tr",
+    ["Dutch (Nederlands)"] = "nl", ["Dutch"] = "nl",
+    ["Polish (Polski)"] = "pl", ["Polish"] = "pl",
+    ["Indonesian (Indonesia)"] = "id", ["Indonesian"] = "id",
+    ["Thai (ไทย)"] = "th", ["Thai"] = "th",
+    ["Vietnamese (Tiếng Việt)"] = "vi", ["Vietnamese"] = "vi",
+    ["Filipino"] = "tl",
+    ["Greek (Ελληνικά)"] = "el", ["Greek"] = "el",
+    ["Hebrew (עברית)"] = "he", ["Hebrew"] = "he",
+    ["Swedish (Svenska)"] = "sv", ["Swedish"] = "sv",
+    ["Norwegian (Norsk)"] = "no", ["Norwegian"] = "no",
+    ["Danish (Dansk)"] = "da", ["Danish"] = "da",
+    ["Finnish (Suomi)"] = "fi", ["Finnish"] = "fi",
+    ["Czech (Čeština)"] = "cs", ["Czech"] = "cs",
+    ["Romanian (Română)"] = "ro", ["Romanian"] = "ro",
+    ["Hungarian (Magyar)"] = "hu", ["Hungarian"] = "hu",
+    ["Ukrainian (Українська)"] = "uk", ["Ukrainian"] = "uk",
+    ["Bengali (বাংলা)"] = "bn", ["Bengali"] = "bn",
+    ["Malay (Melayu)"] = "ms", ["Malay"] = "ms",
+    ["Persian (فارسی)"] = "fa", ["Persian"] = "fa",
+    ["Urdu (اردو)"] = "ur", ["Urdu"] = "ur",
+    ["Tamil (தமிழ்)"] = "ta", ["Tamil"] = "ta",
+    ["Telugu (తెలుగు)"] = "te", ["Telugu"] = "te",
+    ["Marathi (मराठी)"] = "mr", ["Marathi"] = "mr",
+    ["Gujarati (ગુજરાતી)"] = "gu", ["Gujarati"] = "gu",
+    ["Kannada (ಕನ್ನಡ)"] = "kn", ["Kannada"] = "kn",
+    ["Malayalam (മലയാളം)"] = "ml", ["Malayalam"] = "ml",
+    ["Punjabi (ਪੰਜਾਬੀ)"] = "pa", ["Punjabi"] = "pa",
+    ["Burmese (မြန်မာ)"] = "my", ["Burmese"] = "my",
+    ["Khmer (ខ្មែរ)"] = "km", ["Khmer"] = "km",
+    ["Lao (ລາວ)"] = "lo", ["Lao"] = "lo",
+    ["Sinhala (සිංහල)"] = "si", ["Sinhala"] = "si",
+    ["Nepali (नेपाली)"] = "ne", ["Nepali"] = "ne",
+    ["Swahili (Kiswahili)"] = "sw", ["Swahili"] = "sw",
+    ["Zulu (isiZulu)"] = "zu", ["Zulu"] = "zu",
+    ["Afrikaans"] = "af"
+}
+function GetLanguageCode(displayName)
+    if not displayName or displayName == "" then return "en" end
+    if LanguageCodes[displayName] then return LanguageCodes[displayName] end
+    for name, code in pairs(LanguageCodes) do
+        if displayName:find(name) or name:find(displayName) then return code end
+    end
+    return "en"
+end
+pcall(function()
+    if not Settings["Select Language"] then
+        Settings["Select Language"] = "English"
+        SaveSettings("Select Language", "English")
+    end
+end)
+
+
 function translateSingle(text, targetLang)
+    if not targetLang or #targetLang > 3 then targetLang = GetLanguageCode(targetLang or Settings["Select Language"] or "English") end
     if not http_request and not request then return nil, true end
     local httpFunc = http_request or request
 
