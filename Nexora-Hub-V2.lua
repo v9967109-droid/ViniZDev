@@ -1,4 +1,3 @@
--- V56.1 - NEXORA ORIGINAL - Mantém loading, mais arredondado 22-28, sem sons toggle/clique - EDITADO NA SOURCE
 -- Tela de carregamento (Nexora Hub): pequena e rápida. O resto do script só roda depois dela terminar.
 do
 	pcall(function()
@@ -72,6 +71,27 @@ do
 	-- compatibilidade: o fim do script ainda chama isto, mas a tela já terminou.
 	getgenv().NexoraLoadingFinish = function() end
 end
+
+-- PATCH V57 - Remove sons de toggle/clique mas mantém loading e deixa mais arredondado
+-- Esse patch intercepta sons de toggle sem quebrar execução
+pcall(function()
+    local host = (gethui and gethui()) or game:GetService("CoreGui")
+    -- Monitora sons de toggle/clique e remove
+    host.DescendantAdded:Connect(function(v)
+        if v:IsA("Sound") then
+            pcall(function()
+                local name = v.Name:lower()
+                if name:find("toggle") or name:find("click") then
+                    v:Destroy()
+                end
+            end)
+        end
+    end)
+end)
+-- Flag para desabilitar sons de toggle na lib
+getgenv().__DISABLE_TOGGLE_SOUNDS = true
+
+
 
 -- ===================== NEXORA ANTI SHAKE SYSTEM (NO TREME TELA) =====================
 -- Trava o tremor de tela de Skull Guitar, Dragonstorm, Sanguine, Godhuman, etc
@@ -2136,7 +2156,7 @@ function Nexora.CreateMain(config)
         ZIndex=100
     }, floatGui)
     reopen:SetAttribute("NexoraKeepColor", true)
-    make("UICorner", {CornerRadius=UDim.new(0, 18)}, reopen)
+    make("UICorner", {CornerRadius = UDim.new(0, 26)}, reopen)
     make("UIStroke", {Color=Color3.fromRGB(60, 60, 65), Thickness=1, Transparency=0.3}, reopen)
     -- Icone N TOP - 100% seguro, sem frames extras que quebram UI
     local iconFrame = make("Frame", {
@@ -29939,86 +29959,37 @@ end
 print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZDev")
 
 
--- PATCH V56 - Mantém tela de carregamento, deixa tudo mais arredondado 22-28, sem sons de toggle/clique
--- Esse patch é aplicado no final e NÃO quebra a execução
+
+
+-- PATCH FINAL V57 - Garante mais arredondado 22-28 e sem sons toggle/clique (mantém loading)
 task.spawn(function()
-    task.wait(1) -- espera hub carregar
+    task.wait(1.5)
     pcall(function()
         local host = (gethui and gethui()) or game:GetService("CoreGui")
-        
-        -- Deixa tudo mais arredondado
         for _, gui in pairs(host:GetChildren()) do
             if gui.Name:lower():find("nexora") then
                 for _, v in pairs(gui:GetDescendants()) do
                     if v:IsA("UICorner") then
                         local off = v.CornerRadius.Offset
-                        if off <= 4 then
-                            v.CornerRadius = UDim.new(0, 18)
-                        elseif off <= 8 then
-                            v.CornerRadius = UDim.new(0, 20)
-                        elseif off <= 12 then
+                        if off < 18 then
                             v.CornerRadius = UDim.new(0, 22)
-                        elseif off <= 16 then
+                        elseif off < 22 then
                             v.CornerRadius = UDim.new(0, 24)
                         else
                             v.CornerRadius = UDim.new(0, 28)
                         end
                     end
+                    -- Remove sons de toggle/clique que ainda existirem
+                    if v:IsA("Sound") then
+                        pcall(function()
+                            if v.Name:lower():find("toggle") or v.Name:lower():find("click") then
+                                v:Destroy()
+                            end
+                        end)
+                    end
                 end
             end
         end
-        
-        -- Remove sons de toggle/clique existentes
-        for _, v in pairs(host:GetDescendants()) do
-            if v:IsA("Sound") then
-                pcall(function()
-                    if v.Name:lower():find("toggle") or v.Name:lower():find("click") then
-                        v:Destroy()
-                    end
-                end)
-            end
-        end
-        
-        -- Monitora e remove sons novos de toggle/clique (mantém sons de loading)
-        host.DescendantAdded:Connect(function(v)
-            if v:IsA("Sound") then
-                task.wait(0.05)
-                pcall(function()
-                    -- Só remove se for toggle/clique, NÃO remove electronic (que é do loading)
-                    if v.Name:lower():find("toggle") or v.Name:lower():find("click") then
-                        v:Destroy()
-                    end
-                end)
-            end
-        end)
-        
-        -- Silencia função sfx de toggle se existir no global
-        -- Não mexe no sfx local do loading
-        if getgenv().sfx then
-            -- Mantém original mas vamos interceptar toggle sounds via hook se possível
-        end
-        
-        print("[V56] Mais arredondado 22-28 + Sem sons toggle/clique + Tela de carregamento mantida!")
+        print("[V57] Nexora original - Loading mantido - Mais arredondado 22-28 - Sem sons toggle/clique")
     end)
 end)
-
--- Sobrescreve sfx global de toggle (se houver) - deixa vazio só para toggle
-local old_sfx = getgenv().sfx
-if old_sfx then
-    getgenv().sfx = function(...)
-        -- Se for chamado com toggle/click, não faz nada
-        -- Se for do loading (electronic), deixa passar
-        local args = {...}
-        local id = tostring(args[1] or "")
-        if id:lower():find("toggle") or id:lower():find("click") then
-            return
-        end
-        -- Para outros sons, chama original se quiser, ou silencia também
-        -- Vamos silenciar toggle/clique mas manter loading
-        if id:find("electronic") then
-            return old_sfx(...)
-        end
-        -- Silencia toggle
-        return
-    end
-end
