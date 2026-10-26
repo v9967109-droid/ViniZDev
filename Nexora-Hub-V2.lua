@@ -25353,36 +25353,78 @@ SettingsAimbotSection.CreateToggle(
 	end
 )
 function ClosestPartaimbot()
-	-- V64 - PLAYER MAIS PRÓXIMO DE MIM (por distancia, nao por vida)
+	-- V65 - ULTRA CONFIÁVEL - Player mais próximo, sempre mira
 	local closestDist, closestTarget = math.huge, nil
 	local localPlayer = game.Players.LocalPlayer
-	local localChar = localPlayer.Character
-	local localRoot = localChar and localChar:FindFirstChild("HumanoidRootPart")
+	local localChar = localPlayer.Character or workspace:FindFirstChild(localPlayer.Name) or game.Players.LocalPlayer.Character
+	local localRoot = localChar and (localChar:FindFirstChild("HumanoidRootPart") or localChar:FindFirstChild("Torso") or localChar:FindFirstChild("UpperTorso"))
+	if not localRoot then
+		-- Tenta pegar via PrimaryPart ou GetPivot
+		pcall(function()
+			if localChar and localChar.PrimaryPart then
+				localRoot = localChar.PrimaryPart
+			end
+		end)
+	end
 	if not localRoot then return nil end
-	for _, char in pairs(game.Workspace.Characters:GetChildren()) do
-		if char:IsA("Model") and char.Name ~= localPlayer.Name then
-			local hrp = char:FindFirstChild("HumanoidRootPart")
-			local hum = char:FindFirstChildOfClass("Humanoid")
-			if hrp and hum and hum.Health > 0 then
-				-- Team check
-				local enemyPlayer = game.Players:FindFirstChild(char.Name)
-				local isEnemy = true
-				if enemyPlayer and localPlayer.Team and enemyPlayer.Team then
-					if localPlayer.Team == enemyPlayer.Team then
-						isEnemy = false
-					end
-				end
-				if isEnemy then
-					-- Calcula distancia do player mais proximo de mim
-					local dist = (localRoot.Position - hrp.Position).Magnitude
-					if dist < closestDist then
-						closestDist = dist
-						closestTarget = char
+	
+	-- Função para verificar e adicionar target
+	local function checkChar(char)
+		if not char or not char:IsA("Model") then return end
+		if char.Name == localPlayer.Name then return end
+		local hrp = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso")
+		local hum = char:FindFirstChildOfClass("Humanoid") or char:FindFirstChild("Humanoid")
+		if not hrp then return end
+		if hum and hum.Health <= 0 then return end
+		-- Team check - mais flexível
+		local enemyPlayer = game.Players:FindFirstChild(char.Name)
+		if enemyPlayer and localPlayer.Team and enemyPlayer.Team and localPlayer.Team ~= game.Teams.Pirates then
+			if enemyPlayer.Team == localPlayer.Team then
+				return -- Mesmo time, ignora
+			end
+		end
+		local dist = (localRoot.Position - hrp.Position).Magnitude
+		if dist < closestDist then
+			closestDist = dist
+			closestTarget = char
+		end
+	end
+	
+	-- Procura em workspace.Characters
+	pcall(function()
+		local charsFolder = workspace:FindFirstChild("Characters") or game.Workspace.Characters
+		if charsFolder then
+			for _, char in pairs(charsFolder:GetChildren()) do
+				checkChar(char)
+			end
+		end
+	end)
+	
+	-- Fallback: procura em Players se não achou
+	if not closestTarget then
+		pcall(function()
+			for _, plr in pairs(game.Players:GetPlayers()) do
+				if plr.Name ~= localPlayer.Name then
+					local char = plr.Character or workspace:FindFirstChild(plr.Name) or (workspace.Characters and workspace.Characters:FindFirstChild(plr.Name))
+					if char then
+						checkChar(char)
 					end
 				end
 			end
-		end
+		end)
 	end
+	
+	-- Fallback 2: procura direto no workspace
+	if not closestTarget then
+		pcall(function()
+			for _, obj in pairs(workspace:GetChildren()) do
+				if obj:IsA("Model") and game.Players:FindFirstChild(obj.Name) then
+					checkChar(obj)
+				end
+			end
+		end)
+	end
+	
 	return closestTarget
 end
 SettingsAimbotSection.CreateToggle(
@@ -25395,74 +25437,80 @@ SettingsAimbotSection.CreateToggle(
 						if Settings["Select Method Aimbot"] == "Select Player" then
 							local s, s =
 								workspace.CurrentCamera, game.Workspace.Characters[Settings["Select Player PVP"]]
-							-- AIMBOT ULTRA V63 - Predição avançada + ping + anti shake
-							local hrp = s:FindFirstChild("HumanoidRootPart")
-							local head = s:FindFirstChild("Head")
-							local upperTorso = s:FindFirstChild("UpperTorso") or s:FindFirstChild("Torso")
-							local hum = s:FindFirstChildOfClass("Humanoid")
-							if hrp and hum then
-								local targetPart = head or upperTorso or hrp
-								local vel = hrp.Velocity
-								local moveDir = hum.MoveDirection
-								local ping = 0
-								pcall(function()
-									ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
-								end)
-								local predictionFactor = 0.35 + ping * 1.2
-								local predictedPos = targetPart.Position + (vel * predictionFactor)
-								if moveDir.Magnitude > 0.1 then
-									predictedPos = predictedPos + (moveDir * 2)
+							-- AIMBOT V65 ULTRA CONFIÁVEL - Sempre mira no mais próximo
+							pcall(function()
+								local hrp = s:FindFirstChild("HumanoidRootPart") or s:FindFirstChild("Torso") or s:FindFirstChild("UpperTorso")
+								local head = s:FindFirstChild("Head")
+								local upperTorso = s:FindFirstChild("UpperTorso") or s:FindFirstChild("Torso")
+								local hum = s:FindFirstChildOfClass("Humanoid")
+								if hrp then
+									local targetPart = head or upperTorso or hrp
+									local vel = hrp.Velocity
+									local moveDir = hum and hum.MoveDirection or Vector3.new(0,0,0)
+									local ping = 0
+									pcall(function()
+										ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
+									end)
+									local predictionFactor = 0.4 + ping * 1.5
+									local predictedPos = targetPart.Position + (vel * predictionFactor)
+									if moveDir.Magnitude > 0.1 then
+										predictedPos = predictedPos + (moveDir * 2.5)
+									end
+									if vel.Y > 8 or vel.Y < -8 then
+										predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.2, 0)
+									end
+									if getgenv().LastAimPos then
+										predictedPos = getgenv().LastAimPos:Lerp(predictedPos, 0.8)
+									end
+									getgenv().LastAimPos = predictedPos
+									G.Hit = CFrame.new(predictedPos)
+									G.Target = s
+									getgenv().AimPos = CFrame.new(predictedPos)
+								else
+									local pos = s:GetPivot().Position
+									G.Hit = CFrame.new(pos)
+									G.Target = s
+									getgenv().AimPos = CFrame.new(pos)
 								end
-								if vel.Y > 8 or vel.Y < -8 then
-									predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.18, 0)
-								end
-								if getgenv().LastAimPos then
-									predictedPos = getgenv().LastAimPos:Lerp(predictedPos, 0.85)
-								end
-								getgenv().LastAimPos = predictedPos
-								G.Hit = CFrame.new(predictedPos)
-								G.Target = s
-								getgenv().AimPos = CFrame.new(predictedPos)
-							else
-								G.Hit = s.HumanoidRootPart.CFrame
-								G.Target = s
-								getgenv().AimPos = CFrame.new(s.HumanoidRootPart.Position)
-							end
+							end)
 						else
 							local s, s = workspace.CurrentCamera, ClosestPartaimbot()
-							-- AIMBOT ULTRA V63 - Predição avançada + ping + anti shake
-							local hrp = s:FindFirstChild("HumanoidRootPart")
-							local head = s:FindFirstChild("Head")
-							local upperTorso = s:FindFirstChild("UpperTorso") or s:FindFirstChild("Torso")
-							local hum = s:FindFirstChildOfClass("Humanoid")
-							if hrp and hum then
-								local targetPart = head or upperTorso or hrp
-								local vel = hrp.Velocity
-								local moveDir = hum.MoveDirection
-								local ping = 0
-								pcall(function()
-									ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
-								end)
-								local predictionFactor = 0.35 + ping * 1.2
-								local predictedPos = targetPart.Position + (vel * predictionFactor)
-								if moveDir.Magnitude > 0.1 then
-									predictedPos = predictedPos + (moveDir * 2)
+							-- AIMBOT V65 ULTRA CONFIÁVEL - Sempre mira no mais próximo
+							pcall(function()
+								local hrp = s:FindFirstChild("HumanoidRootPart") or s:FindFirstChild("Torso") or s:FindFirstChild("UpperTorso")
+								local head = s:FindFirstChild("Head")
+								local upperTorso = s:FindFirstChild("UpperTorso") or s:FindFirstChild("Torso")
+								local hum = s:FindFirstChildOfClass("Humanoid")
+								if hrp then
+									local targetPart = head or upperTorso or hrp
+									local vel = hrp.Velocity
+									local moveDir = hum and hum.MoveDirection or Vector3.new(0,0,0)
+									local ping = 0
+									pcall(function()
+										ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
+									end)
+									local predictionFactor = 0.4 + ping * 1.5
+									local predictedPos = targetPart.Position + (vel * predictionFactor)
+									if moveDir.Magnitude > 0.1 then
+										predictedPos = predictedPos + (moveDir * 2.5)
+									end
+									if vel.Y > 8 or vel.Y < -8 then
+										predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.2, 0)
+									end
+									if getgenv().LastAimPos then
+										predictedPos = getgenv().LastAimPos:Lerp(predictedPos, 0.8)
+									end
+									getgenv().LastAimPos = predictedPos
+									G.Hit = CFrame.new(predictedPos)
+									G.Target = s
+									getgenv().AimPos = CFrame.new(predictedPos)
+								else
+									local pos = s:GetPivot().Position
+									G.Hit = CFrame.new(pos)
+									G.Target = s
+									getgenv().AimPos = CFrame.new(pos)
 								end
-								if vel.Y > 8 or vel.Y < -8 then
-									predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.18, 0)
-								end
-								if getgenv().LastAimPos then
-									predictedPos = getgenv().LastAimPos:Lerp(predictedPos, 0.85)
-								end
-								getgenv().LastAimPos = predictedPos
-								G.Hit = CFrame.new(predictedPos)
-								G.Target = s
-								getgenv().AimPos = CFrame.new(predictedPos)
-							else
-								G.Hit = s.HumanoidRootPart.CFrame
-								G.Target = s
-								getgenv().AimPos = CFrame.new(s.HumanoidRootPart.Position)
-							end
+							end)
 						end
 					end)
 				end
@@ -25665,57 +25713,62 @@ SettingsAimbotSection.CreateToggle(
 local b = require(game:GetService("ReplicatedStorage").Modules.CombatUtil).GetTargetPosition
 require(game:GetService("ReplicatedStorage").Modules.CombatUtil).GetTargetPosition = function(s, X, g, f, R)
 	if Settings["Auto Aimbot Gun"] then
-		local m = if Settings["Select Method Aimbot"] == "Select Player"
-			then game.Workspace.Characters[Settings["Select Player PVP"]]
-			else (ClosestPartaimbot())
+		local m = nil
+		pcall(function()
+			if Settings["Select Method Aimbot"] == "Select Player" and Settings["Select Player PVP"] then
+				m = game.Workspace.Characters:FindFirstChild(Settings["Select Player PVP"]) or game.Workspace:FindFirstChild(Settings["Select Player PVP"]) or (game.Players:FindFirstChild(Settings["Select Player PVP"]) and game.Players[Settings["Select Player PVP"]].Character)
+			else
+				m = ClosestPartaimbot()
+			end
+		end)
 		if m then
-			local hrp = m:FindFirstChild("HumanoidRootPart")
+			local hrp = m:FindFirstChild("HumanoidRootPart") or m:FindFirstChild("Torso") or m:FindFirstChild("UpperTorso")
 			local head = m:FindFirstChild("Head")
 			local upperTorso = m:FindFirstChild("UpperTorso") or m:FindFirstChild("Torso")
 			local hum = m:FindFirstChildOfClass("Humanoid")
-			if hrp and hum then
+			if hrp then
 				local targetPart = head or upperTorso or hrp
 				local vel = hrp.Velocity
-				local moveDir = hum.MoveDirection
-				-- AIMBOT GUN ULTRA V63 - Predição extrema + compensação ping + gravidade + balística
+				local moveDir = hum and hum.MoveDirection or Vector3.new(0,0,0)
+				-- AIMBOT GUN V65 ULTRA CONFIÁVEL - Sempre mira
 				local ping = 0
 				pcall(function()
 					ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
 				end)
 				local dist = 0
 				pcall(function()
-					local localRoot = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+					local localChar = game.Players.LocalPlayer.Character or workspace:FindFirstChild(game.Players.LocalPlayer.Name)
+					local localRoot = localChar and (localChar:FindFirstChild("HumanoidRootPart") or localChar:FindFirstChild("Torso"))
 					if localRoot then
 						dist = (localRoot.Position - hrp.Position).Magnitude
 					end
 				end)
-				-- Predição baseada em distancia + ping + velocidade
-				local predictionFactor = 0.45 + ping * 1.5 + (dist / 1000) * 0.1
+				local predictionFactor = 0.5 + ping * 1.8 + (dist / 1000) * 0.15
 				local predictedPos = targetPart.Position + (vel * predictionFactor)
-				-- Prediz direção do movimento
 				if moveDir.Magnitude > 0.1 then
-					predictedPos = predictedPos + (moveDir * 3.5)
+					predictedPos = predictedPos + (moveDir * 4)
 				end
-				-- Compensa pulo/queda
 				if vel.Y > 8 then
-					predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.22, 0)
+					predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.25, 0)
 				elseif vel.Y < -8 then
-					predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.1, 0)
+					predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.12, 0)
 				end
-				-- Mira na cabeça sempre para gun (mais dano)
 				if head and targetPart == head then
 					predictedPos = predictedPos + Vector3.new(0, 0.3, 0)
 				end
-				-- Compensa gravidade da bala baseado na distancia
-				if dist > 100 then
-					predictedPos = predictedPos + Vector3.new(0, (dist / 200), 0)
+				if dist > 80 then
+					predictedPos = predictedPos + Vector3.new(0, (dist / 180), 0)
 				end
-				-- Anti shake para gun tambem
 				if getgenv().LastGunAimPos then
-					predictedPos = getgenv().LastGunAimPos:Lerp(predictedPos, 0.8)
+					predictedPos = getgenv().LastGunAimPos:Lerp(predictedPos, 0.75)
 				end
 				getgenv().LastGunAimPos = predictedPos
 				return predictedPos
+			else
+				-- Fallback se não tem HRP
+				pcall(function()
+					return m:GetPivot().Position
+				end)
 			end
 		end
 	end
@@ -26767,44 +26820,43 @@ do
 				if T and (T:FindFirstChild("HumanoidRootPart")) then
 					local b = workspace.CurrentCamera
 					
-					-- AIMBOT ULTRA V63 - Predição avançada com ping + gravidade + mira cabeça
-					local hrp = T:FindFirstChild("HumanoidRootPart")
-					local head = T:FindFirstChild("Head")
-					local upperTorso = T:FindFirstChild("UpperTorso") or T:FindFirstChild("Torso")
-					local hum = T:FindFirstChildOfClass("Humanoid")
-					if hrp and hum then
-						local targetPart = head or upperTorso or hrp
-						local vel = hrp.Velocity
-						local moveDir = hum.MoveDirection
-						-- Pega ping do player para compensar
-						local ping = 0
-						pcall(function()
-							ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
-						end)
-						-- Predição ultra com ping + velocidade + direção
-						local predictionFactor = 0.35 + ping * 1.2 -- Compensa ping
-						local predictedPos = targetPart.Position + (vel * predictionFactor)
-						-- Se estiver correndo, prediz mais
-						if moveDir.Magnitude > 0.1 then
-							predictedPos = predictedPos + (moveDir * 2)
+					-- AIMBOT V65 ULTRA CONFIÁVEL - Sempre mira, fallback garantido
+					pcall(function()
+						local hrp = T:FindFirstChild("HumanoidRootPart") or T:FindFirstChild("Torso") or T:FindFirstChild("UpperTorso")
+						local head = T:FindFirstChild("Head")
+						local upperTorso = T:FindFirstChild("UpperTorso") or T:FindFirstChild("Torso")
+						local hum = T:FindFirstChildOfClass("Humanoid")
+						if hrp then
+							local targetPart = head or upperTorso or hrp
+							local vel = hrp.Velocity
+							local moveDir = hum and hum.MoveDirection or Vector3.new(0,0,0)
+							local ping = 0
+							pcall(function()
+								ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
+							end)
+							local predictionFactor = 0.4 + ping * 1.5
+							local predictedPos = targetPart.Position + (vel * predictionFactor)
+							if moveDir.Magnitude > 0.1 then
+								predictedPos = predictedPos + (moveDir * 2.5)
+							end
+							if vel.Y > 8 or vel.Y < -8 then
+								predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.2, 0)
+							end
+							if getgenv().LastAimPos then
+								predictedPos = getgenv().LastAimPos:Lerp(predictedPos, 0.8)
+							end
+							getgenv().LastAimPos = predictedPos
+							G.Hit = CFrame.new(predictedPos)
+							G.Target = T
+							getgenv().AimPos = CFrame.new(predictedPos)
+						else
+							-- Fallback se não tem HRP
+							local pos = T:GetPivot().Position
+							G.Hit = CFrame.new(pos)
+							G.Target = T
+							getgenv().AimPos = CFrame.new(pos)
 						end
-						-- Ajusta altura se pulando/caindo
-						if vel.Y > 8 or vel.Y < -8 then
-							predictedPos = predictedPos + Vector3.new(0, vel.Y * 0.18, 0)
-						end
-						-- Anti shake - suaviza movimento
-						if getgenv().LastAimPos then
-							predictedPos = getgenv().LastAimPos:Lerp(predictedPos, 0.85)
-						end
-						getgenv().LastAimPos = predictedPos
-						G.Hit = CFrame.new(predictedPos)
-						G.Target = T
-						getgenv().AimPos = CFrame.new(predictedPos)
-					else
-						G.Hit = T.HumanoidRootPart.CFrame
-						G.Target = T
-						getgenv().AimPos = CFrame.new(T.HumanoidRootPart.Position)
-					end
+					end)
 
 				end
 			end
