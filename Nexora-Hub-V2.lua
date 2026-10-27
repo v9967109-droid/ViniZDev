@@ -21021,23 +21021,71 @@ function AutoTrialV4()
 		return
 	end
 	g = GetTempleOfTime()
-	if not g and not VerifyNearbyTrial() then
-		local inTempleCheck = false
-		pcall(function()
-			local charPos = t.Character and t.Character:FindFirstChild("HumanoidRootPart") and t.Character.HumanoidRootPart.Position
-			if charPos and (charPos - Vector3.new(28282.5703125, 14896.8505859375, 105.1042709350586)).Magnitude < 3000 then
-				inTempleCheck = true
+	-- NOVO FLUXO CORRETO: Sempre vai pra Great Tree primeiro se nao estiver no templo nem no trial
+	local shouldGoGreatTree = false
+	local templePos = Vector3.new(28282.5703125, 14896.8505859375, 105.1042709350586)
+	local GreatTreePos = Vector3.new(4345.09375, 575.0524291992188, -6159.00439453125)
+	local GreatTreeCF = CFrame.new(4345.09375, 575.0524291992188, -6159.00439453125)
+	pcall(function()
+		local charPos = t.Character and t.Character:FindFirstChild("HumanoidRootPart") and t.Character.HumanoidRootPart.Position
+		if charPos then
+			local distTemple = (charPos - templePos).Magnitude
+			local inTrial = VerifyNearbyTrial()
+			-- Se estiver longe do templo (>3000) e nao estiver em trial, vai pra Great Tree
+			if distTemple > 3000 and not inTrial then
+				shouldGoGreatTree = true
 			end
-		end)
-		if not inTempleCheck then
-			local GreatTreePos = Vector3.new(4345.09375, 575.0524291992188, -6159.00439453125)
-			local distTree = 99999
-			pcall(function() distTree = t:DistanceFromCharacter(GreatTreePos) end)
-			if distTree > 150 then
-				toTarget(CFrame.new(4345.09375, 575.0524291992188, -6159.00439453125))
-				return
+			-- Se estiver no templo ja (dist <3000), nao vai pra Great Tree
+			if distTemple < 3000 then
+				shouldGoGreatTree = false
 			end
 		end
+	end)
+	if shouldGoGreatTree then
+		-- 1. PRIMEIRO: Vai ate o topo da Great Tree
+		local distTree = 99999
+		pcall(function() distTree = t:DistanceFromCharacter(GreatTreePos) end)
+		if distTree > 150 then
+			toTarget(GreatTreeCF)
+			return
+		end
+		-- 2. SEGUNDO: Ja esta no topo, ativa ToTarget ate NPC e interage
+		local foundNPC = false
+		pcall(function()
+			for _, folder in pairs({workspace.NPCs, game:GetService("ReplicatedStorage").NPCs}) do
+				for _, npc in pairs(folder:GetChildren()) do
+					if npc:FindFirstChild("HumanoidRootPart") then
+						local npcDist = (npc.HumanoidRootPart.Position - GreatTreePos).Magnitude
+						if npcDist < 200 then
+							foundNPC = true
+							toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0, 2, 3))
+							task.wait(0.5)
+							for _, v in pairs(npc:GetDescendants()) do
+								if v:IsA("ClickDetector") then
+									pcall(function() fireclickdetector(v) end)
+								end
+								if v:IsA("ProximityPrompt") then
+									pcall(function() fireproximityprompt(v) end)
+								end
+							end
+							pcall(function()
+								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateAncientOne")
+								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("TempleClock", "Check")
+								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RaceV4Progress", "Check")
+							end)
+							task.wait(1)
+							break
+						end
+					end
+				end
+				if foundNPC then break end
+			end
+		end)
+		-- 3. TERCEIRO: Depois de interagir com NPC, entra no templo
+		toTarget(CFrame.new(28282.5703125, 14896.8505859375, 105.1042709350586))
+		return
+	end
+	if not g and not VerifyNearbyTrial() then
 		toTarget(CFrame.new(28282.5703125, 14896.8505859375, 105.1042709350586))
 		return
 	end
