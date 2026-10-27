@@ -5213,10 +5213,22 @@ end)
 
 LocalPlayerMain = Main.CreatePage({ Page_Name = "LocalPlayer", Page_Title = "LocalPlayer" })
 SectionLocalPlayerMain = LocalPlayerMain.CreateSection("Local Player")
+SectionLocalPlayerMain.CreateDropdown(
+	{
+		Title = "Select Language",
+		List = { "English", "Portuguese", "Spanish", "French", "German", "Italian", "Japanese", "Chinese", "Korean", "Russian", "Arabic", "Hindi", "Turkish", "Dutch", "Polish", "Indonesian", "Thai", "Vietnamese", "Filipino", "Greek", "Hebrew", "Swedish", "Norwegian", "Danish", "Finnish", "Czech", "Romanian", "Hungarian", "Ukrainian", "Bengali", "Malay", "Persian", "Urdu", "Tamil", "Telugu", "Marathi", "Gujarati", "Kannada", "Malayalam", "Punjabi", "Burmese", "Khmer", "Lao", "Sinhala", "Nepali", "Swahili", "Zulu", "Afrikaans" },
+		Search = true,
+		Selected = false,
+		Default = Settings["Select Language"] or "English",
+	},
+	function(lang)
+		SaveSettings("Select Language", lang)
+	end
+)
 SectionLocalPlayerMain.CreateToggle(
 	{
 		Title = "Auto Translate",
-		Desc = "It may take a bit longer to translate the first time.",
+		Desc = "First time English, after change saved.",
 		Default = Settings["Auto Translate"] or false,
 	},
 	function(K)
