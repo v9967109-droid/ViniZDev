@@ -25265,7 +25265,18 @@ function ESPPlayer()
 	if b then
 		local s = Instance.new("IntValue", b)
 		s.Name = "Ignored"
-		-- 3 textos separados pra ter cores diferentes
+		-- ESP Organizado: Team com cor da equipe, Nome branco, HP verde, Dist branco
+		local TeamText = Drawing.new("Text")
+		TeamText.Visible = false
+		TeamText.Transparency = 1
+		TeamText.Text = "Team"
+		TeamText.Color = Color3.fromRGB(255, 255, 255)
+		TeamText.Size = 14
+		TeamText.Outline = true
+		TeamText.OutlineColor = Color3.fromRGB(0, 0, 0)
+		TeamText.Center = true
+		TeamText.Font = 2
+		
 		local NameText = Drawing.new("Text")
 		NameText.Visible = false
 		NameText.Transparency = 1
@@ -25306,29 +25317,50 @@ function ESPPlayer()
 				if f then
 					local plr = game.Players:FindFirstChild(b.Name)
 					local teamName = "No Team"
-					if plr and plr.Team then teamName = plr.Team.Name end
+					local teamColor = Color3.fromRGB(255, 255, 255)
+					if plr and plr.Team then
+						teamName = plr.Team.Name
+						if teamName:lower():find("pirate") or teamName:lower():find("pirata") then
+							teamColor = Color3.fromRGB(255, 50, 50)
+						elseif teamName:lower():find("marine") then
+							teamColor = Color3.fromRGB(80, 130, 255)
+						elseif teamName:lower():find("zombie") or teamName:lower():find("morta") then
+							teamColor = Color3.fromRGB(100, 255, 100)
+						else
+							teamColor = Color3.fromRGB(255, 215, 0)
+						end
+					end
 					local dist = math.round(t:DistanceFromCharacter(b.HumanoidRootPart.Position))
 					local hp = math.round(b.Humanoid.Health)
 					local maxHp = math.round(b.Humanoid.MaxHealth)
 					local hpPercent = math.floor((hp / maxHp) * 100)
 					
-					NameText.Text = "[" .. teamName .. "] " .. b.Name
+					TeamText.Text = "[" .. teamName .. "]"
+					TeamText.Color = teamColor
+					NameText.Text = b.Name
+					NameText.Color = Color3.fromRGB(255, 255, 255)
 					HpText.Text = "HP: " .. hp .. "/" .. maxHp .. " (" .. hpPercent .. "%)"
+					HpText.Color = Color3.fromRGB(0, 255, 0)
 					DistText.Text = "Dist: " .. dist .. "m"
+					DistText.Color = Color3.fromRGB(255, 255, 255)
 					
+					TeamText.Position = Vector2.new(g.X, g.Y - 50)
 					NameText.Position = Vector2.new(g.X, g.Y - 35)
 					HpText.Position = Vector2.new(g.X, g.Y - 20)
 					DistText.Position = Vector2.new(g.X, g.Y - 5)
 					
+					TeamText.Visible = true
 					NameText.Visible = true
 					HpText.Visible = true
 					DistText.Visible = true
 				else
+					TeamText.Visible = false
 					NameText.Visible = false
 					HpText.Visible = false
 					DistText.Visible = false
 				end
 			until not b or not b.Parent or not Settings["ESP Player"]
+			TeamText:Remove()
 			NameText:Remove()
 			HpText:Remove()
 			DistText:Remove()
