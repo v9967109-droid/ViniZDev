@@ -5223,16 +5223,24 @@ SectionLocalPlayerMain.CreateDropdown(
 	},
 	function(lang)
 		SaveSettings("Select Language", lang)
+		-- JUNTO com Auto Translate: se Auto Translate ativo, traduz na hora
+		if Settings["Auto Translate"] then
+			getgenv().ForceRetranslate = true
+		end
 	end
 )
 SectionLocalPlayerMain.CreateToggle(
 	{
 		Title = "Auto Translate",
-		Desc = "First time English, after change saved.",
+		Desc = "First time English, saved after. Translate entire UI when Select Language changes.",
 		Default = Settings["Auto Translate"] or false,
 	},
 	function(K)
 		SaveSettings("Auto Translate", K)
+		if K then
+			-- Ativou Auto Translate, traduz pra lingua selecionada
+			getgenv().ForceRetranslate = true
+		end
 	end
 )
 SectionLocalPlayerMain.CreateButton({ Title = "Stop Tween" }, function()
@@ -25257,83 +25265,74 @@ function ESPPlayer()
 	if b then
 		local s = Instance.new("IntValue", b)
 		s.Name = "Ignored"
-		local X = Drawing.new("Text")
-		X.Visible = false
-		X.Transparency = 1
-		X.Text = b.Name
-		X.Color = Color3.fromRGB(255, 255, 255)
-		X.Size = 18
-		X.Outline = true
-		X.OutlineColor = Color3.fromRGB(0, 0, 0)
-		X.Center = true
-		X.Font = 2
+		-- 3 textos separados pra ter cores diferentes
+		local NameText = Drawing.new("Text")
+		NameText.Visible = false
+		NameText.Transparency = 1
+		NameText.Text = b.Name
+		NameText.Color = Color3.fromRGB(255, 255, 255)
+		NameText.Size = 16
+		NameText.Outline = true
+		NameText.OutlineColor = Color3.fromRGB(0, 0, 0)
+		NameText.Center = true
+		NameText.Font = 2
+		
+		local HpText = Drawing.new("Text")
+		HpText.Visible = false
+		HpText.Transparency = 1
+		HpText.Text = "HP"
+		HpText.Color = Color3.fromRGB(0, 255, 0)
+		HpText.Size = 14
+		HpText.Outline = true
+		HpText.OutlineColor = Color3.fromRGB(0, 0, 0)
+		HpText.Center = true
+		HpText.Font = 2
+		
+		local DistText = Drawing.new("Text")
+		DistText.Visible = false
+		DistText.Transparency = 1
+		DistText.Text = "Dist"
+		DistText.Color = Color3.fromRGB(255, 255, 255)
+		DistText.Size = 14
+		DistText.Outline = true
+		DistText.OutlineColor = Color3.fromRGB(0, 0, 0)
+		DistText.Center = true
+		DistText.Font = 2
+		
 		spawn(function()
 			repeat
 				task.wait()
 				local g, f = game.workspace.CurrentCamera:WorldToViewportPoint(b.HumanoidRootPart.Position)
 				if f then
-					-- Pega Team, HP, Distancia organizado
 					local plr = game.Players:FindFirstChild(b.Name)
 					local teamName = "No Team"
-					local teamColor = Color3.fromRGB(255, 255, 255)
-					if plr and plr.Team then
-						teamName = plr.Team.Name
-						if plr.Team.TeamColor then
-							-- Cor do time
-							if teamName:lower():find("pirate") or teamName:lower():find("pirata") then
-								teamColor = Color3.fromRGB(255, 100, 100)
-							elseif teamName:lower():find("marine") then
-								teamColor = Color3.fromRGB(100, 150, 255)
-							else
-								teamColor = Color3.fromRGB(100, 255, 100)
-							end
-						end
-					end
-					
+					if plr and plr.Team then teamName = plr.Team.Name end
 					local dist = math.round(t:DistanceFromCharacter(b.HumanoidRootPart.Position))
 					local hp = math.round(b.Humanoid.Health)
 					local maxHp = math.round(b.Humanoid.MaxHealth)
 					local hpPercent = math.floor((hp / maxHp) * 100)
 					
-					-- Cor da vida baseada na porcentagem
-					local hpColor = ""
-					if hpPercent > 75 then
-						hpColor = ""
-					elseif hpPercent > 50 then
-						hpColor = ""
-					else
-						hpColor = ""
-					end
+					NameText.Text = "[" .. teamName .. "] " .. b.Name
+					HpText.Text = "HP: " .. hp .. "/" .. maxHp .. " (" .. hpPercent .. "%)"
+					DistText.Text = "Dist: " .. dist .. "m"
 					
-					-- Organizado: Nome + Team + HP + Distancia
-					X.Text = "[" .. teamName .. "] " .. b.Name .. "\n" ..
-						"HP: " .. hp .. "/" .. maxHp .. " (" .. hpPercent .. "%)\n" ..
-						"Dist: " .. dist .. "m"
+					NameText.Position = Vector2.new(g.X, g.Y - 35)
+					HpText.Position = Vector2.new(g.X, g.Y - 20)
+					DistText.Position = Vector2.new(g.X, g.Y - 5)
 					
-					-- Cor baseada no time ou vida
-					if teamName:lower():find("pirate") then
-						X.Color = Color3.fromRGB(255, 80, 80)
-					elseif teamName:lower():find("marine") then
-						X.Color = Color3.fromRGB(80, 150, 255)
-					else
-						X.Color = Color3.fromRGB(255, 255, 255)
-					end
-					
-					-- Se vida baixa, fica vermelho
-					if hpPercent < 30 then
-						X.Color = Color3.fromRGB(255, 0, 0)
-					end
-					
-					X.Position = Vector2.new(g.X, g.Y - 35)
-					X.Visible = true
+					NameText.Visible = true
+					HpText.Visible = true
+					DistText.Visible = true
 				else
-					X.Visible = false
+					NameText.Visible = false
+					HpText.Visible = false
+					DistText.Visible = false
 				end
 			until not b or not b.Parent or not Settings["ESP Player"]
-			X:Remove()
-			if b.Parent then
-				s:Destroy()
-			end
+			NameText:Remove()
+			HpText:Remove()
+			DistText:Remove()
+			if b.Parent then s:Destroy() end
 		end)
 	end
 end
@@ -25378,6 +25377,166 @@ SettingsAimbotSection.CreateDropdown(
 SettingsAimbotSection.CreateButton({ Title = "Refresh Player" }, function()
 	b:GetNewList(DetectNamePlayer())
 end)
+
+-- SISTEMA DE TRADUCAO COMPLETO - JUNTO COM SELECT LANGUAGE
+-- Primeira vez English, depois salvo, traduz UI inteira
+task.spawn(function()
+	if type(WaitForOptionsLoad) == "function" then pcall(WaitForOptionsLoad) end
+	task.wait(3)
+	
+	-- Garante CONFIG e Cache existem
+	if not getgenv().CONFIG then getgenv().CONFIG = { PARALLEL_REQUESTS = 5, SAVE_PATH = "Nexora_Translate_Cache.json", RETRY_MAX = 3, RETRY_BASE = 2, RATE_COOLDOWN = 5 } end
+	if not _G.CONFIG then _G.CONFIG = getgenv().CONFIG end
+	if not CONFIG then CONFIG = getgenv().CONFIG end
+	if not Cache then Cache = {} end
+	if not getgenv().Cache then getgenv().Cache = Cache end
+	if not HttpService then HttpService = game:GetService("HttpService") end
+	if not getgenv().HttpService then getgenv().HttpService = HttpService end
+	
+	-- Garante que request funciona
+	if not getgenv().request and not getgenv().http_request and not request then
+		if syn and syn.request then getgenv().request = syn.request end
+	end
+	
+	local LanguageCodes = {
+		["English"] = "en", ["Portuguese"] = "pt", ["Spanish"] = "es", ["French"] = "fr", ["German"] = "de",
+		["Italian"] = "it", ["Japanese"] = "ja", ["Chinese"] = "zh", ["Korean"] = "ko", ["Russian"] = "ru",
+		["Arabic"] = "ar", ["Hindi"] = "hi", ["Turkish"] = "tr", ["Dutch"] = "nl", ["Polish"] = "pl",
+		["Indonesian"] = "id", ["Thai"] = "th", ["Vietnamese"] = "vi", ["Filipino"] = "tl", ["Greek"] = "el",
+		["Hebrew"] = "he", ["Swedish"] = "sv", ["Norwegian"] = "no", ["Danish"] = "da", ["Finnish"] = "fi",
+		["Czech"] = "cs", ["Romanian"] = "ro", ["Hungarian"] = "hu", ["Ukrainian"] = "uk", ["Bengali"] = "bn",
+		["Malay"] = "ms", ["Persian"] = "fa", ["Urdu"] = "ur", ["Tamil"] = "ta", ["Telugu"] = "te",
+		["Marathi"] = "mr", ["Gujarati"] = "gu", ["Kannada"] = "kn", ["Malayalam"] = "ml", ["Punjabi"] = "pa",
+		["Burmese"] = "my", ["Khmer"] = "km", ["Lao"] = "lo", ["Sinhala"] = "si", ["Nepali"] = "ne",
+		["Swahili"] = "sw", ["Zulu"] = "zu", ["Afrikaans"] = "af"
+	}
+	
+	local function GetLangCode(name)
+		if not name or name=="" then return "en" end
+		if LanguageCodes[name] then return LanguageCodes[name] end
+		for k,v in pairs(LanguageCodes) do if name:find(k) or k:find(name) then return v end end
+		return "en"
+	end
+	
+	-- Funcoes auxiliares se nao existirem (fallback simples)
+	if not getgenv().batchTranslateParallel then
+		getgenv().batchTranslateParallel = function(texts, targetLang)
+			local results = {}
+			for _, txt in ipairs(texts) do
+				if Cache[txt] then
+					results[txt] = Cache[txt]
+				else
+					-- Tenta traduzir via Google Translate API free
+					local ok, result = pcall(function()
+						local reqFunc = getgenv().request or getgenv().http_request or request or (syn and syn.request) or (http and http.request)
+						if not reqFunc then return nil end
+						local url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=" .. targetLang .. "&dt=t&q=" .. HttpService:UrlEncode(txt)
+						local resp = reqFunc({Url = url, Method = "GET"})
+						if resp and resp.Body then
+							local data = HttpService:JSONDecode(resp.Body)
+							if data and data[1] and data[1][1] and data[1][1][1] then
+								return data[1][1][1]
+							end
+						end
+						return nil
+					end)
+					if ok and result and result ~= "" then
+						Cache[txt] = result
+						results[txt] = result
+					else
+						results[txt] = txt
+					end
+					task.wait(0.1)
+				end
+			end
+			return results
+		end
+	end
+	
+	if not getgenv().ApplyCacheToGUI then
+		getgenv().ApplyCacheToGUI = function()
+			if not Options then return end
+			for name, opt in pairs(Options) do
+				if opt and opt.FunctionCreate and opt.FunctionCreate.GetText then
+					local ok, label = pcall(function() return opt.FunctionCreate.GetText() end)
+					if ok and label and label.Text and Cache[label.Text] then
+						pcall(function() label.Text = Cache[label.Text] end)
+					end
+				end
+			end
+		end
+	end
+	
+	-- Exporta pra global
+	batchTranslateParallel = getgenv().batchTranslateParallel
+	ApplyCacheToGUI = getgenv().ApplyCacheToGUI
+	if not saveCache then
+		getgenv().saveCache = function()
+			pcall(function()
+				if isfile and writefile then
+					writefile(CONFIG.SAVE_PATH, HttpService:JSONEncode(Cache))
+				end
+			end)
+		end
+		saveCache = getgenv().saveCache
+	end
+	
+	getgenv().NexoraTranslateFunc = function()
+		if not Settings["Auto Translate"] then return end
+		local selectedLang = Settings["Select Language"] or "English"
+		local targetLang = GetLangCode(selectedLang)
+		print("[Nexora Translate] Traduzindo para: " .. selectedLang .. " (" .. targetLang .. ")")
+		if targetLang == "en" then print("[Translate] Ingles, mantendo original") return end
+		
+		pcall(function()
+			if not Options then print("[Translate] Options nil") return end
+			local texts = {}
+			local seen = {}
+			for name, opt in pairs(Options) do
+				if opt and opt.FunctionCreate then
+					local ok, label = pcall(function() return opt.FunctionCreate.GetText() end)
+					if ok and label and label.Text and label.Text ~= "" and #label.Text > 1 then
+						local txt = label.Text
+						if not seen[txt] then
+							seen[txt] = true
+							table.insert(texts, txt)
+						end
+					end
+				end
+			end
+			print("[Nexora Translate] Textos: " .. #texts)
+			if #texts > 0 then
+				local ok, translated = pcall(function() return batchTranslateParallel(texts, targetLang) end)
+				if ok then
+					print("[Nexora Translate] Aplicando traducao...")
+					pcall(function() saveCache() end)
+					for i=1,20 do
+						pcall(function() ApplyCacheToGUI() end)
+						task.wait(0.1)
+					end
+					print("[Nexora Translate] Concluido: " .. selectedLang)
+				else
+					warn("[Nexora Translate] Erro: " .. tostring(translated))
+				end
+			else
+				pcall(function() ApplyCacheToGUI() end)
+			end
+		end)
+	end
+	
+	if Settings["Auto Translate"] then task.wait(1) getgenv().NexoraTranslateFunc() end
+	
+	while true do
+		task.wait(0.5)
+		if getgenv().ForceRetranslate then
+			getgenv().ForceRetranslate = false
+			task.wait(0.5)
+			getgenv().NexoraTranslateFunc()
+		end
+	end
+end)
+
+
 function TeleportPlayer()
 	for b, b in pairs(game:GetService("Players"):GetChildren()) do
 		if b.Name == Settings["Select Player PVP"] then
