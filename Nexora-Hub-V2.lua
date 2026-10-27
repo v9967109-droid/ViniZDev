@@ -5223,152 +5223,18 @@ SectionLocalPlayerMain.CreateDropdown(
 	},
 	function(lang)
 		SaveSettings("Select Language", lang)
-		if Settings["Auto Translate"] then
-			pcall(function() 
-				getgenv().ForceRetranslate = true
-				-- Força retradução quando muda língua
-				if getgenv().NexoraTranslateFunc then
-					getgenv().NexoraTranslateFunc()
-				end
-			end)
-		end
 	end
 )
 SectionLocalPlayerMain.CreateToggle(
 	{
 		Title = "Auto Translate",
-		Desc = "First time English, after change saved. Select lang then enable.",
+		Desc = "First time English, after change saved.",
 		Default = Settings["Auto Translate"] or false,
 	},
 	function(K)
 		SaveSettings("Auto Translate", K)
-		if K then
-			pcall(function()
-				if getgenv().NexoraTranslateFunc then
-					getgenv().NexoraTranslateFunc()
-				end
-			end)
-		end
 	end
 )
-
--- Auto Translate System - Traduz TODA UI para língua selecionada - FIX
--- Primeira vez inglês, depois salvo
-task.spawn(function()
-	-- Aguarda Options carregar
-	if type(WaitForOptionsLoad) == "function" then pcall(WaitForOptionsLoad) end
-	task.wait(3)
-	
-	-- Garante que CONFIG e Cache existem (evita erro)
-	if not getgenv().CONFIG then getgenv().CONFIG = { PARALLEL_REQUESTS = 5, SAVE_PATH = "Nexora_Translate_Cache.json" } end
-	if not _G.CONFIG then _G.CONFIG = getgenv().CONFIG end
-	if not CONFIG then CONFIG = getgenv().CONFIG end
-	if not Cache then Cache = {} end
-	if not getgenv().Cache then getgenv().Cache = Cache end
-	if not HttpService then HttpService = game:GetService("HttpService") end
-	
-	local LanguageCodes = {
-		["English"] = "en", ["Portuguese"] = "pt", ["Spanish"] = "es", ["French"] = "fr", ["German"] = "de",
-		["Italian"] = "it", ["Japanese"] = "ja", ["Chinese"] = "zh", ["Korean"] = "ko", ["Russian"] = "ru",
-		["Arabic"] = "ar", ["Hindi"] = "hi", ["Turkish"] = "tr", ["Dutch"] = "nl", ["Polish"] = "pl",
-		["Indonesian"] = "id", ["Thai"] = "th", ["Vietnamese"] = "vi", ["Filipino"] = "tl", ["Greek"] = "el",
-		["Hebrew"] = "he", ["Swedish"] = "sv", ["Norwegian"] = "no", ["Danish"] = "da", ["Finnish"] = "fi",
-		["Czech"] = "cs", ["Romanian"] = "ro", ["Hungarian"] = "hu", ["Ukrainian"] = "uk", ["Bengali"] = "bn",
-		["Malay"] = "ms", ["Persian"] = "fa", ["Urdu"] = "ur", ["Tamil"] = "ta", ["Telugu"] = "te",
-		["Marathi"] = "mr", ["Gujarati"] = "gu", ["Kannada"] = "kn", ["Malayalam"] = "ml", ["Punjabi"] = "pa",
-		["Burmese"] = "my", ["Khmer"] = "km", ["Lao"] = "lo", ["Sinhala"] = "si", ["Nepali"] = "ne",
-		["Swahili"] = "sw", ["Zulu"] = "zu", ["Afrikaans"] = "af"
-	}
-	
-	local function GetLangCode(name)
-		if not name or name=="" then return "en" end
-		if LanguageCodes[name] then return LanguageCodes[name] end
-		-- Tenta por substring
-		for k,v in pairs(LanguageCodes) do if name:find(k) or k:find(name) then return v end end
-		return "en"
-	end
-	
-	-- Função que traduz TODA UI
-	getgenv().NexoraTranslateFunc = function()
-		if not Settings["Auto Translate"] then return end
-		local selectedLang = Settings["Select Language"] or "English"
-		local targetLang = GetLangCode(selectedLang)
-		print("[Nexora Translate] Traduzindo para: " .. selectedLang .. " (" .. targetLang .. ")")
-		
-		if targetLang == "en" then
-			-- Se inglês, limpa cache traduzido e restaura original? Por enquanto só avisa
-			print("[Nexora Translate] Inglês selecionado, mantendo original")
-			return
-		end
-		
-		pcall(function()
-			if not Options then print("[Translate] Options nil") return end
-			local texts = {}
-			local seen = {}
-			
-			-- Coleta TODOS os textos da UI (todos os Options)
-			for name, opt in pairs(Options) do
-				if opt and opt.FunctionCreate then
-					local ok, label = pcall(function() return opt.FunctionCreate.GetText() end)
-					if ok and label and label.Text and label.Text ~= "" then
-						local txt = label.Text
-						-- Pega mesmo se já tiver cache, pra garantir que traduz tudo
-						if not seen[txt] and #txt > 1 then
-							seen[txt] = true
-							table.insert(texts, txt)
-						end
-					end
-				end
-			end
-			
-			print("[Nexora Translate] Textos coletados: " .. #texts)
-			
-			if #texts > 0 then
-				-- Garante CONFIG existe antes de chamar batchTranslateParallel
-				if not CONFIG then CONFIG = { PARALLEL_REQUESTS = 5, SAVE_PATH = "Nexora_Translate_Cache.json" } end
-				if not getgenv().CONFIG then getgenv().CONFIG = CONFIG end
-				
-				local ok, translated = pcall(function()
-					return batchTranslateParallel(texts, targetLang)
-				end)
-				
-				if ok then
-					print("[Nexora Translate] Tradução concluída, aplicando...")
-					pcall(function() if type(saveCache) == "function" then saveCache() end end)
-					pcall(function() if type(ApplyCacheToGUI) == "function" then ApplyCacheToGUI() end end)
-					-- Força aplicar cache em loop por 2 segundos pra garantir que pega tudo
-					for i=1,20 do
-						task.wait(0.1)
-						pcall(function() if type(ApplyCacheToGUI) == "function" then ApplyCacheToGUI() end end)
-					end
-					print("[Nexora Translate] UI traduzida para " .. selectedLang)
-				else
-					warn("[Nexora Translate] Erro ao traduzir: " .. tostring(translated))
-				end
-			else
-				-- Mesmo sem textos novos, tenta aplicar cache existente
-				pcall(function() if type(ApplyCacheToGUI) == "function" then ApplyCacheToGUI() end end)
-			end
-		end)
-		end
-	
-	-- Executa tradução inicial se Auto Translate ativo
-	if Settings["Auto Translate"] then
-		task.wait(1)
-		getgenv().NexoraTranslateFunc()
-	end
-	
-	-- Loop para verificar ForceRetranslate e traduzir quando mudar língua
-	while true do
-		task.wait(0.5)
-		if getgenv().ForceRetranslate then
-			getgenv().ForceRetranslate = false
-			task.wait(0.5)
-			getgenv().NexoraTranslateFunc()
-		end
-	end
-end)
-
 SectionLocalPlayerMain.CreateButton({ Title = "Stop Tween" }, function()
 	getgenv().noclip = false
 	TweenManager.CancelCurrent()
@@ -25396,25 +25262,69 @@ function ESPPlayer()
 		X.Transparency = 1
 		X.Text = b.Name
 		X.Color = Color3.fromRGB(255, 255, 255)
-		X.Size = 20
+		X.Size = 18
 		X.Outline = true
 		X.OutlineColor = Color3.fromRGB(0, 0, 0)
 		X.Center = true
-		X.Font = 1
+		X.Font = 2
 		spawn(function()
 			repeat
 				task.wait()
 				local g, f = game.workspace.CurrentCamera:WorldToViewportPoint(b.HumanoidRootPart.Position)
 				if f then
-					X.Text = b.Name
-						.. " ("
-						.. math.round(t:DistanceFromCharacter(b.HumanoidRootPart.Position))
-						.. ")"
-						.. "\10"
-						.. b.Humanoid.Health
-						.. " / "
-						.. b.Humanoid.MaxHealth
-					X.Position = Vector2.new(g.X, g.Y - 20)
+					-- Pega Team, HP, Distancia organizado
+					local plr = game.Players:FindFirstChild(b.Name)
+					local teamName = "No Team"
+					local teamColor = Color3.fromRGB(255, 255, 255)
+					if plr and plr.Team then
+						teamName = plr.Team.Name
+						if plr.Team.TeamColor then
+							-- Cor do time
+							if teamName:lower():find("pirate") or teamName:lower():find("pirata") then
+								teamColor = Color3.fromRGB(255, 100, 100)
+							elseif teamName:lower():find("marine") then
+								teamColor = Color3.fromRGB(100, 150, 255)
+							else
+								teamColor = Color3.fromRGB(100, 255, 100)
+							end
+						end
+					end
+					
+					local dist = math.round(t:DistanceFromCharacter(b.HumanoidRootPart.Position))
+					local hp = math.round(b.Humanoid.Health)
+					local maxHp = math.round(b.Humanoid.MaxHealth)
+					local hpPercent = math.floor((hp / maxHp) * 100)
+					
+					-- Cor da vida baseada na porcentagem
+					local hpColor = ""
+					if hpPercent > 75 then
+						hpColor = ""
+					elseif hpPercent > 50 then
+						hpColor = ""
+					else
+						hpColor = ""
+					end
+					
+					-- Organizado: Nome + Team + HP + Distancia
+					X.Text = "[" .. teamName .. "] " .. b.Name .. "\n" ..
+						"HP: " .. hp .. "/" .. maxHp .. " (" .. hpPercent .. "%)\n" ..
+						"Dist: " .. dist .. "m"
+					
+					-- Cor baseada no time ou vida
+					if teamName:lower():find("pirate") then
+						X.Color = Color3.fromRGB(255, 80, 80)
+					elseif teamName:lower():find("marine") then
+						X.Color = Color3.fromRGB(80, 150, 255)
+					else
+						X.Color = Color3.fromRGB(255, 255, 255)
+					end
+					
+					-- Se vida baixa, fica vermelho
+					if hpPercent < 30 then
+						X.Color = Color3.fromRGB(255, 0, 0)
+					end
+					
+					X.Position = Vector2.new(g.X, g.Y - 35)
 					X.Visible = true
 				else
 					X.Visible = false
