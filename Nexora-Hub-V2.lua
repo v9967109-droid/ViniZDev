@@ -5252,16 +5252,21 @@ SectionLocalPlayerMain.CreateToggle(
 	end
 )
 
--- Auto Translate System - Traduz todo script para língua selecionada
+-- Auto Translate System - Traduz TODA UI para língua selecionada - FIX
 -- Primeira vez inglês, depois salvo
 task.spawn(function()
 	-- Aguarda Options carregar
-	if type(WaitForOptionsLoad) == "function" then
-		pcall(WaitForOptionsLoad)
-	end
-	task.wait(2)
+	if type(WaitForOptionsLoad) == "function" then pcall(WaitForOptionsLoad) end
+	task.wait(3)
 	
-	-- Language mapping
+	-- Garante que CONFIG e Cache existem (evita erro)
+	if not getgenv().CONFIG then getgenv().CONFIG = { PARALLEL_REQUESTS = 5, SAVE_PATH = "Nexora_Translate_Cache.json" } end
+	if not _G.CONFIG then _G.CONFIG = getgenv().CONFIG end
+	if not CONFIG then CONFIG = getgenv().CONFIG end
+	if not Cache then Cache = {} end
+	if not getgenv().Cache then getgenv().Cache = Cache end
+	if not HttpService then HttpService = game:GetService("HttpService") end
+	
 	local LanguageCodes = {
 		["English"] = "en", ["Portuguese"] = "pt", ["Spanish"] = "es", ["French"] = "fr", ["German"] = "de",
 		["Italian"] = "it", ["Japanese"] = "ja", ["Chinese"] = "zh", ["Korean"] = "ko", ["Russian"] = "ru",
@@ -5278,61 +5283,87 @@ task.spawn(function()
 	local function GetLangCode(name)
 		if not name or name=="" then return "en" end
 		if LanguageCodes[name] then return LanguageCodes[name] end
+		-- Tenta por substring
+		for k,v in pairs(LanguageCodes) do if name:find(k) or k:find(name) then return v end end
 		return "en"
 	end
 	
-	-- Função principal de tradução
+	-- Função que traduz TODA UI
 	getgenv().NexoraTranslateFunc = function()
 		if not Settings["Auto Translate"] then return end
 		local selectedLang = Settings["Select Language"] or "English"
 		local targetLang = GetLangCode(selectedLang)
+		print("[Nexora Translate] Traduzindo para: " .. selectedLang .. " (" .. targetLang .. ")")
+		
 		if targetLang == "en" then
-			-- Se inglês, não precisa traduzir, restaura original se tiver cache inglês?
-			-- Por enquanto não faz nada, mantém inglês
+			-- Se inglês, limpa cache traduzido e restaura original? Por enquanto só avisa
+			print("[Nexora Translate] Inglês selecionado, mantendo original")
 			return
 		end
 		
 		pcall(function()
-			if not Options then return end
+			if not Options then print("[Translate] Options nil") return end
 			local texts = {}
-			local textToOption = {}
+			local seen = {}
 			
-			-- Coleta todos os textos da UI
+			-- Coleta TODOS os textos da UI (todos os Options)
 			for name, opt in pairs(Options) do
-				if opt and opt.FunctionCreate and opt.FunctionCreate.GetText then
+				if opt and opt.FunctionCreate then
 					local ok, label = pcall(function() return opt.FunctionCreate.GetText() end)
 					if ok and label and label.Text and label.Text ~= "" then
 						local txt = label.Text
-						if not Cache or not Cache[txt] then
-							if not textToOption[txt] then
-								table.insert(texts, txt)
-								textToOption[txt] = true
-							end
+						-- Pega mesmo se já tiver cache, pra garantir que traduz tudo
+						if not seen[txt] and #txt > 1 then
+							seen[txt] = true
+							table.insert(texts, txt)
 						end
 					end
 				end
 			end
 			
-			if #texts > 0 and type(batchTranslateParallel) == "function" then
-				local translated = batchTranslateParallel(texts, targetLang)
-				if type(saveCache) == "function" then pcall(saveCache) end
-				if type(ApplyCacheToGUI) == "function" then pcall(ApplyCacheToGUI) end
+			print("[Nexora Translate] Textos coletados: " .. #texts)
+			
+			if #texts > 0 then
+				-- Garante CONFIG existe antes de chamar batchTranslateParallel
+				if not CONFIG then CONFIG = { PARALLEL_REQUESTS = 5, SAVE_PATH = "Nexora_Translate_Cache.json" } end
+				if not getgenv().CONFIG then getgenv().CONFIG = CONFIG end
+				
+				local ok, translated = pcall(function()
+					return batchTranslateParallel(texts, targetLang)
+				end)
+				
+				if ok then
+					print("[Nexora Translate] Tradução concluída, aplicando...")
+					pcall(function() if type(saveCache) == "function" then saveCache() end end)
+					pcall(function() if type(ApplyCacheToGUI) == "function" then ApplyCacheToGUI() end end)
+					-- Força aplicar cache em loop por 2 segundos pra garantir que pega tudo
+					for i=1,20 do
+						task.wait(0.1)
+						pcall(function() if type(ApplyCacheToGUI) == "function" then ApplyCacheToGUI() end end)
+					end
+					print("[Nexora Translate] UI traduzida para " .. selectedLang)
+				else
+					warn("[Nexora Translate] Erro ao traduzir: " .. tostring(translated))
+				end
 			else
-					if type(ApplyCacheToGUI) == "function" then pcall(ApplyCacheToGUI) end
+				-- Mesmo sem textos novos, tenta aplicar cache existente
+				pcall(function() if type(ApplyCacheToGUI) == "function" then ApplyCacheToGUI() end end)
 			end
 		end)
 		end
 	
 	-- Executa tradução inicial se Auto Translate ativo
 	if Settings["Auto Translate"] then
+		task.wait(1)
 		getgenv().NexoraTranslateFunc()
 	end
 	
-	-- Loop para verificar ForceRetranslate
+	-- Loop para verificar ForceRetranslate e traduzir quando mudar língua
 	while true do
-		task.wait(1)
+		task.wait(0.5)
 		if getgenv().ForceRetranslate then
 			getgenv().ForceRetranslate = false
+			task.wait(0.5)
 			getgenv().NexoraTranslateFunc()
 		end
 	end
