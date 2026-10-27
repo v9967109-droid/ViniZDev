@@ -2185,23 +2185,42 @@ function Nexora.CreateMain(config)
         TextXAlignment=Enum.TextXAlignment.Left,
         ZIndex=101
     }, reopen)
-    -- Bolinha verde online igual da imagem
+    -- Bolinha verde pulsante mais bonita
     local greenDot = make("Frame", {
-        BackgroundColor3=Color3.fromRGB(0, 255, 100),
+        BackgroundColor3=Color3.fromRGB(0, 255, 120),
         Size=UDim2.new(0, 10, 0, 10),
         Position=UDim2.new(1, -18, 0.5, -5),
         BorderSizePixel=0,
         ZIndex=101
     }, reopen)
     make("UICorner", {CornerRadius=UDim.new(1,0)}, greenDot)
-    make("UIStroke", {Color=Color3.fromRGB(0,0,0), Thickness=1, Transparency=0.5}, greenDot)
-    -- Efeito de brilho na bolinha verde
+    make("UIStroke", {Color=Color3.fromRGB(0, 0, 0), Thickness=1, Transparency=0.3}, greenDot)
+    -- Glow externo pulsante
+    local glowOuter = make("Frame", {
+        BackgroundColor3=Color3.fromRGB(0, 255, 120),
+        BackgroundTransparency=0.7,
+        Size=UDim2.new(0, 18, 0, 18),
+        Position=UDim2.new(0.5, 0, 0.5, 0),
+        AnchorPoint=Vector2.new(0.5, 0.5),
+        BorderSizePixel=0,
+        ZIndex=100
+    }, greenDot)
+    make("UICorner", {CornerRadius=UDim.new(1,0)}, glowOuter)
+    -- Efeito pulsante mais bonito
     task.spawn(function()
         while greenDot.Parent do
-            local tw = TweenService:Create(greenDot, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.3})
-            tw:Play(); tw.Completed:Wait()
-            tw = TweenService:Create(greenDot, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0})
-            tw:Play(); tw.Completed:Wait()
+            -- Pulsa tamanho + transparencia + glow
+            local tw1 = TweenService:Create(greenDot, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Size=UDim2.new(0, 12, 0, 12), BackgroundTransparency=0})
+            local twGlow1 = TweenService:Create(glowOuter, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Size=UDim2.new(0, 22, 0, 22), BackgroundTransparency=0.5})
+            tw1:Play(); twGlow1:Play(); tw1.Completed:Wait()
+            local tw2 = TweenService:Create(greenDot, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Size=UDim2.new(0, 10, 0, 10), BackgroundTransparency=0})
+            local twGlow2 = TweenService:Create(glowOuter, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Size=UDim2.new(0, 18, 0, 18), BackgroundTransparency=0.7})
+            tw2:Play(); twGlow2:Play(); tw2.Completed:Wait()
+            -- Brilho rapido
+            local tw3 = TweenService:Create(greenDot, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3=Color3.fromRGB(120, 255, 180)})
+            tw3:Play(); tw3.Completed:Wait()
+            local tw4 = TweenService:Create(greenDot, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3=Color3.fromRGB(0, 255, 120)})
+            tw4:Play(); tw4.Completed:Wait()
         end
     end)
     local FLOAT_POS_FILE = "NexoraHub_FloatPosition.json"
@@ -8116,7 +8135,59 @@ function isnetworkowner2(Q)
 	return true
 end
 function BringMob(Q)
+	-- Bring Mob DEVAGAR - nao puxa instantaneo, puxa suave
 	if not Settings["Bring Mob"] then return end
+	if not Q or not Q.Parent or not Q:FindFirstChild("HumanoidRootPart") then return end
+	local Character = t.Character
+	local Root = Character and Character:FindFirstChild("HumanoidRootPart")
+	if not Root then return end
+	if tick() - (getgenv().__BringLast or 0) < 0.35 then return end
+	getgenv().__BringLast = tick()
+	local anchor = Q.HumanoidRootPart.CFrame
+	if (Root.Position - anchor.Position).Magnitude > 120 then return end
+	pcall(function() sethiddenproperty(t, "SimulationRadius", math.huge) sethiddenproperty(t, "MaxSimulationRadius", math.huge) end)
+	local count = math.clamp(tonumber(Settings["Bring Mob Count"]) or 2, 2, 6)
+	local radius = count > 2 and 350 or 250
+	local gathered = 1
+	local TweenService = game:GetService("TweenService")
+	for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+		if gathered >= count then break end
+		if mob ~= Q and mob.Name == Q.Name and not mob:FindFirstChild("Ignored") and IsMobAlive(mob) then
+			local hrp = mob.HumanoidRootPart
+			local hum = mob:FindFirstChildOfClass("Humanoid")
+			if (hrp.Position - anchor.Position).Magnitude <= radius then
+				pcall(function()
+					if hum then
+						hum.WalkSpeed = 0
+						hum.JumpPower = 0
+						hum:ChangeState(Enum.HumanoidStateType.Physics)
+					end
+				end)
+				hrp.CanCollide = false
+				sizepart(mob)
+				-- Puxa devagar com Tween
+				local offset = CFrame.new(math.random(-4, 4), math.random(-1, 2), math.random(-4, 4))
+				local targetCF = anchor * offset
+				local dist = (hrp.Position - targetCF.Position).Magnitude
+				-- Tempo baseado na distancia: quanto mais longe, mais devagar, mas nunca instantaneo
+				local tweenTime = math.clamp(dist / 45, 0.6, 2.5)
+				pcall(function()
+					local tween = TweenService:Create(hrp, TweenInfo.new(tweenTime, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {CFrame = targetCF})
+					tween:Play()
+					-- Tambem aplica BodyVelocity suave pra garantir
+					local bv = hrp:FindFirstChild("BringMobVelocity") or Instance.new("BodyVelocity")
+					bv.Name = "BringMobVelocity"
+					bv.Parent = hrp
+					bv.MaxForce = Vector3.new(40000, 40000, 40000)
+					bv.Velocity = (targetCF.Position - hrp.Position).Unit * math.clamp(dist / tweenTime, 8, 22)
+					game:GetService("Debris"):AddItem(bv, tweenTime + 0.5)
+				end)
+				gathered += 1
+				task.wait(0.25)
+			end
+		end
+	end
+end
 	if not Q or not Q.Parent or not Q:FindFirstChild("HumanoidRootPart") then return end
 	local Character = t.Character
 	local Root = Character and Character:FindFirstChild("HumanoidRootPart")
@@ -21000,6 +21071,8 @@ function VerifyNearbyTrial()
 	end
 end
 function AutoTrialV4()
+	-- Auto Trial ORIGINAL + ToTarget ate NPC no topo da Great Tree (arvore grande) e entra no templo
+	-- Se ja estiver no templo, nao vai ate o NPC da Great Tree de novo
 	if Settings["Auto Finish Train Quest"] and Settings["Stack Train With Trial Race"] and (CheckGoTrain()) then
 		return
 	end
@@ -21018,6 +21091,67 @@ function AutoTrialV4()
 	end
 	g = GetTempleOfTime()
 	if not g and not VerifyNearbyTrial() then
+		-- ADICIONADO: Se nao estiver no templo, vai ate o NPC no topo da Great Tree primeiro
+		-- Great Tree topo: 4345, 575, -6159
+		local templePos = Vector3.new(28282.5703125, 14896.8505859375, 105.1042709350586)
+		local inTemple = false
+		pcall(function()
+			local charPos = t.Character and t.Character.HumanoidRootPart and t.Character.HumanoidRootPart.Position
+			if charPos and (charPos - templePos).Magnitude < 2000 then
+				inTemple = true
+			end
+			-- Tambem verifica se ja esta no Temple of Time via Map
+			if workspace.Map:FindFirstChild("Temple of Time") then
+				local templeMap = workspace.Map["Temple of Time"]
+				if templeMap:FindFirstChild("FFABorder") and templeMap.FFABorder:FindFirstChild("Forcefield") then
+					if templeMap.FFABorder.Forcefield.Transparency ~= 0 then
+						-- Se forcefield nao esta bloqueado, pode estar dentro
+						if charPos and (charPos - templePos).Magnitude < 5000 then
+							inTemple = true
+						end
+					end
+				end
+			end
+		end)
+		if not inTemple then
+			-- Vai ate a Great Tree topo onde fica o NPC
+			local GreatTreeTopCF = CFrame.new(4345.09375, 575.0524291992188, -6159.00439453125)
+			local GreatTreePos = Vector3.new(4345.09375, 575.0524291992188, -6159.00439453125)
+			local distToTree = 99999
+			pcall(function() distToTree = t:DistanceFromCharacter(GreatTreePos) end)
+			if distToTree > 150 then
+				toTarget(GreatTreeTopCF)
+				return
+			end
+			-- Ja esta na Great Tree, procura e interage com NPC la em cima
+			pcall(function()
+				for _, npcFolder in pairs({workspace.NPCs, game:GetService("ReplicatedStorage").NPCs}) do
+					for _, npc in pairs(npcFolder:GetChildren()) do
+						if npc:FindFirstChild("HumanoidRootPart") then
+							local npcPos = npc.HumanoidRootPart.Position
+							if (npcPos - GreatTreePos).Magnitude < 150 then
+								toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3))
+								task.wait(0.5)
+								for _, v in pairs(npc:GetDescendants()) do
+									if v:IsA("ClickDetector") then
+										pcall(function() fireclickdetector(v) end)
+									end
+									if v:IsA("ProximityPrompt") then
+										pcall(function() fireproximityprompt(v) end)
+									end
+								end
+								pcall(function()
+									game.ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateAncientOne")
+									game.ReplicatedStorage.Remotes.CommF_:InvokeServer("TempleClock", "Check")
+								end)
+								task.wait(1)
+								break
+							end
+						end
+					end
+				end
+			end)
+		end
 		toTarget(CFrame.new(28282.5703125, 14896.8505859375, 105.1042709350586))
 		return
 	end
