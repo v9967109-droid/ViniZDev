@@ -2195,12 +2195,16 @@ function Nexora.CreateMain(config)
     }, reopen)
     make("UICorner", {CornerRadius=UDim.new(1,0)}, greenDot)
     make("UIStroke", {Color=Color3.fromRGB(0,0,0), Thickness=1, Transparency=0.5}, greenDot)
-    -- Efeito de brilho na bolinha verde
+    -- Bolinha verde pulsante mais bonita
     task.spawn(function()
         while greenDot.Parent do
-            local tw = TweenService:Create(greenDot, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.3})
+            local tw = TweenService:Create(greenDot, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Size=UDim2.new(0, 12, 0, 12), BackgroundTransparency=0.2})
             tw:Play(); tw.Completed:Wait()
-            tw = TweenService:Create(greenDot, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0})
+            tw = TweenService:Create(greenDot, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Size=UDim2.new(0, 10, 0, 10), BackgroundTransparency=0})
+            tw:Play(); tw.Completed:Wait()
+            tw = TweenService:Create(greenDot, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3=Color3.fromRGB(120, 255, 180)})
+            tw:Play(); tw.Completed:Wait()
+            tw = TweenService:Create(greenDot, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3=Color3.fromRGB(0, 255, 100)})
             tw:Play(); tw.Completed:Wait()
         end
     end)
@@ -8116,13 +8120,12 @@ function isnetworkowner2(Q)
 	return true
 end
 function BringMob(Q)
-	-- Bring Mob DEVAGAR - puxa os NPC devagar, nao instantaneo
 	if not Settings["Bring Mob"] then return end
 	if not Q or not Q.Parent or not Q:FindFirstChild("HumanoidRootPart") then return end
 	local Character = t.Character
 	local Root = Character and Character:FindFirstChild("HumanoidRootPart")
 	if not Root then return end
-	if tick() - (getgenv().__BringLast or 0) < 0.40 then return end
+	if tick() - (getgenv().__BringLast or 0) < 0.25 then return end
 	getgenv().__BringLast = tick()
 	local anchor = Q.HumanoidRootPart.CFrame
 	if (Root.Position - anchor.Position).Magnitude > 120 then return end
@@ -8130,38 +8133,17 @@ function BringMob(Q)
 	local count = math.clamp(tonumber(Settings["Bring Mob Count"]) or 2, 2, 6)
 	local radius = count > 2 and 350 or 250
 	local gathered = 1
-	local TweenService = game:GetService("TweenService")
 	for _, mob in ipairs(workspace.Enemies:GetChildren()) do
 		if gathered >= count then break end
 		if mob ~= Q and mob.Name == Q.Name and not mob:FindFirstChild("Ignored") and IsMobAlive(mob) then
 			local hrp = mob.HumanoidRootPart
-			local hum = mob:FindFirstChildOfClass("Humanoid")
 			if (hrp.Position - anchor.Position).Magnitude <= radius then
-				pcall(function()
-					if hum then
-						hum.WalkSpeed = 0
-						hum.JumpPower = 0
-						hum:ChangeState(Enum.HumanoidStateType.Physics)
-					end
-				end)
+				hrp.CFrame = anchor * CFrame.new(math.random(-3, 3), 0, math.random(-3, 3))
 				hrp.CanCollide = false
+				pcall(function() mob.Humanoid.WalkSpeed = 0 mob.Humanoid.JumpPower = 0 end)
 				sizepart(mob)
-				local offset = CFrame.new(math.random(-4, 4), math.random(-1, 2), math.random(-4, 4))
-				local targetCF = anchor * offset
-				local dist = (hrp.Position - targetCF.Position).Magnitude
-				local tweenTime = math.clamp(dist / 35, 0.8, 2.8)
-				pcall(function()
-					local tween = TweenService:Create(hrp, TweenInfo.new(tweenTime, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {CFrame = targetCF})
-					tween:Play()
-					local bv = Instance.new("BodyVelocity")
-					bv.Name = "BringMobVelocity"
-					bv.Parent = hrp
-					bv.MaxForce = Vector3.new(40000, 40000, 40000)
-					bv.Velocity = (targetCF.Position - hrp.Position).Unit * math.clamp(dist / tweenTime, 10, 24)
-					game:GetService("Debris"):AddItem(bv, tweenTime + 0.6)
-				end)
 				gathered += 1
-				task.wait(0.30)
+				task.wait(0.15)
 			end
 		end
 	end
@@ -21040,6 +21022,22 @@ function AutoTrialV4()
 	end
 	g = GetTempleOfTime()
 	if not g and not VerifyNearbyTrial() then
+		local inTempleCheck = false
+		pcall(function()
+			local charPos = t.Character and t.Character:FindFirstChild("HumanoidRootPart") and t.Character.HumanoidRootPart.Position
+			if charPos and (charPos - Vector3.new(28282.5703125, 14896.8505859375, 105.1042709350586)).Magnitude < 3000 then
+				inTempleCheck = true
+			end
+		end)
+		if not inTempleCheck then
+			local GreatTreePos = Vector3.new(4345.09375, 575.0524291992188, -6159.00439453125)
+			local distTree = 99999
+			pcall(function() distTree = t:DistanceFromCharacter(GreatTreePos) end)
+			if distTree > 150 then
+				toTarget(CFrame.new(4345.09375, 575.0524291992188, -6159.00439453125))
+				return
+			end
+		end
 		toTarget(CFrame.new(28282.5703125, 14896.8505859375, 105.1042709350586))
 		return
 	end
