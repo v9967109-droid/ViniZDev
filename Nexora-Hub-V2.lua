@@ -21041,7 +21041,7 @@ function AutoTrialV4()
 		end
 	end)
 	if shouldGoGreatTree then
-		-- Vai direto pro NPC misterioso - clica Interagir depois Use-o pra entrar no templo + fix reset
+		-- CLICK NA TELA MESMO pra clickar no NPC e clickar em Use-o + fix reset
 		pcall(function()
 			local char = t.Character
 			if not char or not char:FindFirstChild("HumanoidRootPart") then
@@ -21058,19 +21058,68 @@ function AutoTrialV4()
 					if string.find(name, "mysterious") or string.find(name, "misc") then
 						if npc:FindFirstChild("HumanoidRootPart") then
 							foundMysterious = true
+							-- PASSO 1: toTarget até NPC
 							toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 1))
 							task.wait(1.2)
+							-- PASSO 2: CLICK NA TELA MESMO no NPC pra aparecer OUTROS. Interagir
 							for _, v in pairs(npc:GetDescendants()) do
+								if v:IsA("ClickDetector") then
+									for i=1,3 do
+										pcall(function()
+											-- Click na tela mesmo no NPC
+											fireclickdetector(v)
+											-- Tenta click via VirtualInput
+											local cam = workspace.CurrentCamera
+											local pos, onScreen = cam:WorldToScreenPoint(npc.HumanoidRootPart.Position)
+											if onScreen then
+												pcall(function()
+													game:GetService("VirtualInputManager"):SendMouseButtonEvent(pos.X, pos.Y, 0, true, game, 0)
+													task.wait(0.1)
+													game:GetService("VirtualInputManager"):SendMouseButtonEvent(pos.X, pos.Y, 0, false, game, 0)
+												end)
+											end
+										end)
+										task.wait(0.3)
+									end
+								end
 								if v:IsA("ProximityPrompt") then
 									for i=1,3 do pcall(function() v.HoldDuration=0 fireproximityprompt(v) end) task.wait(0.3) end
 								end
 							end
-							task.wait(0.8)
+							task.wait(1)
+							-- PASSO 3: CLICK NA TELA MESMO em Use-o pra entrar no templo
+							pcall(function()
+								-- Procura botao Use-o na tela e clica
+								for _, gui in pairs(game.Players.LocalPlayer.PlayerGui:GetDescendants()) do
+									if gui:IsA("TextButton") or gui:IsA("ImageButton") then
+										local txt = string.lower(gui.Text or gui.Name or "")
+										if string.find(txt, "use") then
+											for i=1,5 do
+												pcall(function()
+													-- Click na tela no botao Use-o
+													gui:Activate()
+													for _, conn in pairs(getconnections and getconnections(gui.MouseButton1Click) or {}) do
+														conn:Fire()
+													end
+													-- VirtualInput click no botao
+													local absPos = gui.AbsolutePosition
+													local absSize = gui.AbsoluteSize
+													local cx = absPos.X + absSize.X/2
+													local cy = absPos.Y + absSize.Y/2
+													game:GetService("VirtualInputManager"):SendMouseButtonEvent(cx, cy, 0, true, game, 0)
+													task.wait(0.1)
+													game:GetService("VirtualInputManager"):SendMouseButtonEvent(cx, cy, 0, false, game, 0)
+												end)
+												task.wait(0.2)
+											end
+										end
+									end
+								end
+							end)
 							pcall(function()
 								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("MysteriousForce", "Check")
 								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("MysteriousForce", "UseIt")
 								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RaceV4Progress", "Check")
-								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RaceV4Progress", "Begin")
 							end)
 							task.wait(1.5)
 							toTarget(CFrame.new(28282.5703125, 14896.8505859375, 105.1042709350586))
@@ -21094,8 +21143,42 @@ function AutoTrialV4()
 								if v:IsA("ProximityPrompt") then
 									for i=1,3 do pcall(function() v.HoldDuration=0 fireproximityprompt(v) end) task.wait(0.3) end
 								end
+								if v:IsA("ClickDetector") then
+									for i=1,3 do
+										pcall(function()
+											fireclickdetector(v)
+											local cam = workspace.CurrentCamera
+											local pos, onScreen = cam:WorldToScreenPoint(npc.HumanoidRootPart.Position)
+											if onScreen then
+												game:GetService("VirtualInputManager"):SendMouseButtonEvent(pos.X, pos.Y, 0, true, game, 0)
+												task.wait(0.1)
+												game:GetService("VirtualInputManager"):SendMouseButtonEvent(pos.X, pos.Y, 0, false, game, 0)
+											end
+										end)
+										task.wait(0.3)
+									end
+								end
 							end
-							task.wait(0.8)
+							task.wait(1)
+							pcall(function()
+								for _, gui in pairs(game.Players.LocalPlayer.PlayerGui:GetDescendants()) do
+									if gui:IsA("TextButton") then
+										if string.find(string.lower(gui.Text or ""), "use") then
+											for i=1,3 do
+												pcall(function()
+													gui:Activate()
+													local absPos = gui.AbsolutePosition
+													local absSize = gui.AbsoluteSize
+													game:GetService("VirtualInputManager"):SendMouseButtonEvent(absPos.X+absSize.X/2, absPos.Y+absSize.Y/2, 0, true, game, 0)
+													task.wait(0.1)
+													game:GetService("VirtualInputManager"):SendMouseButtonEvent(absPos.X+absSize.X/2, absPos.Y+absSize.Y/2, 0, false, game, 0)
+												end)
+												task.wait(0.2)
+											end
+										end
+									end
+								end
+							end)
 							pcall(function()
 								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("MysteriousForce", "UseIt")
 								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("MysteriousForce", "Check")
