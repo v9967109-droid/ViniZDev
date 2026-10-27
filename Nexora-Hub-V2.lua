@@ -5223,18 +5223,121 @@ SectionLocalPlayerMain.CreateDropdown(
 	},
 	function(lang)
 		SaveSettings("Select Language", lang)
+		if Settings["Auto Translate"] then
+			pcall(function() 
+				getgenv().ForceRetranslate = true
+				-- Força retradução quando muda língua
+				if getgenv().NexoraTranslateFunc then
+					getgenv().NexoraTranslateFunc()
+				end
+			end)
+		end
 	end
 )
 SectionLocalPlayerMain.CreateToggle(
 	{
 		Title = "Auto Translate",
-		Desc = "First time English, after change saved.",
+		Desc = "First time English, after change saved. Select lang then enable.",
 		Default = Settings["Auto Translate"] or false,
 	},
 	function(K)
 		SaveSettings("Auto Translate", K)
+		if K then
+			pcall(function()
+				if getgenv().NexoraTranslateFunc then
+					getgenv().NexoraTranslateFunc()
+				end
+			end)
+		end
 	end
 )
+
+-- Auto Translate System - Traduz todo script para língua selecionada
+-- Primeira vez inglês, depois salvo
+task.spawn(function()
+	-- Aguarda Options carregar
+	if type(WaitForOptionsLoad) == "function" then
+		pcall(WaitForOptionsLoad)
+	end
+	task.wait(2)
+	
+	-- Language mapping
+	local LanguageCodes = {
+		["English"] = "en", ["Portuguese"] = "pt", ["Spanish"] = "es", ["French"] = "fr", ["German"] = "de",
+		["Italian"] = "it", ["Japanese"] = "ja", ["Chinese"] = "zh", ["Korean"] = "ko", ["Russian"] = "ru",
+		["Arabic"] = "ar", ["Hindi"] = "hi", ["Turkish"] = "tr", ["Dutch"] = "nl", ["Polish"] = "pl",
+		["Indonesian"] = "id", ["Thai"] = "th", ["Vietnamese"] = "vi", ["Filipino"] = "tl", ["Greek"] = "el",
+		["Hebrew"] = "he", ["Swedish"] = "sv", ["Norwegian"] = "no", ["Danish"] = "da", ["Finnish"] = "fi",
+		["Czech"] = "cs", ["Romanian"] = "ro", ["Hungarian"] = "hu", ["Ukrainian"] = "uk", ["Bengali"] = "bn",
+		["Malay"] = "ms", ["Persian"] = "fa", ["Urdu"] = "ur", ["Tamil"] = "ta", ["Telugu"] = "te",
+		["Marathi"] = "mr", ["Gujarati"] = "gu", ["Kannada"] = "kn", ["Malayalam"] = "ml", ["Punjabi"] = "pa",
+		["Burmese"] = "my", ["Khmer"] = "km", ["Lao"] = "lo", ["Sinhala"] = "si", ["Nepali"] = "ne",
+		["Swahili"] = "sw", ["Zulu"] = "zu", ["Afrikaans"] = "af"
+	}
+	
+	local function GetLangCode(name)
+		if not name or name=="" then return "en" end
+		if LanguageCodes[name] then return LanguageCodes[name] end
+		return "en"
+	end
+	
+	-- Função principal de tradução
+	getgenv().NexoraTranslateFunc = function()
+		if not Settings["Auto Translate"] then return end
+		local selectedLang = Settings["Select Language"] or "English"
+		local targetLang = GetLangCode(selectedLang)
+		if targetLang == "en" then
+			-- Se inglês, não precisa traduzir, restaura original se tiver cache inglês?
+			-- Por enquanto não faz nada, mantém inglês
+			return
+		end
+		
+		pcall(function()
+			if not Options then return end
+			local texts = {}
+			local textToOption = {}
+			
+			-- Coleta todos os textos da UI
+			for name, opt in pairs(Options) do
+				if opt and opt.FunctionCreate and opt.FunctionCreate.GetText then
+					local ok, label = pcall(function() return opt.FunctionCreate.GetText() end)
+					if ok and label and label.Text and label.Text ~= "" then
+						local txt = label.Text
+						if not Cache or not Cache[txt] then
+							if not textToOption[txt] then
+								table.insert(texts, txt)
+								textToOption[txt] = true
+							end
+						end
+					end
+				end
+			end
+			
+			if #texts > 0 and type(batchTranslateParallel) == "function" then
+				local translated = batchTranslateParallel(texts, targetLang)
+				if type(saveCache) == "function" then pcall(saveCache) end
+				if type(ApplyCacheToGUI) == "function" then pcall(ApplyCacheToGUI) end
+			else
+					if type(ApplyCacheToGUI) == "function" then pcall(ApplyCacheToGUI) end
+			end
+		end)
+		end
+	
+	-- Executa tradução inicial se Auto Translate ativo
+	if Settings["Auto Translate"] then
+		getgenv().NexoraTranslateFunc()
+	end
+	
+	-- Loop para verificar ForceRetranslate
+	while true do
+		task.wait(1)
+		if getgenv().ForceRetranslate then
+			getgenv().ForceRetranslate = false
+			getgenv().NexoraTranslateFunc()
+		end
+	end
+end)
+
 SectionLocalPlayerMain.CreateButton({ Title = "Stop Tween" }, function()
 	getgenv().noclip = false
 	TweenManager.CancelCurrent()
