@@ -27,7 +27,7 @@ do
 		local n = mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,10), Size=UDim2.new(1,0,1,-12), Text="N", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.Arcade, TextSize=26}, logo)
 		mk("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 140, 255))}, n)
 		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,62), Size=UDim2.fromOffset(220,20), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.Arcade, TextSize=16}, card)
-		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,80), Size=UDim2.fromOffset(220,14), BackgroundTransparency=1, Text="BLOX FRUITS • ViniZDev", TextColor3=Color3.fromRGB(165,165,174), Font=Enum.Font.Code, TextSize=11}, card)
+		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,80), Size=UDim2.fromOffset(220,14), BackgroundTransparency=1, Text="BLOX FRUITS . ViniZ_DV", TextColor3=Color3.fromRGB(165,165,174), Font=Enum.Font.Code, TextSize=11}, card)
 		local track = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,92), Size=UDim2.fromOffset(150,3), BackgroundColor3=Color3.fromRGB(30,28,24), BorderSizePixel=0}, card)
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, track)
 		local fill = mk("Frame", {Size=UDim2.new(0,0,1,0), BackgroundColor3=GOLD, BorderSizePixel=0}, track)
@@ -2097,7 +2097,7 @@ function Nexora.CreateMain(config)
     end
     local title = make("TextLabel", {Position=UDim2.new(0,18,0,10), Size=UDim2.new(0,300,0,26), BackgroundTransparency=1, RichText=true, Text='<font color="#FFFFFF">NEXORA</font> <font color="#008CFF">HUB</font>', TextColor3=Color3.fromRGB(255,255,255), Font=Enum.Font.Arcade, TextSize=22, TextXAlignment=Enum.TextXAlignment.Left}, top)
     local function tracked(t) return (string.gsub(string.upper(t), "(%S)", "%1\u{2009}")) end
-    local desc = make("TextLabel", {Position=UDim2.new(0,19,0,37), Size=UDim2.new(0,300,0,16), BackgroundTransparency=1, Text=tracked("BLOX FRUITS • ViniZDev"), TextColor3=GRAY, Font=Enum.Font.Code, TextSize=10, TextXAlignment=Enum.TextXAlignment.Left}, top)
+    local desc = make("TextLabel", {Position=UDim2.new(0,19,0,37), Size=UDim2.new(0,300,0,16), BackgroundTransparency=1, Text=tracked("BLOX FRUITS . ViniZ_DV"), TextColor3=GRAY, Font=Enum.Font.Code, TextSize=10, TextXAlignment=Enum.TextXAlignment.Left}, top)
     -- 3 tracinhos removidos da UI como você pediu
     local hamburger = make("TextButton", {Name="Menu", AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,-12,0.5,0), Size=UDim2.new(0,36,0,36), BackgroundTransparency=1, Text="", TextTransparency=1, Visible=false, AutoButtonColor=false}, top)
     -- ScreenGui separado: o botão fica fora da janela e não some junto com a UI (nem com o keybind Toggle GUI).
@@ -2860,7 +2860,7 @@ task.delay(10, function() Nexora.RestoreSavedToggles() end)
 return Nexora
 
 end)()
-Main = A.CreateMain({ Title = "NEXORA HUB", Desc = "BLOX FRUITS • ViniZDev" })
+Main = A.CreateMain({ Title = "NEXORA HUB", Desc = "BLOX FRUITS . ViniZ_DV" })
 
 PageShop = Main.CreatePage({ Page_Name = "Shop", Page_Title = "Shop" })
 getgenv().Options = A.Options
@@ -21021,18 +21021,9 @@ function AutoTrialV4()
 		return
 	end
 	g = GetTempleOfTime()
-	-- FLUXO CORRETO: Vai pro topo da Great Tree onde fica Mysterious Force (NPC invisivel no topo)
+	-- FLUXO: Vai direto pro NPC misterioso (Mysterious Force) sem local aleatorio e sem Y alto
 	local shouldGoGreatTree = false
 	local templePos = Vector3.new(28282.5703125, 14896.8505859375, 105.1042709350586)
-	-- Lista de posicoes no topo da Great Tree - tenta achar o topo exato onde fica o NPC
-	local GreatTreeTops = {
-		Vector3.new(4345.09375, 575.0524291992188, -6159.00439453125), -- base do topo
-		Vector3.new(4345.09375, 800, -6159.00439453125), -- mais alto
-		Vector3.new(4345.09375, 1100, -6159.00439453125), -- topo real onde fica Mysterious Force
-		Vector3.new(2330, 800, -8000), -- alternativa
-	}
-	local GreatTreeCF = CFrame.new(4345.09375, 1100, -6159.00439453125) -- topo mais alto
-	local GreatTreePos = GreatTreeTops[3] -- usa o mais alto como referencia
 	pcall(function()
 		local charPos = t.Character and t.Character:FindFirstChild("HumanoidRootPart") and t.Character.HumanoidRootPart.Position
 		if charPos then
@@ -21047,61 +21038,46 @@ function AutoTrialV4()
 		end
 	end)
 	if shouldGoGreatTree then
-		-- Tenta achar Mysterious Force direto (NPC invisivel no topo)
+		-- Vai direto pro NPC misterioso (Mysterious Force / MISC) - sem Y alto, sem local aleatorio
 		local foundMysterious = false
 		pcall(function()
 			for _, folder in pairs({workspace.NPCs, game:GetService("ReplicatedStorage").NPCs}) do
 				for _, npc in pairs(folder:GetChildren()) do
-					local name = npc.Name or ""
-					local display = ""
-					pcall(function() display = npc:GetAttribute("DisplayName") or "" end)
-					if string.find(string.lower(name), "mysterious") or string.find(string.lower(display), "mysterious") or string.find(string.lower(name), "misc") then
+					local name = string.lower(npc.Name or "")
+					if string.find(name, "mysterious") or string.find(name, "misc") or string.find(name, "mysterious force") then
 						if npc:FindFirstChild("HumanoidRootPart") then
-							local npcPos = npc.HumanoidRootPart.Position
-							-- Se NPC estiver perto da Great Tree (qualquer altura)
-							if (Vector3.new(npcPos.X, 0, npcPos.Z) - Vector3.new(4345, 0, -6159)).Magnitude < 1000 then
-								foundMysterious = true
-								toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0, 2, 3))
-								task.wait(0.5)
-								for _, v in pairs(npc:GetDescendants()) do
-									if v:IsA("ClickDetector") then pcall(function() fireclickdetector(v) end) end
-									if v:IsA("ProximityPrompt") then pcall(function() fireproximityprompt(v) end) end
-								end
-								pcall(function()
-									game.ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateAncientOne")
-									game.ReplicatedStorage.Remotes.CommF_:InvokeServer("TempleClock", "Check")
-									game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RaceV4Progress", "Check")
-									game.ReplicatedStorage.Remotes.CommF_:InvokeServer("MysteriousForce", "Check")
-								end)
-								task.wait(1)
-								-- Depois de interagir, vai pro templo
-								toTarget(CFrame.new(28282.5703125, 14896.8505859375, 105.1042709350586))
-								return
+							foundMysterious = true
+							toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 2))
+							task.wait(0.5)
+							for _, v in pairs(npc:GetDescendants()) do
+								if v:IsA("ClickDetector") then pcall(function() fireclickdetector(v) end) end
+								if v:IsA("ProximityPrompt") then pcall(function() fireproximityprompt(v) end) end
 							end
+							pcall(function()
+								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateAncientOne")
+								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("TempleClock", "Check")
+								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RaceV4Progress", "Check")
+								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("MysteriousForce", "Check")
+							end)
+							task.wait(1)
+							toTarget(CFrame.new(28282.5703125, 14896.8505859375, 105.1042709350586))
+							return
 						end
 					end
 				end
 			end
 		end)
 		if foundMysterious then return end
-		-- Se nao achou NPC direto, vai pro topo da Great Tree (mais alto)
-		local distTree = 99999
-		pcall(function() distTree = t:DistanceFromCharacter(GreatTreePos) end)
-		if distTree > 150 then
-			-- Vai pro topo mais alto onde fica o Mysterious Force
-			toTarget(GreatTreeCF)
-			return
-		end
-		-- Ja esta no topo, procura qualquer NPC perto
-		local foundNPC = false
+		-- Se nao achou pelo nome, procura NPCs perto da Great Tree (sem Y alto, so XZ)
 		pcall(function()
-			for _, folder in pairs({workspace.NPCs, game:GetService("ReplicatedStorage").NPCs}) do
+			for _, folder in pairs({workspace.NPCs}) do
 				for _, npc in pairs(folder:GetChildren()) do
 					if npc:FindFirstChild("HumanoidRootPart") then
-						local npcDist = (npc.HumanoidRootPart.Position - GreatTreePos).Magnitude
-						if npcDist < 300 then
-							foundNPC = true
-							toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0, 2, 3))
+						local npcPos = npc.HumanoidRootPart.Position
+						-- So verifica XZ, sem Y alto - vai direto pro NPC que tiver na Great Tree
+						local xzDist = (Vector3.new(npcPos.X, 0, npcPos.Z) - Vector3.new(4345, 0, -6159)).Magnitude
+						if xzDist < 500 then
+							toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 2))
 							task.wait(0.5)
 							for _, v in pairs(npc:GetDescendants()) do
 								if v:IsA("ClickDetector") then pcall(function() fireclickdetector(v) end) end
@@ -21112,14 +21088,14 @@ function AutoTrialV4()
 								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("TempleClock", "Check")
 							end)
 							task.wait(1)
-							break
+							toTarget(CFrame.new(28282.5703125, 14896.8505859375, 105.1042709350586))
+							return
 						end
 					end
 				end
-				if foundNPC then break end
 			end
 		end)
-		-- Entra no templo
+		-- Fallback: se ainda nao achou, vai direto pro templo
 		toTarget(CFrame.new(28282.5703125, 14896.8505859375, 105.1042709350586))
 		return
 	end
@@ -30189,7 +30165,7 @@ end)
 
 
 
--- ===================== FINAL FIX ViniZDev - FAST CLICK 0.06s + NO SPAM + ANCHOR + RESET =====================
+-- ===================== FINAL FIX ViniZ_DV - FAST CLICK 0.06s + NO SPAM + ANCHOR + RESET =====================
 getgenv().PhysicalGunClickInterval = 0.05
 getgenv().DSClickInterval = 0.05
 getgenv().DragonstormRemoteDelay = 0.05
@@ -30266,4 +30242,4 @@ function UseDragonstormAllSeaEvents(Part)
     getgenv().SpamGunDragonStorm(Part)
 end
 
-print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZDev")
+print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZ_DV")
