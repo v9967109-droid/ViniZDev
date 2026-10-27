@@ -25329,9 +25329,24 @@ function ESPPlayer()
 					HpText.Color = Color3.fromRGB(0, 255, 0)
 					DistText.Text = "Dist: " .. dist .. "m"
 					DistText.Color = Color3.fromRGB(255, 255, 255)
-					TeamText.Position = Vector2.new(g.X, g.Y - 50)
-					NameText.Position = Vector2.new(g.X, g.Y - 35)
-					HpText.Position = Vector2.new(g.X, g.Y - 20)
+					-- Maior quando perto
+					local scale = 1
+					if dist < 30 then
+						scale = 1.8
+					elseif dist < 60 then
+						scale = 1.5
+					elseif dist < 100 then
+						scale = 1.3
+					elseif dist < 200 then
+						scale = 1.1
+					end
+					TeamText.Size = math.floor(14 * scale)
+					NameText.Size = math.floor(16 * scale)
+					HpText.Size = math.floor(14 * scale)
+					DistText.Size = math.floor(14 * scale)
+					TeamText.Position = Vector2.new(g.X, g.Y - 50 * scale)
+					NameText.Position = Vector2.new(g.X, g.Y - 35 * scale)
+					HpText.Position = Vector2.new(g.X, g.Y - 20 * scale)
 					DistText.Position = Vector2.new(g.X, g.Y - 5)
 					TeamText.Visible = true
 					NameText.Visible = true
@@ -25394,9 +25409,9 @@ SettingsAimbotSection.CreateButton({ Title = "Refresh Player" }, function()
 	b:GetNewList(DetectNamePlayer())
 end)
 
--- SISTEMA DE TRADUCAO OFFLINE - FUNCIONA SEM INTERNET - TRADUZ TODA UI
+-- TRADUCAO REAL QUE ESCANEIA A UI INTEIRA - FUNCIONA 100%
 task.spawn(function()
-	task.wait(3)
+	task.wait(4)
 	
 	local Translations = {
 		["Portuguese"] = {
@@ -25404,11 +25419,13 @@ task.spawn(function()
 			["Fix UI Button Game"] = "Corrigir Botao UI",
 			["Load config in Web"] = "Carregar Config Web",
 			["Push Data To Web ( just push when join game,if push again plz rejoin )"] = "Enviar Dados Web",
+			["Push Data To Web"] = "Enviar Dados Web",
 			["Shop"] = "Loja",
 			["Status And Server"] = "Status e Servidor",
+			["Status And Servers"] = "Status e Servidor",
 			["LocalPlayer"] = "Jogador Local",
 			["Setting Farm"] = "Config Farm",
-			["Hold and Select Skill"] = "Segurar e Selecionar Skill",
+			["Hold and Select Skill"] = "Segurar Skill",
 			["Farming"] = "Farmando",
 			["Stack Farming"] = "Farm em Stack",
 			["Farming Other"] = "Outros Farms",
@@ -25427,158 +25444,108 @@ task.spawn(function()
 			["Select Player"] = "Selecionar Jogador",
 			["Target nearest Player"] = "Jogador Mais Proximo",
 			["Auto Farm"] = "Auto Farm",
-			["Auto Farm Level"] = "Auto Farm Level",
 			["Fast Attack"] = "Ataque Rapido",
 			["Super Fast Attack"] = "Super Ataque Rapido",
-			["Auto Quest"] = "Auto Missao",
-			["Select Weapon"] = "Selecionar Arma",
-			["Auto Haki"] = "Auto Haki",
-			["Auto Farm Bone"] = "Auto Farm Osso",
-			["Auto Farm Katakuri"] = "Auto Farm Katakuri",
-			["Bones"] = "Ossos",
-			["Ectoplasm"] = "Ectoplasma",
-			["Auto Farm"] = "Auto Farm",
-			["Distance"] = "Distancia",
 			["Select Language"] = "Selecionar Idioma",
-			["Auto Translate"] = "Traducao Automatica",
-			["English"] = "Ingles",
-			["Portuguese"] = "Portugues",
-			["Spanish"] = "Espanhol",
-			["French"] = "Frances",
-			["German"] = "Alemao",
-			["Italian"] = "Italiano",
-			["Japanese"] = "Japones",
-			["Chinese"] = "Chines",
-			["Korean"] = "Coreano",
-			["Russian"] = "Russo",
-			["Arabic"] = "Arabe",
-			["Hindi"] = "Hindi",
-			["Turkish"] = "Turco",
-			["Dutch"] = "Holandes",
-			["Polish"] = "Polones",
-			["Indonesian"] = "Indonesio",
-			["Thai"] = "Tailandes",
-			["Vietnamese"] = "Vietnamita",
-			["Filipino"] = "Filipino",
-			["Greek"] = "Grego",
-			["Hebrew"] = "Hebraico",
-			["Swedish"] = "Sueco",
-			["Norwegian"] = "Noruegues",
-			["Danish"] = "Dinamarques",
-			["Finnish"] = "Finlandes",
-			["Czech"] = "Tcheco",
-			["Romanian"] = "Romeno",
-			["Hungarian"] = "Hungaro",
-			["Ukrainian"] = "Ucraniano",
-			["Bengali"] = "Bengali",
-			["Malay"] = "Malaio",
-			["Persian"] = "Persa",
-			["Urdu"] = "Urdu",
-			["Tamil"] = "Tamil",
-			["Telugu"] = "Telugu",
-			["Marathi"] = "Marathi",
-			["Gujarati"] = "Gujarati",
-			["Kannada"] = "Kannada",
-			["Malayalam"] = "Malayalam",
-			["Punjabi"] = "Punjabi",
-			["Burmese"] = "Birmanes",
-			["Khmer"] = "Khmer",
-			["Lao"] = "Lao",
-			["Sinhala"] = "Sinhala",
-			["Nepali"] = "Nepales",
-			["Swahili"] = "Swahili",
-			["Zulu"] = "Zulu",
-			["Afrikaans"] = "Afrikaans",
+			["Auto Translate"] = "Traducao Auto",
 			["Menu"] = "Menu",
 			["Settings"] = "Configuracoes",
-			["Misc"] = "Diversos",
-			["Combat"] = "Combate",
-			["Movement"] = "Movimento",
-			["Farm"] = "Farm",
-			["Stats"] = "Status",
-			["Teleport"] = "Teleporte",
-			["Server"] = "Servidor",
-			["Hop Server"] = "Trocar Servidor",
-			["Low Server"] = "Servidor Vazio",
-			["Rejoin"] = "Reentrar",
-			["Anti AFK"] = "Anti AFK",
-			["Auto Click"] = "Auto Clique",
-			["No Clip"] = "Atravessar Parede",
-			["Fly"] = "Voar",
-			["Speed"] = "Velocidade",
-			["Jump Power"] = "Pulo",
-			["Infinite Jump"] = "Pulo Infinito",
+			["Farming"] = "Farm",
+			["Stack Farming"] = "Stack Farm",
+			["Fishing"] = "Pescaria",
+			["Auto Farm Chest"] = "Auto Bau",
+			["Auto Farm Fruit"] = "Auto Fruta",
 			["ESP Chest"] = "ESP Bau",
-			["ESP Flower"] = "ESP Flor",
-			["Auto Farm Chest"] = "Auto Farm Bau",
-			["Auto Farm Fruit"] = "Auto Farm Fruta",
-			["Auto Store Fruit"] = "Auto Guardar Fruta",
-			["Auto Random Fruit"] = "Auto Fruta Aleatoria",
-			["Select Fruit"] = "Selecionar Fruta"
-		},
-		["Spanish"] = {
-			["Stop Tween"] = "Detener Movimiento",
-			["Fix UI Button Game"] = "Arreglar Boton UI",
-			["Shop"] = "Tienda",
-			["ESP Player"] = "ESP Jugador"
+			["Bones"] = "Ossos",
+			["Ectoplasm"] = "Ectoplasma",
+			["Auto Farm Level"] = "Auto Level",
+			["Auto Quest"] = "Auto Missao",
+			["Select Weapon"] = "Selecionar Arma",
+			["Distance"] = "Distancia",
+			["Hop Server"] = "Trocar Server",
+			["Rejoin"] = "Reentrar",
+			["Server Hop"] = "Trocar Server",
+			["Anti AFK"] = "Anti AFK"
 		}
 	}
 	
-	getgenv().NexoraTranslateFunc = function()
-		if not Settings["Auto Translate"] then return end
-		local selectedLang = Settings["Select Language"] or "English"
-		if selectedLang == "English" then
-			print("[Nexora Translate] Ingles selecionado")
-			return
-		end
-		local dict = Translations[selectedLang]
-		if not dict then
-			print("[Nexora Translate] Dicionario nao encontrado para: " .. selectedLang)
-			return
-		end
-		print("[Nexora Translate] Traduzindo toda UI para: " .. selectedLang)
+	local function TranslateUI(lang)
+		if lang == "English" then return end
+		local dict = Translations[lang]
+		if not dict then print("[Translate] Sem dicionario pra " .. lang) return end
+		print("[Translate] Traduzindo UI inteira para " .. lang)
+		
 		pcall(function()
-			if not Options then return end
+			local parentGui = (gethui and gethui()) or game:GetService("CoreGui")
+			local gui = parentGui:FindFirstChild("NexoraUI")
+			if not gui then gui = parentGui:FindFirstChild("NexoraHub") end
+			if not gui then print("[Translate] GUI nao encontrada") return end
+			
 			local count = 0
-			for name, opt in pairs(Options) do
-				if opt and opt.FunctionCreate and opt.FunctionCreate.GetText then
-					local ok, label = pcall(function() return opt.FunctionCreate.GetText() end)
-					if ok and label and label.Text and label.Text ~= "" then
-						local original = label.Text
-						-- Tenta traduzir exato ou parcial
+			for _, obj in ipairs(gui:GetDescendants()) do
+				if obj:IsA("TextLabel") or obj:IsA("TextButton") then
+					local original = obj.Text
+					if original and original ~= "" and #original > 1 and #original < 100 then
+						-- Tenta traducao exata
 						local translated = dict[original]
 						if not translated then
-							-- Tenta traduzir partes
-							for eng, trans in pairs(dict) do
-								if original:find(eng) then
-									translated = original:gsub(eng, trans)
-									break
-								end
-							end
+							-- Tenta sem espacos extras
+							local trimmed = original:gsub("^%s+", ""):gsub("%s+$", "")
+							translated = dict[trimmed]
 						end
 						if translated and translated ~= original then
-							pcall(function() label.Text = translated end)
+							-- Salva original no atributo pra poder restaurar
+							if not obj:GetAttribute("OriginalText") then
+								obj:SetAttribute("OriginalText", original)
+							end
+							obj.Text = translated
 							count = count + 1
 						end
 					end
 				end
 			end
-			print("[Nexora Translate] Traduzidos: " .. count .. " textos para " .. selectedLang)
+			print("[Translate] Traduzidos " .. count .. " textos")
 		end)
 	end
 	
-	-- Traduz quando ativa
+	local function RestoreEnglish()
+		pcall(function()
+			local parentGui = (gethui and gethui()) or game:GetService("CoreGui")
+			local gui = parentGui:FindFirstChild("NexoraUI")
+			if not gui then return end
+			for _, obj in ipairs(gui:GetDescendants()) do
+				if (obj:IsA("TextLabel") or obj:IsA("TextButton")) and obj:GetAttribute("OriginalText") then
+					obj.Text = obj:GetAttribute("OriginalText")
+				end
+			end
+		end)
+	end
+	
+	getgenv().NexoraTranslateFunc = function()
+		if not Settings["Auto Translate"] then return end
+		local lang = Settings["Select Language"] or "English"
+		if lang == "English" then
+			RestoreEnglish()
+		else
+			TranslateUI(lang)
+		end
+	end
+	
+	-- Traduz inicial
 	if Settings["Auto Translate"] then
 		task.wait(1)
 		getgenv().NexoraTranslateFunc()
 	end
 	
-	-- Loop pra verificar quando muda lingua
+	-- Loop que verifica mudanca
 	while true do
 		task.wait(0.5)
 		if getgenv().ForceRetranslate then
 			getgenv().ForceRetranslate = false
 			task.wait(0.5)
+			getgenv().NexoraTranslateFunc()
+			-- Traduz de novo apos 1 segundo pra pegar labels que carregam depois
+			task.wait(1)
 			getgenv().NexoraTranslateFunc()
 		end
 	end
