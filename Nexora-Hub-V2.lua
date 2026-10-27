@@ -21021,7 +21021,7 @@ function AutoTrialV4()
 		return
 	end
 	g = GetTempleOfTime()
-	-- FLUXO: Vai direto pro NPC misterioso + reset handling (se resetar vai de novo sem desativar)
+	-- FLUXO: Vai direto pro NPC misterioso + reset handling (se morrer/resetar vai de novo)
 	local shouldGoGreatTree = false
 	local templePos = Vector3.new(28282.5703125, 14896.8505859375, 105.1042709350586)
 	local charExists = false
@@ -21032,7 +21032,8 @@ function AutoTrialV4()
 			charExists = true
 			local charPos = hrp.Position
 			local distTemple = (charPos - templePos).Magnitude
-			local inTrial = VerifyNearbyTrial()
+			local inTrial = false
+			pcall(function() inTrial = VerifyNearbyTrial() end)
 			if distTemple > 3000 and not inTrial then
 				shouldGoGreatTree = true
 			end
@@ -21040,17 +21041,34 @@ function AutoTrialV4()
 				shouldGoGreatTree = false
 			end
 		else
-			-- Se resetou e HRP nao existe ainda, espera e vai de novo pro NPC (nao precisa desativar)
 			charExists = false
 			shouldGoGreatTree = true
+			-- Espera respawn se resetou/morreu - sem precisar desativar/ativar
+			pcall(function()
+				task.wait(1)
+				local char2 = t.Character or workspace:WaitForChild(t.Name, 5)
+				if char2 then
+					char2:WaitForChild("HumanoidRootPart", 5)
+				end
+			end)
 		end
 	end)
-	-- Se char nao existe (resetou), força ir pro NPC de novo
 	if not charExists then
 		shouldGoGreatTree = true
+		-- Força esperar respawn se morreu/resetou
+		pcall(function()
+			task.wait(1.5)
+			local charWait = t.Character
+			if not charWait or not charWait:FindFirstChild("HumanoidRootPart") then
+				charWait = workspace:FindFirstChild(t.Name)
+				if charWait then
+					charWait:WaitForChild("HumanoidRootPart", 5)
+				end
+			end
+		end)
 	end
 	if shouldGoGreatTree then
-		-- Vai direto pro NPC misterioso (Mysterious Force / MISC) - interage e entra no templo
+		-- Vai direto pro NPC misterioso (Mysterious Force / MISC) - interage e entra no templo (FIX VIDEO: OUTROS. Interagir)
 		local foundMysterious = false
 		pcall(function()
 			for _, folder in pairs({workspace.NPCs, game:GetService("ReplicatedStorage").NPCs}) do
@@ -21059,31 +21077,49 @@ function AutoTrialV4()
 					if string.find(name, "mysterious") or string.find(name, "misc") or string.find(name, "mysterious force") then
 						if npc:FindFirstChild("HumanoidRootPart") then
 							foundMysterious = true
-							-- ToTarget ate o NPC
-							toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 2))
-							task.wait(0.8)
-							-- Interage com NPC de todos os jeitos possiveis
+							-- ToTarget ate o NPC (mais perto pra aparecer Interagir)
+							toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 1))
+							task.wait(1)
+							-- Interage com NPC - metodo que funciona com OUTROS. Interagir
 							for _, v in pairs(npc:GetDescendants()) do
-								if v:IsA("ClickDetector") then
-									for i=1,3 do pcall(function() fireclickdetector(v) end) task.wait(0.1) end
-								end
 								if v:IsA("ProximityPrompt") then
-									for i=1,3 do pcall(function() fireproximityprompt(v) end) task.wait(0.1) end
+									-- Metodo principal: fireproximityprompt + hold
+									for i=1,5 do
+										pcall(function()
+											fireproximityprompt(v)
+											v:InputHoldBegin()
+											task.wait(0.1)
+											v:InputHoldEnd()
+										end)
+										task.wait(0.2)
+									end
+								end
+								if v:IsA("ClickDetector") then
+									for i=1,5 do pcall(function() fireclickdetector(v) end) task.wait(0.2) end
 								end
 							end
-							-- Tenta todos os remotes pra Mysterious Force
+							-- Remotes principais pra entrar no templo
 							pcall(function()
-								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("MysteriousForce")
+								-- Esses sao os remotes que fazem teleportar pro templo
 								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("MysteriousForce", "Check")
-								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("MysteriousForce", "UseIt")
 								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RaceV4Progress", "Check")
 								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RaceV4Progress", "Begin")
 								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("TempleClock", "Check")
-								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateAncientOne")
+								-- Tenta tambem sem args
+								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("MysteriousForce")
 							end)
-							task.wait(1.5)
-							-- Entra no templo
-							toTarget(CFrame.new(28282.5703125, 14896.8505859375, 105.1042709350586))
+							task.wait(1)
+							-- Verifica se teleportou pro templo, se nao, força toTarget templo
+							local teleported = false
+							pcall(function()
+								local charPos = t.Character and t.Character:FindFirstChild("HumanoidRootPart") and t.Character.HumanoidRootPart.Position
+								if charPos and (charPos - templePos).Magnitude < 3000 then
+									teleported = true
+								end
+							end)
+							if not teleported then
+								toTarget(CFrame.new(28282.5703125, 14896.8505859375, 105.1042709350586))
+							end
 							return
 						end
 					end
@@ -21091,7 +21127,7 @@ function AutoTrialV4()
 			end
 		end)
 		if foundMysterious then return end
-		-- Se nao achou pelo nome, procura NPCs perto da Great Tree (sem Y alto, so XZ) e interage
+		-- Se nao achou pelo nome, procura qualquer NPC no topo da Great Tree e interage (OUTROS. Interagir)
 		pcall(function()
 			for _, folder in pairs({workspace.NPCs}) do
 				for _, npc in pairs(folder:GetChildren()) do
@@ -21099,21 +21135,32 @@ function AutoTrialV4()
 						local npcPos = npc.HumanoidRootPart.Position
 						local xzDist = (Vector3.new(npcPos.X, 0, npcPos.Z) - Vector3.new(4345, 0, -6159)).Magnitude
 						if xzDist < 500 then
-							toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 2))
-							task.wait(0.8)
+							-- ToTarget bem perto pra aparecer Interagir
+							toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 1))
+							task.wait(1)
+							-- Interage com OUTROS. Interagir
 							for _, v in pairs(npc:GetDescendants()) do
-								if v:IsA("ClickDetector") then for i=1,3 do pcall(function() fireclickdetector(v) end) task.wait(0.1) end end
-								if v:IsA("ProximityPrompt") then for i=1,3 do pcall(function() fireproximityprompt(v) end) task.wait(0.1) end end
+								if v:IsA("ProximityPrompt") then
+									for i=1,5 do
+										pcall(function()
+											fireproximityprompt(v)
+											v:InputHoldBegin()
+											task.wait(0.1)
+											v:InputHoldEnd()
+										end)
+										task.wait(0.2)
+									end
+								end
+								if v:IsA("ClickDetector") then
+									for i=1,5 do pcall(function() fireclickdetector(v) end) task.wait(0.2) end
+								end
 							end
 							pcall(function()
-								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("MysteriousForce")
 								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("MysteriousForce", "Check")
-								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("MysteriousForce", "UseIt")
 								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RaceV4Progress", "Check")
 								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("TempleClock", "Check")
-								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateAncientOne")
 							end)
-							task.wait(1.5)
+							task.wait(1)
 							toTarget(CFrame.new(28282.5703125, 14896.8505859375, 105.1042709350586))
 							return
 						end
