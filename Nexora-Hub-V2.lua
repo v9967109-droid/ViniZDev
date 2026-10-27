@@ -21041,13 +21041,25 @@ function AutoTrialV4()
 		end
 	end)
 	if shouldGoGreatTree then
-		-- CLICK NA TELA MESMO pra clickar no NPC e clickar em Use-o + fix reset
+		-- CLICK NA TELA MESMO + QUANDO MORRER AINDA USA TOTARGET ATE NPC (FIX RESET/MORTE)
+		-- Espera respawn se morreu/resetou - toTarget tem que funcionar mesmo depois de morrer
 		pcall(function()
 			local char = t.Character
-			if not char or not char:FindFirstChild("HumanoidRootPart") then
+			if not char or not char:FindFirstChild("HumanoidRootPart") or not char:FindFirstChild("Humanoid") then
+				task.wait(2)
+				-- Espera character respawnar
+				for i=1,10 do
+					char = t.Character or workspace:FindFirstChild(t.Name)
+					if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid") then
+						break
+					end
+					task.wait(0.5)
+				end
+				if char then
+					pcall(function() char:WaitForChild("HumanoidRootPart", 5) end)
+					pcall(function() char:WaitForChild("Humanoid", 5) end)
+				end
 				task.wait(1)
-				char = workspace:FindFirstChild(t.Name)
-				if char then pcall(function() char:WaitForChild("HumanoidRootPart", 3) end) end
 			end
 		end)
 		local foundMysterious = false
@@ -21087,39 +21099,71 @@ function AutoTrialV4()
 								end
 							end
 							task.wait(1)
-							-- PASSO 3: CLICK NA TELA MESMO em Use-o pra entrar no templo
+							-- PASSO 3: CLICK NA TELA MESMO em Use-o pra entrar no templo (FIX: ainda nao ta clickando)
 							pcall(function()
-								-- Procura botao Use-o na tela e clica
+								-- Espera dialogo Força Misteriosa aparecer
+								task.wait(1)
+								-- Metodo 1: Procura botao Use-o em todo PlayerGui e clica na tela mesmo
 								for _, gui in pairs(game.Players.LocalPlayer.PlayerGui:GetDescendants()) do
-									if gui:IsA("TextButton") or gui:IsA("ImageButton") then
-										local txt = string.lower(gui.Text or gui.Name or "")
-										if string.find(txt, "use") then
-											for i=1,5 do
-												pcall(function()
-													-- Click na tela no botao Use-o
-													gui:Activate()
-													for _, conn in pairs(getconnections and getconnections(gui.MouseButton1Click) or {}) do
-														conn:Fire()
-													end
-													-- VirtualInput click no botao
-													local absPos = gui.AbsolutePosition
-													local absSize = gui.AbsoluteSize
+									local txt = ""
+									pcall(function() txt = string.lower(gui.Text or "") end)
+									if string.find(txt, "use") and (gui:IsA("TextButton") or gui:IsA("TextLabel") or gui:IsA("ImageButton")) then
+										for i=1,8 do
+											pcall(function()
+												-- Click na tela mesmo no botao Use-o
+												local btn = gui
+												if gui:IsA("TextLabel") then
+													btn = gui.Parent and gui.Parent:FindFirstChildWhichIsA("TextButton") or gui.Parent
+												end
+												if btn and btn:IsA("GuiObject") then
+													local absPos = btn.AbsolutePosition
+													local absSize = btn.AbsoluteSize
 													local cx = absPos.X + absSize.X/2
 													local cy = absPos.Y + absSize.Y/2
-													game:GetService("VirtualInputManager"):SendMouseButtonEvent(cx, cy, 0, true, game, 0)
-													task.wait(0.1)
-													game:GetService("VirtualInputManager"):SendMouseButtonEvent(cx, cy, 0, false, game, 0)
-												end)
-												task.wait(0.2)
-											end
+													-- Click via Activate + Connections + VirtualInput
+													pcall(function() btn:Activate() end)
+													pcall(function()
+														for _, conn in pairs(getconnections and getconnections(btn.MouseButton1Click) or {}) do
+															conn:Fire()
+														end
+													end)
+													pcall(function()
+														game:GetService("VirtualInputManager"):SendMouseButtonEvent(cx, cy, 0, true, game, 0)
+														task.wait(0.15)
+														game:GetService("VirtualInputManager"):SendMouseButtonEvent(cx, cy, 0, false, game, 0)
+													end)
+													-- Tenta tambem click via VirtualUser
+													pcall(function()
+														game:GetService("VirtualUser"):ClickButton1(Vector2.new(cx, cy))
+													end)
+												end
+											end)
+											task.wait(0.3)
 										end
 									end
 								end
-							end)
-							pcall(function()
-								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("MysteriousForce", "Check")
-								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("MysteriousForce", "UseIt")
-								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RaceV4Progress", "Check")
+								-- Metodo 2: Click no lado direito da tela onde fica Use-o (video: lado direito, meio)
+								pcall(function()
+									local cam = workspace.CurrentCamera
+									local viewport = cam.ViewportSize
+									-- Use-o fica no lado direito, meio da tela (video mostra)
+									local rightX = viewport.X * 0.85
+										local midY = viewport.Y * 0.6
+									for i=1,5 do
+										game:GetService("VirtualInputManager"):SendMouseButtonEvent(rightX, midY, 0, true, game, 0)
+										task.wait(0.1)
+										game:GetService("VirtualInputManager"):SendMouseButtonEvent(rightX, midY, 0, false, game, 0)
+										task.wait(0.3)
+									end
+								end)
+								-- Metodo 3: Remotes (garante entrada)
+								pcall(function()
+									game.ReplicatedStorage.Remotes.CommF_:InvokeServer("MysteriousForce", "Check")
+									game.ReplicatedStorage.Remotes.CommF_:InvokeServer("MysteriousForce", "UseIt")
+									game.ReplicatedStorage.Remotes.CommF_:InvokeServer("MysteriousForce", "Use")
+									game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RaceV4Progress", "Check")
+									game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RaceV4Progress", "Begin")
+								end)
 							end)
 							task.wait(1.5)
 							toTarget(CFrame.new(28282.5703125, 14896.8505859375, 105.1042709350586))
@@ -21189,6 +21233,14 @@ function AutoTrialV4()
 						end
 					end
 				end
+			end
+		end)
+		pcall(function()
+			local char = t.Character
+			if not char or not char:FindFirstChild("HumanoidRootPart") then
+				task.wait(2)
+				char = workspace:FindFirstChild(t.Name)
+				if char then pcall(function() char:WaitForChild("HumanoidRootPart", 5) end) end
 			end
 		end)
 		toTarget(CFrame.new(28282.5703125, 14896.8505859375, 105.1042709350586))
