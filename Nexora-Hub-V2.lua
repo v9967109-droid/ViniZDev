@@ -21068,28 +21068,43 @@ function AutoTrialV4()
 		end)
 	end
 	if shouldGoGreatTree then
-		-- Vai direto pro NPC misterioso (Mysterious Force / MISC) - interage e entra no templo (FIX VIDEO: OUTROS. Interagir)
+		-- PESQUISA: Como scripts entram no templo - Mysterious Force tem ProximityPrompt OUTROS. Interagir que teleporta automatico
 		local foundMysterious = false
 		pcall(function()
+			-- 1. Tenta achar Mysterious Force pelo nome (MISC)
 			for _, folder in pairs({workspace.NPCs, game:GetService("ReplicatedStorage").NPCs}) do
 				for _, npc in pairs(folder:GetChildren()) do
 					local name = string.lower(npc.Name or "")
-					if string.find(name, "mysterious") or string.find(name, "misc") or string.find(name, "mysterious force") then
+					if string.find(name, "mysterious") or string.find(name, "misc") then
 						if npc:FindFirstChild("HumanoidRootPart") then
 							foundMysterious = true
-							-- ToTarget ate o NPC (mais perto pra aparecer Interagir)
 							toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 1))
-							task.wait(1)
-							-- Interage com NPC - metodo que funciona com OUTROS. Interagir
+							task.wait(1.2)
+							-- PESQUISA: Scripts fazem assim pra entrar no templo
+							-- Metodo 1: fireproximityprompt em todos os prompts perto
+							for _, v in pairs(workspace:GetDescendants()) do
+								if v:IsA("ProximityPrompt") then
+									local promptPos = v.Parent and v.Parent:IsA("BasePart") and v.Parent.Position or (v.Parent and v.Parent:FindFirstChild("HumanoidRootPart") and v.Parent.HumanoidRootPart.Position)
+									if promptPos and (promptPos - npc.HumanoidRootPart.Position).Magnitude < 20 then
+										for i=1,3 do
+											pcall(function()
+												fireproximityprompt(v)
+												v.HoldDuration = 0
+												v:InputHoldBegin()
+												task.wait(0.3)
+												v:InputHoldEnd()
+											end)
+											task.wait(0.2)
+										end
+									end
+								end
+							end
 							for _, v in pairs(npc:GetDescendants()) do
 								if v:IsA("ProximityPrompt") then
-									-- Metodo principal: fireproximityprompt + hold
 									for i=1,5 do
 										pcall(function()
+											v.HoldDuration = 0
 											fireproximityprompt(v)
-											v:InputHoldBegin()
-											task.wait(0.1)
-											v:InputHoldEnd()
 										end)
 										task.wait(0.2)
 									end
@@ -21098,26 +21113,23 @@ function AutoTrialV4()
 									for i=1,5 do pcall(function() fireclickdetector(v) end) task.wait(0.2) end
 								end
 							end
-							-- Remotes principais pra entrar no templo
+							-- PESQUISA: Remotes que scripts usam pra entrar no templo
 							pcall(function()
-								-- Esses sao os remotes que fazem teleportar pro templo
-								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("MysteriousForce", "Check")
-								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RaceV4Progress", "Check")
-								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RaceV4Progress", "Begin")
-								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("TempleClock", "Check")
-								-- Tenta tambem sem args
-								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("MysteriousForce")
+								game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("RaceV4Progress", "Check")
+								game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("RaceV4Progress", "Begin")
+								game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("MysteriousForce", "Check")
+								game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("MysteriousForce")
+								game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("TempleClock", "Check")
 							end)
-							task.wait(1)
-							-- Verifica se teleportou pro templo, se nao, força toTarget templo
+							task.wait(2)
+							-- Se ainda nao teleportou, força toTarget templo (metodo que scripts usam)
 							local teleported = false
 							pcall(function()
 								local charPos = t.Character and t.Character:FindFirstChild("HumanoidRootPart") and t.Character.HumanoidRootPart.Position
-								if charPos and (charPos - templePos).Magnitude < 3000 then
-									teleported = true
-								end
+								if charPos and (charPos - templePos).Magnitude < 3000 then teleported = true end
 							end)
 							if not teleported then
+								-- Metodo que scripts usam: toTarget direto pro templo
 								toTarget(CFrame.new(28282.5703125, 14896.8505859375, 105.1042709350586))
 							end
 							return
@@ -21127,7 +21139,49 @@ function AutoTrialV4()
 			end
 		end)
 		if foundMysterious then return end
-		-- Se nao achou pelo nome, procura qualquer NPC no topo da Great Tree e interage (OUTROS. Interagir)
+		-- 2. PESQUISA: Se nao achou pelo nome, procura ProximityPrompt OUTROS. perto da Great Tree
+		pcall(function()
+			for _, obj in pairs(workspace:GetDescendants()) do
+				if obj:IsA("ProximityPrompt") then
+					local objText = obj.ObjectText or ""
+					local actionText = obj.ActionText or ""
+					if string.find(string.lower(objText), "outros") or string.find(string.lower(actionText), "interagir") then
+						local promptParent = obj.Parent
+						local promptPos = nil
+						if promptParent then
+							if promptParent:IsA("BasePart") then promptPos = promptParent.Position
+							elseif promptParent:FindFirstChild("HumanoidRootPart") then promptPos = promptParent.HumanoidRootPart.Position
+							elseif promptParent.Parent and promptParent.Parent:FindFirstChild("HumanoidRootPart") then promptPos = promptParent.Parent.HumanoidRootPart.Position
+						end
+						if promptPos then
+							local xzDist = (Vector3.new(promptPos.X, 0, promptPos.Z) - Vector3.new(4345, 0, -6159)).Magnitude
+							if xzDist < 1000 then
+								toTarget(CFrame.new(promptPos) * CFrame.new(0, 0, 2))
+								task.wait(1.2)
+								for i=1,5 do
+									pcall(function()
+										obj.HoldDuration = 0
+										fireproximityprompt(obj)
+										obj:InputHoldBegin()
+										task.wait(0.2)
+										obj:InputHoldEnd()
+									end)
+									task.wait(0.2)
+								end
+								pcall(function()
+									game.ReplicatedStorage.Remotes.CommF_:InvokeServer("MysteriousForce", "Check")
+									game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RaceV4Progress", "Check")
+								end)
+								task.wait(2)
+								toTarget(CFrame.new(28282.5703125, 14896.8505859375, 105.1042709350586))
+								return
+							end
+						end
+					end
+				end
+			end
+		end)
+		-- 3. Fallback: procura NPCs perto da Great Tree
 		pcall(function()
 			for _, folder in pairs({workspace.NPCs}) do
 				for _, npc in pairs(folder:GetChildren()) do
@@ -21135,32 +21189,17 @@ function AutoTrialV4()
 						local npcPos = npc.HumanoidRootPart.Position
 						local xzDist = (Vector3.new(npcPos.X, 0, npcPos.Z) - Vector3.new(4345, 0, -6159)).Magnitude
 						if xzDist < 500 then
-							-- ToTarget bem perto pra aparecer Interagir
 							toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 1))
-							task.wait(1)
-							-- Interage com OUTROS. Interagir
+							task.wait(1.2)
 							for _, v in pairs(npc:GetDescendants()) do
 								if v:IsA("ProximityPrompt") then
-									for i=1,5 do
-										pcall(function()
-											fireproximityprompt(v)
-											v:InputHoldBegin()
-											task.wait(0.1)
-											v:InputHoldEnd()
-										end)
-										task.wait(0.2)
-									end
-								end
-								if v:IsA("ClickDetector") then
-									for i=1,5 do pcall(function() fireclickdetector(v) end) task.wait(0.2) end
+									for i=1,5 do pcall(function() v.HoldDuration=0 fireproximityprompt(v) end) task.wait(0.2) end
 								end
 							end
 							pcall(function()
 								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("MysteriousForce", "Check")
-								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RaceV4Progress", "Check")
-								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("TempleClock", "Check")
 							end)
-							task.wait(1)
+							task.wait(2)
 							toTarget(CFrame.new(28282.5703125, 14896.8505859375, 105.1042709350586))
 							return
 						end
@@ -21168,7 +21207,7 @@ function AutoTrialV4()
 				end
 			end
 		end)
-		-- Fallback: entra no templo direto
+		-- Final fallback: vai direto pro templo
 		toTarget(CFrame.new(28282.5703125, 14896.8505859375, 105.1042709350586))
 		return
 	end
