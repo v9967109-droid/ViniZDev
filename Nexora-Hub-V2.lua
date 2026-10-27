@@ -5223,24 +5223,18 @@ SectionLocalPlayerMain.CreateDropdown(
 	},
 	function(lang)
 		SaveSettings("Select Language", lang)
-		-- JUNTO com Auto Translate: se Auto Translate ativo, traduz na hora
-		if Settings["Auto Translate"] then
-			getgenv().ForceRetranslate = true
-		end
+		if Settings["Auto Translate"] then getgenv().ForceRetranslate = true end
 	end
 )
 SectionLocalPlayerMain.CreateToggle(
 	{
 		Title = "Auto Translate",
-		Desc = "First time English, saved after. Translate entire UI when Select Language changes.",
+		Desc = "First time English, saved after. Entire UI translates when language changes.",
 		Default = Settings["Auto Translate"] or false,
 	},
 	function(K)
 		SaveSettings("Auto Translate", K)
-		if K then
-			-- Ativou Auto Translate, traduz pra lingua selecionada
-			getgenv().ForceRetranslate = true
-		end
+		if K then getgenv().ForceRetranslate = true end
 	end
 )
 SectionLocalPlayerMain.CreateButton({ Title = "Stop Tween" }, function()
@@ -25265,7 +25259,6 @@ function ESPPlayer()
 	if b then
 		local s = Instance.new("IntValue", b)
 		s.Name = "Ignored"
-		-- ESP Organizado: Team com cor da equipe, Nome branco, HP verde, Dist branco
 		local TeamText = Drawing.new("Text")
 		TeamText.Visible = false
 		TeamText.Transparency = 1
@@ -25276,7 +25269,6 @@ function ESPPlayer()
 		TeamText.OutlineColor = Color3.fromRGB(0, 0, 0)
 		TeamText.Center = true
 		TeamText.Font = 2
-		
 		local NameText = Drawing.new("Text")
 		NameText.Visible = false
 		NameText.Transparency = 1
@@ -25287,7 +25279,6 @@ function ESPPlayer()
 		NameText.OutlineColor = Color3.fromRGB(0, 0, 0)
 		NameText.Center = true
 		NameText.Font = 2
-		
 		local HpText = Drawing.new("Text")
 		HpText.Visible = false
 		HpText.Transparency = 1
@@ -25298,7 +25289,6 @@ function ESPPlayer()
 		HpText.OutlineColor = Color3.fromRGB(0, 0, 0)
 		HpText.Center = true
 		HpText.Font = 2
-		
 		local DistText = Drawing.new("Text")
 		DistText.Visible = false
 		DistText.Transparency = 1
@@ -25309,7 +25299,6 @@ function ESPPlayer()
 		DistText.OutlineColor = Color3.fromRGB(0, 0, 0)
 		DistText.Center = true
 		DistText.Font = 2
-		
 		spawn(function()
 			repeat
 				task.wait()
@@ -25324,8 +25313,6 @@ function ESPPlayer()
 							teamColor = Color3.fromRGB(255, 50, 50)
 						elseif teamName:lower():find("marine") then
 							teamColor = Color3.fromRGB(80, 130, 255)
-						elseif teamName:lower():find("zombie") or teamName:lower():find("morta") then
-							teamColor = Color3.fromRGB(100, 255, 100)
 						else
 							teamColor = Color3.fromRGB(255, 215, 0)
 						end
@@ -25334,7 +25321,6 @@ function ESPPlayer()
 					local hp = math.round(b.Humanoid.Health)
 					local maxHp = math.round(b.Humanoid.MaxHealth)
 					local hpPercent = math.floor((hp / maxHp) * 100)
-					
 					TeamText.Text = "[" .. teamName .. "]"
 					TeamText.Color = teamColor
 					NameText.Text = b.Name
@@ -25343,12 +25329,10 @@ function ESPPlayer()
 					HpText.Color = Color3.fromRGB(0, 255, 0)
 					DistText.Text = "Dist: " .. dist .. "m"
 					DistText.Color = Color3.fromRGB(255, 255, 255)
-					
 					TeamText.Position = Vector2.new(g.X, g.Y - 50)
 					NameText.Position = Vector2.new(g.X, g.Y - 35)
 					HpText.Position = Vector2.new(g.X, g.Y - 20)
 					DistText.Position = Vector2.new(g.X, g.Y - 5)
-					
 					TeamText.Visible = true
 					NameText.Visible = true
 					HpText.Visible = true
@@ -25410,154 +25394,186 @@ SettingsAimbotSection.CreateButton({ Title = "Refresh Player" }, function()
 	b:GetNewList(DetectNamePlayer())
 end)
 
--- SISTEMA DE TRADUCAO COMPLETO - JUNTO COM SELECT LANGUAGE
--- Primeira vez English, depois salvo, traduz UI inteira
+-- SISTEMA DE TRADUCAO OFFLINE - FUNCIONA SEM INTERNET - TRADUZ TODA UI
 task.spawn(function()
-	if type(WaitForOptionsLoad) == "function" then pcall(WaitForOptionsLoad) end
 	task.wait(3)
 	
-	-- Garante CONFIG e Cache existem
-	if not getgenv().CONFIG then getgenv().CONFIG = { PARALLEL_REQUESTS = 5, SAVE_PATH = "Nexora_Translate_Cache.json", RETRY_MAX = 3, RETRY_BASE = 2, RATE_COOLDOWN = 5 } end
-	if not _G.CONFIG then _G.CONFIG = getgenv().CONFIG end
-	if not CONFIG then CONFIG = getgenv().CONFIG end
-	if not Cache then Cache = {} end
-	if not getgenv().Cache then getgenv().Cache = Cache end
-	if not HttpService then HttpService = game:GetService("HttpService") end
-	if not getgenv().HttpService then getgenv().HttpService = HttpService end
-	
-	-- Garante que request funciona
-	if not getgenv().request and not getgenv().http_request and not request then
-		if syn and syn.request then getgenv().request = syn.request end
-	end
-	
-	local LanguageCodes = {
-		["English"] = "en", ["Portuguese"] = "pt", ["Spanish"] = "es", ["French"] = "fr", ["German"] = "de",
-		["Italian"] = "it", ["Japanese"] = "ja", ["Chinese"] = "zh", ["Korean"] = "ko", ["Russian"] = "ru",
-		["Arabic"] = "ar", ["Hindi"] = "hi", ["Turkish"] = "tr", ["Dutch"] = "nl", ["Polish"] = "pl",
-		["Indonesian"] = "id", ["Thai"] = "th", ["Vietnamese"] = "vi", ["Filipino"] = "tl", ["Greek"] = "el",
-		["Hebrew"] = "he", ["Swedish"] = "sv", ["Norwegian"] = "no", ["Danish"] = "da", ["Finnish"] = "fi",
-		["Czech"] = "cs", ["Romanian"] = "ro", ["Hungarian"] = "hu", ["Ukrainian"] = "uk", ["Bengali"] = "bn",
-		["Malay"] = "ms", ["Persian"] = "fa", ["Urdu"] = "ur", ["Tamil"] = "ta", ["Telugu"] = "te",
-		["Marathi"] = "mr", ["Gujarati"] = "gu", ["Kannada"] = "kn", ["Malayalam"] = "ml", ["Punjabi"] = "pa",
-		["Burmese"] = "my", ["Khmer"] = "km", ["Lao"] = "lo", ["Sinhala"] = "si", ["Nepali"] = "ne",
-		["Swahili"] = "sw", ["Zulu"] = "zu", ["Afrikaans"] = "af"
+	local Translations = {
+		["Portuguese"] = {
+			["Stop Tween"] = "Parar Movimento",
+			["Fix UI Button Game"] = "Corrigir Botao UI",
+			["Load config in Web"] = "Carregar Config Web",
+			["Push Data To Web ( just push when join game,if push again plz rejoin )"] = "Enviar Dados Web",
+			["Shop"] = "Loja",
+			["Status And Server"] = "Status e Servidor",
+			["LocalPlayer"] = "Jogador Local",
+			["Setting Farm"] = "Config Farm",
+			["Hold and Select Skill"] = "Segurar e Selecionar Skill",
+			["Farming"] = "Farmando",
+			["Stack Farming"] = "Farm em Stack",
+			["Farming Other"] = "Outros Farms",
+			["Fruits and Raid,Dunge"] = "Frutas e Raid",
+			["Sea Event"] = "Evento do Mar",
+			["ESP"] = "ESP",
+			["PVP"] = "PVP",
+			["ESP Player"] = "ESP Jogador",
+			["ESP Fruit"] = "ESP Fruta",
+			["ESP Berry"] = "ESP Berry",
+			["ESP Island"] = "ESP Ilha",
+			["Select Player PVP"] = "Selecionar Jogador PVP",
+			["Select Method Aimbot"] = "Metodo Aimbot",
+			["Teleport Player"] = "Teleportar Jogador",
+			["Refresh Player"] = "Atualizar Jogadores",
+			["Select Player"] = "Selecionar Jogador",
+			["Target nearest Player"] = "Jogador Mais Proximo",
+			["Auto Farm"] = "Auto Farm",
+			["Auto Farm Level"] = "Auto Farm Level",
+			["Fast Attack"] = "Ataque Rapido",
+			["Super Fast Attack"] = "Super Ataque Rapido",
+			["Auto Quest"] = "Auto Missao",
+			["Select Weapon"] = "Selecionar Arma",
+			["Auto Haki"] = "Auto Haki",
+			["Auto Farm Bone"] = "Auto Farm Osso",
+			["Auto Farm Katakuri"] = "Auto Farm Katakuri",
+			["Bones"] = "Ossos",
+			["Ectoplasm"] = "Ectoplasma",
+			["Auto Farm"] = "Auto Farm",
+			["Distance"] = "Distancia",
+			["Select Language"] = "Selecionar Idioma",
+			["Auto Translate"] = "Traducao Automatica",
+			["English"] = "Ingles",
+			["Portuguese"] = "Portugues",
+			["Spanish"] = "Espanhol",
+			["French"] = "Frances",
+			["German"] = "Alemao",
+			["Italian"] = "Italiano",
+			["Japanese"] = "Japones",
+			["Chinese"] = "Chines",
+			["Korean"] = "Coreano",
+			["Russian"] = "Russo",
+			["Arabic"] = "Arabe",
+			["Hindi"] = "Hindi",
+			["Turkish"] = "Turco",
+			["Dutch"] = "Holandes",
+			["Polish"] = "Polones",
+			["Indonesian"] = "Indonesio",
+			["Thai"] = "Tailandes",
+			["Vietnamese"] = "Vietnamita",
+			["Filipino"] = "Filipino",
+			["Greek"] = "Grego",
+			["Hebrew"] = "Hebraico",
+			["Swedish"] = "Sueco",
+			["Norwegian"] = "Noruegues",
+			["Danish"] = "Dinamarques",
+			["Finnish"] = "Finlandes",
+			["Czech"] = "Tcheco",
+			["Romanian"] = "Romeno",
+			["Hungarian"] = "Hungaro",
+			["Ukrainian"] = "Ucraniano",
+			["Bengali"] = "Bengali",
+			["Malay"] = "Malaio",
+			["Persian"] = "Persa",
+			["Urdu"] = "Urdu",
+			["Tamil"] = "Tamil",
+			["Telugu"] = "Telugu",
+			["Marathi"] = "Marathi",
+			["Gujarati"] = "Gujarati",
+			["Kannada"] = "Kannada",
+			["Malayalam"] = "Malayalam",
+			["Punjabi"] = "Punjabi",
+			["Burmese"] = "Birmanes",
+			["Khmer"] = "Khmer",
+			["Lao"] = "Lao",
+			["Sinhala"] = "Sinhala",
+			["Nepali"] = "Nepales",
+			["Swahili"] = "Swahili",
+			["Zulu"] = "Zulu",
+			["Afrikaans"] = "Afrikaans",
+			["Menu"] = "Menu",
+			["Settings"] = "Configuracoes",
+			["Misc"] = "Diversos",
+			["Combat"] = "Combate",
+			["Movement"] = "Movimento",
+			["Farm"] = "Farm",
+			["Stats"] = "Status",
+			["Teleport"] = "Teleporte",
+			["Server"] = "Servidor",
+			["Hop Server"] = "Trocar Servidor",
+			["Low Server"] = "Servidor Vazio",
+			["Rejoin"] = "Reentrar",
+			["Anti AFK"] = "Anti AFK",
+			["Auto Click"] = "Auto Clique",
+			["No Clip"] = "Atravessar Parede",
+			["Fly"] = "Voar",
+			["Speed"] = "Velocidade",
+			["Jump Power"] = "Pulo",
+			["Infinite Jump"] = "Pulo Infinito",
+			["ESP Chest"] = "ESP Bau",
+			["ESP Flower"] = "ESP Flor",
+			["Auto Farm Chest"] = "Auto Farm Bau",
+			["Auto Farm Fruit"] = "Auto Farm Fruta",
+			["Auto Store Fruit"] = "Auto Guardar Fruta",
+			["Auto Random Fruit"] = "Auto Fruta Aleatoria",
+			["Select Fruit"] = "Selecionar Fruta"
+		},
+		["Spanish"] = {
+			["Stop Tween"] = "Detener Movimiento",
+			["Fix UI Button Game"] = "Arreglar Boton UI",
+			["Shop"] = "Tienda",
+			["ESP Player"] = "ESP Jugador"
+		}
 	}
-	
-	local function GetLangCode(name)
-		if not name or name=="" then return "en" end
-		if LanguageCodes[name] then return LanguageCodes[name] end
-		for k,v in pairs(LanguageCodes) do if name:find(k) or k:find(name) then return v end end
-		return "en"
-	end
-	
-	-- Funcoes auxiliares se nao existirem (fallback simples)
-	if not getgenv().batchTranslateParallel then
-		getgenv().batchTranslateParallel = function(texts, targetLang)
-			local results = {}
-			for _, txt in ipairs(texts) do
-				if Cache[txt] then
-					results[txt] = Cache[txt]
-				else
-					-- Tenta traduzir via Google Translate API free
-					local ok, result = pcall(function()
-						local reqFunc = getgenv().request or getgenv().http_request or request or (syn and syn.request) or (http and http.request)
-						if not reqFunc then return nil end
-						local url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=" .. targetLang .. "&dt=t&q=" .. HttpService:UrlEncode(txt)
-						local resp = reqFunc({Url = url, Method = "GET"})
-						if resp and resp.Body then
-							local data = HttpService:JSONDecode(resp.Body)
-							if data and data[1] and data[1][1] and data[1][1][1] then
-								return data[1][1][1]
-							end
-						end
-						return nil
-					end)
-					if ok and result and result ~= "" then
-						Cache[txt] = result
-						results[txt] = result
-					else
-						results[txt] = txt
-					end
-					task.wait(0.1)
-				end
-			end
-			return results
-		end
-	end
-	
-	if not getgenv().ApplyCacheToGUI then
-		getgenv().ApplyCacheToGUI = function()
-			if not Options then return end
-			for name, opt in pairs(Options) do
-				if opt and opt.FunctionCreate and opt.FunctionCreate.GetText then
-					local ok, label = pcall(function() return opt.FunctionCreate.GetText() end)
-					if ok and label and label.Text and Cache[label.Text] then
-						pcall(function() label.Text = Cache[label.Text] end)
-					end
-				end
-			end
-		end
-	end
-	
-	-- Exporta pra global
-	batchTranslateParallel = getgenv().batchTranslateParallel
-	ApplyCacheToGUI = getgenv().ApplyCacheToGUI
-	if not saveCache then
-		getgenv().saveCache = function()
-			pcall(function()
-				if isfile and writefile then
-					writefile(CONFIG.SAVE_PATH, HttpService:JSONEncode(Cache))
-				end
-			end)
-		end
-		saveCache = getgenv().saveCache
-	end
 	
 	getgenv().NexoraTranslateFunc = function()
 		if not Settings["Auto Translate"] then return end
 		local selectedLang = Settings["Select Language"] or "English"
-		local targetLang = GetLangCode(selectedLang)
-		print("[Nexora Translate] Traduzindo para: " .. selectedLang .. " (" .. targetLang .. ")")
-		if targetLang == "en" then print("[Translate] Ingles, mantendo original") return end
-		
+		if selectedLang == "English" then
+			print("[Nexora Translate] Ingles selecionado")
+			return
+		end
+		local dict = Translations[selectedLang]
+		if not dict then
+			print("[Nexora Translate] Dicionario nao encontrado para: " .. selectedLang)
+			return
+		end
+		print("[Nexora Translate] Traduzindo toda UI para: " .. selectedLang)
 		pcall(function()
-			if not Options then print("[Translate] Options nil") return end
-			local texts = {}
-			local seen = {}
+			if not Options then return end
+			local count = 0
 			for name, opt in pairs(Options) do
-				if opt and opt.FunctionCreate then
+				if opt and opt.FunctionCreate and opt.FunctionCreate.GetText then
 					local ok, label = pcall(function() return opt.FunctionCreate.GetText() end)
-					if ok and label and label.Text and label.Text ~= "" and #label.Text > 1 then
-						local txt = label.Text
-						if not seen[txt] then
-							seen[txt] = true
-							table.insert(texts, txt)
+					if ok and label and label.Text and label.Text ~= "" then
+						local original = label.Text
+						-- Tenta traduzir exato ou parcial
+						local translated = dict[original]
+						if not translated then
+							-- Tenta traduzir partes
+							for eng, trans in pairs(dict) do
+								if original:find(eng) then
+									translated = original:gsub(eng, trans)
+									break
+								end
+							end
+						end
+						if translated and translated ~= original then
+							pcall(function() label.Text = translated end)
+							count = count + 1
 						end
 					end
 				end
 			end
-			print("[Nexora Translate] Textos: " .. #texts)
-			if #texts > 0 then
-				local ok, translated = pcall(function() return batchTranslateParallel(texts, targetLang) end)
-				if ok then
-					print("[Nexora Translate] Aplicando traducao...")
-					pcall(function() saveCache() end)
-					for i=1,20 do
-						pcall(function() ApplyCacheToGUI() end)
-						task.wait(0.1)
-					end
-					print("[Nexora Translate] Concluido: " .. selectedLang)
-				else
-					warn("[Nexora Translate] Erro: " .. tostring(translated))
-				end
-			else
-				pcall(function() ApplyCacheToGUI() end)
-			end
+			print("[Nexora Translate] Traduzidos: " .. count .. " textos para " .. selectedLang)
 		end)
 	end
 	
-	if Settings["Auto Translate"] then task.wait(1) getgenv().NexoraTranslateFunc() end
+	-- Traduz quando ativa
+	if Settings["Auto Translate"] then
+		task.wait(1)
+		getgenv().NexoraTranslateFunc()
+	end
 	
+	-- Loop pra verificar quando muda lingua
 	while true do
 		task.wait(0.5)
 		if getgenv().ForceRetranslate then
