@@ -18374,7 +18374,80 @@ BoatSettingSection.CreateToggle(
 		SaveSettings("Change Speed Boat", b)
 	end
 )
-RaceMain = Main.CreatePage({ Page_Name = "Upgrade Race", Page_Title = "Upgrade Race" })
+
+-- ===================== NOVA ABA: BOAT SETTINGS COM TOGGLE =====================
+BoatSettingsTab = Main.CreatePage({ Page_Name = "Boat Settings", Page_Title = "Boat Settings" })
+BoatSettingsSection = BoatSettingsTab.CreateSection("Boat Speed Controls")
+
+local function ApplyBoatSpeed(speed)
+    pcall(function()
+        local seated = getSeatedBoat()
+        local boat = seated or checkboatFind() or checkboat()
+        if boat and boat.Parent then
+            local vs = boat:FindFirstChild("VehicleSeat", true)
+            if vs then vs.MaxSpeed = math.clamp(speed, 0, 500) end
+        end
+    end)
+end
+
+BoatSettingsSection.CreateToggle(
+    { Title = "Enable Boat Settings", Desc = "Master toggle - desativa tudo", Default = Settings["Enable Boat Settings"] or false },
+    function(v)
+        SaveSettings("Enable Boat Settings", v)
+        if not v then ApplyBoatSpeed(100) A.CreateNoti({ Title = "Boat Settings", Desc = "Desativado - velocidade normal", ShowTime = 2 }) end
+    end
+)
+
+BoatSettingsSection.CreateSlider(
+    { Title = "Boat Speed", Min = 0, Max = 500, Default = math.min(tonumber(Settings["Value Speed Boat"]) or 350, 500), Precise = true },
+    function(v) SaveSettings("Value Speed Boat", v) if Settings["Enable Boat Settings"] and Settings["Change Speed Boat Active"] then ApplyBoatSpeed(v) end end
+)
+
+BoatSettingsSection.CreateSlider(
+    { Title = "Tween Boat Speed", Min = 50, Max = 500, Default = math.min(tonumber(Settings["Value Speed Tween Boat"]) or 390, 500), Precise = true },
+    function(v) SaveSettings("Value Speed Tween Boat", v) local s = getgenv().TweenBoat if s and s.Speed then s.Speed = math.clamp(tonumber(v) or 390, 1, 500) end end
+)
+
+BoatSettingsSection.CreateSlider(
+    { Title = "Fly Boat Speed", Min = 0, Max = 15, Default = math.min(tonumber(Settings["Value Speed Fly Boat"]) or 7, 15), Precise = true },
+    function(v) SaveSettings("Value Speed Fly Boat", v) end
+)
+
+BoatSettingsSection.CreateSlider(
+    { Title = "Auto Drive Speed", Min = 0, Max = 500, Default = math.min(tonumber(Settings["Speed Boat Auto Drive"]) or 300, 500), Precise = true },
+    function(v) SaveSettings("Speed Boat Auto Drive", math.clamp(tonumber(v) or 300, 0, 500)) end
+)
+
+BoatSettingsSection.CreateToggle(
+    { Title = "Change Speed Boat", Desc = "Desativa com toggle", Default = Settings["Change Speed Boat Active"] or false },
+    function(v)
+        SaveSettings("Change Speed Boat Active", v) SaveSettings("Change Speed Boat", v)
+        if v then spawn(function() while Settings["Change Speed Boat Active"] and Settings["Enable Boat Settings"] and task.wait(0.2) do local sp = tonumber(Settings["Value Speed Boat"]) or 350 ApplyBoatSpeed(sp) end end) else ApplyBoatSpeed(100) end
+    end
+)
+
+BoatSettingsSection.CreateToggle(
+    { Title = "Infinite Boat Speed (500)", Desc = "Desativa com toggle", Default = Settings["Infinite Boat Speed"] or false },
+    function(v) SaveSettings("Infinite Boat Speed", v) if v then spawn(function() while Settings["Infinite Boat Speed"] and Settings["Enable Boat Settings"] and task.wait(0.15) do ApplyBoatSpeed(500) end end) else ApplyBoatSpeed(tonumber(Settings["Value Speed Boat"]) or 100) end end
+)
+
+BoatSettingsSection.CreateToggle(
+    { Title = "NoClip Boat", Desc = "Desativa com toggle", Default = Settings["NoClip Boat"] or false },
+    function(v) SaveSettings("NoClip Boat", v) if v then spawn(function() while Settings["NoClip Boat"] and Settings["Enable Boat Settings"] and task.wait() do pcall(function() local b = checkSpeedboat() if b then for _, part in pairs(b:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end end end) end end) else pcall(function() local b = checkSpeedboat() if b then for _, part in pairs(b:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = true end end end end) end end
+)
+
+BoatSettingsSection.CreateToggle(
+    { Title = "Auto Boost Boat (W)", Desc = "Desativa com toggle", Default = Settings["Auto Boost Boat"] or false },
+    function(v) SaveSettings("Auto Boost Boat", v) if v then spawn(function() while Settings["Auto Boost Boat"] and Settings["Enable Boat Settings"] and task.wait() do pcall(function() local char = game.Players.LocalPlayer.Character local hum = char and char:FindFirstChildOfClass("Humanoid") local seat = hum and hum.SeatPart if seat and seat:IsA("VehicleSeat") then seat.ThrottleFloat = 1 end end) end end) end end
+)
+
+
+
+print("[Boat Settings] Aba com toggles")
+-- ===================== FIM BOAT SETTINGS =====================
+
+RaceMain
+ = Main.CreatePage({ Page_Name = "Upgrade Race", Page_Title = "Upgrade Race" })
 RaceDracoMain = Main.CreatePage({ Page_Name = "Race Draco", Page_Title = "Race Draco" })
 RaceDracoSection = RaceDracoMain.CreateSection("Race Draco")
 RaceDracoSection.CreateToggle(
