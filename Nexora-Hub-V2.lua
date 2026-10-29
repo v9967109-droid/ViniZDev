@@ -2138,11 +2138,34 @@ function OMG.CreateMain(config)
         end)
     end
 
+
     local Main={}
+    local function showPage(p)
+        pcall(function()
+        activePage=p
+        for _,item in pairs(pages) do 
+            pcall(function() item.frame.Visible=(item==p) end)
+        end
+        for pg,b in pairs(navButtons) do
+            pcall(function()
+            local on=(pg==p)
+            b:SetAttribute("Active",on)
+            if b.BackgroundColor3 then
+                TweenService:Create(b,TweenInfo.new(.15),{BackgroundColor3=on and C.accent or Color3.fromRGB(28,28,33)}):Play()
+            end
+            if b.Txt and b.Txt.TextColor3 then
+                TweenService:Create(b.Txt,TweenInfo.new(.15),{TextColor3=on and Color3.new(1,1,1) or C.textDim}):Play()
+            end
+            if b.Bar then b.Bar.Visible=on end
+            end)
+        end
+        end)
+    end
+
     function Main.CreatePage(pageConfig)
+        local okAll, result = pcall(function()
         pageConfig=pageConfig or {}
         local pageName=pageConfig.Page_Name or pageConfig.Page_Title or "Page"
-        -- Evita duplicar abas com mesmo nome (seu arquivo original cria Shop 2x)
         for _,existing in ipairs(pages) do
             if existing.name==pageName then
                 return existing._api
@@ -2151,36 +2174,45 @@ function OMG.CreateMain(config)
         local frame=make("ScrollingFrame",{Name=pageName, Position=UDim2.new(0,0,0,0), Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, BorderSizePixel=0, ScrollBarThickness=3, ScrollBarImageColor3=C.accent, CanvasSize=UDim2.new()}, content)
         make("UIPadding",{PaddingTop=UDim.new(0,12),PaddingBottom=UDim.new(0,14),PaddingLeft=UDim.new(0,12),PaddingRight=UDim.new(0,12)}, frame)
         local layout=make("UIListLayout",{Padding=UDim.new(0,10),SortOrder=Enum.SortOrder.LayoutOrder}, frame)
-        layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() frame.CanvasSize=UDim2.new(0,0,0,layout.AbsoluteContentSize.Y+28) end)
+        layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() 
+            pcall(function() frame.CanvasSize=UDim2.new(0,0,0,layout.AbsoluteContentSize.Y+28) end)
+        end)
         local p={name=pageName,frame=frame, _api=nil}
         frame.Visible = false
-        pages[#pages+1]=p
-        local navText=pageConfig.Page_Title or pageName
         local nb=make("TextButton",{Name="Nav", AutoButtonColor=false, BackgroundColor3=Color3.fromRGB(28,28,33), BackgroundTransparency=0, BorderSizePixel=0, Size=UDim2.new(1,0,0,38), Text=""}, nav)
         corner(nb,8)
         local bar=make("Frame",{Name="Bar", Position=UDim2.new(0,0,0,6), Size=UDim2.new(0,3,1,-12), BackgroundColor3=C.accent, BorderSizePixel=0, Visible=false}, nb); corner(bar,2)
-        local txt=make("TextLabel",{Name="Txt", BackgroundTransparency=1, Position=UDim2.new(0,14,0,0), Size=UDim2.new(1,-20,1,0), Text=navText, TextColor3=C.textDim, Font=Enum.Font.Gotham, TextSize=13, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd}, nb)
+        local txt=make("TextLabel",{Name="Txt", BackgroundTransparency=1, Position=UDim2.new(0,14,0,0), Size=UDim2.new(1,-20,1,0), Text=pageConfig.Page_Title or pageName, TextColor3=C.textDim, Font=Enum.Font.Gotham, TextSize=13, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd}, nb)
         nb.Bar=bar; nb.Txt=txt
         navButtons[p]=nb
         nb.MouseButton1Click:Connect(function() pcall(function() showPage(p) end) end)
-        nb.LayoutOrder=#pages
-        if #pages==1 then
+        nb.LayoutOrder=#pages+1
+        if #pages==0 then
             frame.Visible = true
             activePage = p
             task.defer(function() pcall(function() showPage(p) end) end)
         end
+        pages[#pages+1]=p
 
         local Page={}
         function Page.CreateSection(sectionName)
-            local card=make("Frame",{Name=sectionName, Size=UDim2.new(1,0,0,40), AutomaticSize=Enum.AutomaticSize.Y, BackgroundColor3=C.panel, BorderSizePixel=0}, frame)
-            corner(card,10); stroke(card, Color3.fromRGB(40,40,50),1,0.4)
-            make("UIPadding",{PaddingTop=UDim.new(0,10),PaddingBottom=UDim.new(0,10),PaddingLeft=UDim.new(0,10),PaddingRight=UDim.new(0,10)}, card)
-            local list=make("UIListLayout",{Padding=UDim.new(0,6),SortOrder=Enum.SortOrder.LayoutOrder}, card)
-            local head=make("TextLabel",{Size=UDim2.new(1,0,0,20),BackgroundTransparency=1,Text=string.upper(sectionName),TextColor3=C.text,Font=Enum.Font.GothamBold,TextSize=11,TextXAlignment=Enum.TextXAlignment.Left},card)
-            make("Frame",{Size=UDim2.new(1,0,0,1), BackgroundColor3=Color3.fromRGB(50,50,60), BackgroundTransparency=0.6, BorderSizePixel=0}, card)
+            local card
+            local ok, res = pcall(function()
+                local c=make("Frame",{Name=sectionName, Size=UDim2.new(1,0,0,40), AutomaticSize=Enum.AutomaticSize.Y, BackgroundColor3=C.panel, BorderSizePixel=0}, frame)
+                corner(c,10); stroke(c, Color3.fromRGB(40,40,50),1,0.4)
+                make("UIPadding",{PaddingTop=UDim.new(0,10),PaddingBottom=UDim.new(0,10),PaddingLeft=UDim.new(0,10),PaddingRight=UDim.new(0,10)}, c)
+                local list=make("UIListLayout",{Padding=UDim.new(0,6),SortOrder=Enum.SortOrder.LayoutOrder}, c)
+                local head=make("TextLabel",{Size=UDim2.new(1,0,0,20),BackgroundTransparency=1,Text=string.upper(sectionName),TextColor3=C.text,Font=Enum.Font.GothamBold,TextSize=11,TextXAlignment=Enum.TextXAlignment.Left},c)
+                make("Frame",{Size=UDim2.new(1,0,0,1), BackgroundColor3=Color3.fromRGB(50,50,60), BackgroundTransparency=0.6, BorderSizePixel=0}, c)
+                return c
+            end)
+            if ok then card=res else card=make("Frame",{Name=sectionName, Size=UDim2.new(1,0,0,40), BackgroundTransparency=1}, frame) end
 
             local Section={}
-            local function row(h) return make("Frame",{Size=UDim2.new(1,0,0,h),BackgroundTransparency=1},card) end
+            local function row(h) 
+                local ok,rowF = pcall(function() return make("Frame",{Size=UDim2.new(1,0,0,h),BackgroundTransparency=1},card) end)
+                if ok then return rowF else return card end
+            end
 
             function Section.CreateToggle(cfg, callback)
                 cfg=cfg or {}; local t=cfg.Title or "Toggle"
