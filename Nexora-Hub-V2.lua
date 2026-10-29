@@ -18374,80 +18374,7 @@ BoatSettingSection.CreateToggle(
 		SaveSettings("Change Speed Boat", b)
 	end
 )
-
--- ===================== NOVA ABA: BOAT SETTINGS COM TOGGLE =====================
-BoatSettingsTab = Main.CreatePage({ Page_Name = "Boat Settings", Page_Title = "Boat Settings" })
-BoatSettingsSection = BoatSettingsTab.CreateSection("Boat Speed Controls")
-
-local function ApplyBoatSpeed(speed)
-    pcall(function()
-        local seated = getSeatedBoat()
-        local boat = seated or checkboatFind() or checkboat()
-        if boat and boat.Parent then
-            local vs = boat:FindFirstChild("VehicleSeat", true)
-            if vs then vs.MaxSpeed = math.clamp(speed, 0, 500) end
-        end
-    end)
-end
-
-BoatSettingsSection.CreateToggle(
-    { Title = "Enable Boat Settings", Desc = "Master toggle - desativa tudo", Default = Settings["Enable Boat Settings"] or false },
-    function(v)
-        SaveSettings("Enable Boat Settings", v)
-        if not v then ApplyBoatSpeed(100) A.CreateNoti({ Title = "Boat Settings", Desc = "Desativado - velocidade normal", ShowTime = 2 }) end
-    end
-)
-
-BoatSettingsSection.CreateSlider(
-    { Title = "Boat Speed", Min = 0, Max = 500, Default = math.min(tonumber(Settings["Value Speed Boat"]) or 350, 500), Precise = true },
-    function(v) SaveSettings("Value Speed Boat", v) if Settings["Enable Boat Settings"] and Settings["Change Speed Boat Active"] then ApplyBoatSpeed(v) end end
-)
-
-BoatSettingsSection.CreateSlider(
-    { Title = "Tween Boat Speed", Min = 50, Max = 500, Default = math.min(tonumber(Settings["Value Speed Tween Boat"]) or 390, 500), Precise = true },
-    function(v) SaveSettings("Value Speed Tween Boat", v) local s = getgenv().TweenBoat if s and s.Speed then s.Speed = math.clamp(tonumber(v) or 390, 1, 500) end end
-)
-
-BoatSettingsSection.CreateSlider(
-    { Title = "Fly Boat Speed", Min = 0, Max = 15, Default = math.min(tonumber(Settings["Value Speed Fly Boat"]) or 7, 15), Precise = true },
-    function(v) SaveSettings("Value Speed Fly Boat", v) end
-)
-
-BoatSettingsSection.CreateSlider(
-    { Title = "Auto Drive Speed", Min = 0, Max = 500, Default = math.min(tonumber(Settings["Speed Boat Auto Drive"]) or 300, 500), Precise = true },
-    function(v) SaveSettings("Speed Boat Auto Drive", math.clamp(tonumber(v) or 300, 0, 500)) end
-)
-
-BoatSettingsSection.CreateToggle(
-    { Title = "Change Speed Boat", Desc = "Desativa com toggle", Default = Settings["Change Speed Boat Active"] or false },
-    function(v)
-        SaveSettings("Change Speed Boat Active", v) SaveSettings("Change Speed Boat", v)
-        if v then spawn(function() while Settings["Change Speed Boat Active"] and Settings["Enable Boat Settings"] and task.wait(0.2) do local sp = tonumber(Settings["Value Speed Boat"]) or 350 ApplyBoatSpeed(sp) end end) else ApplyBoatSpeed(100) end
-    end
-)
-
-BoatSettingsSection.CreateToggle(
-    { Title = "Infinite Boat Speed (500)", Desc = "Desativa com toggle", Default = Settings["Infinite Boat Speed"] or false },
-    function(v) SaveSettings("Infinite Boat Speed", v) if v then spawn(function() while Settings["Infinite Boat Speed"] and Settings["Enable Boat Settings"] and task.wait(0.15) do ApplyBoatSpeed(500) end end) else ApplyBoatSpeed(tonumber(Settings["Value Speed Boat"]) or 100) end end
-)
-
-BoatSettingsSection.CreateToggle(
-    { Title = "NoClip Boat", Desc = "Desativa com toggle", Default = Settings["NoClip Boat"] or false },
-    function(v) SaveSettings("NoClip Boat", v) if v then spawn(function() while Settings["NoClip Boat"] and Settings["Enable Boat Settings"] and task.wait() do pcall(function() local b = checkSpeedboat() if b then for _, part in pairs(b:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end end end) end end) else pcall(function() local b = checkSpeedboat() if b then for _, part in pairs(b:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = true end end end end) end end
-)
-
-BoatSettingsSection.CreateToggle(
-    { Title = "Auto Boost Boat (W)", Desc = "Desativa com toggle", Default = Settings["Auto Boost Boat"] or false },
-    function(v) SaveSettings("Auto Boost Boat", v) if v then spawn(function() while Settings["Auto Boost Boat"] and Settings["Enable Boat Settings"] and task.wait() do pcall(function() local char = game.Players.LocalPlayer.Character local hum = char and char:FindFirstChildOfClass("Humanoid") local seat = hum and hum.SeatPart if seat and seat:IsA("VehicleSeat") then seat.ThrottleFloat = 1 end end) end end) end end
-)
-
-
-
-print("[Boat Settings] Aba com toggles")
--- ===================== FIM BOAT SETTINGS =====================
-
-RaceMain
- = Main.CreatePage({ Page_Name = "Upgrade Race", Page_Title = "Upgrade Race" })
+RaceMain = Main.CreatePage({ Page_Name = "Upgrade Race", Page_Title = "Upgrade Race" })
 RaceDracoMain = Main.CreatePage({ Page_Name = "Race Draco", Page_Title = "Race Draco" })
 RaceDracoSection = RaceDracoMain.CreateSection("Race Draco")
 RaceDracoSection.CreateToggle(
@@ -30316,3 +30243,140 @@ function UseDragonstormAllSeaEvents(Part)
 end
 
 print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZ_DV")
+
+
+
+-- ===================== NEXORA FIX M1 FRUTAS IGUAL VIDEO (KITSUNE SPAM) - ViniZ_DV =====================
+-- Cola no final: corrige M1 das frutas para ficar igual do video enviado (0 delay, sem Busy)
+task.spawn(function()
+    repeat task.wait() until getgenv().UseFruitM1 ~= nil
+    print("[FIX] Aplicando M1 Frutas igual video...")
+
+    getgenv().FruitM1Delay = 0
+    getgenv().GunM1Delay = 0.04
+    getgenv().M1Turbo = true
+    getgenv().Usefastattack = true
+    getgenv().fastattect = true
+    getgenv().SuperFastAttack = true
+    if getgenv().BananaCatFastAttackEnabled ~= nil then
+        getgenv().BananaCatFastAttackEnabled = true
+        getgenv().BananaCatSuperFastAttackEnabled = true
+    end
+
+    -- Zera estados travados
+    if FruitM1State then
+        FruitM1State.Busy = false
+        FruitM1State.BusyAt = 0
+        FruitM1State.LastFire = 0
+        FruitM1State.Combo = 0
+        FruitM1State.Tool = nil
+    end
+
+    local t = game.Players.LocalPlayer
+    local function GetPos(T)
+        local ty = typeof(T)
+        if ty == "Vector3" then return T
+        elseif ty == "CFrame" then return T.Position
+        elseif ty == "Instance" then
+            if T:IsA("BasePart") then return T.Position
+            elseif T:IsA("Model") then
+                local r = T:FindFirstChild("HumanoidRootPart") or T.PrimaryPart
+                if r then return r.Position end
+                return T:GetPivot().Position
+            end
+        end
+        return nil
+    end
+
+    -- NOVO M1 DE FRUTA - SEM TRAVA, IGUAL VIDEO
+    getgenv().UseFruitM1 = function(E, l)
+        local char = t.Character
+        if not char then return false end
+        local toolName = nil
+        pcall(function() toolName = NameWeapon("Blox Fruit") end)
+        if not toolName then return false end
+        local tool = char:FindFirstChild(toolName)
+        if not tool then
+            local bp = t.Backpack:FindFirstChild(toolName)
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if bp and hum then
+                pcall(function() hum:EquipTool(bp) end)
+            end
+            return false
+        end
+        local stun = char:FindFirstChild("Stun")
+        if stun and stun.Value ~= 0 then return true end
+
+        local TargetPos = GetPos(E)
+        if not TargetPos then return false end
+
+        -- Atualiza combo sem resetar por delay
+        FruitM1State.Tool = tool
+        FruitM1State.LastFire = os.clock()
+        FruitM1State.Combo = FruitM1State.Combo % 5 + 1
+
+        local ClickRemote = tool:FindFirstChild("LeftClickRemote")
+        local RemoteFn = tool:FindFirstChild("RemoteFunction")
+        local RemoteEv = tool:FindFirstChild("RemoteEvent")
+
+        -- Frutas tipo Kitsune / Dragon usam RemoteFunction TAP, mas sem Busy
+        if not ClickRemote and RemoteFn then
+            if RemoteEv then
+                pcall(function() RemoteEv:FireServer(TargetPos) end)
+            end
+            -- Sem trava de 0.5s - dispara direto
+            pcall(function() RemoteFn:InvokeServer("TAP") end)
+            return true
+        end
+
+        -- Frutas com LeftClickRemote (Mammoth, etc)
+        if ClickRemote then
+            local origin = char:FindFirstChild("HumanoidRootPart")
+            origin = origin and origin.Position or char:GetPivot().Position
+            local dir = (TargetPos - origin)
+            dir = dir.Magnitude < 0.001 and Vector3.new(0,0,-1) or dir.Unit
+            local flat = Vector3.new(dir.X, 0, dir.Z)
+            flat = flat.Magnitude < 0.001 and Vector3.new(0,0,-1) or flat.Unit
+
+            getgenv().AimPos = CFrame.new(TargetPos)
+            pcall(function() ClickRemote:FireServer(dir, FruitM1State.Combo) end)
+            if l then
+                pcall(function() ClickRemote:FireServer(flat, FruitM1State.Combo) end)
+            end
+            return true
+        end
+        return true
+    end
+
+    getgenv().UseFruitM1Boat = getgenv().UseFruitM1
+
+    -- Turbo no Heartbeat igual video - nao para nunca
+    if getgenv().M1TurboConn then
+        pcall(function() getgenv().M1TurboConn:Disconnect() end)
+    end
+    getgenv().M1TurboConn = game:GetService("RunService").Heartbeat:Connect(function()
+        if getgenv().M1Turbo == false then return end
+        local tgt = getgenv().M1Target
+        if not tgt or not tgt.Parent then return end
+        if os.clock() - (getgenv().M1TargetTime or 0) > 0.6 then return end
+        if getgenv().M1TargetWeapon == "Blox Fruit" then
+            getgenv().UseFruitM1(tgt, getgenv().M1TargetL)
+        end
+    end)
+
+    -- Forca FastAttack 60 igual video (3 caudas)
+    task.spawn(function()
+        while task.wait(0.1) do
+            if getgenv().Usefastattack or getgenv().SuperFastAttack then
+                pcall(function()
+                    if getgenv().__BC_FastAttackOnce then getgenv().__BC_FastAttackOnce() end
+                    if getgenv().BananaCatFastAttackOnce then getgenv().BananaCatFastAttackOnce() end
+                    if FastAttackOnce then FastAttackOnce() end
+                end)
+            end
+        end
+    end)
+
+    print("[NEXORA FIX] M1 FRUTAS IGUAL VIDEO ATIVADO - KITSUNE SPAM 0 DELAY")
+end)
+-- ===================== FIM FIX =====================
