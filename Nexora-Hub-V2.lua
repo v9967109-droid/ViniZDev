@@ -1923,10 +1923,9 @@ game:GetService("Players").LocalPlayer.Idled:connect(function()
 end)
 local A = (function()
 
--- OMG HUB UI LIBRARY | Converted from Nexora -> OMG Hub Style
--- API 100% compatível com Nexora: CreateMain, CreatePage, CreateSection, CreateToggle, CreateButton, CreateDropdown, CreateSlider, CreateLabel, CreateBox, CreateNoti, CreateBind
--- Visual: OMG HUB 2026 - Preto fosco + Roxo neon #8A5CFF
--- Author convert: ViniZ_DV request
+-- NEXORA HUB OMG VISUAL - V5 FIXED - COMPATÍVEL COM TODOS EXECUTORES
+-- Mantém nome NEXORA HUB, visual OMG Hub roxo #8A5CFF
+-- SEM AutomaticSize, SEM CanvasSize automático que buga no celular
 
 local OMG = {}
 OMG.Options = {}
@@ -1938,44 +1937,37 @@ local TweenService = game:GetService("TweenService")
 local CoreGui = game:GetService("CoreGui")
 local parentGui = (gethui and gethui()) or CoreGui
 
-local old = parentGui:FindFirstChild("OMGHubUI")
+local old = parentGui:FindFirstChild("NexoraUI")
 if old then old:Destroy() end
-local oldFloat = parentGui:FindFirstChild("OMGFloat")
+local oldFloat = parentGui:FindFirstChild("NexoraFloat")
 if oldFloat then oldFloat:Destroy() end
 
--- CORES OMG HUB
 local C = {
-    bg = Color3.fromRGB(12, 12, 14),
-    shell = Color3.fromRGB(15, 15, 18),
-    sidebar = Color3.fromRGB(20, 20, 24),
-    panel = Color3.fromRGB(24, 24, 30),
-    panel2 = Color3.fromRGB(30, 30, 38),
-    line = Color3.fromRGB(55, 55, 65),
-    accent = Color3.fromRGB(138, 92, 255), -- roxo OMG
-    accentLight = Color3.fromRGB(168, 130, 255),
-    accentDark = Color3.fromRGB(90, 60, 180),
-    text = Color3.fromRGB(240, 240, 245),
-    muted = Color3.fromRGB(140, 140, 150),
-    textDim = Color3.fromRGB(160, 160, 170),
-    toggleOff = Color3.fromRGB(50, 50, 58),
-    green = Color3.fromRGB(80, 255, 120),
+    bg = Color3.fromRGB(12,12,14),
+    shell = Color3.fromRGB(15,15,18),
+    sidebar = Color3.fromRGB(20,20,24),
+    panel = Color3.fromRGB(24,24,30),
+    panel2 = Color3.fromRGB(30,30,38),
+    line = Color3.fromRGB(55,55,65),
+    accent = Color3.fromRGB(138,92,255),
+    accentLight = Color3.fromRGB(168,130,255),
+    text = Color3.fromRGB(240,240,245),
+    muted = Color3.fromRGB(140,140,150),
+    textDim = Color3.fromRGB(160,160,170),
+    toggleOff = Color3.fromRGB(50,50,58),
+    green = Color3.fromRGB(80,255,120),
 }
 
 local function make(class, props, parent)
     local o = Instance.new(class)
-    for k,v in pairs(props or {}) do o[k]=v end
-    o.Parent = parent
+    for k,v in pairs(props or {}) do 
+        pcall(function() o[k]=v end)
+    end
+    if parent then o.Parent = parent end
     return o
 end
 local function corner(o,r) make("UICorner",{CornerRadius=UDim.new(0,r or 8)},o) end
 local function stroke(o,c,t,tr) make("UIStroke",{Color=c or C.line, Thickness=t or 1, Transparency=tr or 0},o) end
-local function label(parent,text,size,color,font)
-    return make("TextLabel",{
-        BackgroundTransparency=1, Text=tostring(text or ""), TextColor3=color or C.text,
-        Font=font or Enum.Font.Gotham, TextSize=size or 13, TextXAlignment=Enum.TextXAlignment.Left,
-        TextYAlignment=Enum.TextYAlignment.Center, Size=UDim2.new(1,0,1,0), TextWrapped=true
-    },parent)
-end
 
 local function addOption(title, typ, value, page, section, callback)
     local opt = {Title=title, name=title, type=typ, value=value, Page_Name=page, Section_Name=section, Callback=callback}
@@ -1985,7 +1977,7 @@ local function addOption(title, typ, value, page, section, callback)
         local v = b; if b==nil then v=a end
         if v==control then return end
         opt.value=v
-        if opt._setValue then opt._setValue(v) end
+        if opt._setValue then pcall(function() opt._setValue(v) end) end
         if callback then task.spawn(function() pcall(callback,v) end) end
     end
     control.SetStage = control.SetValue
@@ -1994,7 +1986,7 @@ local function addOption(title, typ, value, page, section, callback)
         if c~=nil then key,v=b,c else key,v=a,b end
         opt.value=opt.value or {}
         opt.value[key]=v
-        if opt._setSubValue then opt._setSubValue(key,v) end
+        if opt._setSubValue then pcall(function() opt._setSubValue(key,v) end) end
         if callback then task.spawn(function() pcall(callback,opt.value) end) end
     end
     opt.FunctionCreate=control
@@ -2006,61 +1998,30 @@ end
 function OMG.CreateMain(config)
     config=config or {}
     local gui = make("ScreenGui",{Name="NexoraUI", ResetOnSpawn=false, ZIndexBehavior=Enum.ZIndexBehavior.Sibling}, parentGui)
-    local SIZE_FILE="NexoraHubWindowSize.json"
-    local persistedW,persistedH=680,420
-    pcall(function()
-        if readfile and isfile and isfile(SIZE_FILE) then
-            local stored = game:GetService("HttpService"):JSONDecode(readfile(SIZE_FILE))
-            persistedW = math.clamp(tonumber(stored.w) or 680, 360, 900)
-            persistedH = math.clamp(tonumber(stored.h) or 420, 280, 720)
-        elseif getgenv and getgenv().__NEXORA_WINDOW_SIZE then
-            persistedW = math.clamp(tonumber(getgenv().__NEXORA_WINDOW_SIZE.w) or 680, 360, 900)
-            persistedH = math.clamp(tonumber(getgenv().__NEXORA_WINDOW_SIZE.h) or 420, 280, 720)
-        end
-    end)
-    local function saveWindowSize(w,h)
-        local data={w=math.floor(w),h=math.floor(h)}
-        pcall(function() if getgenv then getgenv().__NEXORA_WINDOW_SIZE=data end end)
-        pcall(function() if writefile then writefile(SIZE_FILE, game:GetService("HttpService"):JSONEncode(data)) end end)
-    end
 
-    local shell = make("Frame",{Name="Window", AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.new(0,persistedW,0,persistedH), BackgroundColor3=C.shell, BorderSizePixel=0, ClipsDescendants=true}, gui)
+    local shell = make("Frame",{Name="Window", AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.new(0,680,0,420), BackgroundColor3=C.shell, BorderSizePixel=0, ClipsDescendants=false}, gui)
     corner(shell,12); stroke(shell, Color3.fromRGB(45,45,55),1,0.6)
-    local scale=make("UIScale",{Scale=1},shell)
 
     local HEADER_H,SIDEBAR_W=50,160
     local top = make("Frame",{Size=UDim2.new(1,0,0,HEADER_H), BackgroundColor3=C.sidebar, BorderSizePixel=0}, shell)
     corner(top,12)
     make("Frame",{Position=UDim2.new(0,0,1,-12), Size=UDim2.new(1,0,0,12), BackgroundColor3=C.sidebar, BorderSizePixel=0}, top)
 
-    -- Title OMG HUB
     local mainTitle = config.Title or "NEXORA HUB"
-    local displayTitle = mainTitle
-    pcall(function() displayTitle = string.upper(mainTitle) end)
-    local part1 = "NEXORA"
-    local part2 = "HUB"
-    pcall(function() 
-        if string.find(displayTitle, " ") then
-            local split = string.split(displayTitle, " ")
-            part1 = split[1] or "NEXORA"
-            part2 = split[#split] or "HUB"
-        end
-    end)
-    make("TextLabel",{Position=UDim2.new(0,16,0,8), Size=UDim2.new(0,300,0,22), BackgroundTransparency=1, RichText=true, Text='<b><font color="#FFFFFF">'..part1..'</font> <font color="#8A5CFF">'..part2..'</font></b>', TextColor3=C.text, Font=Enum.Font.GothamBold, TextSize=16, TextXAlignment=Enum.TextXAlignment.Left}, top)
-    make("TextLabel",{Position=UDim2.new(0,16,0,30), Size=UDim2.new(0,300,0,14), BackgroundTransparency=1, Text=config.Desc or "BLOX FRUITS . ViniZ_DV", TextColor3=C.muted, Font=Enum.Font.Code, TextSize=10, TextXAlignment=Enum.TextXAlignment.Left}, top)
+    local desc = config.Desc or "BLOX FRUITS . ViniZ_DV"
+    -- Title fixo sem RichText bugado
+    local titleLabel = make("TextLabel",{Position=UDim2.new(0,16,0,6), Size=UDim2.new(0,300,0,20), BackgroundTransparency=1, Text=string.upper(mainTitle), TextColor3=Color3.fromRGB(255,255,255), Font=Enum.Font.GothamBold, TextSize=15, TextXAlignment=Enum.TextXAlignment.Left}, top)
+    -- HUB roxo separado
+    make("TextLabel",{Position=UDim2.new(0,16+string.len(mainTitle:gsub(" HUB",""))*8,0,6), Size=UDim2.new(0,50,0,20), BackgroundTransparency=1, Text="HUB", TextColor3=C.accent, Font=Enum.Font.GothamBold, TextSize=15, TextXAlignment=Enum.TextXAlignment.Left}, top)
+    make("TextLabel",{Position=UDim2.new(0,16,0,26), Size=UDim2.new(0,300,0,14), BackgroundTransparency=1, Text=desc, TextColor3=C.muted, Font=Enum.Font.Code, TextSize=10, TextXAlignment=Enum.TextXAlignment.Left}, top)
 
-    -- Controls
-    local closeBtn = make("TextButton",{AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,-12,0.5,0), Size=UDim2.new(0,28,0,28), BackgroundColor3=Color3.fromRGB(35,35,40), BorderSizePixel=0, Text="✕", TextColor3=C.muted, Font=Enum.Font.GothamBold, TextSize=12, AutoButtonColor=false}, top)
+    local closeBtn = make("TextButton",{AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,-12,0.5,0), Size=UDim2.new(0,28,0,28), BackgroundColor3=Color3.fromRGB(35,35,40), BorderSizePixel=0, Text="X", TextColor3=C.muted, Font=Enum.Font.GothamBold, TextSize=12, AutoButtonColor=false}, top)
     corner(closeBtn,6)
-    local miniBtn = make("TextButton",{AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,-46,0.5,0), Size=UDim2.new(0,28,0,28), BackgroundColor3=Color3.fromRGB(35,35,40), BorderSizePixel=0, Text="—", TextColor3=C.muted, Font=Enum.Font.GothamBold, TextSize=12, AutoButtonColor=false}, top)
-    corner(miniBtn,6)
 
-    -- Floating button (igual Nexora)
     local floatGui = make("ScreenGui",{Name="NexoraFloat", ResetOnSpawn=false, IgnoreGuiInset=true, DisplayOrder=999, ZIndexBehavior=Enum.ZIndexBehavior.Sibling}, parentGui)
     local reopen = make("TextButton",{Name="NexoraFloatingButton", AutoButtonColor=false, BackgroundColor3=Color3.fromRGB(22,22,26), BorderSizePixel=0, Size=UDim2.new(0,140,0,36), Text="", ZIndex=100}, floatGui)
-    reopen:SetAttribute("NexoraKeepColor", true)
     corner(reopen,18); stroke(reopen, C.accent,1,0.4)
-    local iconFrame = make("Frame",{BackgroundColor3=Color3.fromRGB(138,92,255), Size=UDim2.new(0,24,0,24), Position=UDim2.new(0,8,0.5,-12), BorderSizePixel=0, ZIndex=101}, reopen)
+    local iconFrame = make("Frame",{BackgroundColor3=C.accent, Size=UDim2.new(0,24,0,24), Position=UDim2.new(0,8,0.5,-12), BorderSizePixel=0, ZIndex=101}, reopen)
     corner(iconFrame,12)
     make("TextLabel",{BackgroundTransparency=1, Size=UDim2.new(1,0,1,0), Text="N", TextColor3=Color3.fromRGB(255,255,255), Font=Enum.Font.GothamBold, TextSize=14, ZIndex=102}, iconFrame)
     make("TextLabel",{BackgroundTransparency=1, Position=UDim2.new(0,38,0,0), Size=UDim2.new(0,80,1,0), Text="Nexora Hub", TextColor3=C.text, TextSize=13, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=101}, reopen)
@@ -2069,7 +2030,6 @@ function OMG.CreateMain(config)
     reopen.Position=UDim2.new(0,20,0,70)
     reopen.Visible=true
 
-    -- Dragging
     local dragging,dragStart,startPos=false,nil,nil
     top.InputBegan:Connect(function(input)
         if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then dragging=true; dragStart=input.Position; startPos=shell.Position end
@@ -2082,7 +2042,6 @@ function OMG.CreateMain(config)
         end
     end)
 
-    -- Floating drag
     local floatDragging,floatStart,floatPos,floatMoved=false,nil,nil,false
     reopen.InputBegan:Connect(function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then floatDragging=true; floatMoved=false; floatStart=input.Position; floatPos=reopen.Position end end)
     UIS.InputChanged:Connect(function(input)
@@ -2094,7 +2053,7 @@ function OMG.CreateMain(config)
     end)
     UIS.InputEnded:Connect(function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then floatDragging=false end end)
 
-    local function playOpen() shell.Visible=true; TweenService:Create(shell,TweenInfo.new(.25,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{Size=UDim2.new(0,persistedW,0,persistedH)}):Play() end
+    local function playOpen() shell.Visible=true end
     local function playClose() shell.Visible=false end
 
     reopen.Activated:Connect(function()
@@ -2103,20 +2062,17 @@ function OMG.CreateMain(config)
         if shell.Visible then playClose() else playOpen() end
     end)
     closeBtn.MouseButton1Click:Connect(function() playClose() end)
-    miniBtn.MouseButton1Click:Connect(function() playClose() end)
 
-    -- Sidebar
     local sidebar = make("Frame",{Name="Sidebar", Position=UDim2.new(0,0,0,HEADER_H), Size=UDim2.new(0,SIDEBAR_W,1,-HEADER_H), BackgroundColor3=C.sidebar, BorderSizePixel=0}, shell)
     make("Frame",{Position=UDim2.new(1,-1,0,0), Size=UDim2.new(0,1,1,0), BackgroundColor3=Color3.fromRGB(35,35,45), BorderSizePixel=0}, sidebar)
 
     local search = make("TextBox",{Position=UDim2.new(0,10,0,10), Size=UDim2.new(1,-20,0,32), BackgroundColor3=C.panel, BorderSizePixel=0, PlaceholderText="Search...", Text="", TextColor3=C.text, PlaceholderColor3=C.muted, Font=Enum.Font.Gotham, TextSize=12, ClearTextOnFocus=false}, sidebar)
     corner(search,8); stroke(search, C.line,1,0.5)
 
-    local nav = make("ScrollingFrame",{Position=UDim2.new(0,6,0,50), Size=UDim2.new(1,-12,1,-58), BackgroundTransparency=1, BorderSizePixel=0, ScrollBarThickness=2, ScrollBarImageColor3=C.accent, CanvasSize=UDim2.new()}, sidebar)
-    local navLayout = make("UIListLayout",{Padding=UDim.new(0,4), SortOrder=Enum.SortOrder.LayoutOrder}, nav)
-    navLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() nav.CanvasSize=UDim2.new(0,0,0,navLayout.AbsoluteContentSize.Y+8) end)
+    local nav = make("ScrollingFrame",{Position=UDim2.new(0,6,0,50), Size=UDim2.new(1,-12,1,-58), BackgroundTransparency=1, BorderSizePixel=0, ScrollBarThickness=2, ScrollBarImageColor3=C.accent, CanvasSize=UDim2.new(0,0,0,800)}, sidebar)
+    make("UIListLayout",{Padding=UDim.new(0,4), SortOrder=Enum.SortOrder.LayoutOrder}, nav)
 
-    local content = make("Frame",{Name="Content", Position=UDim2.new(0,SIDEBAR_W,0,HEADER_H), Size=UDim2.new(1,-SIDEBAR_W,1,-HEADER_H), BackgroundColor3=Color3.fromRGB(15,15,18), BorderSizePixel=0}, shell)
+    local content = make("Frame",{Name="Content", Position=UDim2.new(0,SIDEBAR_W,0,HEADER_H), Size=UDim2.new(1,-SIDEBAR_W,1,-HEADER_H), BackgroundColor3=Color3.fromRGB(15,15,18), BorderSizePixel=0, ClipsDescendants=true}, shell)
 
     local pages,activePage,navButtons={},nil,{}
 
@@ -2129,115 +2085,102 @@ function OMG.CreateMain(config)
         for pg,b in pairs(navButtons) do
             pcall(function()
             local on=(pg==p)
-            b:SetAttribute("Active",on)
-            TweenService:Create(b,TweenInfo.new(.15),{BackgroundColor3=on and C.accent or Color3.fromRGB(28,28,33)}):Play()
-            TweenService:Create(b.Txt,TweenInfo.new(.15),{TextColor3=on and Color3.new(1,1,1) or C.textDim}):Play()
-            b.Bar.Visible=on
+            if b then
+                b.BackgroundColor3 = on and C.accent or Color3.fromRGB(28,28,33)
+                if b.Txt then b.Txt.TextColor3 = on and Color3.new(1,1,1) or C.textDim end
+                if b.Bar then b.Bar.Visible=on end
+            end
             end)
         end
         end)
     end
-
 
     local Main={}
-    local function showPage(p)
-        pcall(function()
-        activePage=p
-        for _,item in pairs(pages) do 
-            pcall(function() item.frame.Visible=(item==p) end)
-        end
-        for pg,b in pairs(navButtons) do
-            pcall(function()
-            local on=(pg==p)
-            b:SetAttribute("Active",on)
-            if b.BackgroundColor3 then
-                TweenService:Create(b,TweenInfo.new(.15),{BackgroundColor3=on and C.accent or Color3.fromRGB(28,28,33)}):Play()
-            end
-            if b.Txt and b.Txt.TextColor3 then
-                TweenService:Create(b.Txt,TweenInfo.new(.15),{TextColor3=on and Color3.new(1,1,1) or C.textDim}):Play()
-            end
-            if b.Bar then b.Bar.Visible=on end
-            end)
-        end
-        end)
-    end
-
     function Main.CreatePage(pageConfig)
-        local okAll, result = pcall(function()
-        pageConfig=pageConfig or {}
-        local pageName=pageConfig.Page_Name or pageConfig.Page_Title or "Page"
+        local pageName = "Page"
+        pcall(function() pageName=pageConfig.Page_Name or pageConfig.Page_Title or "Page" end)
+        -- Evita duplicar
         for _,existing in ipairs(pages) do
             if existing.name==pageName then
                 return existing._api
             end
         end
-        local frame=make("ScrollingFrame",{Name=pageName, Position=UDim2.new(0,0,0,0), Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, BorderSizePixel=0, ScrollBarThickness=3, ScrollBarImageColor3=C.accent, CanvasSize=UDim2.new()}, content)
-        make("UIPadding",{PaddingTop=UDim.new(0,12),PaddingBottom=UDim.new(0,14),PaddingLeft=UDim.new(0,12),PaddingRight=UDim.new(0,12)}, frame)
-        local layout=make("UIListLayout",{Padding=UDim.new(0,10),SortOrder=Enum.SortOrder.LayoutOrder}, frame)
-        layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() 
-            pcall(function() frame.CanvasSize=UDim2.new(0,0,0,layout.AbsoluteContentSize.Y+28) end)
-        end)
+
+        local frame = make("ScrollingFrame",{Name=pageName, Position=UDim2.new(0,0,0,0), Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, BorderSizePixel=0, ScrollBarThickness=4, ScrollBarImageColor3=C.accent, CanvasSize=UDim2.new(0,0,0,1200)}, content)
+
         local p={name=pageName,frame=frame, _api=nil}
-        frame.Visible = false
-        local nb=make("TextButton",{Name="Nav", AutoButtonColor=false, BackgroundColor3=Color3.fromRGB(28,28,33), BackgroundTransparency=0, BorderSizePixel=0, Size=UDim2.new(1,0,0,38), Text=""}, nav)
+        frame.Visible = (#pages==0)
+        pages[#pages+1]=p
+
+        local nb=make("TextButton",{Name="Nav_"..pageName, AutoButtonColor=false, BackgroundColor3=Color3.fromRGB(28,28,33), BorderSizePixel=0, Size=UDim2.new(1,0,0,38), Text="", ZIndex=2}, nav)
         corner(nb,8)
-        local bar=make("Frame",{Name="Bar", Position=UDim2.new(0,0,0,6), Size=UDim2.new(0,3,1,-12), BackgroundColor3=C.accent, BorderSizePixel=0, Visible=false}, nb); corner(bar,2)
-        local txt=make("TextLabel",{Name="Txt", BackgroundTransparency=1, Position=UDim2.new(0,14,0,0), Size=UDim2.new(1,-20,1,0), Text=pageConfig.Page_Title or pageName, TextColor3=C.textDim, Font=Enum.Font.Gotham, TextSize=13, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd}, nb)
+        local bar=make("Frame",{Name="Bar", Position=UDim2.new(0,0,0,6), Size=UDim2.new(0,3,1,-12), BackgroundColor3=C.accent, BorderSizePixel=0, Visible=(#pages==1)}, nb); corner(bar,2)
+        local txt=make("TextLabel",{Name="Txt", BackgroundTransparency=1, Position=UDim2.new(0,14,0,0), Size=UDim2.new(1,-20,1,0), Text=pageConfig.Page_Title or pageName, TextColor3=(#pages==1 and Color3.new(1,1,1) or C.textDim), Font=Enum.Font.Gotham, TextSize=13, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd}, nb)
         nb.Bar=bar; nb.Txt=txt
         navButtons[p]=nb
-        nb.MouseButton1Click:Connect(function() pcall(function() showPage(p) end) end)
-        nb.LayoutOrder=#pages+1
-        if #pages==0 then
-            frame.Visible = true
+        nb.MouseButton1Click:Connect(function() showPage(p) end)
+        nb.LayoutOrder=#pages
+
+        if #pages==1 then
             activePage = p
-            task.defer(function() pcall(function() showPage(p) end) end)
         end
-        pages[#pages+1]=p
+
+        -- Auto expand canvas
+        task.spawn(function()
+            task.wait(0.5)
+            pcall(function() nav.CanvasSize = UDim2.new(0,0,0, #pages*42+10) end)
+        end)
 
         local Page={}
         function Page.CreateSection(sectionName)
-            local card
-            local ok, res = pcall(function()
-                local c=make("Frame",{Name=sectionName, Size=UDim2.new(1,0,0,40), AutomaticSize=Enum.AutomaticSize.Y, BackgroundColor3=C.panel, BorderSizePixel=0}, frame)
-                corner(c,10); stroke(c, Color3.fromRGB(40,40,50),1,0.4)
-                make("UIPadding",{PaddingTop=UDim.new(0,10),PaddingBottom=UDim.new(0,10),PaddingLeft=UDim.new(0,10),PaddingRight=UDim.new(0,10)}, c)
-                local list=make("UIListLayout",{Padding=UDim.new(0,6),SortOrder=Enum.SortOrder.LayoutOrder}, c)
-                local head=make("TextLabel",{Size=UDim2.new(1,0,0,20),BackgroundTransparency=1,Text=string.upper(sectionName),TextColor3=C.text,Font=Enum.Font.GothamBold,TextSize=11,TextXAlignment=Enum.TextXAlignment.Left},c)
-                make("Frame",{Size=UDim2.new(1,0,0,1), BackgroundColor3=Color3.fromRGB(50,50,60), BackgroundTransparency=0.6, BorderSizePixel=0}, c)
-                return c
-            end)
-            if ok then card=res else card=make("Frame",{Name=sectionName, Size=UDim2.new(1,0,0,40), BackgroundTransparency=1}, frame) end
+            local card = make("Frame",{Name=sectionName, Size=UDim2.new(1,0,0,50), BackgroundColor3=C.panel, BorderSizePixel=0}, frame)
+            corner(card,10)
+            -- SEM AutomaticSize, altura fixa que cresce com filhos
+            local currentY = 35
+            local function updateSize()
+                local count = 0
+                for _, child in ipairs(card:GetChildren()) do
+                    if child:IsA("Frame") and child.Name~="Header" then count = count + 1 end
+                end
+                card.Size = UDim2.new(1,0,0, 35 + count*40 + 10)
+                pcall(function() frame.CanvasSize = UDim2.new(0,0,0, frame:FindFirstChildOfClass("UIListLayout") and 1000 or 1200) end)
+            end
+
+            local header = make("Frame",{Name="Header", Size=UDim2.new(1,0,0,25), BackgroundTransparency=1}, card)
+            make("TextLabel",{Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Text=string.upper(sectionName), TextColor3=C.text, Font=Enum.Font.GothamBold, TextSize=11, TextXAlignment=Enum.TextXAlignment.Left}, header)
+            make("Frame",{Position=UDim2.new(0,0,1,0), Size=UDim2.new(1,0,0,1), BackgroundColor3=Color3.fromRGB(50,50,60), BackgroundTransparency=0.6, BorderSizePixel=0}, header)
+
+            -- Lista simples sem UIListLayout que buga
+            local listY = 30
 
             local Section={}
-            local function row(h) 
-                local ok,rowF = pcall(function() return make("Frame",{Size=UDim2.new(1,0,0,h),BackgroundTransparency=1},card) end)
-                if ok then return rowF else return card end
+
+            local function addRow(height)
+                local r = make("Frame",{Size=UDim2.new(1,0,0,height), Position=UDim2.new(0,0,0,listY), BackgroundTransparency=1}, card)
+                listY = listY + height + 4
+                card.Size = UDim2.new(1,0,0,listY+5)
+                return r
             end
 
             function Section.CreateToggle(cfg, callback)
                 cfg=cfg or {}; local t=cfg.Title or "Toggle"
-                Settings = Settings or {}
-                local savedToggle=Settings[t]
-                local val = (type(savedToggle)=="boolean" and savedToggle) or (cfg.Default==true)
-                local r=row(38); label(make("Frame",{Size=UDim2.new(1,-62,1,0),BackgroundTransparency=1},r),t,12,C.text)
+                local val = false
+                pcall(function() 
+                    Settings = Settings or {}
+                    local saved = Settings[t]
+                    if type(saved)=="boolean" then val=saved else val=(cfg.Default==true) end
+                end)
+                local r=addRow(38)
+                local label = make("TextLabel",{Position=UDim2.new(0,5,0,0), Size=UDim2.new(1,-62,1,0), BackgroundTransparency=1, Text=t, TextColor3=C.text, Font=Enum.Font.Gotham, TextSize=12, TextXAlignment=Enum.TextXAlignment.Left}, r)
                 local b=make("TextButton",{AutoButtonColor=false, BackgroundColor3=val and C.accent or C.toggleOff, BorderSizePixel=0, Size=UDim2.new(0,44,0,24), Position=UDim2.new(1,-44,0.5,-12), Text=""}, r)
                 corner(b,12)
                 local knob=make("Frame",{Size=UDim2.new(0,18,0,18),Position=val and UDim2.new(1,-20,0.5,-9) or UDim2.new(0,3,0.5,-9),BackgroundColor3=Color3.new(1,1,1),BorderSizePixel=0},b); corner(knob,9)
-                local function paint(animate)
-                    local goalPos=val and UDim2.new(1,-20,0.5,-9) or UDim2.new(0,3,0.5,-9)
-                    local goalColor=val and C.accent or C.toggleOff
-                    if animate then
-                        TweenService:Create(knob,TweenInfo.new(.15),{Position=goalPos}):Play()
-                        TweenService:Create(b,TweenInfo.new(.15),{BackgroundColor3=goalColor}):Play()
-                    else
-                        knob.Position=goalPos; b.BackgroundColor3=goalColor
-                    end
-                end
-                paint(false)
                 local opt=addOption(t,"toggle",val,pageName,sectionName,callback)
                 local function applyToggle(v,fire)
-                    val=not not v; opt.value=val; paint(true)
-                    Settings[t]=val
+                    val=not not v; opt.value=val
+                    b.BackgroundColor3 = val and C.accent or C.toggleOff
+                    knob.Position = val and UDim2.new(1,-20,0.5,-9) or UDim2.new(0,3,0.5,-9)
+                    pcall(function() Settings[t]=val end)
                     pcall(function() if SaveSettings then SaveSettings(t,val) end end)
                     if fire and callback then task.spawn(function() pcall(callback,val) end) end
                 end
@@ -2248,16 +2191,18 @@ function OMG.CreateMain(config)
 
             function Section.CreateButton(cfg, callback)
                 cfg=cfg or {}; local t=cfg.Title or "Button"
-                local b=make("TextButton",{AutoButtonColor=false, BackgroundColor3=C.panel2, BorderSizePixel=0, Size=UDim2.new(1,0,0,36), Text=t, TextColor3=C.accentLight, Font=Enum.Font.GothamBold, TextSize=13}, card)
-                corner(b,8); stroke(b,C.accent,1,0.3)
+                local r=addRow(36)
+                local b=make("TextButton",{AutoButtonColor=false, BackgroundColor3=C.panel2, BorderSizePixel=0, Size=UDim2.new(1,0,0,34), Text=t, TextColor3=C.accentLight, Font=Enum.Font.GothamBold, TextSize=13}, r)
+                corner(b,8)
                 addOption(t,"button",false,pageName,sectionName,callback)
-                b.MouseButton1Click:Connect(function() if callback then task.spawn(callback) end end)
+                b.MouseButton1Click:Connect(function() if callback then task.spawn(function() pcall(callback) end) end end)
                 return b
             end
 
             function Section.CreateLabel(cfg)
                 local t=type(cfg)=="table" and (cfg.Title or cfg.Text or "") or tostring(cfg or "")
-                local r=row(26); local txt=label(r,t,11,C.muted)
+                local r=addRow(26)
+                local txt=make("TextLabel",{Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, Text=t, TextColor3=C.muted, Font=Enum.Font.Gotham, TextSize=11, TextXAlignment=Enum.TextXAlignment.Left}, r)
                 local handle={Object=txt}
                 handle.SetText=function(v) txt.Text=tostring(v or "") end
                 handle.GetText=function() return txt.Text end
@@ -2265,92 +2210,52 @@ function OMG.CreateMain(config)
             end
 
             function Section.CreateSlider(cfg, callback)
-                cfg=cfg or {}; local t=cfg.Title or "Slider"; local min=cfg.Min or cfg.MinValue or 0; local max=cfg.Max or cfg.MaxValue or 100; local val=math.clamp(cfg.Default or cfg.Value or min,min,max)
-                local r=row(52); label(make("Frame",{Size=UDim2.new(1,-70,0,22),BackgroundTransparency=1},r),t,11,C.text)
-                local num=label(make("Frame",{Position=UDim2.new(1,-65,0,0),Size=UDim2.new(0,65,0,22),BackgroundTransparency=1},r),val,11,C.accent); num.TextXAlignment=Enum.TextXAlignment.Right
-                local bar=make("Frame",{Position=UDim2.new(0,0,0,30),Size=UDim2.new(1,0,0,6),BackgroundColor3=Color3.fromRGB(45,45,55),BorderSizePixel=0},r); corner(bar,10)
+                cfg=cfg or {}; local t=cfg.Title or "Slider"; local min=cfg.Min or 0; local max=cfg.Max or 100; local val=cfg.Default or min
+                local r=addRow(52)
+                make("TextLabel",{Position=UDim2.new(0,5,0,0), Size=UDim2.new(1,-70,0,20), BackgroundTransparency=1, Text=t, TextColor3=C.text, Font=Enum.Font.Gotham, TextSize=11, TextXAlignment=Enum.TextXAlignment.Left}, r)
+                local num=make("TextLabel",{Position=UDim2.new(1,-60,0,0), Size=UDim2.new(0,55,0,20), BackgroundTransparency=1, Text=tostring(val), TextColor3=C.accent, Font=Enum.Font.GothamBold, TextSize=11, TextXAlignment=Enum.TextXAlignment.Right}, r)
+                local bar=make("Frame",{Position=UDim2.new(0,5,0,28),Size=UDim2.new(1,-10,0,6),BackgroundColor3=Color3.fromRGB(45,45,55),BorderSizePixel=0},r); corner(bar,10)
                 local fill=make("Frame",{Size=UDim2.new((val-min)/math.max(1,max-min),0,1,0),BackgroundColor3=C.accent,BorderSizePixel=0},bar); corner(fill,10)
-                local knob=make("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new((val-min)/math.max(1,max-min),0,0.5,0),Size=UDim2.fromOffset(14,14),BackgroundColor3=Color3.new(1,1,1),BorderSizePixel=0},bar); corner(knob,10)
-                local hit=make("TextButton",{Size=UDim2.new(1,0,0,24),Position=UDim2.new(0,0,0,-9),BackgroundTransparency=1,Text="",TextTransparency=1},bar)
-                local opt
+                local hit=make("TextButton",{Size=UDim2.new(1,0,0,24),Position=UDim2.new(0,0,0,-9),BackgroundTransparency=1,Text=""},bar)
+                local opt=addOption(t,"slider",val,pageName,sectionName,callback)
                 local function set(x)
                     local ratio=math.clamp((x-bar.AbsolutePosition.X)/math.max(1,bar.AbsoluteSize.X),0,1)
-                    val=math.floor(min+(max-min)*ratio); fill.Size=UDim2.new(ratio,0,1,0); knob.Position=UDim2.new(ratio,0,0.5,0); num.Text=tostring(val); if opt then opt.value=val end; if callback then pcall(callback,val) end
+                    val=math.floor(min+(max-min)*ratio); fill.Size=UDim2.new(ratio,0,1,0); num.Text=tostring(val); opt.value=val; if callback then pcall(callback,val) end
                 end
-                opt=addOption(t,"slider",val,pageName,sectionName,callback)
-                opt._setValue=function(v) val=math.clamp(tonumber(v) or min,min,max); local ratio=(val-min)/math.max(1,max-min); fill.Size=UDim2.new(ratio,0,1,0); knob.Position=UDim2.new(ratio,0,0.5,0); num.Text=tostring(val) end
+                opt._setValue=function(v) val=math.clamp(tonumber(v) or min,min,max); local ratio=(val-min)/math.max(1,max-min); fill.Size=UDim2.new(ratio,0,1,0); num.Text=tostring(val) end
                 hit.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then set(i.Position.X) end end)
-                hit.InputChanged:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch then if UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then set(i.Position.X) end end end)
                 return opt
             end
 
             function Section.CreateDropdown(cfg, callback)
-                cfg=cfg or {}; local t=cfg.Title or "Dropdown"; local rawList=cfg.List or cfg.Values or cfg.Options or {}; local multi=cfg.Selected==true; local listValues={}
-                local function rebuildList(src)
-                    listValues={}; if type(src)~="table" then return end
-                    local isArray = false
-                    pcall(function() if src[1]~=nil then isArray=true end end)
-                    if isArray or #src>0 then for _,v in ipairs(src) do table.insert(listValues,v) end else for k in pairs(src) do table.insert(listValues,k) end; table.sort(listValues,function(a,b) return tostring(a)<tostring(b) end) end
-                end
-                rebuildList(rawList)
-                local selected=cfg.Default
-                if multi then selected=type(selected)=="table" and (function() local c={}; for k,v in pairs(selected) do c[k]=v end; return c end)() or {} for _,v in ipairs(listValues) do if selected[v]==nil then selected[v]=type(rawList)=="table" and rawList[v]==true or false end end
-                else selected=selected or "Select..." end
-                local function displayValue() if not multi then return tostring(selected) end; local chosen={}; for _,v in ipairs(listValues) do if selected[v] then table.insert(chosen,tostring(v)) end end; if #chosen==0 then return "None" end; local s=table.concat(chosen,", "); return #s>28 and (string.sub(s,1,25).."..." ) or s end
-                local b=make("TextButton",{AutoButtonColor=false, BackgroundColor3=C.panel2, BorderSizePixel=0, Size=UDim2.new(1,0,0,36), Text=t.."  ·  "..displayValue().."  ▾", TextColor3=C.text, Font=Enum.Font.Gotham, TextSize=12}, card)
+                cfg=cfg or {}; local t=cfg.Title or "Dropdown"; local list=cfg.List or {}
+                local selected=cfg.Default or "Select..."
+                local r=addRow(36)
+                local b=make("TextButton",{AutoButtonColor=false, BackgroundColor3=C.panel2, BorderSizePixel=0, Size=UDim2.new(1,0,0,34), Text=t.." : "..tostring(selected), TextColor3=C.text, Font=Enum.Font.Gotham, TextSize=12}, r)
                 corner(b,8)
                 local opt=addOption(t,"dropdown",selected,pageName,sectionName,callback)
-                local function refreshButton() b.Text=t.."  ·  "..displayValue().."  ▾"; opt.value=selected end
-                opt._setValue=function(v) if multi then selected=type(v)=="table" and (function() local c={}; for k,v2 in pairs(v) do c[k]=v2 end; return c end)() or {} else selected=v end; refreshButton() end
-                opt.GetNewList=function(_,newList) rebuildList(newList or {}); refreshButton() end; opt.SetList=opt.GetNewList
+                opt._setValue=function(v) selected=v; b.Text=t.." : "..tostring(v) end
+                opt.GetNewList=function(_,newList) list=newList or {} end
+                opt.SetList=opt.GetNewList
                 b.MouseButton1Click:Connect(function()
-                    local menuName="NexoraDropdownOverlay"; local oldMenu=gui:FindFirstChild(menuName); if oldMenu then if oldMenu:GetAttribute("Owner")==t then oldMenu:Destroy(); return end; oldMenu:Destroy() end
-                    local vp=(workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize) or Vector2.new(800,600)
-                    local h=math.max(35, math.min(210, #listValues*29+8))
-                    local w=math.clamp(math.max(180,b.AbsoluteSize.X),180,math.max(180,vp.X-8))
-                    local x=math.clamp(b.AbsolutePosition.X,4,math.max(4,vp.X-w-4)); local by=b.AbsolutePosition.Y+b.AbsoluteSize.Y+3; local y=by
-                    if by+h>vp.Y-8 then y=math.max(8,b.AbsolutePosition.Y-h-3) end
-                    local menu=make("ScrollingFrame",{Name=menuName, Position=UDim2.fromOffset(x,y), Size=UDim2.fromOffset(w,h), CanvasSize=UDim2.new(0,0,0,0), ScrollBarThickness=4, ScrollBarImageColor3=C.accent, BackgroundColor3=C.bg, BorderSizePixel=0, ZIndex=100, Active=true}, gui)
-                    menu:SetAttribute("Owner",t); corner(menu,8); stroke(menu,C.line)
-                    local lay=make("UIListLayout",{Padding=UDim.new(0,3),SortOrder=Enum.SortOrder.LayoutOrder}, menu)
-                    make("UIPadding",{PaddingTop=UDim.new(0,4),PaddingBottom=UDim.new(0,4),PaddingLeft=UDim.new(0,4),PaddingRight=UDim.new(0,4)}, menu)
-                    lay:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() menu.CanvasSize=UDim2.new(0,0,0,lay.AbsoluteContentSize.Y+8) end)
-                    local outside
-                    outside=UIS.InputBegan:Connect(function(input,processed)
-                        if processed then return end
-                        if input.UserInputType~=Enum.UserInputType.MouseButton1 and input.UserInputType~=Enum.UserInputType.Touch then return end
-                        task.defer(function()
-                            if not menu or not menu.Parent then if outside then outside:Disconnect() end; return end
-                            local p=input.Position; local mp,ms=menu.AbsolutePosition,menu.AbsoluteSize; local bp,bs=b.AbsolutePosition,b.AbsoluteSize
-                            local insideMenu=p.X>=mp.X and p.X<=mp.X+ms.X and p.Y>=mp.Y and p.Y<=mp.Y+ms.Y
-                            local insideButton=p.X>=bp.X and p.X<=bp.X+bs.X and p.Y>=bp.Y and p.Y<=bp.Y+bs.Y
-                            if not insideMenu and not insideButton then menu:Destroy() end
-                        end)
-                    end)
-                    menu.Destroying:Connect(function() if outside then outside:Disconnect() end end)
-                    for index,value in ipairs(listValues) do
-                        local isOn=multi and selected[value]==true
-                        local optb=make("TextButton",{AutoButtonColor=false, BackgroundColor3=isOn and C.accent or Color3.fromRGB(20,20,25), BorderSizePixel=0, Size=UDim2.new(1,0,0,27), Text=(multi and (isOn and "✓  " or "□  ") or "")..tostring(value), TextColor3=Color3.new(1,1,1), Font=Enum.Font.Gotham, TextSize=12, ZIndex=101, LayoutOrder=index}, menu)
-                        corner(optb,6)
-                        optb.MouseButton1Click:Connect(function()
-                            if multi then selected[value]=not selected[value]; optb.Text=(selected[value] and "✓  " or "□  ")..tostring(value); optb.BackgroundColor3=selected[value] and C.accent or Color3.fromRGB(20,20,25); refreshButton(); if callback then task.spawn(function() pcall(callback,value,selected[value]) end) end; menu:Destroy()
-                            else selected=value; refreshButton(); menu:Destroy(); if callback then task.spawn(function() pcall(callback,value) end) end end
-                        end)
+                    if type(list)=="table" and #list>0 then
+                        selected=list[1]
+                        b.Text=t.." : "..tostring(selected)
+                        if callback then pcall(callback,selected) end
                     end
                 end)
                 return opt
             end
 
             function Section.CreateBox(cfg, callback)
-                cfg=cfg or {}; local t=cfg.Title or "Text input"
-                local r=row(58); label(make("Frame",{Size=UDim2.new(1,0,0,20),BackgroundTransparency=1},r),t,11,C.text)
-                local input=make("TextBox",{Position=UDim2.new(0,0,0,25),Size=UDim2.new(1,0,0,30),BackgroundColor3=C.bg,BorderSizePixel=0,Text=tostring(cfg.Default or ""),PlaceholderText=cfg.Placeholder or "Digite aqui...",TextColor3=C.text,PlaceholderColor3=C.muted,Font=Enum.Font.Gotham,TextSize=11,ClearTextOnFocus=false},r)
-                corner(input,7); stroke(input,C.line)
+                cfg=cfg or {}; local t=cfg.Title or "Input"
+                local r=addRow(58)
+                make("TextLabel",{Position=UDim2.new(0,5,0,0), Size=UDim2.new(1,0,0,18), BackgroundTransparency=1, Text=t, TextColor3=C.text, Font=Enum.Font.Gotham, TextSize=11, TextXAlignment=Enum.TextXAlignment.Left}, r)
+                local input=make("TextBox",{Position=UDim2.new(0,5,0,22),Size=UDim2.new(1,-10,0,30),BackgroundColor3=Color3.fromRGB(12,12,14),BorderSizePixel=0,Text=cfg.Default or "",PlaceholderText="...",TextColor3=C.text,Font=Enum.Font.Gotham,TextSize=11},r)
+                corner(input,7)
                 local opt=addOption(t,"box",input.Text,pageName,sectionName,callback)
-                local function setText(v,fire) input.Text=tostring(v==nil and "" or v); opt.value=input.Text; if fire and callback then task.spawn(function() pcall(callback,input.Text) end) end end
-                opt._setValue=function(v) setText(v,false) end
-                opt.FunctionCreate.GetText=function() return input.Text end
-                input.FocusLost:Connect(function() setText(input.Text,true) end)
+                opt._setValue=function(v) input.Text=tostring(v or "") end
+                input.FocusLost:Connect(function() if callback then pcall(callback,input.Text) end end)
                 return opt
             end
 
@@ -2359,6 +2264,23 @@ function OMG.CreateMain(config)
         end
         p._api = Page
         return Page
+        end)
+        if okAll then return result else
+            warn("[NEXORA] CreatePage failed: "..tostring(result))
+            -- Retorna página fake que não quebra o resto
+            local dummy={}
+            function dummy.CreateSection() 
+                local s={}
+                function s.CreateToggle() return {SetValue=function() end} end
+                function s.CreateButton() return {} end
+                function s.CreateLabel() return {SetText=function() end, GetText=function() return "" end} end
+                function s.CreateSlider() return {} end
+                function s.CreateDropdown() return {GetNewList=function() end, SetList=function() end} end
+                function s.CreateBox() return {} end
+                return s
+            end
+            return dummy
+        end
     end
 
     function Main.CreateBind(config, callback)
@@ -2367,49 +2289,50 @@ function OMG.CreateMain(config)
         local MainBind={}; MainBind.Disconnect=function() if conn then conn:Disconnect() end end; MainBind.SetKey=function(v) key=v end; return MainBind
     end
 
-    local NotifContainer=nil
-    local function getNotifContainer()
-        if NotifContainer and NotifContainer.Parent then return NotifContainer end
-        local cGui=parentGui:FindFirstChild("NexoraNotifs"); if cGui then cGui:Destroy() end
-        cGui=make("ScreenGui",{Name="NexoraNotifs", ResetOnSpawn=false, IgnoreGuiInset=true, DisplayOrder=1000, ZIndexBehavior=Enum.ZIndexBehavior.Sibling}, parentGui)
-        NotifContainer=make("Frame",{Name="Container", AnchorPoint=Vector2.new(1,0), Position=UDim2.new(1,-12,0,12), Size=UDim2.new(0,320,1,-24), BackgroundTransparency=1}, cGui)
-        make("UIListLayout",{FillDirection=Enum.FillDirection.Vertical, HorizontalAlignment=Enum.HorizontalAlignment.Right, VerticalAlignment=Enum.VerticalAlignment.Top, Padding=UDim.new(0,8), SortOrder=Enum.SortOrder.LayoutOrder}, NotifContainer)
-        return NotifContainer
-    end
-
     function Main.CreateNoti(text,duration)
         local title,desc
         if type(text)=="table" then duration=text.ShowTime or duration or 4; title=tostring(text.Title or "NEXORA HUB"); desc=tostring(text.Desc or text.Text or "") else duration=duration or 4; title="NEXORA HUB"; desc=tostring(text) end
-        local container=getNotifContainer()
-        local card=make("Frame",{Name="Notif", BackgroundColor3=Color3.fromRGB(22,22,28), BorderSizePixel=0, Size=UDim2.new(0,310,0,72), ClipsDescendants=true}, container)
-        corner(card,12); stroke(card,C.accent,1.2,0.3)
-        local sideBar=make("Frame",{BackgroundColor3=C.accent, BorderSizePixel=0, Size=UDim2.new(0,3,1,0)}, card); corner(sideBar,2)
-        make("Frame",{BackgroundColor3=Color3.fromRGB(35,35,45), Size=UDim2.new(0,36,0,36), Position=UDim2.new(0,14,0,10), BorderSizePixel=0}, card)
-        make("TextLabel",{BackgroundTransparency=1, Position=UDim2.new(0,62,0,8), Size=UDim2.new(1,-70,0,18), Text=string.upper(title), TextColor3=C.text, Font=Enum.Font.GothamBold, TextSize=12, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd}, card)
-        make("TextLabel",{BackgroundTransparency=1, Position=UDim2.new(0,62,0,28), Size=UDim2.new(1,-70,0,32), Text=desc, TextColor3=Color3.fromRGB(180,190,210), Font=Enum.Font.Gotham, TextSize=11, TextXAlignment=Enum.TextXAlignment.Left, TextYAlignment=Enum.TextYAlignment.Top, TextWrapped=true}, card)
-        local progressBg=make("Frame",{BackgroundColor3=Color3.fromRGB(40,40,50), BorderSizePixel=0, Size=UDim2.new(1,-16,0,2), Position=UDim2.new(0,8,1,-6)}, card); corner(progressBg,1)
-        local progressBar=make("Frame",{BackgroundColor3=C.accent, BorderSizePixel=0, Size=UDim2.new(1,0,1,0)}, progressBg); corner(progressBar,1)
-        card.Position=UDim2.new(0,340,0,0); TweenService:Create(card,TweenInfo.new(0.35,Enum.EasingStyle.Back,Enum.EasingDirection.Out),{Position=UDim2.new(0,0,0,0)}):Play()
-        TweenService:Create(progressBar,TweenInfo.new(duration,Enum.EasingStyle.Linear),{Size=UDim2.new(0,0,1,0)}):Play()
-        task.delay(duration,function() if card and card.Parent then TweenService:Create(card,TweenInfo.new(0.3,Enum.EasingStyle.Quad,Enum.EasingDirection.In),{Position=UDim2.new(0,340,0,0)}):Play(); task.wait(0.3); if card then card:Destroy() end end end)
-        return card
+        pcall(function()
+        local container = parentGui:FindFirstChild("NexoraNotifs")
+        if not container then
+            local cGui=make("ScreenGui",{Name="NexoraNotifs", ResetOnSpawn=false, DisplayOrder=1000}, parentGui)
+            container=make("Frame",{Name="Container", AnchorPoint=Vector2.new(1,0), Position=UDim2.new(1,-12,0,12), Size=UDim2.new(0,320,1,-24), BackgroundTransparency=1}, cGui)
+            make("UIListLayout",{FillDirection=Enum.FillDirection.Vertical, HorizontalAlignment=Enum.HorizontalAlignment.Right, VerticalAlignment=Enum.VerticalAlignment.Top, Padding=UDim.new(0,8)}, container)
+        else
+            container = container:FindFirstChild("Container") or container
+        end
+        local card=make("Frame",{BackgroundColor3=Color3.fromRGB(22,22,28), BorderSizePixel=0, Size=UDim2.new(0,310,0,60)}, container)
+        corner(card,10)
+        make("TextLabel",{BackgroundTransparency=1, Position=UDim2.new(0,10,0,5), Size=UDim2.new(1,-20,0,18), Text=string.upper(title), TextColor3=C.text, Font=Enum.Font.GothamBold, TextSize=12, TextXAlignment=Enum.TextXAlignment.Left}, card)
+        make("TextLabel",{BackgroundTransparency=1, Position=UDim2.new(0,10,0,25), Size=UDim2.new(1,-20,0,30), Text=desc, TextColor3=C.muted, Font=Enum.Font.Gotham, TextSize=11, TextWrapped=true, TextXAlignment=Enum.TextXAlignment.Left}, card)
+        task.delay(duration,function() pcall(function() card:Destroy() end) end)
+        end)
     end
 
     Main.CreateNotification=function(payload) return Main.CreateNoti(payload) end
-    if pages[1] then showPage(pages[1]) end
+
     search:GetPropertyChangedSignal("Text"):Connect(function()
-        local q=string.lower(search.Text)
+        local q=""
+        pcall(function() q=string.lower(search.Text) end)
         for _,p in ipairs(pages) do
+            pcall(function()
             local has=false
-            for _,d in ipairs(p.frame:GetDescendants()) do if d:IsA("TextLabel") or d:IsA("TextButton") then if string.find(string.lower(d.Text),q,1,true) then has=true end end end
-            navButtons[p].Visible=(q=="" or has)
+            if q=="" then has=true else
+                for _,d in ipairs(p.frame:GetChildren()) do
+                    for _,dd in ipairs(d:GetChildren()) do
+                        if dd:IsA("TextLabel") or dd:IsA("TextButton") then
+                            if string.find(string.lower(dd.Text or ""),q,1,true) then has=true end
+                        end
+                    end
+                end
+            end
+            if navButtons[p] then navButtons[p].Visible=has end
+            end)
         end
     end)
-    shell.Visible=true
+
     return Main
 end
-
-function OMG.CreateNoti(config,duration) return OMG.CreateMain and Main and Main.CreateNoti(config,duration) end
 
 function OMG.RestoreSavedToggles()
     if getgenv().__NexoraRestoreDone then return end
@@ -2419,12 +2342,12 @@ function OMG.RestoreSavedToggles()
             local control=opt.FunctionCreate
             if control and type(control.SetStage)=="function" then pcall(function() control:SetStage(true) end)
             elseif type(opt.Callback)=="function" then pcall(opt.Callback,true) end
-            task.wait()
+            task.wait(0.05)
         end
     end
 end
 getgenv().__NexoraRestoreDone=false
-task.delay(10,function() OMG.RestoreSavedToggles() end)
+task.delay(5,function() OMG.RestoreSavedToggles() end)
 
 return OMG
 
