@@ -34,8 +34,7 @@ do
 		mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,2), Size=UDim2.new(1,0,0,13), Text="♛", TextColor3=Color3.fromRGB(80, 180, 255), Font=Enum.Font.GothamBold, TextSize=12}, logo)
 		local n = mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,10), Size=UDim2.new(1,0,1,-12), Text="N", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.GothamBlack, TextSize=26}, logo)
 		mk("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 140, 255))}, n)
-		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,62), Size=UDim2.fromOffset(220,20), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.GothamBlack, TextSize=16}, card)
-		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,80), Size=UDim2.fromOffset(220,14), BackgroundTransparency=1, Text="BLOX FRUITS • ViniZDev", TextColor3=Color3.fromRGB(165,165,174), Font=Enum.Font.GothamMedium, TextSize=11}, card)
+		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,64), Size=UDim2.fromOffset(220,20), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.GothamBlack, TextSize=16}, card)
 		local track = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,92), Size=UDim2.fromOffset(150,3), BackgroundColor3=Color3.fromRGB(30,28,24), BorderSizePixel=0}, card)
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, track)
 		local fill = mk("Frame", {Size=UDim2.new(0,0,1,0), BackgroundColor3=GOLD, BorderSizePixel=0}, track)
@@ -71,95 +70,6 @@ do
 	-- compatibilidade: o fim do script ainda chama isto, mas a tela já terminou.
 	getgenv().NexoraLoadingFinish = function() end
 end
-
--- ===================== NEXORA ANTI SHAKE SYSTEM (NO TREME TELA) =====================
--- Trava o tremor de tela de Skull Guitar, Dragonstorm, Sanguine, Godhuman, etc
-do
-    task.spawn(function()
-        local Players = game:GetService("Players")
-        local RunService = game:GetService("RunService")
-        local LocalPlayer = Players.LocalPlayer
-        
-        -- 1. Desativa o CameraShaker do Blox Fruits
-        pcall(function()
-            local CameraShaker = require(game:GetService("ReplicatedStorage").Util.CameraShaker)
-            -- Hook no Shake pra nao tremer
-            local oldShake = CameraShaker.Shake
-            local oldShakeOnce = CameraShaker.ShakeOnce
-            local oldShakeSustain = CameraShaker.ShakeSustain
-            
-            CameraShaker.Shake = function(self, ...) return end
-            CameraShaker.ShakeOnce = function(self, ...) return end
-            CameraShaker.ShakeSustain = function(self, ...) return end
-            
-            -- Tenta no Main tambem
-            local Main = require(game:GetService("ReplicatedStorage").Util.CameraShaker.Main)
-            if Main then
-                Main.Shake = function() return end
-                Main.ShakeOnce = function() return end
-            end
-        end)
-        
-        -- 2. Trava Humanoid CameraOffset (usado por algumas skills pra tremer)
-        pcall(function()
-            RunService:BindToRenderStep("NexoraNoShake", Enum.RenderPriority.Camera.Value + 10, function()
-                local char = LocalPlayer.Character
-                if char then
-                    local hum = char:FindFirstChildOfClass("Humanoid")
-                    if hum then
-                        if hum.CameraOffset ~= Vector3.new(0,0,0) then
-                            hum.CameraOffset = Vector3.new(0,0,0)
-                        end
-                    end
-                end
-                -- Trava o CurrentCamera CFrame jitter
-                local cam = workspace.CurrentCamera
-                if cam then
-                    -- Remove o tremor mantendo a posicao
-                    -- Nao mexe no CFrame, so impede shake
-                end
-            end)
-        end)
-        
-        -- 3. Hook no Combat Framework que chama Shake
-        pcall(function()
-            for i,v in pairs(getgc(true)) do
-                if type(v) == "table" and rawget(v, "CameraShaker") then
-                    v.CameraShaker = {
-                        Shake = function() return end,
-                        ShakeOnce = function() return end,
-                        ShakeSustain = function() return end,
-                        Start = function() return end,
-                    }
-                end
-                if type(v) == "function" and debug.getinfo(v).name == "Shake" then
-                    -- Tenta hookar funcoes Shake soltas
-                end
-            end
-        end)
-        
-        -- 4. Remove Screen Shake de habilidades especificas (Skull Guitar, etc)
-        pcall(function()
-            local ReplicatedStorage = game:GetService("ReplicatedStorage")
-            -- Bloqueia remotes que causam shake visual
-            local oldNamecall
-            oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-                local method = getnamecallmethod()
-                local args = {...}
-                -- Bloqueia Shake remote se existir
-                if tostring(self):lower():find("shake") and (method == "FireServer" or method == "Fire") then
-                    return nil
-                end
-                return oldNamecall(self, ...)
-            end)
-        end)
-        
-        print("[Nexora Anti-Shake] Sistema anti-treme ativado! Skull Guitar, Godhuman, etc nao vai tremer mais.")
-    end)
-end
--- ===================== FIM ANTI SHAKE =====================
-
-
 -- Registro de erros (diagnóstico): guarda erros que o pcall engole e erros do console,
 -- para descobrir por que uma toggle não faz nada. Botão "Copy Error Log" em Settings.
 do
@@ -2119,7 +2029,7 @@ function Nexora.CreateMain(config)
     end
     local title = make("TextLabel", {Position=UDim2.new(0,18,0,10), Size=UDim2.new(0,300,0,26), BackgroundTransparency=1, RichText=true, Text='<font color="#FFFFFF">NEXORA</font> <font color="#008CFF">HUB</font>', TextColor3=Color3.fromRGB(255,255,255), Font=Enum.Font.GothamBlack, TextSize=22, TextXAlignment=Enum.TextXAlignment.Left}, top)
     local function tracked(t) return (string.gsub(string.upper(t), "(%S)", "%1\u{2009}")) end
-    local desc = make("TextLabel", {Position=UDim2.new(0,19,0,37), Size=UDim2.new(0,300,0,16), BackgroundTransparency=1, Text=tracked("BLOX FRUITS • ViniZDev"), TextColor3=GRAY, Font=Enum.Font.GothamMedium, TextSize=10, TextXAlignment=Enum.TextXAlignment.Left}, top)
+    local desc = make("TextLabel", {Position=UDim2.new(0,19,0,37), Size=UDim2.new(0,300,0,16), BackgroundTransparency=1, Text=tracked(config.Subtitle or "Blox Fruits"), TextColor3=GRAY, Font=Enum.Font.GothamMedium, TextSize=10, TextXAlignment=Enum.TextXAlignment.Left}, top)
     -- 3 tracinhos removidos da UI como você pediu
     local hamburger = make("TextButton", {Name="Menu", AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,-12,0.5,0), Size=UDim2.new(0,36,0,36), BackgroundTransparency=1, Text="", TextTransparency=1, Visible=false, AutoButtonColor=false}, top)
     -- ScreenGui separado: o botão fica fora da janela e não some junto com a UI (nem com o keybind Toggle GUI).
@@ -2137,47 +2047,28 @@ function Nexora.CreateMain(config)
     reopen:SetAttribute("NexoraKeepColor", true)
     make("UICorner", {CornerRadius=UDim.new(0, 18)}, reopen)
     make("UIStroke", {Color=Color3.fromRGB(60, 60, 65), Thickness=1, Transparency=0.3}, reopen)
-    -- Icone N TOP - 100% seguro, sem frames extras que quebram UI
+    -- Ícone à esquerda (logo) - FIX N icon
     local iconFrame = make("Frame", {
-        BackgroundColor3=Color3.fromRGB(20, 20, 30),
+        BackgroundColor3=Color3.fromRGB(35, 35, 45),
         Size=UDim2.new(0, 24, 0, 24),
         Position=UDim2.new(0, 6, 0.5, -12),
         BorderSizePixel=0,
         ZIndex=101
     }, reopen)
     make("UICorner", {CornerRadius=UDim.new(1,0)}, iconFrame)
-    make("UIStroke", {Color=Color3.fromRGB(0, 140, 255), Thickness=1.2, Transparency=0.2}, iconFrame)
+    -- N como TextLabel (sempre aparece)
     local iconText = make("TextLabel", {
         BackgroundTransparency=1,
         Size=UDim2.new(1, 0, 1, 0),
         Position=UDim2.new(0, 0, 0, 0),
         Text="N",
-        TextColor3=Color3.fromRGB(255, 255, 255),
+        TextColor3=Color3.fromRGB(0, 140, 255),
         Font=Enum.Font.GothamBlack,
-        TextSize=19,
-        TextStrokeTransparency=0,
-        ZIndex=102
+        TextSize=18,
+        TextStrokeTransparency=0.5,
+        ZIndex=103
     }, iconFrame)
-    local grad = make("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(150, 230, 255), Color3.fromRGB(0, 140, 255))}, iconText)
-    local txtStroke = make("UIStroke", {Color=Color3.fromRGB(0, 80, 160), Thickness=1.5, Transparency=0}, iconText)
-    -- So animacao do texto, nada de frames extras
-    task.spawn(function()
-        local TS = game:GetService("TweenService")
-        while iconText.Parent do
-            pcall(function()
-                TS:Create(iconText, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize=22, TextColor3=Color3.fromRGB(180, 240, 255)}):Play()
-                TS:Create(grad, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Rotation=120}):Play()
-                TS:Create(txtStroke, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Thickness=2, Color=Color3.fromRGB(0, 140, 255)}):Play()
-            end)
-            task.wait(0.6)
-            pcall(function()
-                TS:Create(iconText, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize=19, TextColor3=Color3.fromRGB(255, 255, 255)}):Play()
-                TS:Create(grad, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Rotation=90}):Play()
-                TS:Create(txtStroke, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Thickness=1.5, Color=Color3.fromRGB(0, 80, 160)}):Play()
-            end)
-            task.wait(0.6)
-        end
-    end)
+    make("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 140, 255))}, iconText)
     local iconImg = make("ImageLabel", {
         BackgroundTransparency=1,
         Size=UDim2.new(1, -4, 1, -4),
@@ -2585,19 +2476,18 @@ local fScale = make("UIScale", {Scale=1}, reopen)
             end
             function Section.CreateSlider(cfg, callback)
                 cfg=cfg or {}; local t=cfg.Title or "Slider"; local min=cfg.Min or cfg.MinValue or 0; local max=cfg.Max or cfg.MaxValue or 100; local val=math.clamp(cfg.Default or cfg.Value or min,min,max)
-                local r=row(52); label(make("Frame",{Size=UDim2.new(1,-70,0,22),BackgroundTransparency=1},r),t,11,C.text)
-                local num=label(make("Frame",{Position=UDim2.new(1,-65,0,0),Size=UDim2.new(0,65,0,22),BackgroundTransparency=1},r),val,11,Color3.fromRGB(0,140,255)); num.TextXAlignment=Enum.TextXAlignment.Right
-                local bar=make("Frame",{Position=UDim2.new(0,0,0,30),Size=UDim2.new(1,0,0,6),BackgroundColor3=Color3.fromRGB(45,45,55),BorderSizePixel=0},r); corner(bar,10)
-                local fill=make("Frame",{Size=UDim2.new((val-min)/math.max(1,max-min),0,1,0),BackgroundColor3=Color3.fromRGB(0,140,255),BorderSizePixel=0},bar); corner(fill,10)
-                local knob=make("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new((val-min)/math.max(1,max-min),0,0.5,0),Size=UDim2.fromOffset(14,14),BackgroundColor3=Color3.fromRGB(255,255,255),BorderSizePixel=0},bar); corner(knob,10)
-                local hit=make("TextButton",{Size=UDim2.new(1,0,0,24),Position=UDim2.new(0,0,0,-9),BackgroundTransparency=1,Text="",TextTransparency=1},bar)
+                local r=row(51); label(make("Frame",{Size=UDim2.new(1,-65,0,22),BackgroundTransparency=1},r),t,11,C.text)
+                local num=label(make("Frame",{Position=UDim2.new(1,-58,0,0),Size=UDim2.new(0,58,0,22),BackgroundTransparency=1},r),val,11,C.gold); num.TextXAlignment=Enum.TextXAlignment.Right
+                local bar=make("Frame",{Position=UDim2.new(0,0,0,30),Size=UDim2.new(1,0,0,7),BackgroundColor3=C.panel2,BorderSizePixel=0},r); corner(bar,4)
+                local fill=make("Frame",{Size=UDim2.new((val-min)/math.max(1,max-min),0,1,0),BackgroundColor3=C.gold,BorderSizePixel=0},bar); corner(fill,4)
+                local hit=make("TextButton",{Size=UDim2.new(1,0,0,20),Position=UDim2.new(0,0,0,-6),BackgroundTransparency=1,Text="",TextTransparency=1},bar)
                 local opt
-                local function set(x) local ratio=math.clamp((x-bar.AbsolutePosition.X)/math.max(1,bar.AbsoluteSize.X),0,1); val=math.floor(min+(max-min)*ratio); fill.Size=UDim2.new(ratio,0,1,0); knob.Position=UDim2.new(ratio,0,0.5,0); num.Text=tostring(val); if opt then opt.value=val end; if callback then pcall(callback,val) end end
+                local function set(x) local ratio=math.clamp((x-bar.AbsolutePosition.X)/math.max(1,bar.AbsoluteSize.X),0,1); val=math.floor(min+(max-min)*ratio); fill.Size=UDim2.new(ratio,0,1,0); num.Text=tostring(val); if opt then opt.value=val end; if callback then pcall(callback,val) end end
                 opt=addOption(t,"slider",val,pageName,sectionName,callback)
                 opt._setValue = function(v)
                     val = math.clamp(tonumber(v) or min, min, max)
                     local ratio = (val-min)/math.max(1,max-min)
-                    fill.Size=UDim2.new(ratio,0,1,0); knob.Position=UDim2.new(ratio,0,0.5,0); num.Text=tostring(val)
+                    fill.Size=UDim2.new(ratio,0,1,0); num.Text=tostring(val)
                 end
                 hit.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then set(i.Position.X) end end)
                 hit.InputChanged:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch then if UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then set(i.Position.X) end end end)
@@ -3520,13 +3410,6 @@ do
 
 end
 -- ===============================================================
-
--- ===================== NOVA ABA: HOP OTHERS (SEPARADA) - CLICK UNICO =====================
-
--- Hop Others removido
-
-
-
 SectionServer = PageStatusAndServer.CreateSection("Server")
 SectionServer.CreateButton({ Title = "Open Gui Server Browser (Low Player and Ping)" }, function()
 	local G = game:GetService("HttpService")
@@ -4697,35 +4580,24 @@ SectionServer.CreateButton({ Title = "Hop Server" }, function()
 	HopServer()
 end)
 SectionServer.CreateButton({ Title = "Rejoin Server" }, function()
-	local Players = game:GetService("Players")
-	local ReplicatedStorage = game:GetService("ReplicatedStorage")
-	local TeleportService = game:GetService("TeleportService")
-	local player = Players.LocalPlayer
-	local placeId = game.PlaceId
-	local jobId = game.JobId
+	-- Volta para o MESMO servidor (mesmo JobId).
 	pcall(function()
-		require(ReplicatedStorage.Notification)
-			.new("<Color=Red>Nexora Hub : Rejoining current server...<Color=/>")
+		require(game:GetService("ReplicatedStorage").Notification)
+			.new("<Color=Red>Nexora Hub : Rejoin Server<Color=/>")
 			:Display()
 	end)
-	-- Prioriza o browser remoto do próprio jogo, já utilizado pelo botão Join JobId.
-	-- Isso evita alguns erros de "Local restricted" gerados pelo teleport local do executor.
-	local remote = ReplicatedStorage:FindFirstChild("__ServerBrowser")
-	if remote then
-		local ok = pcall(function()
-			remote:InvokeServer("teleport", jobId)
-		end)
-		if ok then return end
-	end
-	-- Fallback: solicita o retorno ao mesmo JobId pela API oficial.
 	local ok = pcall(function()
-		TeleportService:TeleportToPlaceInstance(placeId, jobId, player)
+		game:GetService("TeleportService"):TeleportToPlaceInstance(
+			game.PlaceId,
+			game.JobId,
+			game:GetService("Players").LocalPlayer
+		)
 	end)
-	if ok then return end
-	-- Último recurso: tenta reentrar no place; Roblox pode escolher outro servidor.
-	pcall(function()
-		TeleportService:Teleport(placeId, player)
-	end)
+	if not ok then
+		pcall(function()
+			game:GetService("TeleportService"):Teleport(game.PlaceId, game:GetService("Players").LocalPlayer)
+		end)
+	end
 end)
 function HopLessAll()
 	require(game:GetService("ReplicatedStorage").Notification)
@@ -4999,34 +4871,32 @@ function EliteQuestOK(name)
 	end)
 	return false
 end
-local EliteHunterNames = { "Deandre", "Urban", "Diablo" }
+local K = { "Deandre", "Urban", "Diablo" }
 function DetectEliteHunter()
-    -- Só considera NPCs vivos realmente carregados no Workspace; modelos em
-    -- ReplicatedStorage costumam ser templates e causavam falso positivo.
-    local enemies = workspace:FindFirstChild("Enemies")
-    if not enemies then return nil end
-    local function isEliteModel(model)
-        if not model or not model:IsA("Model") or not IsMobAlive(model) then return false end
-        local name = string.lower(tostring(model.Name))
-        local display = ""
-        pcall(function() display = string.lower(tostring(model:GetAttribute("DisplayName") or "")) end)
-        for _, eliteName in ipairs(EliteHunterNames) do
-            local wanted = string.lower(eliteName)
-            if name == wanted or string.find(name, wanted, 1, true) or string.find(display, wanted, 1, true) then
-                return true
-            end
-        end
-        return false
-    end
-    for _, model in ipairs(enemies:GetChildren()) do
-        if isEliteModel(model) then return model end
-    end
-    for _, model in ipairs(enemies:GetDescendants()) do
-        if isEliteModel(model) then return model end
-    end
-    return nil
+	local enemies = game:GetService("Workspace"):FindFirstChild("Enemies")
+	if enemies then
+		-- Caminho mais rápido: os Elites normalmente ficam diretamente em Workspace.Enemies.
+		for _, name in ipairs(K) do
+			local mob = enemies:FindFirstChild(name)
+			if mob and mob:IsA("Model") and IsMobAlive(mob) then
+				return mob
+			end
+		end
+		-- Fallback para estruturas aninhadas.
+		for _, mob in ipairs(enemies:GetDescendants()) do
+			if mob:IsA("Model") and table.find(K, mob.Name) and IsMobAlive(mob) then
+				return mob
+			end
+		end
+	end
+	local replicated = game:GetService("ReplicatedStorage")
+	for _, name in ipairs(K) do
+		local mob = replicated:FindFirstChild(name, true)
+		if mob and mob:IsA("Model") and IsMobAlive(mob) then
+			return mob
+		end
+	end
 end
-
 local K = 0
 lastCheckTime = tick()
 function GetOldestLocation()
@@ -5067,9 +4937,9 @@ spawn(function()
 				end
 			end
 			if DetectEliteHunter() then
-				StatusEliteHunter.SetText("Elite Hunter: 🟢")
+				StatusEliteHunter.SetText("Elite Hunter: \226\156\133")
 			else
-				StatusEliteHunter.SetText("Elite Hunter: 🔴")
+				StatusEliteHunter.SetText("Elite Hunter: \226\157\140")
 			end
 			if game.PlaceId == getgenv().CheckPlaceId then
 				K = 0
@@ -5098,9 +4968,9 @@ spawn(function()
 			StatusKatakuri.SetText("Cake Prince: " .. string.gsub(E, "%D", "") .. " Mobs")
 			Statusspy.SetText("Leviathan: " .. StatusCheckLeviathan())
 			if workspace.Map:FindFirstChild("MysticIsland") then
-				StatusMirage.SetText("Mirage Island: 🟢")
+				StatusMirage.SetText("Mirage Island: \226\156\133")
 			else
-				StatusMirage.SetText("Mirage Island: 🔴")
+				StatusMirage.SetText("Mirage Island: \226\157\140")
 			end
 			do
 				local kitsuneOn = false
@@ -5109,20 +4979,20 @@ spawn(function()
 						or workspace._WorldOrigin.Locations:FindFirstChild("Kitsune Island") ~= nil
 				end)
 				if kitsuneOn then
-					StatusKitsuneIsland.SetText("Kitsune Island: 🟢")
+					StatusKitsuneIsland.SetText("Kitsune Island: \240\159\159\162")
 				else
-					StatusKitsuneIsland.SetText("Kitsune Island: 🔴")
+					StatusKitsuneIsland.SetText("Kitsune Island: \226\157\140")
 				end
 			end
 			if not workspace.Map:FindFirstChild("PrehistoricIsland") then
-				StatusPrehistoricIsland.SetText("Prehistoric Island: 🔴")
+				StatusPrehistoricIsland.SetText("Prehistoric Island: \226\157\140")
 			else
-				StatusPrehistoricIsland.SetText("Prehistoric Island: 🟢")
+				StatusPrehistoricIsland.SetText("Prehistoric Island: \226\156\133")
 			end
 			if not workspace._WorldOrigin.Locations:FindFirstChild("Frozen Dimension") then
-				StatusFrozenDimension.SetText("Frozen Dimension: 🔴")
+				StatusFrozenDimension.SetText("Frozen Dimension: \226\157\140")
 			else
-				StatusFrozenDimension.SetText("Frozen Dimension: 🟢")
+				StatusFrozenDimension.SetText("Frozen Dimension: \226\156\133")
 			end
 			StatusGear.SetText("Ancient One: " .. CheckAcientOneStatus())
 			if getgenv().StatusGearDraco then
@@ -5132,107 +5002,6 @@ spawn(function()
 		end)
 	end
 end)
--- Status And Server resilient updater: each label is isolated so one failed remote/helper
--- cannot stop all status values from refreshing.
-task.spawn(function()
-    local Players = game:GetService("Players")
-    local ReplicatedStorage = game:GetService("ReplicatedStorage")
-    local Workspace = game:GetService("Workspace")
-    local Lighting = game:GetService("Lighting")
-    local function safeSet(label, value)
-        pcall(function() if label and label.SetText then label.SetText(tostring(value)) end end)
-    end
-    local function hasPath(root, path)
-        local obj = root
-        for _, part in ipairs(path) do
-            if not obj then return false end
-            obj = obj:FindFirstChild(part)
-        end
-        return obj ~= nil
-    end
-    while task.wait(1) do
-        pcall(function()
-            safeSet(TimerLabel, string.format("Timer: %.0fh %.0fm %.0fs", math.floor(Workspace.DistributedGameTime/3600), math.floor(Workspace.DistributedGameTime/60)%60, math.floor(Workspace.DistributedGameTime)%60))
-        end)
-        pcall(function()
-            local found = DetectEliteHunter()
-            safeSet(StatusEliteHunter, "Elite Hunter: " .. (found and "🟢" or "🔴"))
-        end)
-        pcall(function()
-            local count = 0
-            local map = Workspace:FindFirstChild("Map")
-            local tiki = map and map:FindFirstChild("TikiOutpost")
-            local island = tiki and tiki:FindFirstChild("IslandModel")
-            if island then
-                for i=1,4 do
-                    local eye = island:FindFirstChild("Eye"..i, true)
-                    if eye and eye.Transparency == 1 then count += 1 end
-                end
-            end
-            safeSet(StatusTyrant, "Tyrant Eyes: "..count.." Eyes")
-        end)
-        pcall(function()
-            local remotes = ReplicatedStorage:FindFirstChild("Remotes")
-            local comm = remotes and remotes:FindFirstChild("CommF_")
-            if comm then
-                local result = comm:InvokeServer("CakePrinceSpawner", true)
-                if type(result) ~= "string" then result = tostring(result or "") end
-                safeSet(StatusKatakuri, "Cake Prince: " .. string.gsub(result, "%D", "") .. " Mobs")
-            end
-        end)
-        pcall(function() safeSet(Statusspy, "Leviathan: " .. tostring(StatusCheckLeviathan())) end)
-        pcall(function()
-            local map = Workspace:FindFirstChild("Map")
-            local world = Workspace:FindFirstChild("_WorldOrigin")
-            local locations = world and world:FindFirstChild("Locations")
-            local on = (map and (map:FindFirstChild("MysticIsland") or map:FindFirstChild("MirageIsland"))) or (locations and locations:FindFirstChild("Mirage Island"))
-            safeSet(StatusMirage, "Mirage Island: " .. (on and "🟢" or "🔴"))
-        end)
-        pcall(function()
-            local map = Workspace:FindFirstChild("Map")
-            local world = Workspace:FindFirstChild("_WorldOrigin")
-            local locations = world and world:FindFirstChild("Locations")
-            local on = (map and (map:FindFirstChild("KitsuneIsland", true) or map:FindFirstChild("Kitsune Island", true)))
-                or (locations and (locations:FindFirstChild("Kitsune Island", true) or locations:FindFirstChild("KitsuneIsland", true)))
-            safeSet(StatusKitsuneIsland, "Kitsune Island: " .. (on and "🟢" or "🔴"))
-        end)
-        pcall(function()
-            local map = Workspace:FindFirstChild("Map")
-            local world = Workspace:FindFirstChild("_WorldOrigin")
-            local locations = world and world:FindFirstChild("Locations")
-            local on = (map and (map:FindFirstChild("PrehistoricIsland", true) or map:FindFirstChild("Prehistoric Island", true)))
-                or (locations and (locations:FindFirstChild("Prehistoric Island", true) or locations:FindFirstChild("PrehistoricIsland", true)))
-            safeSet(StatusPrehistoricIsland, "Prehistoric Island: " .. (on and "🟢" or "🔴"))
-        end)
-        pcall(function()
-            local world = Workspace:FindFirstChild("_WorldOrigin")
-            local locations = world and world:FindFirstChild("Locations")
-            local map = Workspace:FindFirstChild("Map")
-            local on = (locations and (locations:FindFirstChild("Frozen Dimension", true) or locations:FindFirstChild("FrozenDimension", true)))
-                or (map and (map:FindFirstChild("Frozen Dimension", true) or map:FindFirstChild("FrozenDimension", true)))
-            safeSet(StatusFrozenDimension, "Frozen Dimension: " .. (on and "🟢" or "🔴"))
-        end)
-        pcall(function()
-            safeSet(StatusMoon, "Moon Phase: " .. tostring(CheckMoon()) .. " | " .. tostring(function8()))
-        end)
-        pcall(function() safeSet(StatusGear, "Ancient One: " .. tostring(CheckAcientOneStatus())) end)
-        pcall(function()
-            local locations = Workspace:FindFirstChild("_WorldOrigin") and Workspace._WorldOrigin:FindFirstChild("Locations")
-            local oldest = nil
-            if type(GetOldestLocation) == "function" then oldest = GetOldestLocation() end
-            if oldest then
-                local timeIn = oldest:GetAttribute("TimeIn")
-                if type(timeIn) == "number" then
-                    local elapsed = math.max(0, tick() - 25200 - timeIn)
-                    local nextSpawn = 14400 - (elapsed % 14400)
-                    safeSet(TimerServerLabel, string.format("Server Timer: %.0fh %.0fm %.0fs", math.floor(elapsed/3600), math.floor(elapsed/60)%60, math.floor(elapsed)%60))
-                    safeSet(NextTimerServerLabel, string.format("Next Time Spawn Fist of Darkness or God's Chalice: %.0fh %.0fm %.0fs", math.floor(nextSpawn/3600), math.floor(nextSpawn/60)%60, math.floor(nextSpawn)%60))
-                end
-            end
-        end)
-    end
-end)
-
 LocalPlayerMain = Main.CreatePage({ Page_Name = "LocalPlayer", Page_Title = "LocalPlayer" })
 SectionLocalPlayerMain = LocalPlayerMain.CreateSection("Local Player")
 SectionLocalPlayerMain.CreateToggle(
@@ -6873,121 +6642,19 @@ local function B(Z, C, J, F)
 	return r
 end
 
-
 function toTarget(P, e)
-    if typeof(P) ~= "CFrame" then return end
-    local Y = t.Character
-    if not Y or not Y:FindFirstChild("HumanoidRootPart") then return end
-    local H, Z = Y.HumanoidRootPart, Y:FindFirstChildOfClass("Humanoid")
-    if not Z then return end
-
-    local shouldUsePortal = false
-    local bestPortal = nil
-
-    pcall(function()
-        do return end -- PORTAL REMOVIDO
-        if Settings and Settings["Use Portals"] == false then return end
-        local myPos = H.Position
-        local targetPos = P.Position
-        local direct = (targetPos - myPos).Magnitude
-        if direct < 2500 then return end
-
-        -- POSICOES REAIS PESQUISADAS
-        local islandExit = {
-            Castle = Vector3.new(-5084, 314, -3150),
-            Mansion = Vector3.new(-12462, 375, -7524),
-            Hydra = Vector3.new(5541, 668, 195),
-            Tiki = Vector3.new(-16545, 430, -210),
-        }
-
-        local function GetIsland(pos)
-            local best = "Sea"
-            local bestDist = 9e9
-            for name, ipos in pairs(islandExit) do
-                local d = (pos - ipos).Magnitude
-                if d < bestDist then bestDist = d best = name end
-            end
-            if bestDist < 6000 then return best, bestDist else return "Sea", bestDist end
-        end
-
-        local myIsland, myDist = GetIsland(myPos)
-        local targetIsland, targetDist = GetIsland(targetPos)
-
-        -- JA PERTO: NAO USA PORTAL
-        if myIsland ~= "Sea" and targetIsland ~= "Sea" and myIsland == targetIsland then return end
-
-        -- PORTAIS OFICIAIS DO WIKI:
-        -- Castle: 3 portais na casa de telhado azul a esquerda do castelo principal
-        --   Esquerda LARANJA = Tiki, Meio = Mansion, Direita = Hydra
-        -- Mansion: Lado esquerdo da varanda interior, quase na parede frontal
-        -- Tiki: Na frente do porto, oposto ao spawn/safe zone
-        -- Hydra: Topo da montanha no centro da ilha, esquerda do predio do Hydra Leader
-
-        local portals = {
-            CastleToMansion = {Name="Castle->Mansion", EntryPos=Vector3.new(-5084, 314, -3150), ExitPos=Vector3.new(-12462, 375, -7524), Dest="Mansion"},
-            CastleToHydra = {Name="Castle->Hydra", EntryPos=Vector3.new(-5144, 314, -3151), ExitPos=Vector3.new(5541, 668, 195), Dest="Hydra"},
-            CastleToTiki = {Name="Castle->Tiki", EntryPos=Vector3.new(-5008, 314, -3151), ExitPos=Vector3.new(-16545, 430, -210), Dest="Tiki"},
-            MansionToCastle = {Name="Mansion->Castle", EntryPos=Vector3.new(-12462, 375, -7524), ExitPos=Vector3.new(-5084, 314, -3150), Dest="Castle"},
-            HydraToCastle = {Name="Hydra->Castle", EntryPos=Vector3.new(5541, 668, 195), ExitPos=Vector3.new(-5144, 314, -3151), Dest="Castle"},
-            TikiToCastle = {Name="Tiki->Castle", EntryPos=Vector3.new(-16545, 430, -210), ExitPos=Vector3.new(-5008, 314, -3151), Dest="Castle"},
-        }
-
-        if myIsland == "Tiki" and targetIsland ~= "Tiki" then bestPortal = portals.TikiToCastle
-        elseif myIsland == "Mansion" and targetIsland ~= "Mansion" then bestPortal = portals.MansionToCastle
-        elseif myIsland == "Hydra" and targetIsland ~= "Hydra" then bestPortal = portals.HydraToCastle
-        elseif myIsland == "Castle" then
-            -- Escolhe pelo destino mais proximo
-            local distMansion = (targetPos - islandExit.Mansion).Magnitude
-            local distHydra = (targetPos - islandExit.Hydra).Magnitude
-            local distTiki = (targetPos - islandExit.Tiki).Magnitude
-            local minDist = math.min(distMansion, distHydra, distTiki)
-            if minDist > 6500 then return end
-            if minDist == distMansion then bestPortal = portals.CastleToMansion
-            elseif minDist == distHydra then bestPortal = portals.CastleToHydra
-            elseif minDist == distTiki then bestPortal = portals.CastleToTiki
-            end
-        end
-
-        if bestPortal then
-            shouldUsePortal = false -- REMOVIDO
-            warn("[Nexora Portal] "..myIsland.." -> "..bestPortal.Dest.." = "..bestPortal.Name)
-        end
-    end)
-
-    if shouldUsePortal and bestPortal then
-        pcall(function() TweenManager.CancelCurrent() end)
-        local realPart = nil
-        local realPos = bestPortal.EntryPos
-        pcall(function()
-            local closest = 9e9
-            for _, v in pairs(workspace:GetDescendants()) do
-                if v:IsA("BasePart") and v:FindFirstChildOfClass("TouchTransmitter") then
-                    local d = (v.Position - bestPortal.EntryPos).Magnitude
-                    if d < 300 and d < closest then closest = d realPart = v realPos = v.Position end
-                end
-            end
-        end)
-
-        local t0 = tick()
-        repeat H.CFrame = CFrame.new(realPos + Vector3.new(0,5,0)) H.AssemblyLinearVelocity = Vector3.new(0,0,0) task.wait(0.15) until (H.Position - realPos).Magnitude < 15 or tick()-t0 > 10
-
-        local oldPos = H.Position
-        local start = tick()
-        while tick() - start < 3 do
-            H.CFrame = CFrame.new(realPos + Vector3.new(0,3,0)) H.AssemblyLinearVelocity = Vector3.new(0,0,0)
-            if realPart then pcall(function() firetouchinterest(H, realPart, 0) task.wait(0.05) firetouchinterest(H, realPart, 1) end) end
-            task.wait(0.1)
-            if (H.Position - oldPos).Magnitude > 500 then break end
-        end
-
-        local t1 = tick()
-        repeat task.wait(0.1) until (H.Position - oldPos).Magnitude > 500 or tick()-t1 > 8
-        if (H.Position - oldPos).Magnitude < 500 then H.CFrame = CFrame.new(bestPortal.ExitPos + Vector3.new(0,15,0)) task.wait(0.5) end
-        return
-    end
-
-    k.LastCall = tick()
-
+	if typeof(P) ~= "CFrame" then
+		return
+	end
+	local Y = t.Character
+	if not Y or not Y:FindFirstChild("HumanoidRootPart") then
+		return
+	end
+	local H, Z = Y.HumanoidRootPart, Y:FindFirstChildOfClass("Humanoid")
+	if not Z then
+		return
+	end
+	k.LastCall = tick()
 	if Z and Z.Sit then
 		TweenManager.CancelCurrent()
 		task.wait(0.1)
@@ -7787,29 +7454,28 @@ function EquipOnlyIfNeeded(toolName, interval)
 	hum:EquipTool(bp)
 	return false -- vai atirar no próximo ciclo
 end
-function DragonstormPhysicalClick(force, toolName)
-	toolName = toolName or "Dragonstorm"
+function DragonstormPhysicalClick(force)
 	local now = os.clock()
-	local lastKey = "__PhysicalClickLast_" .. tostring(toolName)
-	local interval = getgenv().PhysicalGunClickInterval or getgenv().DSClickInterval or 0.5
-	if not force and now - (getgenv()[lastKey] or 0) < interval then
+	if not force and now - (getgenv().__DSClickLast or 0) < (getgenv().DSClickInterval or 0.5) then
 		return false
 	end
-	getgenv()[lastKey] = now
+	getgenv().__DSClickLast = now
 	task.spawn(function()
 		pcall(function()
 			local Camera = workspace.CurrentCamera
-			if not Camera then return end
+			if not Camera then
+				return
+			end
 			local vp = Camera.ViewportSize
+			-- Mouse reto para o TOPO da tela (centro horizontal) antes de clicar.
 			local x, y = math.floor(vp.X / 2), 2
 			local VIM = game:GetService("VirtualInputManager")
-			-- Mesma sequência física da Dragonstorm: mover o mouse e clicar com botão esquerdo.
 			VIM:SendMouseMoveEvent(x, y, game)
 			task.wait(0.03)
 			VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
 			task.wait(0.05)
 			VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
-			-- Fallback para executores mobile que ignoram eventos de mouse.
+			-- Celular: o clique de mouse não vale, então manda também um toque (fora da barra do topo) e Activate na tool.
 			pcall(function()
 				local tx, ty = x, math.max(64, math.floor(vp.Y * 0.12))
 				VIM:SendTouchEvent(1, 0, tx, ty)
@@ -7817,7 +7483,7 @@ function DragonstormPhysicalClick(force, toolName)
 				VIM:SendTouchEvent(1, 2, tx, ty)
 			end)
 			pcall(function()
-				local tool = t.Character and t.Character:FindFirstChild(toolName)
+				local tool = t.Character and t.Character:FindFirstChild("Dragonstorm")
 				if tool then tool:Activate() end
 			end)
 			pcall(function()
@@ -7953,10 +7619,6 @@ getgenv().SpamGunSkullGuitar = function(E)
 	if now - (getgenv().__SkullGuitarM1Last or 0) < 0.12 then return true end
 	getgenv().__SkullGuitarM1Last = now
 	getgenv().AimPos = CFrame.new(targetPosition)
-	-- Reutiliza o clique físico da Dragonstorm, ativando a Skull Guitar.
-	if DragonstormPhysicalClick then
-		DragonstormPhysicalClick(false, "Skull Guitar")
-	end
 	local stun = character:FindFirstChild("Stun")
 	if stun and stun.Value ~= 0 then return true end
 	-- Send the regular M1 shot first, with the destructible part as hit target.
@@ -8492,8 +8154,6 @@ SettingFarmMainSection.CreateToggle(
 		SaveSettings("Bring Mob", I)
 	end
 )
--- Use Portals removido
-
 SaveSettings("Speed Tween ", 220)
 SettingFarmMainSection.CreateLabel({
 	Title = "Speed Tween: 220",
@@ -9622,16 +9282,11 @@ function FarmMethod()
 									game:GetService("ReplicatedStorage").Remotes.CommF_
 										:InvokeServer(unpack({ [1] = "LoadItem", [2] = "Skull Guitar" }))
 								else
-									equiptool("Skull Guitar")
-									-- A árvore/vasos são modelos; apontar para uma peça física melhora o hit do M1.
-									local hitPart = V:IsA("BasePart") and V or V:FindFirstChildWhichIsA("BasePart", true)
-									if hitPart then
-										getgenv().AimPos = CFrame.new(hitPart.Position)
-										getgenv().SpamGunSkullGuitar(hitPart)
-										-- Usa M1 repetidamente enquanto a peça destrutível existir.
-										RealClickM1()
-										ClickM1(hitPart, true)
-									end
+									equiptool(NameWeapon("Gun"))
+									getgenv().SpamGunSkullGuitar(V.WorldPivot)
+									-- Remote click only (no screen click).
+									RealClickM1()
+									ClickM1(V, true)
 								end
 							else
 								getgenv().AimPos = V.WorldPivot
@@ -11422,12 +11077,10 @@ task.spawn(function()
 					local wanted = name and { name } or EliteNames
 					local function scan(root)
 						if not root then return nil end
-					-- Evita parar numa cópia morta/descarregada do mesmo Elite.
-					for _, inst in ipairs(root:GetDescendants()) do
-						if inst:IsA("Model") and table.find(wanted, inst.Name) and IsMobAlive(inst) then
-							return inst
+						for _, n in ipairs(wanted) do
+							local m = root:FindFirstChild(n, true)
+							if m and m:IsA("Model") and IsMobAlive(m) then return m end
 						end
-					end
 					end
 					local found = scan(game:GetService("ReplicatedStorage")) or scan(workspace)
 					if found then return found end
@@ -11576,11 +11229,10 @@ task.spawn(function()
 					local dist = (handle.Position - root.Position).Magnitude
 					if dist <= 15 then
 						getgenv().noclip = false
-						-- Só aproxima suavemente; não posiciona o personagem diretamente na fruta.
-						if dist > 5 then
-							toTarget(handle.CFrame * CFrame.new(0, 2, 0))
-							task.wait(0.15)
-						end
+						-- Pega a fruta sem lag
+						pcall(function()
+							root.CFrame = handle.CFrame
+						end)
 						task.wait(0.15)
 						pcall(function()
 							firetouchinterest(root, handle, 0)
@@ -11604,12 +11256,18 @@ task.spawn(function()
 						getgenv().__LastFruitScan = 0
 						-- NÃO dá return, continua procurando próxima fruta
 					else
-						-- Aproximação sempre via toTarget, inclusive acima de 1500 studs.
-						-- Não usa CFrame direto nem teleporte em etapas quando a fruta está longe.
-						getgenv().noclip = true
-						pcall(function()
+						-- Vai até a fruta mesmo se estiver longe - SEM LAG
+						-- Se muito longe, teleporta direto em etapas
+						if dist > 1500 then
+							-- Teleporta direto pra perto da fruta (sem tween lento)
+							pcall(function()
+								getgenv().noclip = true
+								root.CFrame = handle.CFrame * CFrame.new(0, 10, 0)
+							end)
+							task.wait(0.3)
+						else
 							toTarget(handle.CFrame * CFrame.new(0, 3, 0))
-						end)
+						end
 					end
 				else
 					-- Nenhuma fruta encontrada, espera um pouco
@@ -12215,11 +11873,8 @@ function checkboat()
 	local y, P, Y = next, game:GetService("Workspace").Boats:GetChildren()
 	for H, H in y, P, Y do
 		if H:IsA("Model") then
-			local owner = H:FindFirstChild("Owner")
-			local hum = H:FindFirstChild("Humanoid")
-			if owner and hum and tostring(owner.Value) == V then
-				local ok, val = pcall(function() return hum.Value end)
-				if ok and val and val > 0 then return H end
+			if H:FindFirstChild("Owner") and tostring(H.Owner.Value) == V and H.Humanoid.Value > 0 then
+				return H
 			end
 		end
 	end
@@ -12310,12 +11965,7 @@ function AutoQuestDojo()
 		SaveSettings("QuestDojo", true)
 		local y = GetNameDoubleQuest() or ""
 		if not t.PlayerGui.Main:FindFirstChild("Quest").Visible and typeof(y) == "string" then
-			task.wait(10)
 			TakeQuestLevel()
-			task.wait(1)
-			if not t.PlayerGui.Main:FindFirstChild("Quest").Visible then
-				task.wait(75)
-			end
 		else
 			local P = DetectMob(y)
 			if not P then
@@ -12650,11 +12300,8 @@ function AutoDragonHunter()
 					else
 						getgenv().QuestHunterDragon = "Hydra Enforcers"
 					end
-					getgenv().__DragonHunterMissionPickedAt = tick()
-					task.wait(10)
 				else
 					getgenv().QuestHunterDragon = res.Text
-					getgenv().__DragonHunterMissionPickedAt = getgenv().__DragonHunterMissionPickedAt or tick()
 				end
 				-- Se já tem 15 Blaze Ember, tenta claim
 				if CheckCountItem("Blaze Ember", 15) then
@@ -12689,7 +12336,6 @@ function AutoDragonHunter()
 			until not y or not y.Parent or not Settings["Auto Quest Dragon Hunter"]
 			return
 		end
-		if getgenv().__DragonHunterMissionPickedAt and tick() - getgenv().__DragonHunterMissionPickedAt < 35 then task.wait(35 - (tick() - getgenv().__DragonHunterMissionPickedAt)) end
 		if string.find(getgenv().QuestHunterDragon, "Hydra Enforcers") then
 			local P = DetectMob("Hydra Enforcer")
 			if not P then
@@ -12877,13 +12523,12 @@ function AutoDragonHunterQuestLoop()
 
         -- Se não tem quest, pega quest no Dragon Hunter
         local npc = GetDragonHunterNPC()
-        if not npc or not npc:FindFirstChild("HumanoidRootPart") then
-            -- O NPC pode não estar replicado enquanto o jogador está longe.
+        if not npc then
             toTarget(DOJO_CFRAME)
             return
         end
 
-        -- DETECTA DE LONGE: se está longe, vai até o NPC/Dragon Dojo
+        -- DETECTA DE LONGE: se está longe, vai até o NPC
         local distToNPC = t:DistanceFromCharacter(npc.HumanoidRootPart.Position)
         if distToNPC > 1500 then
             -- Longe: usa tween até Hydra/Dojo
@@ -14581,37 +14226,25 @@ local function GetFruitOriginalName(tool)
 		if list[clean .. "-" .. clean] then
 			return clean .. "-" .. clean
 		end
-		-- Só aceita correspondência inequívoca: escolher a primeira chave com o mesmo
-		-- prefixo podia armazenar outra fruta (ex.: versões variantes do mesmo nome).
-		local matchKey = nil
 		for key in pairs(list) do
-			local keyText = tostring(key)
-			if keyText == clean .. "-" .. clean then
-				return keyText
-			end
-			local short = string.match(keyText, "^(.-)%-")
-			if short and string.lower(short) == string.lower(clean) then
-				if matchKey then
-					matchKey = nil
-					break
-				end
-				matchKey = keyText
+			local short = string.match(tostring(key), "^(.-)%-")
+			if short and short == clean then
+				return key
 			end
 		end
-		if matchKey then return matchKey end
 	end
 	return clean .. "-" .. clean
 end
 
 local function IsFruitTool(tool)
-	if not tool or not tool:IsA("Tool") or tool:FindFirstChild("Ignored") then return false end
+	if not tool or not tool:IsA("Tool") then
+		return false
+	end
+	if tool:FindFirstChild("Ignored") then
+		return false
+	end
 	local original = tool:GetAttribute("OriginalName")
-	if typeof(original) == "string" and original ~= "" then return true end
-	local name = tostring(tool.Name or "")
-	if string.find(name, "Fruit", 1, true) then return true end
-	-- Algumas versões usam o identificador interno (ex.: Rocket-Rocket) no nome da Tool.
-	local list = FruitInfoModule and FruitInfoModule.List
-	return type(list) == "table" and list[name] ~= nil
+	return (typeof(original) == "string" and original ~= "") or string.find(tool.Name, "Fruit", 1, true) ~= nil
 end
 
 -- NOVO MÉTODO de guardar fruta:
@@ -14665,15 +14298,7 @@ function StoreFruit(container)
 						task.wait(0.3)
 					end
 					if Gone() then
-						-- Confirma que a fruta realmente entrou no inventário armazenado, quando o servidor expõe a lista.
-						local storedConfirmed = false
-						pcall(function()
-							local data = LocalPlayer:FindFirstChild("Data")
-							local stored = data and data:FindFirstChild("DevilFruit")
-							if stored and tostring(stored.Value) == tostring(fruitName) then storedConfirmed = true end
-						end)
-						-- Tool removida é o sinal primário do StoreFruit; webhook só se confirmado ou sem valor de inventário exposto.
-						if Settings["Webhook Store Fruit"] and Settings["Select Rarity Fruit"] and (storedConfirmed or not LocalPlayer:FindFirstChild("Data") or not LocalPlayer.Data:FindFirstChild("DevilFruit")) then
+						if Settings["Webhook Store Fruit"] and Settings["Select Rarity Fruit"] then
 							local rarityName
 							pcall(function()
 								local info = FruitInfoModule.List[fruitName]
@@ -15706,20 +15331,16 @@ function SpinBoat()
 	end
 end
 function NoclipBoat(P)
-	-- Mantem os assentos colidiveis: desativar CanCollide no VehicleSeat
-	-- pode fazer o jogador ser ejetado durante a navegacao.
-	if not P then return end
-	for _, part in ipairs(P:GetDescendants()) do
-		if part:IsA("BasePart") and not part:IsA("VehicleSeat") and not part:IsA("Seat") then
-			part.CanCollide = false
+	for Y, Y in ipairs(P:GetDescendants()) do
+		if (Y:IsA("BasePart") or (Y:IsA("Part")) or (Y:IsA("MeshPart"))) and Y.CanCollide then
+			Y.CanCollide = false
 		end
 	end
 end
 function TurnOffNoclipBoat(P)
-	if not P then return end
-	for _, part in ipairs(P:GetDescendants()) do
-		if part:IsA("BasePart") and not part:IsA("VehicleSeat") and not part:IsA("Seat") then
-			part.CanCollide = true
+	for Y, Y in ipairs(P:GetDescendants()) do
+		if (Y:IsA("BasePart") or (Y:IsA("Part")) or (Y:IsA("MeshPart"))) and not Y.CanCollide then
+			Y.CanCollide = true
 		end
 	end
 end
@@ -16471,182 +16092,59 @@ function DetectIslandKitsune()
 end
 function AutoSpawnKitsune()
 	local y, P = game.Lighting.ClockTime, checkboat()
-	getgenv().KitsuneNotifyFlags = getgenv().KitsuneNotifyFlags or {lastKey = "", lastTime = 0}
-	getgenv().KitsuneState = getgenv().KitsuneState or "none"
-
-	local function NotifyOnce(key, title, desc, time)
-		local now = tick()
-		if getgenv().KitsuneNotifyFlags.lastKey ~= key and (now - (getgenv().KitsuneNotifyFlags.lastTime or 0)) > 15 then
-			getgenv().KitsuneNotifyFlags.lastKey = key
-			getgenv().KitsuneNotifyFlags.lastTime = now
-			pcall(function() A.CreateNoti({Title = title, Desc = desc, ShowTime = time or 5}) end)
-		end
-	end
-
-	local function IsDoughSea()
-		return workspace.Map:FindFirstChild("DoughSea") ~= nil or workspace:FindFirstChild("DoughSea") ~= nil or workspace._WorldOrigin:FindFirstChild("Dough Dimension") ~= nil
-	end
-
-	local function StopBoatParado(boat)
-		pcall(function()
-			if getgenv().TweenBoat then getgenv().TweenBoat:Pause() getgenv().TweenBoat:Cancel() end
-			if getgenv().TweenBoatBack then getgenv().TweenBoatBack:Pause() getgenv().TweenBoatBack:Cancel() end
-			local seat = boat:FindFirstChild("VehicleSeat", true)
-			if seat then
-				seat.ThrottleFloat = 0
-				seat.Throttle = 0
-				seat.MaxSpeed = 0
-				seat.Velocity = Vector3.new(0,0,0)
-				seat.AssemblyLinearVelocity = Vector3.new(0,0,0)
-			end
-			for _,v in ipairs(boat:GetDescendants()) do
-				if v:IsA("BasePart") then
-					v.Anchored = false
-					v.Velocity = Vector3.new(0,0,0)
-					v.AssemblyLinearVelocity = Vector3.new(0,0,0)
-					v.AssemblyAngularVelocity = Vector3.new(0,0,0)
-				end
-			end
-		end)
-	end
-
-	local function UnanchorBoat(boat)
-		pcall(function()
-			for _,v in ipairs(boat:GetDescendants()) do
-				if v:IsA("BasePart") then v.Anchored = false end
-			end
-		end)
-	end
-
-	local function IsBoatDead(boat)
-		local dead = false
-		pcall(function()
-			local h = boat:FindFirstChild("Health")
-			if h and h.Value <= 100 then dead = true end
-			if not boat.Parent then dead = true end
-			local hum = boat:FindFirstChild("Humanoid")
-			if hum and hum.Health <= 0 then dead = true end
-			if boat.PrimaryPart and boat.PrimaryPart.Position.Y < -15 then dead = true end
-		end)
-		return dead
-	end
-
-	-- Hop Server logic se ativado
 	if Settings["Hop Server Kitsune Island"] then
 		local Y = CheckMoon()
-		if not (Y == "Full Moon" and math.floor(18 - y) <= 5 and math.floor(18 - y) >= 0 or Y == "Next Night" or Y == "Full Moon" and y <= 5 and math.floor(5 - y) >= 11) then
+		if
+			not (
+				Y == "Full Moon" and math.floor(18 - y) <= 5 and math.floor(18 - y) >= 0
+				or Y == "Next Night"
+				or Y == "Full Moon" and y <= 5 and math.floor(5 - y) >= 11
+			)
+		then
 			HopServer()
 			return
 		end
 	end
-
-	-- Verifica se barco está longe ou morto
-	local isBoatFar = false
-	local boatDead = false
-	if P then
-		pcall(function()
-			if t:DistanceFromCharacter(P.VehicleSeat.Position) >= 3500 then isBoatFar = true end
-			if IsBoatDead(P) then boatDead = true end
-		end)
-	end
-
-	if boatDead then
-		pcall(function()
-			NotifyOnce("boat_dead", "Nexora Hub - Kitsune", "Boat destroyed! Respawning to buy new one", 4)
-			getgenv().KitsuneState = "none"
-			getgenv().KitsuneNotifyFlags.lastKey = ""
-			UnanchorBoat(P)
-			if t.Character and t.Character:FindFirstChild("Humanoid") then
-				t.Character.Humanoid.Health = 0
-			end
-		end)
-		return
-	end
-
-	if not P or isBoatFar then
-		if isBoatFar then NotifyOnce("far", "Nexora Hub - Kitsune", "Boat too far, buying new one", 4) end
+	if not P then
 		local Y = CFrame.new(-13.488054275512695, 10.311711311340332, 2927.692)
-		Y = if game.PlaceId == getgenv().CheckPlaceId then (CFrame.new(-16204.0810546875, 9.0863618850708, 479.2259521484375)) else Y
+		Y = if game.PlaceId == getgenv().CheckPlaceId
+			then (CFrame.new(-16204.0810546875, 9.0863618850708, 479.2259521484375))
+			else Y
 		if (Y.Position - t.Character.HumanoidRootPart.Position).Magnitude > 8 then
 			toTarget(Y)
 		else
 			local Y = Settings["Select Boat"]
-			if not Y then WarnOnce("SelectBoat", "Select boat in Sea Event > Select Boat first.") return end
+			if not Y then
+				WarnOnce("SelectBoat", "Chon thuyen o Sea Event > Select Boat truoc da.")
+				return
+			end
 			local H = Y == "Brigade"
-			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyBoat", if H or Y == "GrandBrigade" then "Pirate" .. Y else Y)
-			task.wait(1)
+			game:GetService("ReplicatedStorage").Remotes.CommF_
+				:InvokeServer("BuyBoat", if H or Y == "GrandBrigade" then "Pirate" .. Y else Y)
+			task.wait(0.1)
 		end
-		getgenv().KitsuneState = "none"
 		return
 	end
-
 	NoclipBoat(P)
-	local boatY = P.WorldPivot.Y
-	local isFullMoon = CheckMoon() == "Full Moon"
-	local isDough = IsDoughSea()
-
-	local zone5Pos = CFrame.new(-38480.42578125, boatY, 10350.943359375)
-	local zone6Pos = CFrame.new(-32975.9921875, boatY, 25963.7109375) * CFrame.new(0, 0, 500)
-	local alternativeDoughPos = CFrame.new(-26017.931640625, boatY, 5657.8837890625)
-
-	-- Dough Sea detectado
-	if isDough then
-		if getgenv().KitsuneState == "dough_stopped" then
-			StopBoatParado(P)
-			return
-		end
-		if (P.VehicleSeat.Position - alternativeDoughPos.Position).Magnitude > 300 then
-			UnanchorBoat(P)
-			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) else manageTween(P.VehicleSeat, alternativeDoughPos, 350, "TweenBoat") end
-			NotifyOnce("dough", "Nexora Hub - Kitsune", "Dough Sea detected! Going to safe point, not Sea 6", 5)
-		else
-			StopBoatParado(P)
-			getgenv().KitsuneState = "dough_stopped"
-		end
-		return
-	end
-
-	-- Ja chegou no Mar 6 e está parado
-	if getgenv().KitsuneState == "arrived_sea6" then
-		StopBoatParado(P)
-		if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) end
-		return
-	end
-
-	-- LOGICA DO ZERO: Compra barco -> vai pro Mar 5 se nao tiver lua cheia, se tiver lua cheia vai direto pro Mar 6, se nao tiver espera no Mar 5 ate lua cheia aparecer e ai vai pro Mar 6
-
-	if isFullMoon then
-		-- Lua cheia: vai direto pro Mar 6
-		UnanchorBoat(P)
-		local distToZone6 = (P.VehicleSeat.Position - zone6Pos.Position).Magnitude
-		if distToZone6 > 300 then
-			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) else manageTween(P.VehicleSeat, zone6Pos, 350, "TweenBoat") end
-			NotifyOnce("mar6_full", "Nexora Hub - Kitsune", "Full moon detected! Sailing directly to Sea 6", 5)
-			getgenv().KitsuneState = "going_sea6"
-		else
-			StopBoatParado(P)
-			NotifyOnce("arrived6", "Nexora Hub - Kitsune", "Arrived at Sea 6 - Full moon", 5)
-			getgenv().KitsuneState = "arrived_sea6"
+	local Y = P.WorldPivot.Y
+	local H = CFrame.new(-32975.9921875, Y, 25963.7109375) * CFrame.new(0, 0, 1000)
+	if CheckMoon() == "Full Moon" and math.floor(18 - y) <= 0 then
+		if (P.VehicleSeat.Position - H.Position).Magnitude > 200 then
+			if not t.Character.Humanoid.Sit then
+				toTarget(P.VehicleSeat.CFrame)
+			else
+				manageTween(P.VehicleSeat, H, 350, "TweenBoat")
+			end
+		elseif not t.Character.Humanoid.Sit then
+			toTarget(P.VehicleSeat.CFrame)
 		end
 	else
-		-- Sem lua cheia: vai pro Mar 5 e espera la
-		local distToZone5 = (P.VehicleSeat.Position - zone5Pos.Position).Magnitude
-		if distToZone5 > 400 then
-			-- Ainda nao chegou no Mar 5, navegando
-			UnanchorBoat(P)
-			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) else manageTween(P.VehicleSeat, zone5Pos, 350, "TweenBoat") end
-			NotifyOnce("mar5", "Nexora Hub - Kitsune", "No full moon, sailing to Sea 5 to wait", 5)
-			getgenv().KitsuneState = "going_sea5"
-		else
-			-- Chegou no Mar 5, espera parado ate lua cheia
-			StopBoatParado(P)
-			getgenv().KitsuneState = "waiting_sea5"
-			NotifyOnce("waiting5", "Nexora Hub - Kitsune", "Arrived at Sea 5. Waiting for full moon to go to Sea 6", 6)
+		if (P.VehicleSeat.Position - H.Position).Magnitude > 200 then
+			manageTween(P.VehicleSeat, H, 350, "TweenBoat")
 		end
+		toTarget(H * CFrame.new(0, 2000, 0))
 	end
 end
-
-
 function DetectSoulEmber()
 	local y, P, Y = next, game.Workspace:GetChildren()
 	for H, H in y, P, Y do
@@ -17017,29 +16515,21 @@ function AutoBuyBoatBeastHunter()
 	return checkboat()
 end
 
-function getSeatedBoat()
-	local char = t.Character
-	if not char then return false end
-	local hum = char:FindFirstChildOfClass("Humanoid")
-	if not hum or not hum.SeatPart then return false end
-	local boat = hum.SeatPart:FindFirstAncestorOfClass("Model")
-	if boat and boat:FindFirstChild("VehicleSeat", true) then return boat end
-	return false
-end
 function checkboatFind()
 	local y, P, Y = next, game:GetService("Workspace").Boats:GetChildren()
 	for H, H in y, P, Y do
 		if H:IsA("Model") then
-			local hum = t.Character and t.Character:FindFirstChildOfClass("Humanoid")
-			if hum and hum.SeatPart and hum.SeatPart:IsDescendantOf(H) and H:FindFirstChild("VehicleSeat") and H.Humanoid.Value > 0 then return H end
+			if
+				H:FindFirstChild("Owner")
+				and t:DistanceFromCharacter(H.VehicleSeat.Position) < 10
+				and t.Character.Humanoid.SeatPart
+				and t.Character.Humanoid.SeatPart.Name == "VehicleSeat"
+				and H.Humanoid.Value > 0
+			then
+				return H
+			end
 		end
 	end
-	for H, H in y, P, Y do
-		if H:IsA("Model") and H:FindFirstChild("VehicleSeat") and H.Humanoid.Value > 0 then
-			if t:DistanceFromCharacter(H.VehicleSeat.Position) < 15 then return H end
-		end
-	end
-	return false
 end
 g, s, a, I = {}, next, game:GetService("ReplicatedStorage").RockGenerator.Rocks:GetChildren()
 for y, y in s, a, I do
@@ -18360,24 +17850,20 @@ BoatSettingSection.CreateSlider(
 	end
 )
 function checkSpeedboat()
-	local ok, result = pcall(function()
-		local seated = getSeatedBoat()
-		if seated then return seated end
-		local found = checkboatFind()
-		if found then return found end
-		return checkboat()
-	end)
-	if ok then return result else return false end
+	local b, s = math.clamp(tonumber(Settings["Value Speed Boat"]) or 300, 0, 300), checkboat()
+	if s then
+		local X = s:FindFirstChild("VehicleSeat")
+		if X and X.MaxSpeed + 1 < b then
+			return s
+		end
+	end
+	return false
 end
 function ChangeSpeedBoat()
-	pcall(function()
-		local b = math.clamp(tonumber(Settings["Value Speed Boat"]) or 300, 0, 300)
-		local s = checkSpeedboat()
-		if s and s.Parent then
-			local vs = s:FindFirstChild("VehicleSeat", true) or s:FindFirstChild("VehicleSeat")
-			if vs then vs.MaxSpeed = math.clamp(b, 0, 300) end
-		end
-	end)
+	local b, s = math.clamp(tonumber(Settings["Value Speed Boat"]) or 300, 0, 300), checkSpeedboat()
+	if s then
+		s.VehicleSeat.MaxSpeed = math.clamp(b, 0, 300)
+	end
 end
 BoatSettingSection.CreateToggle(
 	{ Title = "Change Speed Boat", Desc = nil, Default = Settings["Change Speed Boat"] or false },
@@ -18385,7 +17871,10 @@ BoatSettingSection.CreateToggle(
 		if b then
 			spawn(function()
 				while Settings["Change Speed Boat"] and (task.wait(0.3)) do
-					pcall(ChangeSpeedBoat)
+					local s, X = pcall(ChangeSpeedBoat)
+					if not s then
+						WarnOnce("ChangeSpeedBoat", "Change Speed Boat loi: " .. tostring(X))
+					end
 				end
 			end)
 		end
@@ -23420,26 +22909,8 @@ SettingsVolcanoSection.CreateDropdown(
 )
 FarmingVolcanoSection = VolcanoTab.CreateSection("Farming Volcano")
 function AutoCraftinMagnetVol()
+	-- "Ignore Craft [ Fully ]" afeta só o Fully Event; este toggle avulso sempre craftea.
 	if not CheckItemInventory("Volcanic Magnet") then
-		if CheckCountItem("Blaze Ember", 3) and not getgenv().QuestHunterDragon and not CheckCountItem("Blaze Ember", 15) then
-			local npc = workspace.NPCs:FindFirstChild("Dragon Hunter") or game:GetService("ReplicatedStorage").NPCs:FindFirstChild("Dragon Hunter")
-			if npc and npc:FindFirstChild("HumanoidRootPart") then
-				if game.Players.LocalPlayer:DistanceFromCharacter(npc.HumanoidRootPart.Position) > 12 then
-					toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 4))
-					return
-				else
-					pcall(function()
-						local req = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net"):WaitForChild("RF/DragonHunter"):InvokeServer({ Context = "RequestQuest" })
-						if req and req.Text then
-							getgenv().QuestHunterDragon = req.Text
-							getgenv().__DragonHunterMissionPickedAt = tick()
-							task.wait(10)
-						end
-					end)
-				end
-			end
-			return
-		end
 		if not CheckCountItem("Scrap Metal", 10) then
 			local g = { "Jungle Pirate", "Musketeer Pirate" }
 			local f = DetectMob(g)
@@ -23622,21 +23093,13 @@ ToggleAutoCraftingVolcanicMagnet = FarmingVolcanoSection.CreateToggle(
 	{ Title = "Auto Crafting Volcanic Magnet", Desc = nil, Default = Settings["Auto Crafting Volcanic Magnet"] or false },
 	function(g)
 		if g then
-			getgenv().__HydraReady_Volcanic = false
-			BananaMoveToDestination(CFrame.new(5661.5302734375, 1013.411315918, -334.9619140625), "Auto Crafting Volcanic Magnet", "__HydraReady_Volcanic", 100)
 			spawn(function()
-				while Settings["Auto Crafting Volcanic Magnet"] do
-					if getgenv().__HydraReady_Volcanic then
-						pcall(function()
-							AutoCraftinMagnetVol()
-						end)
-					end
-					task.wait(0.1)
+				while Settings["Auto Crafting Volcanic Magnet"] and (wait(0.1)) do
+					pcall(function()
+						AutoCraftinMagnetVol()
+					end)
 				end
-				getgenv().__HydraReady_Volcanic = false
 			end)
-			else
-				getgenv().__HydraReady_Volcanic = false
 		end
 		SaveSettings("Auto Crafting Volcanic Magnet", g)
 	end
@@ -24057,22 +23520,13 @@ function AutoFindPrehistoric()
 			getgenv().TweenBoat:Pause()
 			getgenv().TweenBoat:Cancel()
 		end
-		getgenv().PrehistoricNotified = getgenv().PrehistoricNotified or false
-		if not getgenv().PrehistoricNotified then
-			getgenv().PrehistoricNotified = true
-			A.CreateNoti({ Title = "Nexora Hub", Desc = "Prehistoric Island Found! Auto disabled.", ShowTime = 6 })
-		end
+		A.CreateNoti({ Title = "Nexora Hub", Desc = "Prehistoric Island Spawned", ShowTime = 5 })
 		if Settings["Auto Multi Find Prehistoric Island"] then
 			Settings["Auto Multi Find Prehistoric Island"] = false
-			SaveSettings("Auto Multi Find Prehistoric Island", false)
 		else
-			Settings["Auto Find Prehistoric Island"] = false
-			SaveSettings("Auto Find Prehistoric Island", false)
-			pcall(function() ToggleAutoFindPrehistoricIsland:SetStage(false) end)
+			ToggleAutoFindPrehistoricIsland:SetStage(false)
 		end
-		task.wait(2)
-		getgenv().PrehistoricNotified = false
-		return
+		wait(5)
 	end
 end
 ToggleAutoFindPrehistoricIsland = FarmingVolcanoSection.CreateToggle(
@@ -24454,16 +23908,6 @@ FarmingVolcanoSection.CreateToggle(
 	end
 )
 function FullyEventVolcano()
-	-- Usa o ciclo dedicado do Dragon Hunter para continuar solicitando missões após cada conclusão.
-	-- O NPC pode não estar replicado à distância; o helper encaminha primeiro para Hydra/Dojo.
-	if not game:GetService("Workspace").Map:FindFirstChild("PrehistoricIsland")
-		and not CheckItemInventory("Volcanic Magnet")
-		and not Settings["Ignore Craft Volcanic Magnet"]
-		and CheckCountItem("Scrap Metal", 10)
-		and not CheckCountItem("Blaze Ember", 15) then
-		pcall(AutoDragonHunterQuestLoop)
-		return
-	end
 	if not game:GetService("Workspace").Map:FindFirstChild("PrehistoricIsland") then
 		getgenv().RespawnVolcano = true
 		getgenv().turnoffnoclipBoatt = true
@@ -25427,191 +24871,6 @@ SettingsAimbotSection.CreateToggle(
 		SaveSettings("Auto Aimbot", b)
 	end
 )
--- Auto Fly Player: voo em 3D orientado pela câmera, compatível com o analógico Roblox.
-SettingsAimbotSection.CreateToggle(
-	{ Title = "Auto Fly Player", Desc = "Voo em todas as direções com controles padrão (velocidade 220).", Default = Settings["Auto Fly Player"] or false },
-	function(enabled)
-		SaveSettings("Auto Fly Player", enabled)
-		getgenv().__NexoraFlyGeneration = (getgenv().__NexoraFlyGeneration or 0) + 1
-		local generation = getgenv().__NexoraFlyGeneration
-		local Players = game:GetService("Players")
-		local function cleanupFly()
-			local character = Players.LocalPlayer.Character
-			local root = character and character:FindFirstChild("HumanoidRootPart")
-			local mover = root and root:FindFirstChild("NexoraAutoFlyVelocity")
-			if mover then mover:Destroy() end
-		end
-		if not enabled then cleanupFly(); return end
-		task.spawn(function()
-			local player = Players.LocalPlayer
-			local root, humanoid, velocity
-			while Settings["Auto Fly Player"] and generation == getgenv().__NexoraFlyGeneration do
-				local character = player.Character
-				local newRoot = character and character:FindFirstChild("HumanoidRootPart")
-				local newHumanoid = character and character:FindFirstChildOfClass("Humanoid")
-				if newRoot and newHumanoid and newHumanoid.Health > 0 then
-					if root ~= newRoot then
-						if velocity then pcall(function() velocity:Destroy() end) end
-						root, humanoid = newRoot, newHumanoid
-						velocity = Instance.new("BodyVelocity")
-						velocity.Name = "NexoraAutoFlyVelocity"
-						velocity.MaxForce = Vector3.new(1e9, 1e9, 1e9)
-						velocity.P = 1e5
-						velocity.Velocity = Vector3.zero
-						velocity.Parent = root
-					end
-					local camera = workspace.CurrentCamera
-					local move = humanoid.MoveDirection
-					local desired = Vector3.zero
-					if camera and move.Magnitude > 0.05 then
-						-- Converte o movimento do analógico para os eixos da câmera.
-						local forwardInput = move:Dot(Vector3.new(camera.CFrame.LookVector.X, 0, camera.CFrame.LookVector.Z).Unit)
-						local rightInput = move:Dot(Vector3.new(camera.CFrame.RightVector.X, 0, camera.CFrame.RightVector.Z).Unit)
-						local forward = camera.CFrame.LookVector * forwardInput
-						local right = Vector3.new(camera.CFrame.RightVector.X, 0, camera.CFrame.RightVector.Z).Unit * rightInput
-						desired = forward + right
-						if desired.Magnitude > 1 then desired = desired.Unit end
-						desired = desired * 220
-					end
-					velocity.Velocity = desired
-				else
-					root, humanoid = nil, nil
-					if velocity then pcall(function() velocity:Destroy() end); velocity = nil end
-				end
-				task.wait(0.03)
-			end
-			if velocity then pcall(function() velocity:Destroy() end) end
-			cleanupFly()
-		end)
-	end
-)
-
--- Auto Esquiva: ativa quando um jogador vivo está a até 250 studs.
--- Faz uma volta tridimensional completa, subindo e descendo; não usa teleporte.
-SettingsAimbotSection.CreateToggle(
-	{ Title = "Auto Esquiva", Desc = "Ativa quando há jogador vivo a até 250 studs; órbita 3D completa para cima e para baixo, velocidade 300, sem limite fixo de órbita.", Default = Settings["Auto Esquiva"] or false },
-	function(enabled)
-		-- Atualiza o estado imediatamente; a rotina de voo consulta este valor.
-		Settings["Auto Esquiva"] = enabled
-		SaveSettings("Auto Esquiva", enabled)
-		getgenv().__NexoraDodgeGeneration = (getgenv().__NexoraDodgeGeneration or 0) + 1
-		local generation = getgenv().__NexoraDodgeGeneration
-		local Players = game:GetService("Players")
-		local player = Players.LocalPlayer
-		local function removeMovers(root)
-			if root then
-				for _, name in ipairs({"NexoraDodgeVelocity", "NexoraDodgeGyro"}) do
-					local obj = root:FindFirstChild(name)
-					if obj then pcall(function() obj:Destroy() end) end
-				end
-			end
-		end
-		if not enabled then
-			-- Limpa também raízes antigas se o personagem acabou de renascer.
-			local character = player.Character
-			removeMovers(character and character:FindFirstChild("HumanoidRootPart"))
-			return
-		end
-		task.spawn(function()
-			local orbitAngle = math.random() * math.pi * 2
-			local orbitDirection = (math.random(0, 1) == 0) and -1 or 1
-			local orbitRadius = 150
-			local verticalAngle = 0
-			local targetName, moversRoot
-			local velocity, gyro
-			local function cleanup()
-				if velocity then pcall(function() velocity:Destroy() end); velocity = nil end
-				if gyro then pcall(function() gyro:Destroy() end); gyro = nil end
-				moversRoot = nil
-			end
-			while Settings["Auto Esquiva"] == true and generation == getgenv().__NexoraDodgeGeneration do
-				local ok = pcall(function()
-					local character = player.Character
-					local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-					local root = character and character:FindFirstChild("HumanoidRootPart")
-					if not (root and humanoid and humanoid.Health > 0) then cleanup(); return end
-					-- Detecta jogadores vivos a qualquer distância; os 300 studs continuam sendo
-					-- o limite máximo da órbita, não um limite para encontrar o jogador.
-					local nearest = math.huge
-					local targetPlayer
-					local selectedName = Settings["Select Player PVP"]
-					local selected = selectedName and selectedName ~= "" and Players:FindFirstChild(selectedName)
-					local function validTarget(candidate)
-						if not candidate or candidate == player then return nil end
-						local c = candidate.Character
-						local r = c and c:FindFirstChild("HumanoidRootPart")
-						local h = c and c:FindFirstChildOfClass("Humanoid")
-						if not (r and h and h.Health > 0) then return nil end
-						local d = (r.Position - root.Position).Magnitude
-						if d > 250 then return nil, d end
-						return r, d
-					end
-					local selectedRoot = validTarget(selected)
-					if selectedRoot then targetPlayer = selected end
-					if not targetPlayer then
-						for _, candidate in ipairs(Players:GetPlayers()) do
-							local candidateRoot, distance = validTarget(candidate)
-							if candidateRoot and distance < nearest then nearest, targetPlayer = distance, candidate end
-						end
-					end
-					local targetCharacter = targetPlayer and targetPlayer.Character
-					local targetRoot = targetCharacter and targetCharacter:FindFirstChild("HumanoidRootPart")
-					local targetHumanoid = targetCharacter and targetCharacter:FindFirstChildOfClass("Humanoid")
-					if not (targetRoot and targetHumanoid and targetHumanoid.Health > 0) then
-						cleanup() -- para se o alvo morrer, sair ou perder o personagem
-						return
-					end
-					if moversRoot ~= root then
-						cleanup(); moversRoot = root
-						velocity = Instance.new("BodyVelocity")
-						velocity.Name = "NexoraDodgeVelocity"
-						velocity.MaxForce = Vector3.new(1e9, 1e9, 1e9)
-						velocity.P = 6e4
-						velocity.Velocity = Vector3.zero
-						velocity.Parent = root
-						gyro = Instance.new("BodyGyro")
-						gyro.Name = "NexoraDodgeGyro"
-						gyro.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
-						gyro.P = 5e4; gyro.D = 1e3; gyro.Parent = root
-					end
-					if targetName ~= targetPlayer.Name then
-						targetName = targetPlayer.Name
-						orbitAngle = math.atan2(root.Position.Z - targetRoot.Position.Z, root.Position.X - targetRoot.Position.X)
-						verticalAngle = 0
-						orbitRadius = math.max(150, (root.Position - targetRoot.Position).Magnitude)
-					end
-					local dt = 0.18
-					-- Raio da órbita não tem limite artificial; o alvo só é adquirido a até 250 studs.
-					orbitAngle = orbitAngle + orbitDirection * dt * 1.25
-					-- Ângulo vertical sincronizado para completar uma volta 3D, passando por cima e por baixo.
-					verticalAngle = verticalAngle + dt * 1.25
-					local radius = orbitRadius
-					local verticalRadius = radius * math.sin(verticalAngle)
-					local horizontalRadius = radius * math.cos(verticalAngle)
-					local desiredPosition = targetRoot.Position + Vector3.new(math.cos(orbitAngle) * horizontalRadius, verticalRadius, math.sin(orbitAngle) * horizontalRadius)
-					local offset = desiredPosition - root.Position
-					if offset.Magnitude > 0.1 then
-						velocity.Velocity = offset.Unit * 300
-					else
-						velocity.Velocity = Vector3.zero
-					end
-					gyro.CFrame = CFrame.lookAt(root.Position, targetRoot.Position)
-				end)
-				if not ok then cleanup() end
-				-- Se foi desligado ou reiniciado, não mantenha velocidade residual.
-				if Settings["Auto Esquiva"] ~= true or generation ~= getgenv().__NexoraDodgeGeneration then
-					if velocity then pcall(function() velocity.Velocity = Vector3.zero end) end
-					cleanup()
-					break
-				end
-				task.wait(0.18)
-			end
-			cleanup()
-			removeMovers(player.Character and player.Character:FindFirstChild("HumanoidRootPart"))
-		end)
-	end
-)
-
 SettingsAimbotSection.CreateToggle(
 	{ Title = "Auto Aimbot Gun", Desc = nil, Default = Settings["Auto Aimbot Gun"] or false },
 	function(b)
@@ -26632,15 +25891,10 @@ do
 		end
 	end)
 	task.spawn(function()
-		while task.wait(0.75) and getgenv().__FruitGen == FruitGen do
+		while task.wait(1) and getgenv().__FruitGen == FruitGen do
 			if Settings["Auto Store Fruit"] then
-				local player = game:GetService("Players").LocalPlayer
-				if player then
-					local backpack = player:FindFirstChildOfClass("Backpack")
-					local character = player.Character
-					if backpack then pcall(StoreFruit, backpack) end
-					if character then pcall(StoreFruit, character) end
-				end
+				pcall(StoreFruit, t.Backpack)
+				pcall(StoreFruit, t.Character)
 			end
 		end
 	end)
@@ -26710,23 +25964,8 @@ do
 					BuyFruitShop()
 				end
 				if Settings["Auto Awake Fruit"] then
-					-- So compra fora da Raid
-					if not game.Players.LocalPlayer.PlayerGui.Main.TopHUDList.RaidTimer.Visible then
-						local okFrags = false
-						pcall(function() if game.Players.LocalPlayer.Data.Fragments.Value >= 500 then okFrags = true end end)
-						if okFrags then
-							pcall(function() L.Remotes.CommF_:InvokeServer("Awakener", "Check") end)
-							for _, sk in ipairs({"Z","X","C","V","F"}) do
-								pcall(function() L.Remotes.CommF_:InvokeServer("Awakener", "Awaken", sk) end)
-								pcall(function() L.Remotes.CommF_:InvokeServer("Awakener", "Awaken") end)
-							end
-							for _, fr in ipairs({"Flame","Ice","Sand","Dark","Light","Magma","Quake","Buddha","Spider","Phoenix","Rumble","Dough"}) do
-								for _, sk in ipairs({"Z","X","C","V","F"}) do
-									pcall(function() L.Remotes.CommF_:InvokeServer("Awakener", "Awaken", fr, sk) end)
-								end
-							end
-						end
-					end
+					L.Remotes.CommF_:InvokeServer("Awakener", "Check")
+					L.Remotes.CommF_:InvokeServer("Awakener", "Awaken")
 				end
 				if Settings["Auto Buy Legendary Sword"] then
 					L.Remotes.CommF_:InvokeServer("LegendarySwordDealer", "2")
@@ -29672,284 +28911,232 @@ end)()
 
 
 
--- DRAGONSTORM REMOTE ONLY FIX
--- Esse fix faz a Dragonstorm atirar SÓ via remotes, sem clique físico na tela
--- Cole DEPOIS do Nexora Hub carregar ou injete na source
 
+-- ==================== NEXORA FIXES INJETADOS NA SOURCE (AUTO ELITE, SNIPER, BRING, STORE, AWAKEN, RANDOM) ====================
 task.wait(0.5)
+print("[Nexora Source Fix] Injetando correcoes...")
 
-print("[Dragonstorm Fix] Aplicando modo REMOTE ONLY...")
+getgenv().BringBlacklist = getgenv().BringBlacklist or {
+    ["Deandre"]=true, ["Urban"]=true, ["Diablo"]=true,
+    ["Cake Prince"]=true, ["Dough King"]=true, ["Cake Queen"]=true,
+    ["rip_indra"]=true, ["rip_indra True Form"]=true,
+    ["Soul Reaper"]=true, ["Cursed Captain"]=true, ["Darkbeard"]=true, ["Order"]=true, ["Stone"]=true,
+}
 
--- 1. Desativa completamente o clique físico (o que causa detecção e bug no celular)
-if DragonstormPhysicalClick then
-    _G.Old_DragonstormPhysicalClick = DragonstormPhysicalClick
-    function DragonstormPhysicalClick(force)
-        -- Não faz mais mouse move, SendMouseButtonEvent, SendTouchEvent, VirtualUser Click
-        -- Retorna true só pra não travar o fluxo
-        return true
+-- BRING MOB FIX
+do
+    local function IsMobAliveSafe(m)
+        if not m then return false end
+        local hum = m:FindFirstChildOfClass("Humanoid")
+        if hum then return hum.Health > 0 end
+        return m:FindFirstChild("HumanoidRootPart") ~= nil
     end
-    getgenv().DragonstormPhysicalClick = DragonstormPhysicalClick
-    print("[Fix] DragonstormPhysicalClick desativado (sem clique físico)")
-end
-
--- 2. Reescreve SpamGunDragonStorm pra ser 100% remote
-getgenv().SpamGunDragonStorm = function(targetPart)
-    local char = game.Players.LocalPlayer.Character
-    if not char then return end
-    local tool = char:FindFirstChild("Dragonstorm")
-    if not tool then return end
-    if not targetPart then return end
+    _G.IsMobAlive = _G.IsMobAlive or IsMobAliveSafe
     
-    local targetPos
-    if typeof(targetPart) == "Instance" then
-        if targetPart:IsA("BasePart") then
-            targetPos = targetPart.Position
-        elseif targetPart:IsA("Model") then
-            local hrp = targetPart:FindFirstChild("HumanoidRootPart") or targetPart.PrimaryPart
-            targetPos = hrp and hrp.Position or targetPart:GetPivot().Position
-        end
-    elseif typeof(targetPart) == "Vector3" then
-        targetPos = targetPart
-    elseif typeof(targetPart) == "CFrame" then
-        targetPos = targetPart.Position
-    else
-        return
-    end
-    
-    if not targetPos then return end
-    
-    -- Validação anti-reload
-    local reloading = false
-    pcall(function()
-        local CombatUtil = require(game:GetService("ReplicatedStorage").Modules.CombatUtil)
-        if CombatUtil and CombatUtil.IsGunReloading then
-            reloading = CombatUtil:IsGunReloading(tool)
-        end
-    end)
-    if reloading then return end
-    
-    -- Cooldown pequeno pra não floodar remote
-    local now = os.clock()
-    getgenv().__DragonstormLastShot = getgenv().__DragonstormLastShot or 0
-    if now - getgenv().__DragonstormLastShot < (getgenv().DragonstormRemoteDelay or 0.08) then
-        return
-    end
-    getgenv().__DragonstormLastShot = now
-    
-    -- Mira
-    getgenv().AimPos = CFrame.new(targetPos)
-    
-    -- REMOTES ONLY - Sem VirtualInputManager, sem tool:Activate(), sem mouse
-    pcall(function()
-        -- Validator2 (anti-cheat do jogo precisa disso)
-        local CombatController = require(game.Players.LocalPlayer.PlayerScripts.Controllers.CombatController)
-        local attackFunc = require(game:GetService("ReplicatedStorage").Controllers.CombatController)
-        -- tenta pegar o upvalue do validator
-        local l = getupvalues and getupvalues(CombatController.Attack)[9] or nil
-        if l then
-            local I = debug.getupvalue(l, 15)
-            local _ = debug.getupvalue(l, 13)
-            local o = debug.getupvalue(l, 16)
-            local V = debug.getupvalue(l, 17)
-            local N = debug.getupvalue(l, 14)
-            local y = debug.getupvalue(l, 12)
-            local P = debug.getupvalue(l, 18)
-            local Q2 = y * _
-            local d2 = ((N * _ + y * I) % o * o + Q2) % V
-            N = math.floor(d2 / o)
-            y = d2 - N * o
-            P = P + 1
-            debug.setupvalue(l, 15, I)
-            debug.setupvalue(l, 13, _)
-            debug.setupvalue(l, 16, o)
-            debug.setupvalue(l, 17, V)
-            debug.setupvalue(l, 14, N)
-            debug.setupvalue(l, 12, y)
-            debug.setupvalue(l, 18, P)
-            game:GetService("ReplicatedStorage").Remotes.Validator2:FireServer(math.floor(d2 / V * 16777215), P)
-        end
-    end)
-    
-    -- Remote principal que atira
-    pcall(function()
-        local args = {targetPos, {targetPart}}
-        -- Se targetPart for Vector3, manda só posição
-        if typeof(targetPart) == "Vector3" then
-            args = {targetPos, {}}
-        end
-        game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RE/ShootGunEvent"):FireServer(unpack(args))
-        -- Alternativa: game.ReplicatedStorage.Remotes.Validator:FireServer etc já está no validator acima
-    end)
-    
-    -- Segunda tentativa com remote direto (alguns executors precisam)
-    pcall(function()
-        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("ShootGun", targetPos)
-    end)
-end
-
-print("[Dragonstorm Fix] SpamGunDragonStorm reescrito - REMOTE ONLY!")
-
--- 3. Também corrige ShootM1 pra não chamar o clique físico quando for Dragonstorm
-if ShootM1 then
-    local oldShoot = ShootM1
-    function ShootM1(E)
-        local char = game.Players.LocalPlayer.Character
-        if not char or not E then return false end
-        local gunName = NameWeapon and NameWeapon("Gun") or "Dragonstorm"
-        local gun = char:FindFirstChild(gunName)
-        if not gun then
-            if EquipOnlyIfNeeded then EquipOnlyIfNeeded(gunName, 1.5) end
-            return false
-        end
-        -- Se for Dragonstorm, NÃO chama DragonstormPhysicalClick
-        if gunName == "Dragonstorm" then
-            -- vai direto pro remote
-            local targetPos
-            if typeof(E) == "Instance" then
-                if E:IsA("BasePart") then targetPos = E.Position
-                elseif E:IsA("Model") then
-                    local hrp = E:FindFirstChild("HumanoidRootPart") or E.PrimaryPart
-                    targetPos = hrp and hrp.Position or E:GetPivot().Position
+    function BringMob(Q)
+        if not Settings or not Settings["Bring Mob"] then return end
+        if not Q or not Q.Parent or not Q:FindFirstChild("HumanoidRootPart") then return end
+        if getgenv().BringBlacklist[Q.Name] then return end
+        if Q:FindFirstChild("Ignored") then return end
+        local LocalPlayer = game.Players.LocalPlayer
+        local Character = LocalPlayer.Character
+        local Root = Character and Character:FindFirstChild("HumanoidRootPart")
+        if not Root then return end
+        if tick() - (getgenv().__BringLast or 0) < 0.35 then return end
+        getgenv().__BringLast = tick()
+        local anchor = Q.HumanoidRootPart.CFrame
+        if (Root.Position - anchor.Position).Magnitude > 150 then return end
+        pcall(function() sethiddenproperty(LocalPlayer, "SimulationRadius", math.huge) end)
+        local count = math.clamp(tonumber(Settings["Bring Mob Count"]) or 6, 2, 8)
+        local gathered = 0
+        for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+            if gathered >= count then break end
+            if mob ~= Q and mob.Name == Q.Name and not mob:FindFirstChild("Ignored") and getgenv().BringBlacklist[mob.Name] == nil then
+                if IsMobAlive(mob) then
+                    local hrp = mob:FindFirstChild("HumanoidRootPart")
+                    if hrp and (hrp.Position - anchor.Position).Magnitude <= 350 then
+                        hrp.CFrame = anchor * CFrame.new(math.random(-4,4), 0, math.random(-4,4))
+                        hrp.CanCollide = false
+                        hrp.Velocity = Vector3.new(0,0,0)
+                        pcall(function()
+                            local hum = mob:FindFirstChildOfClass("Humanoid")
+                            if hum then hum.WalkSpeed = 0 hum.JumpPower = 0 hum:ChangeState(Enum.HumanoidStateType.Physics) end
+                        end)
+                        if _G.sizepart then pcall(_G.sizepart, mob) end
+                        if sizepart then pcall(sizepart, mob) end
+                        gathered = gathered + 1
+                    end
                 end
-            elseif typeof(E) == "Vector3" then targetPos = E
-            elseif typeof(E) == "CFrame" then targetPos = E.Position
             end
-            if targetPos then
-                getgenv().SpamGunDragonStorm(E)
-            end
-            return true
         end
-        -- Pra outras guns, mantém original
-        return oldShoot(E)
     end
-    print("[Fix] ShootM1 corrigido pra Dragonstorm remote only")
-end
 
--- 4. Corrige UseDragonstormAllSeaEvents e UseDragonstormSkill pra não usar clique
-if UseDragonstormAllSeaEvents then
-    local oldAll = UseDragonstormAllSeaEvents
-    function UseDragonstormAllSeaEvents(Part)
-        if not Part or not Part.Parent then return end
-        if not EquipOnlyIfNeeded or not EquipOnlyIfNeeded("Dragonstorm", 1.0) then
-            -- Tenta equipar, se não tiver ainda sai
-            pcall(function() game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("LoadItem", "Dragonstorm") end)
-            return
+    function BringMobNearst(b)
+        if not Settings["Bring Mob"] then return end
+        if not b or getgenv().BringBlacklist[b.Name] then return end
+        BringMob(b)
+    end
+
+    function BringMobRaid(b)
+        if not Settings["Bring Mob"] then return end
+        if not b or getgenv().BringBlacklist[b.Name] then return end
+        local anchor = b.HumanoidRootPart and b.HumanoidRootPart.CFrame
+        if not anchor then return end
+        for _, mob in ipairs(workspace.Enemies:GetChildren()) do
+            if mob ~= b and not mob:FindFirstChild("Ignored") and IsMobAlive(mob) and getgenv().BringBlacklist[mob.Name] == nil then
+                local hrp = mob:FindFirstChild("HumanoidRootPart")
+                if hrp and (hrp.Position - anchor.Position).Magnitude <= 300 then
+                    hrp.CFrame = anchor * CFrame.new(math.random(-2,2), 1, math.random(-2,2))
+                    hrp.CanCollide = false
+                end
+            end
         end
-        -- NÃO chama DragonstormPhysicalClick()
-        getgenv().SpamGunDragonStorm(Part)
     end
 end
 
--- 5. Config extra: delay menor = atira mais rápido só via remote
-getgenv().DragonstormRemoteDelay = 0.06 -- 60ms entre tiros, ajusta se quiser (0.05 mais rápido, 0.1 mais seguro)
-getgenv().DSClickInterval = 9999 -- desativa intervalo do clique antigo
-getgenv().__DSClickLast = math.huge
+-- ELITE HUNTER FIX
+do
+    function EliteRequest()
+        getgenv().__EliteReq = tick()
+        pcall(function() game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("EliteHunter") end)
+    end
+    function EliteQuestOK(name)
+        local txt, visible = "", false
+        pcall(function()
+            local q = game.Players.LocalPlayer.PlayerGui.Main.Quest
+            visible = q.Visible
+            txt = q.Container.QuestTitle.Title.Text
+        end)
+        if visible and txt ~= "" then
+            if name and string.find(txt, name, 1, true) then return true end
+            for _, n in ipairs({"Deandre","Urban","Diablo"}) do if string.find(txt, n, 1, true) then return true end end
+        end
+        pcall(function()
+            local R = game:GetService("ReplicatedStorage").Remotes.CommF_
+            if visible then R:InvokeServer("AbandonQuest") task.wait(0.3) end
+            R:InvokeServer("EliteHunter")
+        end)
+        return false
+    end
+    function DetectEliteHunter()
+        local function isAlive(m)
+            if not m or not m:IsA("Model") then return false end
+            local hum = m:FindFirstChildOfClass("Humanoid")
+            if hum then return hum.Health > 0 end
+            return m:FindFirstChild("HumanoidRootPart") ~= nil
+        end
+        local enemies = workspace:FindFirstChild("Enemies")
+        if enemies then
+            for _, name in ipairs({"Deandre","Urban","Diablo"}) do
+                local mob = enemies:FindFirstChild(name)
+                if mob and isAlive(mob) then return mob end
+            end
+            for _, mob in ipairs(enemies:GetChildren()) do
+                if mob:IsA("Model") and table.find({"Deandre","Urban","Diablo"}, mob.Name) and isAlive(mob) then return mob end
+            end
+        end
+        return nil
+    end
+end
 
-print("[Dragonstorm Fix] ✅ Tudo remote only! Sem mouse, sem toque, sem VirtualUser!")
-print("[Dragonstorm Fix] Delay atual: "..getgenv().DragonstormRemoteDelay.."s - Ajusta com getgenv().DragonstormRemoteDelay = 0.08 se tomar kick")
+-- SNIPER SHOP + RANDOM FRUIT FIX
+do
+    function DetectFruitShop()
+        local sniperList = Settings["Blox Fruit Sniper Shop"]
+        if type(sniperList) ~= "table" then return nil end
+        local ok, fruits = pcall(function() return game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("GetFruits", false) end)
+        if not ok or type(fruits) ~= "table" then return nil end
+        for _, fd in pairs(fruits) do
+            if fd and fd.Name and fd.OnSale and sniperList[fd.Name] then return fd.Name end
+        end
+        return nil
+    end
+    function BuyFruitShop()
+        local f = DetectFruitShop()
+        if not f then return end
+        pcall(function() game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("PurchaseRawFruit", f) print("[Fix] Comprando Sniper: "..f) end)
+    end
+    getgenv().__RandomFruitNext = getgenv().__RandomFruitNext or 0
+    getgenv().__RandomFruitBusy = false
+    function RandomFruit()
+        if not Settings["Random Devil Fruit"] then return false end
+        if (getgenv().__RandomFruitNext or 0) > tick() or getgenv().__RandomFruitBusy then return false end
+        getgenv().__RandomFruitBusy = true
+        local function GetBeli() local ok,v=pcall(function() return game.Players.LocalPlayer.Data.Beli.Value end) return ok and v or 0 end
+        local before = GetBeli()
+        local success = false
+        local CommF = game:GetService("ReplicatedStorage").Remotes.CommF_
+        local function Try(fn)
+            local ok,res=pcall(fn)
+            task.wait(0.4)
+            local now=GetBeli()
+            if now < before - 1000 then success=true end
+            if ok and (res==true or res==1) then success=true end
+        end
+        pcall(function()
+            Try(function() return CommF:InvokeServer("Zioles", "Buy") end)
+            if not success then Try(function() return CommF:InvokeServer("Cousin", "Buy") end) end
+            if not success then Try(function() return CommF:InvokeServer("BloxFruitsGacha", "Buy") end) end
+        end)
+        getgenv().__RandomFruitBusy = false
+        getgenv().__RandomFruitNext = tick() + (success and 7200 or 15)
+        return success
+    end
+end
+
+-- STORE + AWAKEN FIX
+do
+    function IsFruitTool(tool)
+        if not tool or not tool:IsA("Tool") then return false end
+        return string.match(tool.Name, "Fruit") ~= nil
+    end
+    function GetFruitOriginalName(tool) return tool.Name end
+    function StoreFruit(container)
+        if not container or not container.GetChildren then return end
+        local LP = game.Players.LocalPlayer
+        local CommF = game:GetService("ReplicatedStorage").Remotes.CommF_
+        for _, tool in ipairs(container:GetChildren()) do
+            if IsFruitTool(tool) then
+                local fail = tool:GetAttribute("__StoreFail")
+                if typeof(fail) == "number" and tick() - fail < 30 then
+                else
+                    if tool.Parent == LP.Character then pcall(function() LP.Character:FindFirstChildOfClass("Humanoid"):UnequipTools() end) task.wait(0.2) end
+                    local gone = function() return not tool.Parent or (tool.Parent ~= LP.Backpack and tool.Parent ~= LP.Character) end
+                    pcall(function() CommF:InvokeServer("StoreFruit", tool.Name, tool) end) task.wait(0.35)
+                    if not gone() then pcall(function() CommF:InvokeServer("StoreFruit", tool.Name) end) task.wait(0.35) end
+                    if gone() then print("[Fix Store] Guardou: "..tool.Name) else tool:SetAttribute("__StoreFail", tick()) end
+                    task.wait(0.5)
+                end
+            end
+        end
+    end
+    
+    getgenv().__AwakenCooldown = 0
+    -- Sobrescreve o loop de awaken que estava dentro do RenderStepped
+    task.spawn(function()
+        while task.wait(3) do
+            pcall(function()
+                if Settings["Auto Awake Fruit"] then
+                    if tick() - getgenv().__AwakenCooldown > 3 then
+                        getgenv().__AwakenCooldown = tick()
+                        local CommF = game:GetService("ReplicatedStorage").Remotes.CommF_
+                        local chk = CommF:InvokeServer("Awakener", "Check")
+                        if chk and tostring(chk) ~= "" and not string.find(tostring(chk):lower(), "need") then
+                            CommF:InvokeServer("Awakener", "Awaken")
+                        end
+                    end
+                end
+            end)
+        end
+    end)
+end
+
+print("[Nexora Source Fix] Todos fixes aplicados na source!")
+-- FIM FIXES
 
 -- Restaura os toggles ativos (UI + callback) pelo mesmo caminho do clique manual.
 task.spawn(function()
     task.wait()
     if A and A.RestoreSavedToggles then A.RestoreSavedToggles() end
     pcall(function() if getgenv().NexoraLoadingFinish then getgenv().NexoraLoadingFinish() end end)
-end)
-
-
-
-
--- ===================== FINAL FIX ViniZDev - FAST CLICK 0.06s + NO SPAM + ANCHOR + RESET =====================
-getgenv().PhysicalGunClickInterval = 0.05
-getgenv().DSClickInterval = 0.05
-getgenv().DragonstormRemoteDelay = 0.05
-getgenv().__DragonstormLastShot = 0
-
-function DragonstormPhysicalClick(force, toolName)
-    toolName = toolName or "Dragonstorm"
-    local now = os.clock()
-    local lastKey = "__PhysicalClickLast_" .. tostring(toolName)
-    if not force and now - (getgenv()[lastKey] or 0) < 0.05 then return false end
-    getgenv()[lastKey] = now
-    task.spawn(function()
-        pcall(function()
-            local Camera = workspace.CurrentCamera
-            if not Camera then return end
-            local vp = Camera.ViewportSize
-            local x, y = math.floor(vp.X / 2), 2
-            local VIM = game:GetService("VirtualInputManager")
-            VIM:SendMouseMoveEvent(x, y, game)
-            VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
-            VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
-            pcall(function() local tool = t.Character and t.Character:FindFirstChild(toolName) if tool then tool:Activate() end end)
-            pcall(function() local VU = game:GetService("VirtualUser") VU:CaptureController() VU:ClickButton1(Vector2.new(x, y)) end)
-        end)
-    end)
-    return true
-end
-getgenv().DragonstormPhysicalClick = DragonstormPhysicalClick
-
-getgenv().SpamGunDragonStorm = function(targetPart)
-    local plr = game.Players.LocalPlayer
-    local char = plr and plr.Character
-    if not char then return end
-    local tool = char:FindFirstChild("Dragonstorm")
-    if not tool then return end
-    if not targetPart then return end
-    local targetPos, hitPart
-    if typeof(targetPart) == "Instance" then
-        if targetPart:IsA("BasePart") then targetPos = targetPart.Position hitPart = targetPart
-        elseif targetPart:IsA("Model") then local hrp = targetPart:FindFirstChild("HumanoidRootPart") or targetPart.PrimaryPart if hrp then targetPos = hrp.Position hitPart = hrp else targetPos = targetPart:GetPivot().Position end
-        end
-    elseif typeof(targetPart) == "Vector3" then targetPos = targetPart
-    elseif typeof(targetPart) == "CFrame" then targetPos = targetPart.Position end
-    if not targetPos then return end
-    local now = os.clock()
-    if now - (getgenv().__DragonstormLastShot or 0) < 0.06 then return end
-    getgenv().__DragonstormLastShot = now
-    getgenv().AimPos = CFrame.new(targetPos)
-    -- FAST: 3 physical clicks + 3 activates per call = no more 2 sec delay
-    for i=1,3 do
-        pcall(function() if DragonstormPhysicalClick then DragonstormPhysicalClick(true, "Dragonstorm") end end)
-        pcall(function() tool:Activate() end)
-        pcall(function()
-            local VU = game:GetService("VirtualUser")
-            VU:CaptureController()
-            VU:ClickButton1(Vector2.new(0,0))
-        end)
-    end
-    pcall(function()
-        local net = game:GetService("ReplicatedStorage").Modules.Net
-        local shoot = net and net:FindFirstChild("RE/ShootGunEvent")
-        if shoot then if hitPart then shoot:FireServer(targetPos, {hitPart}) else shoot:FireServer(targetPos, {}) end end
-    end)
-    pcall(function()
-        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("ShootGun", targetPos)
-    end)
-end
-
-function UseDragonstormAllSeaEvents(Part)
-    if not Part or not Part.Parent then return end
-    local has = game.Players.LocalPlayer.Backpack:FindFirstChild("Dragonstorm") or (game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Dragonstorm"))
-    if not has then pcall(function() game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("LoadItem", "Dragonstorm") end) return end
-    if not EquipOnlyIfNeeded or not EquipOnlyIfNeeded("Dragonstorm", 1.0) then return end
-    getgenv().SpamGunDragonStorm(Part)
-end
-
-print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZDev")
-
-
-pcall(function()
-    task.spawn(function()
-        task.wait(1)
-        local host = (gethui and gethui()) or game:GetService("CoreGui")
-        for _, gui in pairs(host:GetChildren()) do
-            if gui.Name:lower():find("nexora") then
-                for _, v in pairs(gui:GetDescendants()) do
-                    if v:IsA("UICorner") then
-                        v.CornerRadius = UDim.new(0, 22)
-                    end
-                end
-            end
-        end
-    end)
 end)
