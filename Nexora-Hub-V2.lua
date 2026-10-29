@@ -2035,7 +2035,18 @@ function OMG.CreateMain(config)
 
     -- Title OMG HUB
     local mainTitle = config.Title or "NEXORA HUB"
-    make("TextLabel",{Position=UDim2.new(0,16,0,8), Size=UDim2.new(0,300,0,22), BackgroundTransparency=1, RichText=true, Text='<b><font color="#FFFFFF">'..string.upper(mainTitle):gsub(" HUB","")..'</font> <font color="#8A5CFF">HUB</font></b>', TextColor3=C.text, Font=Enum.Font.GothamBold, TextSize=16, TextXAlignment=Enum.TextXAlignment.Left}, top)
+    local displayTitle = mainTitle
+    pcall(function() displayTitle = string.upper(mainTitle) end)
+    local part1 = "NEXORA"
+    local part2 = "HUB"
+    pcall(function() 
+        if string.find(displayTitle, " ") then
+            local split = string.split(displayTitle, " ")
+            part1 = split[1] or "NEXORA"
+            part2 = split[#split] or "HUB"
+        end
+    end)
+    make("TextLabel",{Position=UDim2.new(0,16,0,8), Size=UDim2.new(0,300,0,22), BackgroundTransparency=1, RichText=true, Text='<b><font color="#FFFFFF">'..part1..'</font> <font color="#8A5CFF">'..part2..'</font></b>', TextColor3=C.text, Font=Enum.Font.GothamBold, TextSize=16, TextXAlignment=Enum.TextXAlignment.Left}, top)
     make("TextLabel",{Position=UDim2.new(0,16,0,30), Size=UDim2.new(0,300,0,14), BackgroundTransparency=1, Text=config.Desc or "BLOX FRUITS . ViniZ_DV", TextColor3=C.muted, Font=Enum.Font.Code, TextSize=10, TextXAlignment=Enum.TextXAlignment.Left}, top)
 
     -- Controls
@@ -2110,15 +2121,21 @@ function OMG.CreateMain(config)
     local pages,activePage,navButtons={},nil,{}
 
     local function showPage(p)
+        pcall(function()
         activePage=p
-        for _,item in pairs(pages) do item.frame.Visible=(item==p) end
+        for _,item in pairs(pages) do 
+            pcall(function() item.frame.Visible=(item==p) end)
+        end
         for pg,b in pairs(navButtons) do
+            pcall(function()
             local on=(pg==p)
             b:SetAttribute("Active",on)
             TweenService:Create(b,TweenInfo.new(.15),{BackgroundColor3=on and C.accent or Color3.fromRGB(28,28,33)}):Play()
             TweenService:Create(b.Txt,TweenInfo.new(.15),{TextColor3=on and Color3.new(1,1,1) or C.textDim}):Play()
             b.Bar.Visible=on
+            end)
         end
+        end)
     end
 
     local Main={}
@@ -2136,7 +2153,7 @@ function OMG.CreateMain(config)
         local layout=make("UIListLayout",{Padding=UDim.new(0,10),SortOrder=Enum.SortOrder.LayoutOrder}, frame)
         layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() frame.CanvasSize=UDim2.new(0,0,0,layout.AbsoluteContentSize.Y+28) end)
         local p={name=pageName,frame=frame, _api=nil}
-        frame.Visible = (#pages==0)
+        frame.Visible = false
         pages[#pages+1]=p
         local navText=pageConfig.Page_Title or pageName
         local nb=make("TextButton",{Name="Nav", AutoButtonColor=false, BackgroundColor3=Color3.fromRGB(28,28,33), BackgroundTransparency=0, BorderSizePixel=0, Size=UDim2.new(1,0,0,38), Text=""}, nav)
@@ -2145,10 +2162,12 @@ function OMG.CreateMain(config)
         local txt=make("TextLabel",{Name="Txt", BackgroundTransparency=1, Position=UDim2.new(0,14,0,0), Size=UDim2.new(1,-20,1,0), Text=navText, TextColor3=C.textDim, Font=Enum.Font.Gotham, TextSize=13, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd}, nb)
         nb.Bar=bar; nb.Txt=txt
         navButtons[p]=nb
-        nb.MouseButton1Click:Connect(function() showPage(p) end)
+        nb.MouseButton1Click:Connect(function() pcall(function() showPage(p) end) end)
         nb.LayoutOrder=#pages
         if #pages==1 then
-            task.defer(function() showPage(p) end)
+            frame.Visible = true
+            activePage = p
+            task.defer(function() pcall(function() showPage(p) end) end)
         end
 
         local Page={}
@@ -2237,18 +2256,20 @@ function OMG.CreateMain(config)
                 cfg=cfg or {}; local t=cfg.Title or "Dropdown"; local rawList=cfg.List or cfg.Values or cfg.Options or {}; local multi=cfg.Selected==true; local listValues={}
                 local function rebuildList(src)
                     listValues={}; if type(src)~="table" then return end
-                    if #src>0 then for _,v in ipairs(src) do table.insert(listValues,v) end else for k in pairs(src) do table.insert(listValues,k) end; table.sort(listValues,function(a,b) return tostring(a)<tostring(b) end) end
+                    local isArray = false
+                    pcall(function() if src[1]~=nil then isArray=true end end)
+                    if isArray or #src>0 then for _,v in ipairs(src) do table.insert(listValues,v) end else for k in pairs(src) do table.insert(listValues,k) end; table.sort(listValues,function(a,b) return tostring(a)<tostring(b) end) end
                 end
                 rebuildList(rawList)
                 local selected=cfg.Default
-                if multi then selected=type(selected)=="table" and table.clone(selected) or {} for _,v in ipairs(listValues) do if selected[v]==nil then selected[v]=type(rawList)=="table" and rawList[v]==true or false end end
+                if multi then selected=type(selected)=="table" and (function() local c={}; for k,v in pairs(selected) do c[k]=v end; return c end)() or {} for _,v in ipairs(listValues) do if selected[v]==nil then selected[v]=type(rawList)=="table" and rawList[v]==true or false end end
                 else selected=selected or "Select..." end
                 local function displayValue() if not multi then return tostring(selected) end; local chosen={}; for _,v in ipairs(listValues) do if selected[v] then table.insert(chosen,tostring(v)) end end; if #chosen==0 then return "None" end; local s=table.concat(chosen,", "); return #s>28 and (string.sub(s,1,25).."..." ) or s end
                 local b=make("TextButton",{AutoButtonColor=false, BackgroundColor3=C.panel2, BorderSizePixel=0, Size=UDim2.new(1,0,0,36), Text=t.."  ·  "..displayValue().."  ▾", TextColor3=C.text, Font=Enum.Font.Gotham, TextSize=12}, card)
                 corner(b,8)
                 local opt=addOption(t,"dropdown",selected,pageName,sectionName,callback)
                 local function refreshButton() b.Text=t.."  ·  "..displayValue().."  ▾"; opt.value=selected end
-                opt._setValue=function(v) if multi then selected=type(v)=="table" and table.clone(v) or {} else selected=v end; refreshButton() end
+                opt._setValue=function(v) if multi then selected=type(v)=="table" and (function() local c={}; for k,v2 in pairs(v) do c[k]=v2 end; return c end)() or {} else selected=v end; refreshButton() end
                 opt.GetNewList=function(_,newList) rebuildList(newList or {}); refreshButton() end; opt.SetList=opt.GetNewList
                 b.MouseButton1Click:Connect(function()
                     local menuName="NexoraDropdownOverlay"; local oldMenu=gui:FindFirstChild(menuName); if oldMenu then if oldMenu:GetAttribute("Owner")==t then oldMenu:Destroy(); return end; oldMenu:Destroy() end
