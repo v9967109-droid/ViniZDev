@@ -3,10 +3,10 @@ do
 	pcall(function()
 		local TS = game:GetService("TweenService")
 		local host = (gethui and gethui()) or game:GetService("CoreGui")
-		local oldLoad = host:FindFirstChild("NexoraLoading")
+		local oldLoad = host:FindFirstChild("OMGHubLoading")
 		if oldLoad then oldLoad:Destroy() end
 		local gui = Instance.new("ScreenGui")
-		gui.Name = "NexoraLoading"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true; gui.DisplayOrder = 10000
+		gui.Name = "OMGHubLoading"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true; gui.DisplayOrder = 10000
 		gui.Parent = host
 		local GOLD, GOLD_L, GRAY = Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255), Color3.fromRGB(165,165,174)
 		local function mk(class, props, parent)
@@ -26,7 +26,7 @@ do
 		mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,2), Size=UDim2.new(1,0,0,13), Text="♛", TextColor3=Color3.fromRGB(80, 180, 255), Font=Enum.Font.Fantasy, TextSize=12}, logo)
 		local n = mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,10), Size=UDim2.new(1,0,1,-12), Text="N", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.Arcade, TextSize=26}, logo)
 		mk("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 140, 255))}, n)
-		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,62), Size=UDim2.fromOffset(220,20), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.Arcade, TextSize=16}, card)
+		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,62), Size=UDim2.fromOffset(220,20), BackgroundTransparency=1, Text="OMG HUB", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.Arcade, TextSize=16}, card)
 		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,80), Size=UDim2.fromOffset(220,14), BackgroundTransparency=1, Text="BLOX FRUITS . ViniZ_DV", TextColor3=Color3.fromRGB(165,165,174), Font=Enum.Font.Code, TextSize=11}, card)
 		local track = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,92), Size=UDim2.fromOffset(150,3), BackgroundColor3=Color3.fromRGB(30,28,24), BorderSizePixel=0}, card)
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, track)
@@ -64,7 +64,7 @@ do
 	getgenv().NexoraLoadingFinish = function() end
 end
 
--- ===================== NEXORA ANTI SHAKE SYSTEM (NO TREME TELA) =====================
+-- ===================== OMG ANTI SHAKE SYSTEM (NO TREME TELA) =====================
 -- Trava o tremor de tela de Skull Guitar, Dragonstorm, Sanguine, Godhuman, etc
 do
     task.spawn(function()
@@ -1922,945 +1922,449 @@ game:GetService("Players").LocalPlayer.Idled:connect(function()
 	vu:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 end)
 local A = (function()
--- NexoraUI.lua | Biblioteca independente de interface para Roblox executors
--- API compatível com o padrão usado na source Nexora Hub:
--- CreateMain, CreatePage, CreateSection, CreateToggle, CreateButton,
--- CreateDropdown, CreateSlider, CreateLabel, CreateNoti.
--- Observação: esta biblioteca cria a UI; a source principal continua responsável pelas funções do jogo.
 
-local Nexora = {}
-Nexora.Options = {}
-Nexora.OptionOrder = {}
+-- OMG HUB UI LIBRARY | Converted from Nexora -> OMG Hub Style
+-- API 100% compatível com Nexora: CreateMain, CreatePage, CreateSection, CreateToggle, CreateButton, CreateDropdown, CreateSlider, CreateLabel, CreateBox, CreateNoti, CreateBind
+-- Visual: OMG HUB 2026 - Preto fosco + Roxo neon #8A5CFF
+-- Author convert: ViniZ_DV request
+
+local OMG = {}
+OMG.Options = {}
+OMG.OptionOrder = {}
 
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local CoreGui = game:GetService("CoreGui")
-local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 local parentGui = (gethui and gethui()) or CoreGui
 
-local old = parentGui:FindFirstChild("NexoraUI")
+local old = parentGui:FindFirstChild("OMGHubUI")
 if old then old:Destroy() end
-local oldFloat = parentGui:FindFirstChild("NexoraFloat")
+local oldFloat = parentGui:FindFirstChild("OMGFloat")
 if oldFloat then oldFloat:Destroy() end
 
+-- CORES OMG HUB
 local C = {
-    -- Fundo preto e azul igual você pediu
-    bg = Color3.fromRGB(0, 0, 0),
-    panel = Color3.fromRGB(10, 10, 15),
-    panel2 = Color3.fromRGB(18, 18, 28),
-    line = Color3.fromRGB(0, 80, 180),
-    gold = Color3.fromRGB(0, 140, 255),
-    goldLight = Color3.fromRGB(80, 180, 255),
-    text = Color3.fromRGB(240, 245, 255),
-    muted = Color3.fromRGB(140, 150, 170),
-    green = Color3.fromRGB(0, 200, 255),
+    bg = Color3.fromRGB(12, 12, 14),
+    shell = Color3.fromRGB(15, 15, 18),
+    sidebar = Color3.fromRGB(20, 20, 24),
+    panel = Color3.fromRGB(24, 24, 30),
+    panel2 = Color3.fromRGB(30, 30, 38),
+    line = Color3.fromRGB(55, 55, 65),
+    accent = Color3.fromRGB(138, 92, 255), -- roxo OMG
+    accentLight = Color3.fromRGB(168, 130, 255),
+    accentDark = Color3.fromRGB(90, 60, 180),
+    text = Color3.fromRGB(240, 240, 245),
+    muted = Color3.fromRGB(140, 140, 150),
+    textDim = Color3.fromRGB(160, 160, 170),
+    toggleOff = Color3.fromRGB(50, 50, 58),
+    green = Color3.fromRGB(80, 255, 120),
 }
 
 local function make(class, props, parent)
     local o = Instance.new(class)
-    for k, v in pairs(props or {}) do o[k] = v end
+    for k,v in pairs(props or {}) do o[k]=v end
     o.Parent = parent
     return o
 end
-local function corner(obj, radius)
-    make("UICorner", {CornerRadius = UDim.new(0, radius or 8)}, obj)
+local function corner(o,r) make("UICorner",{CornerRadius=UDim.new(0,r or 8)},o) end
+local function stroke(o,c,t,tr) make("UIStroke",{Color=c or C.line, Thickness=t or 1, Transparency=tr or 0},o) end
+local function label(parent,text,size,color,font)
+    return make("TextLabel",{
+        BackgroundTransparency=1, Text=tostring(text or ""), TextColor3=color or C.text,
+        Font=font or Enum.Font.Gotham, TextSize=size or 13, TextXAlignment=Enum.TextXAlignment.Left,
+        TextYAlignment=Enum.TextYAlignment.Center, Size=UDim2.new(1,0,1,0), TextWrapped=true
+    },parent)
 end
-local function stroke(obj, color, transparency)
-    make("UIStroke", {Color = color or C.line, Transparency = transparency or 0, Thickness = 1}, obj)
-end
-local function label(parent, text, size, color, font)
-    return make("TextLabel", {
-        BackgroundTransparency = 1, Text = tostring(text or ""), TextColor3 = color or C.text,
-        Font = font or Enum.Font.SourceSansBold, TextSize = size or 12, TextXAlignment = Enum.TextXAlignment.Left,
-        TextYAlignment = Enum.TextYAlignment.Center, Size = UDim2.new(1, 0, 1, 0),
-        TextWrapped = true,
-    }, parent)
-end
-local function button(parent, text, height)
-    local b = make("TextButton", {
-        AutoButtonColor = false, BackgroundColor3 = C.panel2, BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 0, height or 34), Text = text or "", TextColor3 = C.text,
-        Font = Enum.Font.SourceSansBold, TextSize = 12,
-    }, parent)
-    corner(b, 7)
-    b.MouseEnter:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.12), {BackgroundColor3 = Color3.fromRGB(36, 34, 31)}):Play() end end)
-    b.MouseLeave:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.12), {BackgroundColor3 = C.panel2}):Play() end end)
-    b.MouseButton1Down:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.08), {BackgroundColor3 = Color3.fromRGB(58, 46, 22)}):Play() end end)
-    b.MouseButton1Up:Connect(function() if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.14), {BackgroundColor3 = Color3.fromRGB(36, 34, 31)}):Play() end end)
-    return b
-end
--- Sons da UI. Para usar os seus: getgenv().NexoraSounds = { ping="rbxassetid://ID", switch="rbxassetid://ID", click="rbxassetid://ID" } antes de executar.
-local SND = { ping = "rbxasset://sounds/electronicpingshort.wav", switch = "rbxasset://sounds/switch.wav", click = "rbxasset://sounds/button.wav" }
-pcall(function() for k, v in pairs(getgenv().NexoraSounds or {}) do SND[k] = v end end)
-local function playUISound(id, vol, speed) return end -- SFX REMOVIDO DIRETO
--- Cada efeito é uma sequência curta de camadas {som, volume, velocidade, atraso}.
-local SFX = {
-    open  = {},
-    close = {},
-    on    = {},
-    off   = {},
-    tab   = {},
-}
-local function sfxPlay(name) return end -- SFX REMOVIDO DIRETO
+
 local function addOption(title, typ, value, page, section, callback)
-    local opt = {Title = title, name = title, type = typ, value = value, Page_Name = page, Section_Name = section, Callback = callback}
+    local opt = {Title=title, name=title, type=typ, value=value, Page_Name=page, Section_Name=section, Callback=callback}
     local control = {}
     control.GetText = function() return tostring(opt.value or "") end
-    control.SetValue = function(a, b)
-        local v = b
-        if b == nil then v = a end
-        if v == control then return end
-        opt.value = v
+    control.SetValue = function(a,b)
+        local v = b; if b==nil then v=a end
+        if v==control then return end
+        opt.value=v
         if opt._setValue then opt._setValue(v) end
-        if callback then task.spawn(function() pcall(callback, v) end) end
+        if callback then task.spawn(function() pcall(callback,v) end) end
     end
     control.SetStage = control.SetValue
-    control.SetSubValue = function(a, b, c)
-        local key, v
-        if c ~= nil then key, v = b, c else key, v = a, b end
-        opt.value = opt.value or {}
-        opt.value[key] = v
-        if opt._setSubValue then opt._setSubValue(key, v) end
-        if callback then task.spawn(function() pcall(callback, opt.value) end) end
+    control.SetSubValue = function(a,b,c)
+        local key,v
+        if c~=nil then key,v=b,c else key,v=a,b end
+        opt.value=opt.value or {}
+        opt.value[key]=v
+        if opt._setSubValue then opt._setSubValue(key,v) end
+        if callback then task.spawn(function() pcall(callback,opt.value) end) end
     end
-    opt.FunctionCreate = control
-    Nexora.Options[title] = opt
-    table.insert(Nexora.OptionOrder, opt)
+    opt.FunctionCreate=control
+    OMG.Options[title]=opt
+    table.insert(OMG.OptionOrder, opt)
     return opt
 end
 
-function Nexora.CreateMain(config)
-    config = config or {}
-    local gui = make("ScreenGui", {Name = "NexoraUI", ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
-    local SIZE_FILE = "NexoraHubWindowSize.json"
-    local persistedW, persistedH = 690, 440
-    -- Salva o tamanho em arquivo do executor para sobreviver a reinícios do jogo.
+function OMG.CreateMain(config)
+    config=config or {}
+    local gui = make("ScreenGui",{Name="OMGHubUI", ResetOnSpawn=false, ZIndexBehavior=Enum.ZIndexBehavior.Sibling}, parentGui)
+    local SIZE_FILE="OMGHubWindowSize.json"
+    local persistedW,persistedH=680,420
     pcall(function()
         if readfile and isfile and isfile(SIZE_FILE) then
             local stored = game:GetService("HttpService"):JSONDecode(readfile(SIZE_FILE))
-            persistedW = math.clamp(tonumber(stored.w) or 690, 360, 900)
-            persistedH = math.clamp(tonumber(stored.h) or 440, 280, 720)
-        elseif getgenv and getgenv().__NEXORA_WINDOW_SIZE then
-            persistedW = math.clamp(tonumber(getgenv().__NEXORA_WINDOW_SIZE.w) or 690, 360, 900)
-            persistedH = math.clamp(tonumber(getgenv().__NEXORA_WINDOW_SIZE.h) or 440, 280, 720)
+            persistedW = math.clamp(tonumber(stored.w) or 680, 360, 900)
+            persistedH = math.clamp(tonumber(stored.h) or 420, 280, 720)
+        elseif getgenv and getgenv().__OMG_WINDOW_SIZE then
+            persistedW = math.clamp(tonumber(getgenv().__OMG_WINDOW_SIZE.w) or 680, 360, 900)
+            persistedH = math.clamp(tonumber(getgenv().__OMG_WINDOW_SIZE.h) or 420, 280, 720)
         end
     end)
-    local function saveWindowSize(w, h)
-        local data = {w = math.floor(w), h = math.floor(h)}
-        pcall(function() if getgenv then getgenv().__NEXORA_WINDOW_SIZE = data end end)
+    local function saveWindowSize(w,h)
+        local data={w=math.floor(w),h=math.floor(h)}
+        pcall(function() if getgenv then getgenv().__OMG_WINDOW_SIZE=data end end)
         pcall(function() if writefile then writefile(SIZE_FILE, game:GetService("HttpService"):JSONEncode(data)) end end)
     end
-    local shell = make("Frame", {Name="Window", AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.new(0, persistedW, 0, persistedH), BackgroundColor3=C.bg, BorderSizePixel=0}, gui)
-    corner(shell, 14); stroke(shell, Color3.fromRGB(255,255,255), 0.88)
-    make("UIGradient", {Rotation = 135, Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
-        ColorSequenceKeypoint.new(0.52, Color3.fromRGB(0, 0, 0)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 10, 30)),
-    })}, shell)
-    local scale = make("UIScale", {Scale = 1}, shell)
-    local function fitScale()
-        local cam = workspace.CurrentCamera
-        if cam then
-            local v = cam.ViewportSize
-            return math.clamp(math.min((v.X-20)/math.max(1, shell.Size.X.Offset), (v.Y-20)/math.max(1, shell.Size.Y.Offset)), .38, 1)
-        end
-        return 1
-    end
-    local function resize()
-        scale.Scale = fitScale()
-    end
-    resize()
-    if workspace.CurrentCamera then workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(resize) end
 
-    local HEADER_H, SIDEBAR_W = 64, 190
-    local GOLD, GOLD_L, GRAY = Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255), Color3.fromRGB(165,165,174)
-    local top = make("Frame", {Size=UDim2.new(1,0,0,HEADER_H), BackgroundColor3=Color3.fromRGB(10,10,14), BorderSizePixel=0}, shell)
-    corner(top, 12)
-    make("UIGradient", {Rotation=0, Color=ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 15, 40)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(13,13,18)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(8,8,11)),
-    })}, top)
-    -- cobre os cantos de baixo do header e desenha a linha dourada
-    make("Frame", {Position=UDim2.new(0,0,1,-12), Size=UDim2.new(1,0,0,12), BackgroundColor3=Color3.fromRGB(10,10,14), BorderSizePixel=0}, top)
-    do
-        local hl = make("Frame", {Position=UDim2.new(0,0,1,-1), Size=UDim2.new(1,0,0,1), BackgroundColor3=GOLD, BackgroundTransparency=0, BorderSizePixel=0}, top)
-        local hg = make("UIGradient", {Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,1),NumberSequenceKeypoint.new(0.5,0.1),NumberSequenceKeypoint.new(1,1)}), Offset=Vector2.new(-1,0)}, hl)
-        task.spawn(function()
-            while hl.Parent do
-                hg.Offset = Vector2.new(-1,0)
-                local tw = TweenService:Create(hg, TweenInfo.new(3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Offset=Vector2.new(1,0)})
-                tw:Play(); tw.Completed:Wait(); task.wait(0.8)
-            end
-        end)
-    end
-    local title = make("TextLabel", {Position=UDim2.new(0,18,0,10), Size=UDim2.new(0,300,0,26), BackgroundTransparency=1, RichText=true, Text='<font color="#FFFFFF">NEXORA</font> <font color="#008CFF">HUB</font>', TextColor3=Color3.fromRGB(255,255,255), Font=Enum.Font.Arcade, TextSize=22, TextXAlignment=Enum.TextXAlignment.Left}, top)
-    local function tracked(t) return (string.gsub(string.upper(t), "(%S)", "%1\u{2009}")) end
-    local desc = make("TextLabel", {Position=UDim2.new(0,19,0,37), Size=UDim2.new(0,300,0,16), BackgroundTransparency=1, Text=tracked("BLOX FRUITS . ViniZ_DV"), TextColor3=GRAY, Font=Enum.Font.Code, TextSize=10, TextXAlignment=Enum.TextXAlignment.Left}, top)
-    -- 3 tracinhos removidos da UI como você pediu
-    local hamburger = make("TextButton", {Name="Menu", AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,-12,0.5,0), Size=UDim2.new(0,36,0,36), BackgroundTransparency=1, Text="", TextTransparency=1, Visible=false, AutoButtonColor=false}, top)
-    -- ScreenGui separado: o botão fica fora da janela e não some junto com a UI (nem com o keybind Toggle GUI).
-    local floatGui = make("ScreenGui", {Name="NexoraFloat", ResetOnSpawn=false, IgnoreGuiInset=true, DisplayOrder=999, ZIndexBehavior=Enum.ZIndexBehavior.Sibling}, parentGui)
-    -- Botão preto com nome branco igual você pediu
-    local reopen = make("TextButton", {
-        Name="NexoraFloatingButton",
-        AutoButtonColor=false,
-        BackgroundColor3=Color3.fromRGB(20, 20, 25),
-        BorderSizePixel=0,
-        Size=UDim2.new(0, 145, 0, 36),
-        Text="",
-        ZIndex=100
-    }, floatGui)
+    local shell = make("Frame",{Name="Window", AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.new(0,persistedW,0,persistedH), BackgroundColor3=C.shell, BorderSizePixel=0, ClipsDescendants=true}, gui)
+    corner(shell,12); stroke(shell, Color3.fromRGB(45,45,55),1,0.6)
+    local scale=make("UIScale",{Scale=1},shell)
+
+    local HEADER_H,SIDEBAR_W=50,160
+    local top = make("Frame",{Size=UDim2.new(1,0,0,HEADER_H), BackgroundColor3=C.sidebar, BorderSizePixel=0}, shell)
+    corner(top,12)
+    make("Frame",{Position=UDim2.new(0,0,1,-12), Size=UDim2.new(1,0,0,12), BackgroundColor3=C.sidebar, BorderSizePixel=0}, top)
+
+    -- Title OMG HUB
+    make("TextLabel",{Position=UDim2.new(0,16,0,0), Size=UDim2.new(0,300,1,0), BackgroundTransparency=1, RichText=true, Text='<b><font color="#FFFFFF">OMG</font> <font color="#8A5CFF">HUB</font></b>', TextColor3=C.text, Font=Enum.Font.GothamBold, TextSize=16, TextXAlignment=Enum.TextXAlignment.Left}, top)
+    make("TextLabel",{Position=UDim2.new(0,17,0,18), Size=UDim2.new(0,300,0,16), BackgroundTransparency=1, Text="BLOX FRUITS . ViniZ_DV", TextColor3=C.muted, Font=Enum.Font.Code, TextSize=10, TextXAlignment=Enum.TextXAlignment.Left}, top)
+
+    -- Controls
+    local closeBtn = make("TextButton",{AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,-12,0.5,0), Size=UDim2.new(0,28,0,28), BackgroundColor3=Color3.fromRGB(35,35,40), BorderSizePixel=0, Text="✕", TextColor3=C.muted, Font=Enum.Font.GothamBold, TextSize=12, AutoButtonColor=false}, top)
+    corner(closeBtn,6)
+    local miniBtn = make("TextButton",{AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,-46,0.5,0), Size=UDim2.new(0,28,0,28), BackgroundColor3=Color3.fromRGB(35,35,40), BorderSizePixel=0, Text="—", TextColor3=C.muted, Font=Enum.Font.GothamBold, TextSize=12, AutoButtonColor=false}, top)
+    corner(miniBtn,6)
+
+    -- Floating button (igual Nexora)
+    local floatGui = make("ScreenGui",{Name="OMGFloat", ResetOnSpawn=false, IgnoreGuiInset=true, DisplayOrder=999, ZIndexBehavior=Enum.ZIndexBehavior.Sibling}, parentGui)
+    local reopen = make("TextButton",{Name="OMGFloatingButton", AutoButtonColor=false, BackgroundColor3=Color3.fromRGB(22,22,26), BorderSizePixel=0, Size=UDim2.new(0,140,0,36), Text="", ZIndex=100}, floatGui)
     reopen:SetAttribute("NexoraKeepColor", true)
-    make("UICorner", {CornerRadius=UDim.new(0, 18)}, reopen)
-    make("UIStroke", {Color=Color3.fromRGB(60, 60, 65), Thickness=1, Transparency=0.3}, reopen)
-    -- Icone N TOP - 100% seguro, sem frames extras que quebram UI
-    local iconFrame = make("Frame", {
-        BackgroundColor3=Color3.fromRGB(20, 20, 30),
-        Size=UDim2.new(0, 24, 0, 24),
-        Position=UDim2.new(0, 6, 0.5, -12),
-        BorderSizePixel=0,
-        ZIndex=101
-    }, reopen)
-    make("UICorner", {CornerRadius=UDim.new(1,0)}, iconFrame)
-    make("UIStroke", {Color=Color3.fromRGB(0, 140, 255), Thickness=1.2, Transparency=0.2}, iconFrame)
-    local iconText = make("TextLabel", {
-        BackgroundTransparency=1,
-        Size=UDim2.new(1, 0, 1, 0),
-        Position=UDim2.new(0, 0, 0, 0),
-        Text="N",
-        TextColor3=Color3.fromRGB(255, 255, 255),
-        Font=Enum.Font.Arcade,
-        TextSize=19,
-        TextStrokeTransparency=0,
-        ZIndex=102
-    }, iconFrame)
-    local grad = make("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(150, 230, 255), Color3.fromRGB(0, 140, 255))}, iconText)
-    local txtStroke = make("UIStroke", {Color=Color3.fromRGB(0, 80, 160), Thickness=1.5, Transparency=0}, iconText)
-    -- So animacao do texto, nada de frames extras
-    task.spawn(function()
-        local TS = game:GetService("TweenService")
-        while iconText.Parent do
-            pcall(function()
-                TS:Create(iconText, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize=22, TextColor3=Color3.fromRGB(180, 240, 255)}):Play()
-                TS:Create(grad, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Rotation=120}):Play()
-                TS:Create(txtStroke, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Thickness=2, Color=Color3.fromRGB(0, 140, 255)}):Play()
-            end)
-            task.wait(0.6)
-            pcall(function()
-                TS:Create(iconText, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextSize=19, TextColor3=Color3.fromRGB(255, 255, 255)}):Play()
-                TS:Create(grad, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Rotation=90}):Play()
-                TS:Create(txtStroke, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Thickness=1.5, Color=Color3.fromRGB(0, 80, 160)}):Play()
-            end)
-            task.wait(0.6)
-        end
-    end)
-    local iconImg = make("ImageLabel", {
-        BackgroundTransparency=1,
-        Size=UDim2.new(1, -4, 1, -4),
-        Position=UDim2.new(0, 2, 0, 2),
-        Image="rbxassetid://18747094503",
-        ScaleType=Enum.ScaleType.Fit,
-        ImageColor3=Color3.fromRGB(80, 180, 255),
-        ZIndex=102,
-        Visible=false
-    }, iconFrame)
-    pcall(function()
-        if config.Logo and config.Logo ~= "" then
-            iconImg.Image = config.Logo
-            iconImg.Visible = true
-            iconText.Visible = false
-        end
-    end)
-    -- Texto Nexora Hub
-    local textLabel = make("TextLabel", {
-        BackgroundTransparency=1,
-        Position=UDim2.new(0, 36, 0, 0),
-        Size=UDim2.new(0, 85, 1, 0),
-        Text="Nexora Hub",
-        TextColor3=Color3.fromRGB(255, 255, 255),
-        TextSize=13,
-        Font=Enum.Font.Code,
-        TextXAlignment=Enum.TextXAlignment.Left,
-        ZIndex=101
-    }, reopen)
-    -- Bolinha verde online igual da imagem
-    local greenDot = make("Frame", {
-        BackgroundColor3=Color3.fromRGB(0, 255, 100),
-        Size=UDim2.new(0, 10, 0, 10),
-        Position=UDim2.new(1, -18, 0.5, -5),
-        BorderSizePixel=0,
-        ZIndex=101
-    }, reopen)
-    make("UICorner", {CornerRadius=UDim.new(1,0)}, greenDot)
-    make("UIStroke", {Color=Color3.fromRGB(0,0,0), Thickness=1, Transparency=0.5}, greenDot)
-    -- Bolinha verde pulsante mais bonita
-    task.spawn(function()
-        while greenDot.Parent do
-            local tw = TweenService:Create(greenDot, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Size=UDim2.new(0, 12, 0, 12), BackgroundTransparency=0.2})
-            tw:Play(); tw.Completed:Wait()
-            tw = TweenService:Create(greenDot, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Size=UDim2.new(0, 10, 0, 10), BackgroundTransparency=0})
-            tw:Play(); tw.Completed:Wait()
-            tw = TweenService:Create(greenDot, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3=Color3.fromRGB(120, 255, 180)})
-            tw:Play(); tw.Completed:Wait()
-            tw = TweenService:Create(greenDot, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3=Color3.fromRGB(0, 255, 100)})
-            tw:Play(); tw.Completed:Wait()
-        end
-    end)
-    local FLOAT_POS_FILE = "NexoraHub_FloatPosition.json"
-    local function loadFloatPosition()
-        local saved
-        pcall(function()
-            if readfile and isfile and isfile(FLOAT_POS_FILE) then
-                saved = game:GetService("HttpService"):JSONDecode(readfile(FLOAT_POS_FILE))
-            end
-        end)
-        if type(saved) == "table" and tonumber(saved.x) and tonumber(saved.y) then
-            return UDim2.new(0, tonumber(saved.x), 0, tonumber(saved.y))
-        end
-        local cam = workspace.CurrentCamera
-        local vp = cam and cam.ViewportSize or Vector2.new(800, 600)
-        return UDim2.new(0, math.max(10, vp.X - 66), 0, 70)
-    end
-    local function saveFloatPosition()
-        pcall(function()
-            if writefile then
-                local p = reopen.Position
-                writefile(FLOAT_POS_FILE, game:GetService("HttpService"):JSONEncode({
-                    x = math.floor(p.X.Offset), y = math.floor(p.Y.Offset)
-                }))
-            end
-        end)
-    end
-    reopen.Position = loadFloatPosition()
-    reopen.AnchorPoint = Vector2.new(0, 0)
-    reopen.Visible = true
-    do
-        local z = 103
-local fScale = make("UIScale", {Scale=1}, reopen)
-        function bounceFloat()
-            TweenService:Create(fScale, TweenInfo.new(.08), {Scale=.8}):Play()
-            task.delay(.08, function() TweenService:Create(fScale, TweenInfo.new(.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale=1}):Play() end)
-        end
-    end
-    -- Estado declarado antes dos eventos para evitar que o clique use uma variável global.
-    local floatDragging, floatStart, floatPos, floatMoved = false, nil, nil, false
-    local playClose
-    local function hideWindow()
-        if playClose then playClose() else shell.Visible = false end
-    end
-    -- Abrir/fechar: sempre parte da escala "encaixada" (fitScale) e da posição de repouso,
-    -- e cancela a animação anterior, para a janela não ir encolhendo a cada abre/fecha.
-    local animToken, animating, isClosing, animTweens = 0, false, false, {}
-    local restPos = shell.Position
-    local function stopAnim()
-        for _, tw in ipairs(animTweens) do pcall(function() tw:Cancel() end) end
-        animTweens = {}
-    end
-    local function playOpen()
-        animToken = animToken + 1
-        local token = animToken
-        stopAnim()
-        isClosing = false
-        if not animating then restPos = shell.Position end
-        animating = true
-        local base = fitScale()
-        shell.Visible = true
-        shell.Position = restPos + UDim2.new(0,0,0,22)
-        scale.Scale = base * 0.93
-        sfxPlay("open")
-        local t1 = TweenService:Create(shell, TweenInfo.new(.34, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position=restPos})
-        local t2 = TweenService:Create(scale, TweenInfo.new(.34, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale=base})
-        animTweens = { t1, t2 }
-        t1:Play(); t2:Play()
-        t1.Completed:Connect(function()
-            if token ~= animToken then return end
-            animating = false
-            shell.Position = restPos
-            scale.Scale = fitScale()
-        end)
-    end
-    playClose = function()
-        if not shell.Visible or isClosing then return end
-        animToken = animToken + 1
-        local token = animToken
-        stopAnim()
-        if not animating then restPos = shell.Position end
-        animating, isClosing = true, true
-        local base = fitScale()
-        sfxPlay("close")
-        local t1 = TweenService:Create(shell, TweenInfo.new(.2, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {Position=restPos + UDim2.new(0,0,0,18)})
-        local t2 = TweenService:Create(scale, TweenInfo.new(.2, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {Scale=base * 0.93})
-        animTweens = { t1, t2 }
-        t1:Play(); t2:Play()
-        t1.Completed:Connect(function()
-            if token ~= animToken then return end
-            shell.Visible = false
-            shell.Position = restPos
-            scale.Scale = fitScale()
-            animating, isClosing = false, false
-        end)
-    end
-    -- O mesmo botão flutuante fica sempre visível e alterna abrir/fechar.
-    reopen.Activated:Connect(function()
-        if floatMoved then
-            task.defer(function() floatMoved = false end)
-            return
-        end
-        pcall(function() if bounceFloat then bounceFloat() end end)
-        if not gui.Enabled then
-            gui.Enabled = true
-            pcall(function() getgenv().UIToggled = true end)
-            playOpen()
-            return
-        end
-        if shell.Visible then playClose() else playOpen() end
-    end)
-    reopen.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            floatDragging = true; floatMoved = false; floatStart = input.Position; floatPos = reopen.Position
-        end
-    end)
-    UIS.InputChanged:Connect(function(input)
-        if floatDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local d = input.Position - floatStart
-            if math.abs(d.X) > 4 or math.abs(d.Y) > 4 then floatMoved = true end
-            if floatMoved then
-                local cam = workspace.CurrentCamera
-                local vp = cam and cam.ViewportSize or Vector2.new(800,600)
-                local x = math.clamp(floatPos.X.Offset + d.X, 0, math.max(0, vp.X - reopen.AbsoluteSize.X))
-                local y = math.clamp(floatPos.Y.Offset + d.Y, 0, math.max(0, vp.Y - reopen.AbsoluteSize.Y))
-                reopen.Position = UDim2.new(0, x, 0, y)
-            end
-        end
-    end)
-    UIS.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            floatDragging = false
-            if floatMoved then saveFloatPosition() end
-            -- Mantém floatMoved até Activated decidir se foi clique ou arrasto.
-        end
-    end)
+    corner(reopen,18); stroke(reopen, C.accent,1,0.4)
+    local iconFrame = make("Frame",{BackgroundColor3=Color3.fromRGB(138,92,255), Size=UDim2.new(0,24,0,24), Position=UDim2.new(0,8,0.5,-12), BorderSizePixel=0, ZIndex=101}, reopen)
+    corner(iconFrame,12)
+    make("TextLabel",{BackgroundTransparency=1, Size=UDim2.new(1,0,1,0), Text="O", TextColor3=Color3.fromRGB(255,255,255), Font=Enum.Font.GothamBold, TextSize=14, ZIndex=102}, iconFrame)
+    make("TextLabel",{BackgroundTransparency=1, Position=UDim2.new(0,38,0,0), Size=UDim2.new(0,80,1,0), Text="OMG Hub", TextColor3=C.text, TextSize=13, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=101}, reopen)
+    local greenDot = make("Frame",{BackgroundColor3=C.green, Size=UDim2.new(0,8,0,8), Position=UDim2.new(1,-18,0.5,-4), BorderSizePixel=0, ZIndex=101}, reopen)
+    corner(greenDot,4)
+    reopen.Position=UDim2.new(0,20,0,70)
+    reopen.Visible=true
 
-    local dragging, dragStart, startPos = false, nil, nil
+    -- Dragging
+    local dragging,dragStart,startPos=false,nil,nil
     top.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging=true; dragStart=input.Position; startPos=shell.Position
-        end
+        if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then dragging=true; dragStart=input.Position; startPos=shell.Position end
     end)
-    top.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging=false end
-    end)
+    UIS.InputEnded:Connect(function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then dragging=false end end)
     UIS.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        if dragging and (input.UserInputType==Enum.UserInputType.MouseMovement or input.UserInputType==Enum.UserInputType.Touch) then
             local d=input.Position-dragStart
             shell.Position=UDim2.new(startPos.X.Scale,startPos.X.Offset+d.X,startPos.Y.Scale,startPos.Y.Offset+d.Y)
         end
     end)
 
-    local sidebar = make("Frame", {Name="Sidebar", Position=UDim2.new(0,0,0,HEADER_H), Size=UDim2.new(0,SIDEBAR_W,1,-HEADER_H), BackgroundColor3=Color3.fromRGB(9,9,12), BorderSizePixel=0}, shell)
-    make("Frame", {Position=UDim2.new(1,-1,0,0), Size=UDim2.new(0,1,1,0), BackgroundColor3=C.line, BorderSizePixel=0}, sidebar)
-    make("UIStroke", {Color=Color3.fromRGB(245,245,245), Transparency=0.94, Thickness=1}, sidebar)
-    local search = make("TextBox", {Position=UDim2.new(0,12,0,12), Size=UDim2.new(1,-24,0,32), BackgroundColor3=C.bg, BorderSizePixel=0, PlaceholderText="Pesquisar...", Text="", TextColor3=C.text, PlaceholderColor3=C.muted, Font=Enum.Font.SourceSansBold, TextSize=11, ClearTextOnFocus=false}, sidebar); corner(search,7); stroke(search,C.line)
-    local nav = make("ScrollingFrame", {Position=UDim2.new(0,8,0,54), Size=UDim2.new(1,-16,1,-62), BackgroundTransparency=1, BorderSizePixel=0, ScrollBarThickness=2, ScrollBarImageColor3=C.gold, CanvasSize=UDim2.new()}, sidebar)
-    local navLayout = make("UIListLayout", {Padding=UDim.new(0,5), SortOrder=Enum.SortOrder.LayoutOrder}, nav)
-    navLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        nav.CanvasSize = UDim2.new(0, 0, 0, navLayout.AbsoluteContentSize.Y + 8)
-    end)
-    local content = make("Frame", {Name="Content", Position=UDim2.new(0,SIDEBAR_W,0,HEADER_H), Size=UDim2.new(1,-SIDEBAR_W,1,-HEADER_H), BackgroundTransparency=1}, shell)
-    local sidebarOpen = true
-    hamburger.MouseButton1Click:Connect(function()
-        sidebarOpen = not sidebarOpen
-        sidebar.Visible = sidebarOpen
-        content.Position = UDim2.new(0, sidebarOpen and SIDEBAR_W or 0, 0, HEADER_H)
-        content.Size = UDim2.new(1, sidebarOpen and -SIDEBAR_W or 0, 1, -HEADER_H)
-    end)
-    -- Alça de redimensionamento no canto inferior direito (mouse e toque).
-    local grip = make("TextButton", {Name="ResizeGrip", AnchorPoint=Vector2.new(1,1), Position=UDim2.new(1,-4,1,-4), Size=UDim2.new(0,22,0,22), BackgroundColor3=C.panel2, BorderSizePixel=0, Text="◢", TextColor3=C.gold, Font=Enum.Font.Fantasy, TextSize=14, AutoButtonColor=false}, shell)
-    corner(grip, 5)
-    local resizing, resizeStart, sizeStart = false, nil, nil
-    grip.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            resizing = true; resizeStart = input.Position; sizeStart = shell.Size
-        end
-    end)
-    UIS.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then resizing = false end
-    end)
+    -- Floating drag
+    local floatDragging,floatStart,floatPos,floatMoved=false,nil,nil,false
+    reopen.InputBegan:Connect(function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then floatDragging=true; floatMoved=false; floatStart=input.Position; floatPos=reopen.Position end end)
     UIS.InputChanged:Connect(function(input)
-        if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local delta = input.Position - resizeStart
-            local w = math.clamp(sizeStart.X.Offset + delta.X, 360, 900)
-            local h = math.clamp(sizeStart.Y.Offset + delta.Y, 280, 720)
-            shell.Size = UDim2.new(0, w, 0, h)
-            savedWindowSize = shell.Size
-            saveWindowSize(w, h)
-            scale.Scale = 1
+        if floatDragging and (input.UserInputType==Enum.UserInputType.MouseMovement or input.UserInputType==Enum.UserInputType.Touch) then
+            local d=input.Position-floatStart
+            if math.abs(d.X)>4 or math.abs(d.Y)>4 then floatMoved=true end
+            if floatMoved then reopen.Position=UDim2.new(0,floatPos.X.Offset+d.X,0,floatPos.Y.Offset+d.Y) end
         end
     end)
-    local pages, activePage, navButtons = {}, nil, {}
-    -- Ícones desenhados com formas simples (sem emoji): contorno fino, estilo minimalista.
-    local function drawIcon(parent, kind)
-        local holder = make("Frame", {Name="Icon", BackgroundTransparency=1, Position=UDim2.new(0,13,.5,-10), Size=UDim2.new(0,20,0,20)}, parent)
-        local function outline(w,h,x,y,r,rot)
-            local f = make("Frame", {BackgroundTransparency=1, Size=UDim2.new(0,w,0,h), Position=UDim2.new(0,x,0,y), Rotation=rot or 0, BorderSizePixel=0}, holder)
-            corner(f, r or 0); make("UIStroke", {Thickness=1.6, Color=GRAY}, f)
-            return f
-        end
-        local function fill(w,h,x,y,r,rot)
-            local f = make("Frame", {BackgroundColor3=GRAY, Size=UDim2.new(0,w,0,h), Position=UDim2.new(0,x,0,y), Rotation=rot or 0, BorderSizePixel=0}, holder)
-            f:SetAttribute("Fill", true); corner(f, r or 0)
-            return f
-        end
-        if kind == "house" then
-            fill(10,1.6,0.5,6,1,-38); fill(10,1.6,9.5,6,1,38); outline(12,8,4,10,2)
-        elseif kind == "diamond" then
-            outline(10,10,5,5,2,45); fill(4,4,8,8,2)
-        elseif kind == "bag" then
-            outline(7,6,6.5,2,3); outline(14,11,3,7,3)
-        elseif kind == "cross" then
-            fill(19,1.8,0.5,9.1,1,45); fill(19,1.8,0.5,9.1,1,-45)
-        elseif kind == "gear" then
-            outline(14,14,3,3,7); fill(4,4,8,8,2); fill(2,3,9,0,1); fill(2,3,9,17,1); fill(3,2,0,9,1); fill(3,2,17,9,1)
-        elseif kind == "bars" then
-            fill(3,5,3,13,1); fill(3,10,8.5,8,1); fill(3,15,14,3,1)
-        elseif kind == "user" then
-            outline(8,8,6,2,4); outline(14,7,3,12,4)
-        elseif kind == "wave" then
-            fill(12,2,2,5,1); fill(12,2,6,9,1); fill(12,2,4,13,1)
-        elseif kind == "orb" then
-            outline(14,14,3,4,7); fill(5,3,9,1,2,-30)
-        elseif kind == "eye" then
-            outline(18,11,1,4.5,6); fill(5,5,7.5,7.5,3)
-        else
-            outline(7,7,2,2,2); outline(7,7,11,2,2); outline(7,7,2,11,2); outline(7,7,11,11,2)
-        end
-        return holder
-    end
-    local function tintIcon(holder, color, transp)
-        for _, d in ipairs(holder:GetDescendants()) do
-            if d:IsA("UIStroke") then
-                TweenService:Create(d, TweenInfo.new(.18), {Color=color, Transparency=transp}):Play()
-            elseif d:IsA("Frame") and d:GetAttribute("Fill") then
-                TweenService:Create(d, TweenInfo.new(.18), {BackgroundColor3=color, BackgroundTransparency=transp}):Play()
-            end
-        end
-    end
-    local function iconKind(name)
-        local n = string.lower(name)
-        local map = {{"home","house"},{"setting","gear"},{"status","bars"},{"server","bars"},{"local","user"},{"shop","bag"},{"item","bag"},
-            {"farm","diamond"},{"stack","diamond"},{"fishing","wave"},{"sea","wave"},{"volcano","wave"},{"fruit","orb"},{"race","orb"},{"kitsune","orb"},
-            {"raid","cross"},{"pvp","cross"},{"boss","cross"},{"esp","eye"}}
-        for _, m in ipairs(map) do if string.find(n, m[1], 1, true) then return m[2] end end
-        return "grid"
-    end
+    UIS.InputEnded:Connect(function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then floatDragging=false end end)
+
+    local function playOpen() shell.Visible=true; TweenService:Create(shell,TweenInfo.new(.25,Enum.EasingStyle.Quint,Enum.EasingDirection.Out),{Size=UDim2.new(0,persistedW,0,persistedH)}):Play() end
+    local function playClose() shell.Visible=false end
+
+    reopen.Activated:Connect(function()
+        if floatMoved then floatMoved=false; return end
+        if not gui.Enabled then gui.Enabled=true; shell.Visible=true; return end
+        if shell.Visible then playClose() else playOpen() end
+    end)
+    closeBtn.MouseButton1Click:Connect(function() playClose() end)
+    miniBtn.MouseButton1Click:Connect(function() playClose() end)
+
+    -- Sidebar
+    local sidebar = make("Frame",{Name="Sidebar", Position=UDim2.new(0,0,0,HEADER_H), Size=UDim2.new(0,SIDEBAR_W,1,-HEADER_H), BackgroundColor3=C.sidebar, BorderSizePixel=0}, shell)
+    make("Frame",{Position=UDim2.new(1,-1,0,0), Size=UDim2.new(0,1,1,0), BackgroundColor3=Color3.fromRGB(35,35,45), BorderSizePixel=0}, sidebar)
+
+    local search = make("TextBox",{Position=UDim2.new(0,10,0,10), Size=UDim2.new(1,-20,0,32), BackgroundColor3=C.panel, BorderSizePixel=0, PlaceholderText="Search...", Text="", TextColor3=C.text, PlaceholderColor3=C.muted, Font=Enum.Font.Gotham, TextSize=12, ClearTextOnFocus=false}, sidebar)
+    corner(search,8); stroke(search, C.line,1,0.5)
+
+    local nav = make("ScrollingFrame",{Position=UDim2.new(0,6,0,50), Size=UDim2.new(1,-12,1,-58), BackgroundTransparency=1, BorderSizePixel=0, ScrollBarThickness=2, ScrollBarImageColor3=C.accent, CanvasSize=UDim2.new()}, sidebar)
+    local navLayout = make("UIListLayout",{Padding=UDim.new(0,4), SortOrder=Enum.SortOrder.LayoutOrder}, nav)
+    navLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() nav.CanvasSize=UDim2.new(0,0,0,navLayout.AbsoluteContentSize.Y+8) end)
+
+    local content = make("Frame",{Name="Content", Position=UDim2.new(0,SIDEBAR_W,0,HEADER_H), Size=UDim2.new(1,-SIDEBAR_W,1,-HEADER_H), BackgroundColor3=Color3.fromRGB(15,15,18), BorderSizePixel=0}, shell)
+
+    local pages,activePage,navButtons={},nil,{}
+
     local function showPage(p)
-        local changed = (activePage ~= p)
         activePage=p
-        for _, item in pairs(pages) do item.frame.Visible=(item==p) end
+        for _,item in pairs(pages) do item.frame.Visible=(item==p) end
         for pg,b in pairs(navButtons) do
-            local on = (pg==p)
-            local was = b:GetAttribute("NexoraActive")
-            b:SetAttribute("NexoraActive", on)
-            b.BackgroundColor3 = Color3.fromRGB(24,22,18)
-            TweenService:Create(b, TweenInfo.new(.18), {BackgroundTransparency = on and 0.35 or 1}):Play()
-            b.Bar.Visible = on
-            if on and not was then
-                b.Bar.Size = UDim2.new(0,3,0,0)
-                TweenService:Create(b.Bar, TweenInfo.new(.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Size=UDim2.new(0,3,1,-14)}):Play()
-            end
-            tintIcon(b.Icon, on and GOLD or GRAY, on and 0 or 0.4)
-            TweenService:Create(b.Txt, TweenInfo.new(.18), {TextColor3 = on and Color3.fromRGB(255,255,255) or GRAY}):Play()
-        end
-        if changed and p.frame then
-            p.frame.Position = UDim2.new(0,18,0,0)
-            TweenService:Create(p.frame, TweenInfo.new(.28, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position=UDim2.new(0,0,0,0)}):Play()
+            local on=(pg==p)
+            b:SetAttribute("Active",on)
+            TweenService:Create(b,TweenInfo.new(.15),{BackgroundColor3=on and C.accent or Color3.fromRGB(28,28,33)}):Play()
+            TweenService:Create(b.Txt,TweenInfo.new(.15),{TextColor3=on and Color3.new(1,1,1) or C.textDim}):Play()
+            b.Bar.Visible=on
         end
     end
 
-    local Main = {}
+    local Main={}
     function Main.CreatePage(pageConfig)
         pageConfig=pageConfig or {}
         local pageName=pageConfig.Page_Name or pageConfig.Page_Title or "Page"
-        local frame=make("ScrollingFrame", {Name=pageName, Position=UDim2.new(0,0,0,0), Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, BorderSizePixel=0, ScrollBarThickness=3, ScrollBarImageColor3=C.gold, CanvasSize=UDim2.new()}, content)
-        local padding=make("UIPadding", {PaddingTop=UDim.new(0,13),PaddingBottom=UDim.new(0,14),PaddingLeft=UDim.new(0,13),PaddingRight=UDim.new(0,13)}, frame)
-        local layout=make("UIListLayout", {Padding=UDim.new(0,10),SortOrder=Enum.SortOrder.LayoutOrder}, frame)
+        local frame=make("ScrollingFrame",{Name=pageName, Position=UDim2.new(0,0,0,0), Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, BorderSizePixel=0, ScrollBarThickness=3, ScrollBarImageColor3=C.accent, CanvasSize=UDim2.new()}, content)
+        make("UIPadding",{PaddingTop=UDim.new(0,12),PaddingBottom=UDim.new(0,14),PaddingLeft=UDim.new(0,12),PaddingRight=UDim.new(0,12)}, frame)
+        local layout=make("UIListLayout",{Padding=UDim.new(0,10),SortOrder=Enum.SortOrder.LayoutOrder}, frame)
         layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() frame.CanvasSize=UDim2.new(0,0,0,layout.AbsoluteContentSize.Y+28) end)
         local p={name=pageName,frame=frame}
         pages[#pages+1]=p
-        local navText = pageConfig.Page_Title or pageName
-        local nb = make("TextButton", {Name="Nav", AutoButtonColor=false, BackgroundColor3=Color3.fromRGB(22,22,28), BackgroundTransparency=1, BorderSizePixel=0, Size=UDim2.new(1,0,0,42), Text=""}, nav)
-        corner(nb, 8)
-        local bar = make("Frame", {Name="Bar", Position=UDim2.new(0,0,0,7), Size=UDim2.new(0,3,1,-14), BackgroundColor3=GOLD, BorderSizePixel=0, Visible=false}, nb); corner(bar, 2)
-            do local ic = drawIcon(nb, iconKind(navText)); tintIcon(ic, GRAY, 0.4) end
-        make("TextLabel", {Name="Txt", BackgroundTransparency=1, Position=UDim2.new(0,46,0,0), Size=UDim2.new(1,-52,1,0), Text=navText, TextColor3=GRAY, Font=Enum.Font.Fantasy, TextSize=12, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd}, nb)
-        nb.MouseEnter:Connect(function() if not nb:GetAttribute("NexoraActive") then nb.BackgroundTransparency = 0.55 end end)
-        nb.MouseLeave:Connect(function() if not nb:GetAttribute("NexoraActive") then nb.BackgroundTransparency = 1 end end)
+        local navText=pageConfig.Page_Title or pageName
+        local nb=make("TextButton",{Name="Nav", AutoButtonColor=false, BackgroundColor3=Color3.fromRGB(28,28,33), BackgroundTransparency=0, BorderSizePixel=0, Size=UDim2.new(1,0,0,38), Text=""}, nav)
+        corner(nb,8)
+        local bar=make("Frame",{Name="Bar", Position=UDim2.new(0,0,0,6), Size=UDim2.new(0,3,1,-12), BackgroundColor3=C.accent, BorderSizePixel=0, Visible=false}, nb); corner(bar,2)
+        local txt=make("TextLabel",{Name="Txt", BackgroundTransparency=1, Position=UDim2.new(0,14,0,0), Size=UDim2.new(1,-20,1,0), Text=navText, TextColor3=C.textDim, Font=Enum.Font.Gotham, TextSize=13, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd}, nb)
+        nb.Bar=bar; nb.Txt=txt
         navButtons[p]=nb
-        nb.MouseButton1Click:Connect(function() if activePage ~= p then sfxPlay("tab") end showPage(p) end)
+        nb.MouseButton1Click:Connect(function() showPage(p) end)
         nb.LayoutOrder=#pages
+
         local Page={}
         function Page.CreateSection(sectionName)
-            local card=make("Frame", {Name=sectionName, Size=UDim2.new(1,0,0,40), AutomaticSize=Enum.AutomaticSize.Y, BackgroundColor3=C.panel, BorderSizePixel=0}, frame)
-            corner(card,10); stroke(card,C.line,0.35)
-            make("UIPadding", {PaddingTop=UDim.new(0,11),PaddingBottom=UDim.new(0,11),PaddingLeft=UDim.new(0,11),PaddingRight=UDim.new(0,11)}, card)
-            local list=make("UIListLayout", {Padding=UDim.new(0,7),SortOrder=Enum.SortOrder.LayoutOrder}, card)
-            local head=make("TextLabel", {Size=UDim2.new(1,0,0,22),BackgroundTransparency=1,Text=sectionName,TextColor3=Color3.fromRGB(245,245,250),Font=Enum.Font.Fantasy,TextSize=12,TextXAlignment=Enum.TextXAlignment.Left},card)
-            make("UIPadding", {PaddingLeft=UDim.new(0,10)}, head)
-            do local hb=make("Frame", {Position=UDim2.new(0,-10,.5,-7),Size=UDim2.new(0,3,0,14),BackgroundColor3=C.gold,BorderSizePixel=0},head); corner(hb,2) end
-            make("Frame", {Size=UDim2.new(1,0,0,1), BackgroundColor3=Color3.fromRGB(255,255,255), BackgroundTransparency=0.92, BorderSizePixel=0}, card)
+            local card=make("Frame",{Name=sectionName, Size=UDim2.new(1,0,0,40), AutomaticSize=Enum.AutomaticSize.Y, BackgroundColor3=C.panel, BorderSizePixel=0}, frame)
+            corner(card,10); stroke(card, Color3.fromRGB(40,40,50),1,0.4)
+            make("UIPadding",{PaddingTop=UDim.new(0,10),PaddingBottom=UDim.new(0,10),PaddingLeft=UDim.new(0,10),PaddingRight=UDim.new(0,10)}, card)
+            local list=make("UIListLayout",{Padding=UDim.new(0,6),SortOrder=Enum.SortOrder.LayoutOrder}, card)
+            local head=make("TextLabel",{Size=UDim2.new(1,0,0,20),BackgroundTransparency=1,Text=string.upper(sectionName),TextColor3=C.text,Font=Enum.Font.GothamBold,TextSize=11,TextXAlignment=Enum.TextXAlignment.Left},card)
+            make("Frame",{Size=UDim2.new(1,0,0,1), BackgroundColor3=Color3.fromRGB(50,50,60), BackgroundTransparency=0.6, BorderSizePixel=0}, card)
+
             local Section={}
-            local function row(height)
-                return make("Frame", {Size=UDim2.new(1,0,0,height),BackgroundTransparency=1},card)
-            end
+            local function row(h) return make("Frame",{Size=UDim2.new(1,0,0,h),BackgroundTransparency=1},card) end
+
             function Section.CreateToggle(cfg, callback)
                 cfg=cfg or {}; local t=cfg.Title or "Toggle"
-                -- Usa o arquivo de settings por jogador já existente.
                 Settings = Settings or {}
-                local savedToggle = Settings[t]
-                local val
-                if type(savedToggle) == "boolean" then val = savedToggle else val = (cfg.Default == true) end
-                local r=row(35); local txt=label(make("Frame",{Size=UDim2.new(1,-62,1,0),BackgroundTransparency=1},r),t,12,C.text)
-                local b=button(r,"",24); b:SetAttribute("NexoraKeepColor", true)
-                b.Size=UDim2.new(0,44,0,24); b.Position=UDim2.new(1,-44,.5,-12)
-                local bc=b:FindFirstChildOfClass("UICorner"); if bc then bc.CornerRadius = UDim.new(0, 22) end
-                local bs=make("UIStroke",{Color=C.line,Thickness=1,Transparency=0.2},b)
-                local knob=make("Frame",{Size=UDim2.new(0,18,0,18),Position=UDim2.new(0,3,.5,-9),BackgroundColor3=Color3.fromRGB(165,160,149),BorderSizePixel=0,ZIndex=2},b); corner(knob,9)
+                local savedToggle=Settings[t]
+                local val = (type(savedToggle)=="boolean" and savedToggle) or (cfg.Default==true)
+                local r=row(38); label(make("Frame",{Size=UDim2.new(1,-62,1,0),BackgroundTransparency=1},r),t,12,C.text)
+                local b=make("TextButton",{AutoButtonColor=false, BackgroundColor3=val and C.accent or C.toggleOff, BorderSizePixel=0, Size=UDim2.new(0,44,0,24), Position=UDim2.new(1,-44,0.5,-12), Text=""}, r)
+                corner(b,12)
+                local knob=make("Frame",{Size=UDim2.new(0,18,0,18),Position=val and UDim2.new(1,-20,0.5,-9) or UDim2.new(0,3,0.5,-9),BackgroundColor3=Color3.new(1,1,1),BorderSizePixel=0},b); corner(knob,9)
                 local function paint(animate)
-                    local goal={Position=val and UDim2.new(1,-21,.5,-9) or UDim2.new(0,3,.5,-9), BackgroundColor3=val and Color3.fromRGB(255,255,255) or Color3.fromRGB(165,160,149)}
-                    local trackColor=val and C.gold or Color3.fromRGB(22,21,26)
-                    bs.Color=val and C.goldLight or C.line
+                    local goalPos=val and UDim2.new(1,-20,0.5,-9) or UDim2.new(0,3,0.5,-9)
+                    local goalColor=val and C.accent or C.toggleOff
                     if animate then
-                        TweenService:Create(knob,TweenInfo.new(.14),goal):Play()
-                        TweenService:Create(b,TweenInfo.new(.14),{BackgroundColor3=trackColor}):Play()
+                        TweenService:Create(knob,TweenInfo.new(.15),{Position=goalPos}):Play()
+                        TweenService:Create(b,TweenInfo.new(.15),{BackgroundColor3=goalColor}):Play()
                     else
-                        knob.Position=goal.Position; knob.BackgroundColor3=goal.BackgroundColor3; b.BackgroundColor3=trackColor
+                        knob.Position=goalPos; b.BackgroundColor3=goalColor
                     end
                 end
                 paint(false)
                 local opt=addOption(t,"toggle",val,pageName,sectionName,callback)
-                local function applyToggle(v, fire)
-                    val = not not v; opt.value=val; paint(true)
-                    if fire then sfxPlay(val and "on" or "off") end
-                    -- Persiste no mesmo formato/caminho do Settings original.
-                    Settings[t] = val
-                    pcall(function() SaveSettings(t, val) end)
+                local function applyToggle(v,fire)
+                    val=not not v; opt.value=val; paint(true)
+                    Settings[t]=val
+                    pcall(function() if SaveSettings then SaveSettings(t,val) end end)
                     if fire and callback then task.spawn(function() pcall(callback,val) end) end
                 end
-                opt._setValue = function(v) applyToggle(v, false) end
-                b.MouseButton1Click:Connect(function() applyToggle(not val, true) end)
-                -- A restauração das opções salvas roda ao final do carregamento (RestoreSavedToggles).
+                opt._setValue=function(v) applyToggle(v,false) end
+                b.MouseButton1Click:Connect(function() applyToggle(not val,true) end)
                 return opt
             end
+
             function Section.CreateButton(cfg, callback)
-                cfg=cfg or {}; local t=cfg.Title or "Button"; local b=button(card,t,34); b.TextColor3=C.goldLight; b.Font=Enum.Font.Fantasy; stroke(b,C.line,0.25); addOption(t,"button",false,pageName,sectionName,callback); b.MouseButton1Click:Connect(function() if callback then task.spawn(callback) end end); return b
+                cfg=cfg or {}; local t=cfg.Title or "Button"
+                local b=make("TextButton",{AutoButtonColor=false, BackgroundColor3=C.panel2, BorderSizePixel=0, Size=UDim2.new(1,0,0,36), Text=t, TextColor3=C.accentLight, Font=Enum.Font.GothamBold, TextSize=13}, card)
+                corner(b,8); stroke(b,C.accent,1,0.3)
+                addOption(t,"button",false,pageName,sectionName,callback)
+                b.MouseButton1Click:Connect(function() if callback then task.spawn(callback) end end)
+                return b
             end
+
             function Section.CreateLabel(cfg)
                 local t=type(cfg)=="table" and (cfg.Title or cfg.Text or "") or tostring(cfg or "")
-                local r=row(28)
-                local txt=label(r,t,11,C.muted)
+                local r=row(26); local txt=label(r,t,11,C.muted)
                 local handle={Object=txt}
-                handle.SetText=function(value) txt.Text=tostring(value or "") end
+                handle.SetText=function(v) txt.Text=tostring(v or "") end
                 handle.GetText=function() return txt.Text end
                 return handle
             end
+
             function Section.CreateSlider(cfg, callback)
                 cfg=cfg or {}; local t=cfg.Title or "Slider"; local min=cfg.Min or cfg.MinValue or 0; local max=cfg.Max or cfg.MaxValue or 100; local val=math.clamp(cfg.Default or cfg.Value or min,min,max)
                 local r=row(52); label(make("Frame",{Size=UDim2.new(1,-70,0,22),BackgroundTransparency=1},r),t,11,C.text)
-                local num=label(make("Frame",{Position=UDim2.new(1,-65,0,0),Size=UDim2.new(0,65,0,22),BackgroundTransparency=1},r),val,11,Color3.fromRGB(0,140,255)); num.TextXAlignment=Enum.TextXAlignment.Right
+                local num=label(make("Frame",{Position=UDim2.new(1,-65,0,0),Size=UDim2.new(0,65,0,22),BackgroundTransparency=1},r),val,11,C.accent); num.TextXAlignment=Enum.TextXAlignment.Right
                 local bar=make("Frame",{Position=UDim2.new(0,0,0,30),Size=UDim2.new(1,0,0,6),BackgroundColor3=Color3.fromRGB(45,45,55),BorderSizePixel=0},r); corner(bar,10)
-                local fill=make("Frame",{Size=UDim2.new((val-min)/math.max(1,max-min),0,1,0),BackgroundColor3=Color3.fromRGB(0,140,255),BorderSizePixel=0},bar); corner(fill,10)
-                local knob=make("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new((val-min)/math.max(1,max-min),0,0.5,0),Size=UDim2.fromOffset(14,14),BackgroundColor3=Color3.fromRGB(255,255,255),BorderSizePixel=0},bar); corner(knob,10)
+                local fill=make("Frame",{Size=UDim2.new((val-min)/math.max(1,max-min),0,1,0),BackgroundColor3=C.accent,BorderSizePixel=0},bar); corner(fill,10)
+                local knob=make("Frame",{AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new((val-min)/math.max(1,max-min),0,0.5,0),Size=UDim2.fromOffset(14,14),BackgroundColor3=Color3.new(1,1,1),BorderSizePixel=0},bar); corner(knob,10)
                 local hit=make("TextButton",{Size=UDim2.new(1,0,0,24),Position=UDim2.new(0,0,0,-9),BackgroundTransparency=1,Text="",TextTransparency=1},bar)
                 local opt
-                local function set(x) local ratio=math.clamp((x-bar.AbsolutePosition.X)/math.max(1,bar.AbsoluteSize.X),0,1); val=math.floor(min+(max-min)*ratio); fill.Size=UDim2.new(ratio,0,1,0); knob.Position=UDim2.new(ratio,0,0.5,0); num.Text=tostring(val); if opt then opt.value=val end; if callback then pcall(callback,val) end end
-                opt=addOption(t,"slider",val,pageName,sectionName,callback)
-                opt._setValue = function(v)
-                    val = math.clamp(tonumber(v) or min, min, max)
-                    local ratio = (val-min)/math.max(1,max-min)
-                    fill.Size=UDim2.new(ratio,0,1,0); knob.Position=UDim2.new(ratio,0,0.5,0); num.Text=tostring(val)
+                local function set(x)
+                    local ratio=math.clamp((x-bar.AbsolutePosition.X)/math.max(1,bar.AbsoluteSize.X),0,1)
+                    val=math.floor(min+(max-min)*ratio); fill.Size=UDim2.new(ratio,0,1,0); knob.Position=UDim2.new(ratio,0,0.5,0); num.Text=tostring(val); if opt then opt.value=val end; if callback then pcall(callback,val) end
                 end
+                opt=addOption(t,"slider",val,pageName,sectionName,callback)
+                opt._setValue=function(v) val=math.clamp(tonumber(v) or min,min,max); local ratio=(val-min)/math.max(1,max-min); fill.Size=UDim2.new(ratio,0,1,0); knob.Position=UDim2.new(ratio,0,0.5,0); num.Text=tostring(val) end
                 hit.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then set(i.Position.X) end end)
                 hit.InputChanged:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch then if UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then set(i.Position.X) end end end)
                 return opt
             end
+
             function Section.CreateDropdown(cfg, callback)
-                cfg = cfg or {}
-                local t = cfg.Title or "Dropdown"
-                local rawList = cfg.List or cfg.Values or cfg.Options or {}
-                local multi = cfg.Selected == true
-                local listValues = {}
+                cfg=cfg or {}; local t=cfg.Title or "Dropdown"; local rawList=cfg.List or cfg.Values or cfg.Options or {}; local multi=cfg.Selected==true; local listValues={}
                 local function rebuildList(src)
-                    listValues = {}
-                    if type(src) ~= "table" then return end
-                    -- Multi-select sources pass a dictionary {name = enabled}; ordinary
-                    -- dropdowns pass an array. Support both without losing dictionary keys.
-                    if #src > 0 then
-                        for _, value in ipairs(src) do table.insert(listValues, value) end
-                    else
-                        for key in pairs(src) do table.insert(listValues, key) end
-                        table.sort(listValues, function(a,b) return tostring(a) < tostring(b) end)
-                    end
+                    listValues={}; if type(src)~="table" then return end
+                    if #src>0 then for _,v in ipairs(src) do table.insert(listValues,v) end else for k in pairs(src) do table.insert(listValues,k) end; table.sort(listValues,function(a,b) return tostring(a)<tostring(b) end) end
                 end
                 rebuildList(rawList)
-                local selected = cfg.Default
-                if multi then
-                    selected = type(selected) == "table" and table.clone(selected) or {}
-                    for _, value in ipairs(listValues) do
-                        if selected[value] == nil then selected[value] = type(rawList) == "table" and rawList[value] == true or false end
-                    end
-                else
-                    selected = selected or "Select..."
-                end
-                local function displayValue()
-                    if not multi then return tostring(selected) end
-                    local chosen = {}
-                    for _, value in ipairs(listValues) do if selected[value] then table.insert(chosen, tostring(value)) end end
-                    if #chosen == 0 then return "None selected" end
-                    local shown = table.concat(chosen, ", ")
-                    return #shown > 32 and (string.sub(shown,1,29) .. "...") or shown
-                end
-                local b = button(card, t .. "  ·  " .. displayValue() .. "  ▾", 34)
-                local opt = addOption(t, "dropdown", selected, pageName, sectionName, callback)
-                local function refreshButton()
-                    b.Text = t .. "  ·  " .. displayValue() .. "  ▾"
-                    opt.value = selected
-                end
-                opt._setValue = function(v)
-                    if multi then selected = type(v) == "table" and table.clone(v) or {} else selected = v end
-                    refreshButton()
-                end
-                opt.GetNewList = function(_, newList)
-                    rebuildList(newList or {})
-                    if multi then
-                        for _, value in ipairs(listValues) do if selected[value] == nil then selected[value] = false end end
-                    elseif not table.find(listValues, selected) then
-                        selected = "Select..."
-                    end
-                    refreshButton()
-                end
-                opt.SetList = opt.GetNewList
+                local selected=cfg.Default
+                if multi then selected=type(selected)=="table" and table.clone(selected) or {} for _,v in ipairs(listValues) do if selected[v]==nil then selected[v]=type(rawList)=="table" and rawList[v]==true or false end end
+                else selected=selected or "Select..." end
+                local function displayValue() if not multi then return tostring(selected) end; local chosen={}; for _,v in ipairs(listValues) do if selected[v] then table.insert(chosen,tostring(v)) end end; if #chosen==0 then return "None" end; local s=table.concat(chosen,", "); return #s>28 and (string.sub(s,1,25).."..." ) or s end
+                local b=make("TextButton",{AutoButtonColor=false, BackgroundColor3=C.panel2, BorderSizePixel=0, Size=UDim2.new(1,0,0,36), Text=t.."  ·  "..displayValue().."  ▾", TextColor3=C.text, Font=Enum.Font.Gotham, TextSize=12}, card)
+                corner(b,8)
+                local opt=addOption(t,"dropdown",selected,pageName,sectionName,callback)
+                local function refreshButton() b.Text=t.."  ·  "..displayValue().."  ▾"; opt.value=selected end
+                opt._setValue=function(v) if multi then selected=type(v)=="table" and table.clone(v) or {} else selected=v end; refreshButton() end
+                opt.GetNewList=function(_,newList) rebuildList(newList or {}); refreshButton() end; opt.SetList=opt.GetNewList
                 b.MouseButton1Click:Connect(function()
-                    local menuName = "NexoraDropdownOverlay"
-                    local oldMenu = gui:FindFirstChild(menuName)
-                    if oldMenu then
-                        if oldMenu:GetAttribute("NexoraOwner") == t then oldMenu:Destroy(); return end
-                        oldMenu:Destroy()
-                    end
-                    local vp = (workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize) or Vector2.new(800,600)
-                    local h = math.max(35, math.min(210, #listValues * 29 + 8))
-                    local bx, by = b.AbsolutePosition.X, b.AbsolutePosition.Y + b.AbsoluteSize.Y + 3
-                    if by + h > vp.Y - 8 then by = math.max(8, b.AbsolutePosition.Y - h - 3) end
-                    local w = math.clamp(math.max(180, b.AbsoluteSize.X), 180, math.max(180, vp.X - 8))
-                    local x = math.clamp(b.AbsolutePosition.X, 4, math.max(4, vp.X - w - 4))
-                    local menu = make("ScrollingFrame", {Name=menuName, Position=UDim2.fromOffset(x,by), Size=UDim2.fromOffset(w,h), CanvasSize=UDim2.new(0,0,0,0), ScrollBarThickness=4, ScrollBarImageColor3=C.gold, BackgroundColor3=C.bg, BorderSizePixel=0, ZIndex=100, Active=true}, gui)
-                    menu:SetAttribute("NexoraOwner", t)
-                    corner(menu,7); stroke(menu,C.line)
-                    -- Close the dropdown when the user taps anywhere outside it.
-                    local outsideConnection
-                    outsideConnection = UIS.InputBegan:Connect(function(input, processed)
+                    local menuName="OMGDropdownOverlay"; local oldMenu=gui:FindFirstChild(menuName); if oldMenu then if oldMenu:GetAttribute("Owner")==t then oldMenu:Destroy(); return end; oldMenu:Destroy() end
+                    local vp=(workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize) or Vector2.new(800,600)
+                    local h=math.max(35, math.min(210, #listValues*29+8))
+                    local w=math.clamp(math.max(180,b.AbsoluteSize.X),180,math.max(180,vp.X-8))
+                    local x=math.clamp(b.AbsolutePosition.X,4,math.max(4,vp.X-w-4)); local by=b.AbsolutePosition.Y+b.AbsoluteSize.Y+3; local y=by
+                    if by+h>vp.Y-8 then y=math.max(8,b.AbsolutePosition.Y-h-3) end
+                    local menu=make("ScrollingFrame",{Name=menuName, Position=UDim2.fromOffset(x,y), Size=UDim2.fromOffset(w,h), CanvasSize=UDim2.new(0,0,0,0), ScrollBarThickness=4, ScrollBarImageColor3=C.accent, BackgroundColor3=C.bg, BorderSizePixel=0, ZIndex=100, Active=true}, gui)
+                    menu:SetAttribute("Owner",t); corner(menu,8); stroke(menu,C.line)
+                    local lay=make("UIListLayout",{Padding=UDim.new(0,3),SortOrder=Enum.SortOrder.LayoutOrder}, menu)
+                    make("UIPadding",{PaddingTop=UDim.new(0,4),PaddingBottom=UDim.new(0,4),PaddingLeft=UDim.new(0,4),PaddingRight=UDim.new(0,4)}, menu)
+                    lay:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() menu.CanvasSize=UDim2.new(0,0,0,lay.AbsoluteContentSize.Y+8) end)
+                    local outside
+                    outside=UIS.InputBegan:Connect(function(input,processed)
                         if processed then return end
-                        if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then return end
+                        if input.UserInputType~=Enum.UserInputType.MouseButton1 and input.UserInputType~=Enum.UserInputType.Touch then return end
                         task.defer(function()
-                            if not menu or not menu.Parent then
-                                if outsideConnection then outsideConnection:Disconnect() end
-                                return
-                            end
-                            local p = input.Position
-                            local mp, ms = menu.AbsolutePosition, menu.AbsoluteSize
-                            local bp, bs = b.AbsolutePosition, b.AbsoluteSize
-                            local insideMenu = p.X >= mp.X and p.X <= mp.X + ms.X and p.Y >= mp.Y and p.Y <= mp.Y + ms.Y
-                            local insideButton = p.X >= bp.X and p.X <= bp.X + bs.X and p.Y >= bp.Y and p.Y <= bp.Y + bs.Y
+                            if not menu or not menu.Parent then if outside then outside:Disconnect() end; return end
+                            local p=input.Position; local mp,ms=menu.AbsolutePosition,menu.AbsoluteSize; local bp,bs=b.AbsolutePosition,b.AbsoluteSize
+                            local insideMenu=p.X>=mp.X and p.X<=mp.X+ms.X and p.Y>=mp.Y and p.Y<=mp.Y+ms.Y
+                            local insideButton=p.X>=bp.X and p.X<=bp.X+bs.X and p.Y>=bp.Y and p.Y<=bp.Y+bs.Y
                             if not insideMenu and not insideButton then menu:Destroy() end
                         end)
                     end)
-                    menu.Destroying:Connect(function() if outsideConnection then outsideConnection:Disconnect() end end)
-                    local lay = make("UIListLayout", {Padding=UDim.new(0,3),SortOrder=Enum.SortOrder.LayoutOrder}, menu)
-                    make("UIPadding", {PaddingTop=UDim.new(0,4),PaddingBottom=UDim.new(0,4),PaddingLeft=UDim.new(0,4),PaddingRight=UDim.new(0,4)}, menu)
-                    lay:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() menu.CanvasSize = UDim2.new(0,0,0,lay.AbsoluteContentSize.Y+8) end)
-                    for index, value in ipairs(listValues) do
-                        local isOn = multi and selected[value] == true
-                        local optb = button(menu, (multi and (isOn and "✓  " or "□  ") or "") .. tostring(value), 27)
-                        optb.ZIndex = 101; optb.LayoutOrder = index
-                        if multi then
-                            optb.BackgroundColor3 = isOn and C.gold or Color3.fromRGB(0,0,0)
-                            optb.TextColor3 = Color3.fromRGB(255,255,255)
-                            optb:SetAttribute("NexoraKeepColor", true)
-                        end
+                    menu.Destroying:Connect(function() if outside then outside:Disconnect() end end)
+                    for index,value in ipairs(listValues) do
+                        local isOn=multi and selected[value]==true
+                        local optb=make("TextButton",{AutoButtonColor=false, BackgroundColor3=isOn and C.accent or Color3.fromRGB(20,20,25), BorderSizePixel=0, Size=UDim2.new(1,0,0,27), Text=(multi and (isOn and "✓  " or "□  ") or "")..tostring(value), TextColor3=Color3.new(1,1,1), Font=Enum.Font.Gotham, TextSize=12, ZIndex=101, LayoutOrder=index}, menu)
+                        corner(optb,6)
                         optb.MouseButton1Click:Connect(function()
-                            if multi then
-                                selected[value] = not selected[value]
-                                optb.Text = (selected[value] and "✓  " or "□  ") .. tostring(value)
-                                optb.BackgroundColor3 = selected[value] and C.gold or Color3.fromRGB(0,0,0)
-                                optb.TextColor3 = Color3.fromRGB(255,255,255)
-                                refreshButton()
-                                if callback then task.spawn(function() pcall(callback, value, selected[value]) end) end
-                                -- Close after each choice; tap the dropdown again to choose another item.
-                                menu:Destroy()
-                            else
-                                selected = value
-                                refreshButton()
-                                menu:Destroy()
-                                if callback then task.spawn(function() pcall(callback, value) end) end
-                            end
+                            if multi then selected[value]=not selected[value]; optb.Text=(selected[value] and "✓  " or "□  ")..tostring(value); optb.BackgroundColor3=selected[value] and C.accent or Color3.fromRGB(20,20,25); refreshButton(); if callback then task.spawn(function() pcall(callback,value,selected[value]) end) end; menu:Destroy()
+                            else selected=value; refreshButton(); menu:Destroy(); if callback then task.spawn(function() pcall(callback,value) end) end end
                         end)
-                    end
-                    if multi then
-                        local done = button(menu, "Done", 27); done.LayoutOrder = #listValues + 1; done.ZIndex = 101
-                        done.MouseButton1Click:Connect(function() menu:Destroy() end)
                     end
                 end)
                 return opt
             end
+
             function Section.CreateBox(cfg, callback)
-                cfg = cfg or {}
-                local t = cfg.Title or "Text input"
-                local r = row(58)
-                label(make("Frame", {Size=UDim2.new(1,0,0,20), BackgroundTransparency=1}, r), t, 11, C.text)
-                local input = make("TextBox", {Position=UDim2.new(0,0,0,25), Size=UDim2.new(1,0,0,30), BackgroundColor3=C.bg, BorderSizePixel=0, Text=tostring(cfg.Default or ""), PlaceholderText=cfg.Placeholder or "Digite aqui...", TextColor3=C.text, PlaceholderColor3=C.muted, Font=Enum.Font.SourceSansBold, TextSize=11, ClearTextOnFocus=false}, r)
-                corner(input, 7); stroke(input, C.line)
-                local opt = addOption(t, "box", input.Text, pageName, sectionName, callback)
-                local function setText(v, fire)
-                    input.Text = tostring(v == nil and "" or v); opt.value = input.Text
-                    if fire and callback then task.spawn(function() pcall(callback, input.Text) end) end
-                end
-                opt._setValue = function(v) setText(v, false) end
-                opt.FunctionCreate.GetText = function() return input.Text end
-                input.FocusLost:Connect(function() setText(input.Text, true) end)
+                cfg=cfg or {}; local t=cfg.Title or "Text input"
+                local r=row(58); label(make("Frame",{Size=UDim2.new(1,0,0,20),BackgroundTransparency=1},r),t,11,C.text)
+                local input=make("TextBox",{Position=UDim2.new(0,0,0,25),Size=UDim2.new(1,0,0,30),BackgroundColor3=C.bg,BorderSizePixel=0,Text=tostring(cfg.Default or ""),PlaceholderText=cfg.Placeholder or "Digite aqui...",TextColor3=C.text,PlaceholderColor3=C.muted,Font=Enum.Font.Gotham,TextSize=11,ClearTextOnFocus=false},r)
+                corner(input,7); stroke(input,C.line)
+                local opt=addOption(t,"box",input.Text,pageName,sectionName,callback)
+                local function setText(v,fire) input.Text=tostring(v==nil and "" or v); opt.value=input.Text; if fire and callback then task.spawn(function() pcall(callback,input.Text) end) end end
+                opt._setValue=function(v) setText(v,false) end
+                opt.FunctionCreate.GetText=function() return input.Text end
+                input.FocusLost:Connect(function() setText(input.Text,true) end)
                 return opt
             end
-            function Section.CreateNoti(text, duration)
-                local note=make("TextLabel",{AnchorPoint=Vector2.new(1,1),Position=UDim2.new(1,-15,1,-15),Size=UDim2.new(0,260,0,48),BackgroundColor3=C.panel,Text=tostring(text),TextColor3=C.text,Font=Enum.Font.SourceSansBold,TextSize=12,TextWrapped=true},gui); corner(note,8); stroke(note,C.gold,0); make("UIStroke", {Color=C.goldLight, Transparency=0.35, Thickness=2}, note); task.delay(duration or 3,function() if note then note:Destroy() end end); return note
-            end
+
+            function Section.CreateNoti(text,duration) return Main.CreateNoti(text,duration) end
             return Section
         end
         return Page
     end
+
     function Main.CreateBind(config, callback)
-        config = config or {}
-        local key = config.Key or Enum.KeyCode.LeftControl
-        local listening = false
-        local bindGui = gui
-        local MainBind = {}
-        local conn = UIS.InputBegan:Connect(function(input, processed)
-            if processed then return end
-            if input.KeyCode == key then
-                if callback then task.spawn(function() pcall(callback) end) else bindGui.Enabled = not bindGui.Enabled end
-            end
-        end)
-        MainBind.Disconnect = function() if conn then conn:Disconnect() end end
-        MainBind.SetKey = function(v) key = v end
-        return MainBind
+        config=config or {}; local key=config.Key or Enum.KeyCode.LeftControl
+        local conn=UIS.InputBegan:Connect(function(input,processed) if processed then return end; if input.KeyCode==key then if callback then task.spawn(function() pcall(callback) end) else gui.Enabled=not gui.Enabled end end end)
+        local MainBind={}; MainBind.Disconnect=function() if conn then conn:Disconnect() end end; MainBind.SetKey=function(v) key=v end; return MainBind
     end
-    Main.CreateNotification = function(payload)
-        return Main.CreateNoti(payload)
-    end
-    local NotifContainer = nil
+
+    local NotifContainer=nil
     local function getNotifContainer()
         if NotifContainer and NotifContainer.Parent then return NotifContainer end
-        local cGui = parentGui:FindFirstChild("NexoraNotifs")
-        if cGui then cGui:Destroy() end
-        cGui = make("ScreenGui", {Name="NexoraNotifs", ResetOnSpawn=false, IgnoreGuiInset=true, DisplayOrder=1000, ZIndexBehavior=Enum.ZIndexBehavior.Sibling}, parentGui)
-        NotifContainer = make("Frame", {Name="Container", AnchorPoint=Vector2.new(1,0), Position=UDim2.new(1,-12,0,12), Size=UDim2.new(0,320,1,-24), BackgroundTransparency=1}, cGui)
-        make("UIListLayout", {FillDirection=Enum.FillDirection.Vertical, HorizontalAlignment=Enum.HorizontalAlignment.Right, VerticalAlignment=Enum.VerticalAlignment.Top, Padding=UDim.new(0,8), SortOrder=Enum.SortOrder.LayoutOrder}, NotifContainer)
+        local cGui=parentGui:FindFirstChild("OMGNotifs"); if cGui then cGui:Destroy() end
+        cGui=make("ScreenGui",{Name="OMGNotifs", ResetOnSpawn=false, IgnoreGuiInset=true, DisplayOrder=1000, ZIndexBehavior=Enum.ZIndexBehavior.Sibling}, parentGui)
+        NotifContainer=make("Frame",{Name="Container", AnchorPoint=Vector2.new(1,0), Position=UDim2.new(1,-12,0,12), Size=UDim2.new(0,320,1,-24), BackgroundTransparency=1}, cGui)
+        make("UIListLayout",{FillDirection=Enum.FillDirection.Vertical, HorizontalAlignment=Enum.HorizontalAlignment.Right, VerticalAlignment=Enum.VerticalAlignment.Top, Padding=UDim.new(0,8), SortOrder=Enum.SortOrder.LayoutOrder}, NotifContainer)
         return NotifContainer
     end
-    function Main.CreateNoti(text, duration)
-        local title, desc
-        if type(text) == "table" then
-            duration = text.ShowTime or duration or 4
-            title = tostring(text.Title or "NEXORA HUB")
-            desc = tostring(text.Desc or text.Text or "")
-        else
-            duration = duration or 4
-            title = "NEXORA HUB"
-            desc = tostring(text)
-        end
-        local container = getNotifContainer()
-        local card = make("Frame", {Name="Notif", BackgroundColor3=Color3.fromRGB(15,15,20), BorderSizePixel=0, Size=UDim2.new(0,310,0,72), ClipsDescendants=true}, container)
-        corner(card, 14)
-        local border = make("UIStroke", {Color=Color3.fromRGB(0,140,255), Thickness=1.2, Transparency=0.2, ApplyStrokeMode=Enum.ApplyStrokeMode.Border}, card)
-        make("UIGradient", {Color=ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(25,25,35)), ColorSequenceKeypoint.new(1, Color3.fromRGB(12,12,18))}, Rotation=90}, card)
-        local sideBar = make("Frame", {Name="SideBar", BackgroundColor3=Color3.fromRGB(0,140,255), BorderSizePixel=0, Size=UDim2.new(0,3,1,0)}, card)
-        corner(sideBar, 2)
-        make("UIGradient", {Color=ColorSequence.new(Color3.fromRGB(80,180,255), Color3.fromRGB(0,100,220)), Rotation=90}, sideBar)
-        local iconBg = make("Frame", {BackgroundColor3=Color3.fromRGB(28,28,40), Size=UDim2.new(0,36,0,36), Position=UDim2.new(0,14,0,10), BorderSizePixel=0}, card)
-        corner(iconBg, 10)
-        make("UIStroke", {Color=Color3.fromRGB(0,140,255), Transparency=0.6, Thickness=1}, iconBg)
-        local iconText = make("TextLabel", {BackgroundTransparency=1, Size=UDim2.new(1,0,1,0), Text="N", TextColor3=Color3.fromRGB(0,140,255), Font=Enum.Font.Arcade, TextSize=20}, iconBg)
-        make("UIGradient", {Color=ColorSequence.new(Color3.fromRGB(80,180,255), Color3.fromRGB(0,140,255)), Rotation=90}, iconText)
-        make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,62,0,8), Size=UDim2.new(1,-70,0,18), Text=string.upper(title), TextColor3=Color3.fromRGB(255,255,255), Font=Enum.Font.Fantasy, TextSize=12, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd}, card)
-        make("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,62,0,28), Size=UDim2.new(1,-70,0,32), Text=desc, TextColor3=Color3.fromRGB(180,190,210), Font=Enum.Font.SourceSansBold, TextSize=11, TextXAlignment=Enum.TextXAlignment.Left, TextYAlignment=Enum.TextYAlignment.Top, TextWrapped=true}, card)
-        local progressBg = make("Frame", {BackgroundColor3=Color3.fromRGB(30,30,40), BorderSizePixel=0, Size=UDim2.new(1,-16,0,2), Position=UDim2.new(0,8,1,-6)}, card)
-        corner(progressBg, 1)
-        local progressBar = make("Frame", {BackgroundColor3=Color3.fromRGB(0,140,255), BorderSizePixel=0, Size=UDim2.new(1,0,1,0)}, progressBg)
-        corner(progressBar, 1)
-        make("UIGradient", {Color=ColorSequence.new(Color3.fromRGB(80,180,255), Color3.fromRGB(0,100,220)), Rotation=0}, progressBar)
-        card.Position = UDim2.new(0,340,0,0)
-        card.Size = UDim2.new(0,310,0,0)
-        TweenService:Create(card, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position=UDim2.new(0,0,0,0), Size=UDim2.new(0,310,0,72)}):Play()
-        TweenService:Create(progressBar, TweenInfo.new(duration, Enum.EasingStyle.Linear), {Size=UDim2.new(0,0,1,0)}):Play()
-        spawn(function()
-            while card.Parent do
-                TweenService:Create(border, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency=0.5}):Play()
-                task.wait(1)
-                TweenService:Create(border, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency=0.1}):Play()
-                task.wait(1)
-            end
-        end)
-        task.delay(duration, function()
-            if card and card.Parent then
-                TweenService:Create(card, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position=UDim2.new(0,340,0,0)}):Play()
-                task.wait(0.3)
-                if card then card:Destroy() end
-            end
-        end)
+
+    function Main.CreateNoti(text,duration)
+        local title,desc
+        if type(text)=="table" then duration=text.ShowTime or duration or 4; title=tostring(text.Title or "OMG HUB"); desc=tostring(text.Desc or text.Text or "") else duration=duration or 4; title="OMG HUB"; desc=tostring(text) end
+        local container=getNotifContainer()
+        local card=make("Frame",{Name="Notif", BackgroundColor3=Color3.fromRGB(22,22,28), BorderSizePixel=0, Size=UDim2.new(0,310,0,72), ClipsDescendants=true}, container)
+        corner(card,12); stroke(card,C.accent,1.2,0.3)
+        local sideBar=make("Frame",{BackgroundColor3=C.accent, BorderSizePixel=0, Size=UDim2.new(0,3,1,0)}, card); corner(sideBar,2)
+        make("Frame",{BackgroundColor3=Color3.fromRGB(35,35,45), Size=UDim2.new(0,36,0,36), Position=UDim2.new(0,14,0,10), BorderSizePixel=0}, card)
+        make("TextLabel",{BackgroundTransparency=1, Position=UDim2.new(0,62,0,8), Size=UDim2.new(1,-70,0,18), Text=string.upper(title), TextColor3=C.text, Font=Enum.Font.GothamBold, TextSize=12, TextXAlignment=Enum.TextXAlignment.Left, TextTruncate=Enum.TextTruncate.AtEnd}, card)
+        make("TextLabel",{BackgroundTransparency=1, Position=UDim2.new(0,62,0,28), Size=UDim2.new(1,-70,0,32), Text=desc, TextColor3=Color3.fromRGB(180,190,210), Font=Enum.Font.Gotham, TextSize=11, TextXAlignment=Enum.TextXAlignment.Left, TextYAlignment=Enum.TextYAlignment.Top, TextWrapped=true}, card)
+        local progressBg=make("Frame",{BackgroundColor3=Color3.fromRGB(40,40,50), BorderSizePixel=0, Size=UDim2.new(1,-16,0,2), Position=UDim2.new(0,8,1,-6)}, card); corner(progressBg,1)
+        local progressBar=make("Frame",{BackgroundColor3=C.accent, BorderSizePixel=0, Size=UDim2.new(1,0,1,0)}, progressBg); corner(progressBar,1)
+        card.Position=UDim2.new(0,340,0,0); TweenService:Create(card,TweenInfo.new(0.35,Enum.EasingStyle.Back,Enum.EasingDirection.Out),{Position=UDim2.new(0,0,0,0)}):Play()
+        TweenService:Create(progressBar,TweenInfo.new(duration,Enum.EasingStyle.Linear),{Size=UDim2.new(0,0,1,0)}):Play()
+        task.delay(duration,function() if card and card.Parent then TweenService:Create(card,TweenInfo.new(0.3,Enum.EasingStyle.Quad,Enum.EasingDirection.In),{Position=UDim2.new(0,340,0,0)}):Play(); task.wait(0.3); if card then card:Destroy() end end end)
         return card
     end
+
+    Main.CreateNotification=function(payload) return Main.CreateNoti(payload) end
     if pages[1] then showPage(pages[1]) end
     search:GetPropertyChangedSignal("Text"):Connect(function()
         local q=string.lower(search.Text)
         for _,p in ipairs(pages) do
             local has=false
-            for _,d in ipairs(p.frame:GetDescendants()) do
-                if d:IsA("TextLabel") or d:IsA("TextButton") then if string.find(string.lower(d.Text),q,1,true) then has=true end end
-            end
+            for _,d in ipairs(p.frame:GetDescendants()) do if d:IsA("TextLabel") or d:IsA("TextButton") then if string.find(string.lower(d.Text),q,1,true) then has=true end end end
             navButtons[p].Visible=(q=="" or has)
         end
     end)
-    task.defer(playOpen)
+    shell.Visible=true
     return Main
 end
 
-function Nexora.CreateNoti(config, duration)
-    return Main.CreateNoti(config, duration)
-end
+function OMG.CreateNoti(config,duration) return OMG.CreateMain and Main and Main.CreateNoti(config,duration) end
 
-function Nexora.RestoreSavedToggles()
-    if getgenv().__NexoraRestoreDone then return end
-    getgenv().__NexoraRestoreDone = true
-    for _, opt in ipairs(Nexora.OptionOrder) do
-        -- usa o estado real da UI (inclui toggles com Default = true ainda sem valor salvo)
-        if opt and opt.type == "toggle" and opt.value == true then
-            local control = opt.FunctionCreate
-            if control and type(control.SetStage) == "function" then
-                pcall(function() control:SetStage(true) end)
-            elseif type(opt.Callback) == "function" then
-                pcall(opt.Callback, true)
-            end
+function OMG.RestoreSavedToggles()
+    if getgenv().__OMGRestoreDone then return end
+    getgenv().__OMGRestoreDone=true
+    for _,opt in ipairs(OMG.OptionOrder) do
+        if opt and opt.type=="toggle" and opt.value==true then
+            local control=opt.FunctionCreate
+            if control and type(control.SetStage)=="function" then pcall(function() control:SetStage(true) end)
+            elseif type(opt.Callback)=="function" then pcall(opt.Callback,true) end
             task.wait()
         end
     end
 end
-getgenv().__NexoraRestoreDone = false
--- fallback: se o script principal der erro antes do fim, restaura mesmo assim
-task.delay(10, function() Nexora.RestoreSavedToggles() end)
+getgenv().__OMGRestoreDone=false
+task.delay(10,function() OMG.RestoreSavedToggles() end)
 
-return Nexora
+return OMG
 
 end)()
-Main = A.CreateMain({ Title = "NEXORA HUB", Desc = "BLOX FRUITS . ViniZ_DV" })
+Main = A.CreateMain({ Title = "OMG HUB", Desc = "BLOX FRUITS . ViniZ_DV" })
 
 PageShop = Main.CreatePage({ Page_Name = "Shop", Page_Title = "Shop" })
 getgenv().Options = A.Options
@@ -12792,7 +12296,7 @@ QuestDragonSection.CreateToggle(
 )
 
 
--- ===== NEXORA FIX: Auto Craft Volcanic Magnet Completo =====
+-- ===== OMG FIX: Auto Craft Volcanic Magnet Completo =====
 -- Detecta de longe, vai no Dragon Hunter no Dragon Dojo em Hydra, pega missão, completa, volta até 15 Blaze Ember e crafta
 
 function GetDragonHunterNPC()
@@ -30389,4 +29893,4 @@ function UseDragonstormAllSeaEvents(Part)
     getgenv().SpamGunDragonStorm(Part)
 end
 
-print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZ_DV")
+print("[OMG] DragonStorm FAST 0.06s - No 2s delay - ViniZ_DV")
