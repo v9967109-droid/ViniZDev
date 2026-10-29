@@ -3,10 +3,10 @@ do
 	pcall(function()
 		local TS = game:GetService("TweenService")
 		local host = (gethui and gethui()) or game:GetService("CoreGui")
-		local oldLoad = host:FindFirstChild("OMGHubLoading")
+		local oldLoad = host:FindFirstChild("NexoraLoading")
 		if oldLoad then oldLoad:Destroy() end
 		local gui = Instance.new("ScreenGui")
-		gui.Name = "OMGHubLoading"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true; gui.DisplayOrder = 10000
+		gui.Name = "NexoraLoading"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true; gui.DisplayOrder = 10000
 		gui.Parent = host
 		local GOLD, GOLD_L, GRAY = Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255), Color3.fromRGB(165,165,174)
 		local function mk(class, props, parent)
@@ -26,7 +26,7 @@ do
 		mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,2), Size=UDim2.new(1,0,0,13), Text="♛", TextColor3=Color3.fromRGB(80, 180, 255), Font=Enum.Font.Fantasy, TextSize=12}, logo)
 		local n = mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,10), Size=UDim2.new(1,0,1,-12), Text="N", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.Arcade, TextSize=26}, logo)
 		mk("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 140, 255))}, n)
-		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,62), Size=UDim2.fromOffset(220,20), BackgroundTransparency=1, Text="OMG HUB", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.Arcade, TextSize=16}, card)
+		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,62), Size=UDim2.fromOffset(220,20), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.Arcade, TextSize=16}, card)
 		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,80), Size=UDim2.fromOffset(220,14), BackgroundTransparency=1, Text="BLOX FRUITS . ViniZ_DV", TextColor3=Color3.fromRGB(165,165,174), Font=Enum.Font.Code, TextSize=11}, card)
 		local track = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,92), Size=UDim2.fromOffset(150,3), BackgroundColor3=Color3.fromRGB(30,28,24), BorderSizePixel=0}, card)
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, track)
@@ -64,7 +64,7 @@ do
 	getgenv().NexoraLoadingFinish = function() end
 end
 
--- ===================== OMG ANTI SHAKE SYSTEM (NO TREME TELA) =====================
+-- ===================== NEXORA ANTI SHAKE SYSTEM (NO TREME TELA) =====================
 -- Trava o tremor de tela de Skull Guitar, Dragonstorm, Sanguine, Godhuman, etc
 do
     task.spawn(function()
@@ -2005,22 +2005,22 @@ end
 
 function OMG.CreateMain(config)
     config=config or {}
-    local gui = make("ScreenGui",{Name="OMGHubUI", ResetOnSpawn=false, ZIndexBehavior=Enum.ZIndexBehavior.Sibling}, parentGui)
-    local SIZE_FILE="OMGHubWindowSize.json"
+    local gui = make("ScreenGui",{Name="NexoraUI", ResetOnSpawn=false, ZIndexBehavior=Enum.ZIndexBehavior.Sibling}, parentGui)
+    local SIZE_FILE="NexoraHubWindowSize.json"
     local persistedW,persistedH=680,420
     pcall(function()
         if readfile and isfile and isfile(SIZE_FILE) then
             local stored = game:GetService("HttpService"):JSONDecode(readfile(SIZE_FILE))
             persistedW = math.clamp(tonumber(stored.w) or 680, 360, 900)
             persistedH = math.clamp(tonumber(stored.h) or 420, 280, 720)
-        elseif getgenv and getgenv().__OMG_WINDOW_SIZE then
-            persistedW = math.clamp(tonumber(getgenv().__OMG_WINDOW_SIZE.w) or 680, 360, 900)
-            persistedH = math.clamp(tonumber(getgenv().__OMG_WINDOW_SIZE.h) or 420, 280, 720)
+        elseif getgenv and getgenv().__NEXORA_WINDOW_SIZE then
+            persistedW = math.clamp(tonumber(getgenv().__NEXORA_WINDOW_SIZE.w) or 680, 360, 900)
+            persistedH = math.clamp(tonumber(getgenv().__NEXORA_WINDOW_SIZE.h) or 420, 280, 720)
         end
     end)
     local function saveWindowSize(w,h)
         local data={w=math.floor(w),h=math.floor(h)}
-        pcall(function() if getgenv then getgenv().__OMG_WINDOW_SIZE=data end end)
+        pcall(function() if getgenv then getgenv().__NEXORA_WINDOW_SIZE=data end end)
         pcall(function() if writefile then writefile(SIZE_FILE, game:GetService("HttpService"):JSONEncode(data)) end end)
     end
 
@@ -2034,8 +2034,9 @@ function OMG.CreateMain(config)
     make("Frame",{Position=UDim2.new(0,0,1,-12), Size=UDim2.new(1,0,0,12), BackgroundColor3=C.sidebar, BorderSizePixel=0}, top)
 
     -- Title OMG HUB
-    make("TextLabel",{Position=UDim2.new(0,16,0,0), Size=UDim2.new(0,300,1,0), BackgroundTransparency=1, RichText=true, Text='<b><font color="#FFFFFF">OMG</font> <font color="#8A5CFF">HUB</font></b>', TextColor3=C.text, Font=Enum.Font.GothamBold, TextSize=16, TextXAlignment=Enum.TextXAlignment.Left}, top)
-    make("TextLabel",{Position=UDim2.new(0,17,0,18), Size=UDim2.new(0,300,0,16), BackgroundTransparency=1, Text="BLOX FRUITS . ViniZ_DV", TextColor3=C.muted, Font=Enum.Font.Code, TextSize=10, TextXAlignment=Enum.TextXAlignment.Left}, top)
+    local mainTitle = config.Title or "NEXORA HUB"
+    make("TextLabel",{Position=UDim2.new(0,16,0,8), Size=UDim2.new(0,300,0,22), BackgroundTransparency=1, RichText=true, Text='<b><font color="#FFFFFF">'..string.upper(mainTitle):gsub(" HUB","")..'</font> <font color="#8A5CFF">HUB</font></b>', TextColor3=C.text, Font=Enum.Font.GothamBold, TextSize=16, TextXAlignment=Enum.TextXAlignment.Left}, top)
+    make("TextLabel",{Position=UDim2.new(0,16,0,30), Size=UDim2.new(0,300,0,14), BackgroundTransparency=1, Text=config.Desc or "BLOX FRUITS . ViniZ_DV", TextColor3=C.muted, Font=Enum.Font.Code, TextSize=10, TextXAlignment=Enum.TextXAlignment.Left}, top)
 
     -- Controls
     local closeBtn = make("TextButton",{AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,-12,0.5,0), Size=UDim2.new(0,28,0,28), BackgroundColor3=Color3.fromRGB(35,35,40), BorderSizePixel=0, Text="✕", TextColor3=C.muted, Font=Enum.Font.GothamBold, TextSize=12, AutoButtonColor=false}, top)
@@ -2044,14 +2045,14 @@ function OMG.CreateMain(config)
     corner(miniBtn,6)
 
     -- Floating button (igual Nexora)
-    local floatGui = make("ScreenGui",{Name="OMGFloat", ResetOnSpawn=false, IgnoreGuiInset=true, DisplayOrder=999, ZIndexBehavior=Enum.ZIndexBehavior.Sibling}, parentGui)
-    local reopen = make("TextButton",{Name="OMGFloatingButton", AutoButtonColor=false, BackgroundColor3=Color3.fromRGB(22,22,26), BorderSizePixel=0, Size=UDim2.new(0,140,0,36), Text="", ZIndex=100}, floatGui)
+    local floatGui = make("ScreenGui",{Name="NexoraFloat", ResetOnSpawn=false, IgnoreGuiInset=true, DisplayOrder=999, ZIndexBehavior=Enum.ZIndexBehavior.Sibling}, parentGui)
+    local reopen = make("TextButton",{Name="NexoraFloatingButton", AutoButtonColor=false, BackgroundColor3=Color3.fromRGB(22,22,26), BorderSizePixel=0, Size=UDim2.new(0,140,0,36), Text="", ZIndex=100}, floatGui)
     reopen:SetAttribute("NexoraKeepColor", true)
     corner(reopen,18); stroke(reopen, C.accent,1,0.4)
     local iconFrame = make("Frame",{BackgroundColor3=Color3.fromRGB(138,92,255), Size=UDim2.new(0,24,0,24), Position=UDim2.new(0,8,0.5,-12), BorderSizePixel=0, ZIndex=101}, reopen)
     corner(iconFrame,12)
-    make("TextLabel",{BackgroundTransparency=1, Size=UDim2.new(1,0,1,0), Text="O", TextColor3=Color3.fromRGB(255,255,255), Font=Enum.Font.GothamBold, TextSize=14, ZIndex=102}, iconFrame)
-    make("TextLabel",{BackgroundTransparency=1, Position=UDim2.new(0,38,0,0), Size=UDim2.new(0,80,1,0), Text="OMG Hub", TextColor3=C.text, TextSize=13, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=101}, reopen)
+    make("TextLabel",{BackgroundTransparency=1, Size=UDim2.new(1,0,1,0), Text="N", TextColor3=Color3.fromRGB(255,255,255), Font=Enum.Font.GothamBold, TextSize=14, ZIndex=102}, iconFrame)
+    make("TextLabel",{BackgroundTransparency=1, Position=UDim2.new(0,38,0,0), Size=UDim2.new(0,80,1,0), Text="Nexora Hub", TextColor3=C.text, TextSize=13, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=101}, reopen)
     local greenDot = make("Frame",{BackgroundColor3=C.green, Size=UDim2.new(0,8,0,8), Position=UDim2.new(1,-18,0.5,-4), BorderSizePixel=0, ZIndex=101}, reopen)
     corner(greenDot,4)
     reopen.Position=UDim2.new(0,20,0,70)
@@ -2129,6 +2130,7 @@ function OMG.CreateMain(config)
         local layout=make("UIListLayout",{Padding=UDim.new(0,10),SortOrder=Enum.SortOrder.LayoutOrder}, frame)
         layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() frame.CanvasSize=UDim2.new(0,0,0,layout.AbsoluteContentSize.Y+28) end)
         local p={name=pageName,frame=frame}
+        frame.Visible = (#pages==0)
         pages[#pages+1]=p
         local navText=pageConfig.Page_Title or pageName
         local nb=make("TextButton",{Name="Nav", AutoButtonColor=false, BackgroundColor3=Color3.fromRGB(28,28,33), BackgroundTransparency=0, BorderSizePixel=0, Size=UDim2.new(1,0,0,38), Text=""}, nav)
@@ -2139,6 +2141,9 @@ function OMG.CreateMain(config)
         navButtons[p]=nb
         nb.MouseButton1Click:Connect(function() showPage(p) end)
         nb.LayoutOrder=#pages
+        if #pages==1 then
+            task.defer(function() showPage(p) end)
+        end
 
         local Page={}
         function Page.CreateSection(sectionName)
@@ -2240,7 +2245,7 @@ function OMG.CreateMain(config)
                 opt._setValue=function(v) if multi then selected=type(v)=="table" and table.clone(v) or {} else selected=v end; refreshButton() end
                 opt.GetNewList=function(_,newList) rebuildList(newList or {}); refreshButton() end; opt.SetList=opt.GetNewList
                 b.MouseButton1Click:Connect(function()
-                    local menuName="OMGDropdownOverlay"; local oldMenu=gui:FindFirstChild(menuName); if oldMenu then if oldMenu:GetAttribute("Owner")==t then oldMenu:Destroy(); return end; oldMenu:Destroy() end
+                    local menuName="NexoraDropdownOverlay"; local oldMenu=gui:FindFirstChild(menuName); if oldMenu then if oldMenu:GetAttribute("Owner")==t then oldMenu:Destroy(); return end; oldMenu:Destroy() end
                     local vp=(workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize) or Vector2.new(800,600)
                     local h=math.max(35, math.min(210, #listValues*29+8))
                     local w=math.clamp(math.max(180,b.AbsoluteSize.X),180,math.max(180,vp.X-8))
@@ -2305,8 +2310,8 @@ function OMG.CreateMain(config)
     local NotifContainer=nil
     local function getNotifContainer()
         if NotifContainer and NotifContainer.Parent then return NotifContainer end
-        local cGui=parentGui:FindFirstChild("OMGNotifs"); if cGui then cGui:Destroy() end
-        cGui=make("ScreenGui",{Name="OMGNotifs", ResetOnSpawn=false, IgnoreGuiInset=true, DisplayOrder=1000, ZIndexBehavior=Enum.ZIndexBehavior.Sibling}, parentGui)
+        local cGui=parentGui:FindFirstChild("NexoraNotifs"); if cGui then cGui:Destroy() end
+        cGui=make("ScreenGui",{Name="NexoraNotifs", ResetOnSpawn=false, IgnoreGuiInset=true, DisplayOrder=1000, ZIndexBehavior=Enum.ZIndexBehavior.Sibling}, parentGui)
         NotifContainer=make("Frame",{Name="Container", AnchorPoint=Vector2.new(1,0), Position=UDim2.new(1,-12,0,12), Size=UDim2.new(0,320,1,-24), BackgroundTransparency=1}, cGui)
         make("UIListLayout",{FillDirection=Enum.FillDirection.Vertical, HorizontalAlignment=Enum.HorizontalAlignment.Right, VerticalAlignment=Enum.VerticalAlignment.Top, Padding=UDim.new(0,8), SortOrder=Enum.SortOrder.LayoutOrder}, NotifContainer)
         return NotifContainer
@@ -2314,7 +2319,7 @@ function OMG.CreateMain(config)
 
     function Main.CreateNoti(text,duration)
         local title,desc
-        if type(text)=="table" then duration=text.ShowTime or duration or 4; title=tostring(text.Title or "OMG HUB"); desc=tostring(text.Desc or text.Text or "") else duration=duration or 4; title="OMG HUB"; desc=tostring(text) end
+        if type(text)=="table" then duration=text.ShowTime or duration or 4; title=tostring(text.Title or "NEXORA HUB"); desc=tostring(text.Desc or text.Text or "") else duration=duration or 4; title="NEXORA HUB"; desc=tostring(text) end
         local container=getNotifContainer()
         local card=make("Frame",{Name="Notif", BackgroundColor3=Color3.fromRGB(22,22,28), BorderSizePixel=0, Size=UDim2.new(0,310,0,72), ClipsDescendants=true}, container)
         corner(card,12); stroke(card,C.accent,1.2,0.3)
@@ -2347,8 +2352,8 @@ end
 function OMG.CreateNoti(config,duration) return OMG.CreateMain and Main and Main.CreateNoti(config,duration) end
 
 function OMG.RestoreSavedToggles()
-    if getgenv().__OMGRestoreDone then return end
-    getgenv().__OMGRestoreDone=true
+    if getgenv().__NexoraRestoreDone then return end
+    getgenv().__NexoraRestoreDone=true
     for _,opt in ipairs(OMG.OptionOrder) do
         if opt and opt.type=="toggle" and opt.value==true then
             local control=opt.FunctionCreate
@@ -2358,13 +2363,13 @@ function OMG.RestoreSavedToggles()
         end
     end
 end
-getgenv().__OMGRestoreDone=false
+getgenv().__NexoraRestoreDone=false
 task.delay(10,function() OMG.RestoreSavedToggles() end)
 
 return OMG
 
 end)()
-Main = A.CreateMain({ Title = "OMG HUB", Desc = "BLOX FRUITS . ViniZ_DV" })
+Main = A.CreateMain({ Title = "NEXORA HUB", Desc = "BLOX FRUITS . ViniZ_DV" })
 
 PageShop = Main.CreatePage({ Page_Name = "Shop", Page_Title = "Shop" })
 getgenv().Options = A.Options
@@ -12296,7 +12301,7 @@ QuestDragonSection.CreateToggle(
 )
 
 
--- ===== OMG FIX: Auto Craft Volcanic Magnet Completo =====
+-- ===== NEXORA FIX: Auto Craft Volcanic Magnet Completo =====
 -- Detecta de longe, vai no Dragon Hunter no Dragon Dojo em Hydra, pega missão, completa, volta até 15 Blaze Ember e crafta
 
 function GetDragonHunterNPC()
@@ -29893,4 +29898,4 @@ function UseDragonstormAllSeaEvents(Part)
     getgenv().SpamGunDragonStorm(Part)
 end
 
-print("[OMG] DragonStorm FAST 0.06s - No 2s delay - ViniZ_DV")
+print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZ_DV")
