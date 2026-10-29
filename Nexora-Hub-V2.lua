@@ -2125,11 +2125,17 @@ function OMG.CreateMain(config)
     function Main.CreatePage(pageConfig)
         pageConfig=pageConfig or {}
         local pageName=pageConfig.Page_Name or pageConfig.Page_Title or "Page"
+        -- Evita duplicar abas com mesmo nome (seu arquivo original cria Shop 2x)
+        for _,existing in ipairs(pages) do
+            if existing.name==pageName then
+                return existing._api
+            end
+        end
         local frame=make("ScrollingFrame",{Name=pageName, Position=UDim2.new(0,0,0,0), Size=UDim2.new(1,0,1,0), BackgroundTransparency=1, BorderSizePixel=0, ScrollBarThickness=3, ScrollBarImageColor3=C.accent, CanvasSize=UDim2.new()}, content)
         make("UIPadding",{PaddingTop=UDim.new(0,12),PaddingBottom=UDim.new(0,14),PaddingLeft=UDim.new(0,12),PaddingRight=UDim.new(0,12)}, frame)
         local layout=make("UIListLayout",{Padding=UDim.new(0,10),SortOrder=Enum.SortOrder.LayoutOrder}, frame)
         layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() frame.CanvasSize=UDim2.new(0,0,0,layout.AbsoluteContentSize.Y+28) end)
-        local p={name=pageName,frame=frame}
+        local p={name=pageName,frame=frame, _api=nil}
         frame.Visible = (#pages==0)
         pages[#pages+1]=p
         local navText=pageConfig.Page_Title or pageName
@@ -2298,6 +2304,7 @@ function OMG.CreateMain(config)
             function Section.CreateNoti(text,duration) return Main.CreateNoti(text,duration) end
             return Section
         end
+        p._api = Page
         return Page
     end
 
