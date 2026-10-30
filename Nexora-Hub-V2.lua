@@ -5708,7 +5708,8 @@ SectionLocalPlayerMain.CreateDropdown(
 		end
 	end
 )
-SectionLocalPlayerMain.CreateToggle({ Title = "Noclip", Desc = nil, Default = Settings.Noclip or false }, function(K)
+SectionLocalPlayerMain.CreateToggle({ Title = "No collision Player", Desc = "Deixa o player sem colisao", Default = Settings["No collision Player"] == nil and true or Settings["No collision Player"], }, function(K)
+	SaveSettings("No collision Player", K)
 	SaveSettings("Noclip", K)
 end)
 local K
@@ -18395,6 +18396,27 @@ BoatSettingSection.CreateToggle({ Title = "Fly Boat", Desc = nil, Default = Sett
 	end
 	SaveSettings("Fly Boat", s)
 end)
+-- NOVA TOGGLE ABAIXO DE FLY BOAT - NO COLLISION BOAT
+-- Quando ligada, deixa o barco SEM colisao (no clip, CanCollide = false)
+BoatSettingSection.CreateToggle({ Title = "No collision boat", Desc = "Deixa o barco sem colisao (atravessa tudo)", Default = Settings["No collision boat"] == nil and true or Settings["No collision boat"] }, function(b)
+	if b then
+		spawn(function()
+			while Settings["No collision boat"] and (task.wait(0.3)) do
+				pcall(function()
+					local boat = nil
+					if getSeatedBoat then boat = getSeatedBoat() end
+					if not boat and checkboat then boat = checkboat() end
+					if not boat and checkboatFind then boat = checkboatFind() end
+					if not boat and CheckSeaEventBoat then boat = CheckSeaEventBoat() end
+					if boat then
+						NoclipBoat(boat)
+					end
+				end)
+			end
+		end)
+	end
+	SaveSettings("No collision boat", b)
+end)
 R = Settings["Value Speed Fly Boat"]
 BoatSettingSection.CreateSlider(
 	{ Title = "Value Speed Boat", Min = 0, Max = 300, Default = math.min(tonumber(Settings["Value Speed Boat"]) or 300, 300), Precise = true },
@@ -27085,7 +27107,7 @@ do
 				end
 			end
 			local Character = t.Character
-			if Character and (ToggleNoclip() or Settings.Noclip) then
+			if Character and (ToggleNoclip() or Settings.Noclip or Settings["No collision Player"]) then
 				for _, part in ipairs(Character:GetDescendants()) do
 					if part:IsA("BasePart") then
 						part.CanCollide = false
