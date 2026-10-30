@@ -8526,10 +8526,20 @@ _("Melee", { "Z", "X", "C" })
 _("Sword", { "Z", "X" })
 _("Gun", { "Z", "X" })
 _("Blox Fruit", { "Z", "X", "C", "V", "F" })
--- ==================== USE SKULL GUITAR TYRANT - ABAIXO HOLD SKILLS ====================
--- Criado abaixo de Hold Skills, na mesma aba Setting Hold And Select
-SkullGuitarTyrantSection = SettingSkillMain.CreateSection("Use Skull Guitar Tyrant")
-SkullGuitarTyrantSection.CreateToggle(
+-- ==================== USE SKILLS TYRANT BOSS - ABAIXO HOLD SKILLS ====================
+-- Igual a aba Select Skills la em cima (Melee, Sword, Gun, Blox Fruit)
+-- Mas essa e SO para as skills da Skull Guitar, abaixo de Hold Skills
+SelectSkillsSkullGuitarSection = SettingSkillMain.CreateSection("Use Skills Tyrant Boss")
+SelectSkillsSkullGuitarSection.CreateDropdown(
+    { Title = "Select Skills Skull Guitar", List = {"Z", "X"}, Search = true, Selected = true, Default = Settings["Select Skills Skull Guitar"] or "Z" },
+    function(s)
+        SaveSettings("Select Skills Skull Guitar", s)
+        getgenv().SkullGuitarTyrantSkill = s
+        getgenv().SelectSkillsSkullGuitar = s
+        print("[Tyrant] Select Skills Skull Guitar: " .. tostring(s))
+    end
+)
+SelectSkillsSkullGuitarSection.CreateToggle(
     { Title = "Use Skull Guitar Tyrant", Desc = nil, Default = Settings["Use Skull Guitar Tyrant"] == nil and true or Settings["Use Skull Guitar Tyrant"] },
     function(b)
         SaveSettings("Use Skull Guitar Tyrant", b)
@@ -8537,26 +8547,20 @@ SkullGuitarTyrantSection.CreateToggle(
         print("[Tyrant] Use Skull Guitar Tyrant: " .. tostring(b))
     end
 )
-SkullGuitarTyrantSection.CreateDropdown(
-    { Title = "Select Skill", List = {"Z", "X", "Z + X"}, Search = true, Selected = true, Default = Settings["Select Skill Skull Guitar"] or "Z" },
-    function(s)
-        SaveSettings("Select Skill Skull Guitar", s)
-        getgenv().SkullGuitarTyrantSkill = s
-        print("[Tyrant] Select Skill: " .. tostring(s))
-    end
-)
 -- Defaults - Ja vem ativado padrao
 if Settings["Use Skull Guitar Tyrant"] == nil then
     Settings["Use Skull Guitar Tyrant"] = true
     getgenv().UseSkullGuitarTyrant = true
 end
-if Settings["Select Skill Skull Guitar"] == nil then
-    Settings["Select Skill Skull Guitar"] = "Z"
+if Settings["Select Skills Skull Guitar"] == nil then
+    Settings["Select Skills Skull Guitar"] = "Z"
     getgenv().SkullGuitarTyrantSkill = "Z"
+    getgenv().SelectSkillsSkullGuitar = "Z"
 end
 getgenv().UseSkullGuitarTyrant = Settings["Use Skull Guitar Tyrant"]
-getgenv().SkullGuitarTyrantSkill = Settings["Select Skill Skull Guitar"]
--- Funcao pra quebrar vasos SO com skill selecionada
+getgenv().SkullGuitarTyrantSkill = Settings["Select Skills Skull Guitar"]
+getgenv().SelectSkillsSkullGuitar = Settings["Select Skills Skull Guitar"]
+-- Funcao pra quebrar vasos SO com skill selecionada da Skull Guitar
 getgenv().BreakVaseWithSelectedSkill = function(vase)
     pcall(function()
         if not getgenv().UseSkullGuitarTyrant then return end
@@ -8577,7 +8581,7 @@ getgenv().BreakVaseWithSelectedSkill = function(vase)
             if guitar then char.Humanoid:EquipTool(guitar) task.wait(0.3) tool = char:FindFirstChild("Skull Guitar") end
         end
         if not tool then return end
-        local selected = getgenv().SkullGuitarTyrantSkill or "Z"
+        local selected = getgenv().SkullGuitarTyrantSkill or getgenv().SelectSkillsSkullGuitar or "Z"
         local vim = game:GetService("VirtualInputManager")
         local keyMap = {Z=Enum.KeyCode.Z, X=Enum.KeyCode.X}
         local function ClickSkill(key)
@@ -8596,15 +8600,9 @@ getgenv().BreakVaseWithSelectedSkill = function(vase)
         elseif selected == "X" then
             ClickSkill("X") task.wait(1.0)
             if vase and vase.Parent then ClickSkill("X") end
-        elseif selected == "Z + X" then
-            ClickSkill("Z") task.wait(0.8)
-            if vase and vase.Parent then ClickSkill("X") end
-            task.wait(1.0)
-            if vase and vase.Parent then ClickSkill("Z") end
         end
     end)
 end
--- Loop Farm Tyrant usando SO skills selecionadas
 task.spawn(function()
     while true do
         task.wait(0.5)
@@ -8621,7 +8619,7 @@ task.spawn(function()
         end)
     end
 end)
--- ==================== FIM USE SKULL GUITAR TYRANT ====================
+-- ==================== FIM USE SKILLS TYRANT BOSS ====================
 FarmMain = Main.CreatePage({ Page_Name = "Farming", Page_Title = "Farming" })
 SettingAutoFarmSection = FarmMain.CreateSection("Farming")
 -- Individual farm toggles. Each method keeps its own state; no Select Method Farm dropdown.
