@@ -25337,83 +25337,70 @@ function ESPPlayer()
     if b then
         local s = Instance.new("IntValue", b)
         s.Name = "Ignored"
-        -- ===== ESP PLAYER BONITO - V2 =====
-        -- Box em volta do player (Square, borda colorida por time)
-        local Box = Drawing.new("Square")
-        Box.Visible = false
-        Box.Filled = false
-        Box.Thickness = 2
-        Box.Color = Color3.fromRGB(0, 170, 255)
-        Box.Transparency = 1
-        -- Background do nome (painel preto transparente atras dos textos)
-        local NameBg = Drawing.new("Square")
-        NameBg.Visible = false
-        NameBg.Filled = true
-        NameBg.Color = Color3.fromRGB(0, 0, 0)
-        NameBg.Transparency = 0.55
-        -- Barra de HP fundo
-        local HpBg = Drawing.new("Square")
-        HpBg.Visible = false
-        HpBg.Filled = true
-        HpBg.Color = Color3.fromRGB(20, 20, 20)
-        HpBg.Transparency = 0.8
-        -- Barra de HP fill (muda cor por HP%)
+        -- ===== ESP PLAYER SEM FUNDO PRETO - MAIS VISIVEL =====
+        -- SEM NameBg, SEM HpBg preto - poluia a tela!
+        -- Agora so Box + Barra HP + Textos com outline FORTE pra ficar visivel
+        -- SEM BOX em volta! Tirado, poluia a tela!
+        -- local Box = Drawing.new("Square") -- REMOVIDO
+        -- Barra de HP - SEM fundo preto, so a barra colorida + borda branca fina
         local HpBar = Drawing.new("Square")
         HpBar.Visible = false
         HpBar.Filled = true
         HpBar.Color = Color3.fromRGB(0, 255, 0)
         HpBar.Transparency = 1
-        -- Texto do time (badge colorido)
+        -- Borda da barra HP (pra ficar visivel sem fundo preto)
+        local HpBarBorder = Drawing.new("Square")
+        HpBarBorder.Visible = false
+        HpBarBorder.Filled = false
+        HpBarBorder.Thickness = 1
+        HpBarBorder.Color = Color3.fromRGB(255, 255, 255)
+        HpBarBorder.Transparency = 0.9
         local TeamText = Drawing.new("Text")
         TeamText.Visible = false
         TeamText.Transparency = 1
         TeamText.Text = "Team"
         TeamText.Color = Color3.fromRGB(255, 255, 255)
-        TeamText.Size = 13
+        TeamText.Size = 15
         TeamText.Outline = true
         TeamText.OutlineColor = Color3.fromRGB(0, 0, 0)
         TeamText.Center = true
         TeamText.Font = 2
-        -- Nome (mais bonito, maior, branco/ciano)
         local NameText = Drawing.new("Text")
         NameText.Visible = false
         NameText.Transparency = 1
         NameText.Text = b.Name
         NameText.Color = Color3.fromRGB(255, 255, 255)
-        NameText.Size = 17
+        NameText.Size = 19
         NameText.Outline = true
         NameText.OutlineColor = Color3.fromRGB(0, 0, 0)
         NameText.Center = true
         NameText.Font = 2
-        -- HP Texto (cor por HP%)
         local HpText = Drawing.new("Text")
         HpText.Visible = false
         HpText.Transparency = 1
         HpText.Text = "HP"
         HpText.Color = Color3.fromRGB(0, 255, 0)
-        HpText.Size = 13
+        HpText.Size = 15
         HpText.Outline = true
         HpText.OutlineColor = Color3.fromRGB(0, 0, 0)
         HpText.Center = true
         HpText.Font = 2
-        -- Distancia (cor por distancia)
         local DistText = Drawing.new("Text")
         DistText.Visible = false
         DistText.Transparency = 1
         DistText.Text = "Dist"
         DistText.Color = Color3.fromRGB(200, 200, 255)
-        DistText.Size = 13
+        DistText.Size = 15
         DistText.Outline = true
         DistText.OutlineColor = Color3.fromRGB(0, 0, 0)
         DistText.Center = true
         DistText.Font = 2
-        -- Level / Bounty se tiver
         local LevelText = Drawing.new("Text")
         LevelText.Visible = false
         LevelText.Transparency = 1
         LevelText.Text = ""
         LevelText.Color = Color3.fromRGB(255, 215, 0)
-        LevelText.Size = 12
+        LevelText.Size = 14
         LevelText.Outline = true
         LevelText.OutlineColor = Color3.fromRGB(0, 0, 0)
         LevelText.Center = true
@@ -25441,15 +25428,13 @@ function ESPPlayer()
                     local maxHp = math.round(b.Humanoid.MaxHealth)
                     local hpPercent = math.clamp(hp / maxHp, 0, 1)
                     local hpPercentInt = math.floor(hpPercent * 100)
-                    -- Cor do HP: verde >50%, amarelo 25-50%, vermelho <25%
-                    local hpColor = Color3.fromRGB(0, 255, 0)
+                    -- Cor HP mais viva: verde neon, amarelo vivo, vermelho vivo
+                    local hpColor = Color3.fromRGB(0, 255, 80)
                     if hpPercent < 0.25 then hpColor = Color3.fromRGB(255, 30, 30)
-                    elseif hpPercent < 0.5 then hpColor = Color3.fromRGB(255, 200, 0) end
-                    -- Cor da distancia: verde perto, amarelo medio, cinza longe
-                    local distColor = Color3.fromRGB(100, 255, 100)
-                    if dist > 200 then distColor = Color3.fromRGB(180, 180, 200)
-                    elseif dist > 100 then distColor = Color3.fromRGB(255, 220, 100) end
-                    -- Level / Bounty
+                    elseif hpPercent < 0.5 then hpColor = Color3.fromRGB(255, 210, 0) end
+                    local distColor = Color3.fromRGB(120, 255, 120)
+                    if dist > 200 then distColor = Color3.fromRGB(200, 200, 220)
+                    elseif dist > 100 then distColor = Color3.fromRGB(255, 230, 100) end
                     local lvlText = ""
                     pcall(function()
                         if plr and plr:FindFirstChild("leaderstats") and plr.leaderstats:FindFirstChild("Bounty/Honor") then
@@ -25461,10 +25446,9 @@ function ESPPlayer()
                     TeamText.Text = "[" .. teamName .. "]"
                     TeamText.Color = teamColor
                     NameText.Text = b.Name
-                    -- Nome ciano se inimigo (time diferente), branco se mesmo time
                     local localPlr = game.Players.LocalPlayer
                     if localPlr and plr and localPlr.Team and plr.Team and localPlr.Team ~= plr.Team then
-                        NameText.Color = Color3.fromRGB(0, 220, 255)
+                        NameText.Color = Color3.fromRGB(0, 230, 255)
                     else
                         NameText.Color = Color3.fromRGB(255, 255, 255)
                     end
@@ -25478,40 +25462,26 @@ function ESPPlayer()
                     elseif dist < 60 then scale = 1.5
                     elseif dist < 100 then scale = 1.3
                     elseif dist < 200 then scale = 1.1 end
-                    TeamText.Size = math.floor(13 * scale)
-                    NameText.Size = math.floor(17 * scale)
-                    HpText.Size = math.floor(13 * scale)
-                    DistText.Size = math.floor(13 * scale)
-                    LevelText.Size = math.floor(12 * scale)
-                    -- Posicoes
+                    TeamText.Size = math.floor(15 * scale)
+                    NameText.Size = math.floor(19 * scale)
+                    HpText.Size = math.floor(15 * scale)
+                    DistText.Size = math.floor(15 * scale)
+                    LevelText.Size = math.floor(14 * scale)
                     local baseY = g.Y - 50 * scale
                     TeamText.Position = Vector2.new(g.X, baseY - 30 * scale)
                     NameText.Position = Vector2.new(g.X, baseY - 15 * scale)
                     HpText.Position = Vector2.new(g.X, baseY)
                     DistText.Position = Vector2.new(g.X, baseY + 15 * scale)
                     LevelText.Position = Vector2.new(g.X, baseY + 30 * scale)
-                    -- Box em volta do player (calcula tamanho por distancia)
-                    local boxW = 60 * scale
-                    local boxH = 100 * scale
-                    Box.Size = Vector2.new(boxW, boxH)
-                    Box.Position = Vector2.new(g.X - boxW / 2, g.Y - boxH / 2 - 10)
-                    Box.Color = teamColor
-                    Box.Thickness = 2
-                    -- Background atras do nome (largura pelo nome)
-                    local nameW = NameText.TextBounds.X + 16
-                    NameBg.Size = Vector2.new(nameW, 62 * scale)
-                    NameBg.Position = Vector2.new(g.X - nameW / 2, baseY - 35 * scale)
-                    -- Barra de HP (largura 60, altura 6)
-                    local barW = 60 * scale
-                    HpBg.Size = Vector2.new(barW, 6)
-                    HpBg.Position = Vector2.new(g.X - barW / 2, baseY + 12 * scale)
-                    HpBar.Size = Vector2.new(barW * hpPercent, 6)
+                    -- SEM BOX - removido
+                    -- Barra HP SEM fundo preto - so barra + borda branca
+                    local barW = 70 * scale
+                    HpBarBorder.Size = Vector2.new(barW, 7)
+                    HpBarBorder.Position = Vector2.new(g.X - barW / 2, baseY + 12 * scale)
+                    HpBar.Size = Vector2.new(barW * hpPercent, 7)
                     HpBar.Position = Vector2.new(g.X - barW / 2, baseY + 12 * scale)
                     HpBar.Color = hpColor
-                    -- Mostra tudo
-                    Box.Visible = true
-                    NameBg.Visible = true
-                    HpBg.Visible = true
+                    HpBarBorder.Visible = true
                     HpBar.Visible = true
                     TeamText.Visible = true
                     NameText.Visible = true
@@ -25519,9 +25489,7 @@ function ESPPlayer()
                     DistText.Visible = true
                     LevelText.Visible = lvlText ~= ""
                 else
-                    Box.Visible = false
-                    NameBg.Visible = false
-                    HpBg.Visible = false
+                    HpBarBorder.Visible = false
                     HpBar.Visible = false
                     TeamText.Visible = false
                     NameText.Visible = false
@@ -25530,9 +25498,7 @@ function ESPPlayer()
                     LevelText.Visible = false
                 end
             until not b or not b.Parent or not Settings["ESP Player"]
-            Box:Remove()
-            NameBg:Remove()
-            HpBg:Remove()
+            HpBarBorder:Remove()
             HpBar:Remove()
             TeamText:Remove()
             NameText:Remove()
