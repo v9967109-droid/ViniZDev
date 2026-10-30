@@ -8589,31 +8589,32 @@ getgenv().UseSkullGuitarSkillAttack = function(hitPart)
     local vim = game:GetService("VirtualInputManager")
     local km = {Z=Enum.KeyCode.Z, X=Enum.KeyCode.X}
     local used = false
-    -- Usa Z se marcado
+    -- MAIS RAPIDO: Delays curtos pra quebrar vaso rapido!
+    -- Antes: 0.08 + 0.1 + 0.5 = 0.68s por skill (lento!)
+    -- Agora: 0.03 + 0.03 + 0.05 = 0.11s por skill (bem mais rapido!)
     if tbl.Z then
         local kc = km.Z
         vim:SendKeyEvent(true, kc, false, game)
-        task.wait(0.08)
+        task.wait(0.03)
         vim:SendKeyEvent(false, kc, false, game)
-        task.wait(0.1)
+        task.wait(0.03)
         local char = game:GetService("Players").LocalPlayer.Character
         local tool = char and char:FindFirstChild("Skull Guitar")
         if tool then tool:Activate() end
         used = true
-        task.wait(0.5)
+        task.wait(0.05)
     end
-    -- Usa X se marcado (pode usar as duas ao mesmo tempo!)
     if tbl.X then
         local kc = km.X
         vim:SendKeyEvent(true, kc, false, game)
-        task.wait(0.08)
+        task.wait(0.03)
         vim:SendKeyEvent(false, kc, false, game)
-        task.wait(0.1)
+        task.wait(0.03)
         local char = game:GetService("Players").LocalPlayer.Character
         local tool = char and char:FindFirstChild("Skull Guitar")
         if tool then tool:Activate() end
         used = true
-        task.wait(0.5)
+        task.wait(0.05)
     end
     return used
 end
@@ -25345,7 +25346,7 @@ function ESPPlayer()
         TeamText.Transparency = 1
         TeamText.Text = "Team"
         TeamText.Color = Color3.fromRGB(255, 255, 255)
-        TeamText.Size = 15
+        TeamText.Size = 17
         TeamText.Outline = true
         TeamText.OutlineColor = Color3.fromRGB(0, 0, 0)
         TeamText.Center = true
@@ -25355,7 +25356,7 @@ function ESPPlayer()
         NameText.Transparency = 1
         NameText.Text = b.Name
         NameText.Color = Color3.fromRGB(255, 255, 255)
-        NameText.Size = 19
+        NameText.Size = 22
         NameText.Outline = true
         NameText.OutlineColor = Color3.fromRGB(0, 0, 0)
         NameText.Center = true
@@ -25455,16 +25456,22 @@ function ESPPlayer()
                     DistText.Text = dist .. "m"
                     DistText.Color = distColor
                     LevelText.Text = lvlText
-                    local scale = 1
-                    if dist < 30 then scale = 1.8
-                    elseif dist < 60 then scale = 1.5
-                    elseif dist < 100 then scale = 1.3
-                    elseif dist < 200 then scale = 1.1 end
-                    TeamText.Size = math.floor(15 * scale)
-                    NameText.Size = math.floor(19 * scale)
-                    HpText.Size = math.floor(15 * scale)
-                    DistText.Size = math.floor(15 * scale)
-                    LevelText.Size = math.floor(14 * scale)
+                    -- VER DE LONGE: Nao deixa o texto ficar pequeno quando longe!
+                    -- Antes: longe = scale 1 (pequeno, sumia de longe)
+                    -- Agora: longe = scale 1.2 / 1.1 (ainda grande pra ver de longe!)
+                    local scale = 1.2
+                    if dist < 30 then scale = 2.0
+                    elseif dist < 60 then scale = 1.7
+                    elseif dist < 100 then scale = 1.5
+                    elseif dist < 200 then scale = 1.3
+                    elseif dist < 500 then scale = 1.2
+                    else scale = 1.1 end
+                    -- Tamanhos maiores pra ver de longe! Nome 22, outros 17-18
+                    TeamText.Size = math.floor(17 * scale)
+                    NameText.Size = math.floor(22 * scale)
+                    HpText.Size = math.floor(17 * scale)
+                    DistText.Size = math.floor(17 * scale)
+                    LevelText.Size = math.floor(16 * scale)
                     local baseY = g.Y - 50 * scale
                     TeamText.Position = Vector2.new(g.X, baseY - 30 * scale)
                     NameText.Position = Vector2.new(g.X, baseY - 15 * scale)
