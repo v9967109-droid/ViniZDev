@@ -7711,8 +7711,7 @@ getgenv().SpamGunDragonStorm = function(E)
 	if reloading then
 		return
 	end
-	-- Validação do jogo: depende de índices de upvalue que mudam a cada update.
-	-- Antes um erro aqui impedia o tiro; agora é tentativa protegida e o tiro sai de qualquer forma.
+	-- REMOTES MELHORES: Validator + ShootGunEvent multiplo + TAP + Activate
 	pcall(function()
 		local l = getupvalues(require(L.Controllers.CombatController).Attack)[9]
 		local I, _, o, V, N, y, P =
@@ -7735,12 +7734,30 @@ getgenv().SpamGunDragonStorm = function(E)
 		debug.setupvalue(l, 14, N)
 		debug.setupvalue(l, 12, y)
 		debug.setupvalue(l, 18, P)
-		L.Remotes.Validator2:FireServer(math.floor(d2 / V * 16777215), P)
+		for i = 1, 3 do
+			L.Remotes.Validator2:FireServer(math.floor(d2 / V * 16777215), P + i)
+		end
 	end)
 	pcall(function()
-		m.Net:FindFirstChild("RE/ShootGunEvent"):FireServer(E.Position, { E })
+		local net = m.Net:FindFirstChild("RE/ShootGunEvent")
+		if net then
+			for i = 1, 5 do
+				net:FireServer(E.Position, { E })
+				task.wait(0.02)
+			end
+		end
+	end)
+	pcall(function()
+		local remote = d:FindFirstChild("RemoteEvent")
+		if remote then
+			remote:FireServer("TAP", E.Position)
+		end
+	end)
+	pcall(function()
+		d:Activate()
 	end)
 end
+
 GunM1State = { Last = 0 }
 -- Equipa uma tool só quando preciso: se já está na mão não faz nada, e as tentativas
 -- têm intervalo (antes o turbo chamava EquipTool a cada frame e brigava com o farm).
@@ -7770,7 +7787,7 @@ function DragonstormPhysicalClick(force, toolName)
 	toolName = toolName or "Dragonstorm"
 	local now = os.clock()
 	local lastKey = "__PhysicalClickLast_" .. tostring(toolName)
-	local interval = getgenv().PhysicalGunClickInterval or getgenv().DSClickInterval or 0.5
+	local interval = getgenv().PhysicalGunClickInterval or getgenv().DSClickInterval or 0.1
 	if not force and now - (getgenv()[lastKey] or 0) < interval then
 		return false
 	end
@@ -7782,32 +7799,38 @@ function DragonstormPhysicalClick(force, toolName)
 			local vp = Camera.ViewportSize
 			local x, y = math.floor(vp.X / 2), 2
 			local VIM = game:GetService("VirtualInputManager")
-			-- Mesma sequência física da Dragonstorm: mover o mouse e clicar com botão esquerdo.
+			-- CLICK NA TELA DRAGON STORM DE 2 SEGUNDOS (pedido do user)
 			VIM:SendMouseMoveEvent(x, y, game)
 			task.wait(0.03)
 			VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
-			task.wait(0.05)
+			task.wait(2) -- 2 SEGUNDOS SEGURANDO!
 			VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
-			-- Fallback para executores mobile que ignoram eventos de mouse.
 			pcall(function()
 				local tx, ty = x, math.max(64, math.floor(vp.Y * 0.12))
 				VIM:SendTouchEvent(1, 0, tx, ty)
-				task.wait(0.04)
+				task.wait(2) -- 2 SEGUNDOS MOBILE!
 				VIM:SendTouchEvent(1, 2, tx, ty)
 			end)
 			pcall(function()
 				local tool = t.Character and t.Character:FindFirstChild(toolName)
-				if tool then tool:Activate() end
+				if tool then
+					for i = 1, 3 do
+						tool:Activate()
+						task.wait(0.05)
+					end
+				end
 			end)
 			pcall(function()
 				local VU = game:GetService("VirtualUser")
 				VU:CaptureController()
+				VU:ClickButton1(Vector2.new(x, y))
 				VU:ClickButton1(Vector2.new(x, y))
 			end)
 		end)
 	end)
 	return true
 end
+
 function ShootM1(E)
 	local char = t.Character
 	if not char or not E then
