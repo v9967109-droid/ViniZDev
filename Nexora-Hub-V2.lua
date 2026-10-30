@@ -23235,29 +23235,22 @@ end
 MasteryWeaponSection.CreateToggle(
 	{ Title = "Auto Farm Mastery 600 Melees", Desc = nil, Default = Settings["Auto Farm Mastery 600 Melees"] or false },
 	function(g)
-		-- FIX: Q, o, d NAO EXISTIAM! Por isso o toggle nao fazia nada / dava erro!
-		-- Antes: Q = true / o:SetStage(true) / d:SetValue("Melee") -> o e d eram nil, dava erro e parava!
-		-- Agora: Liga Farm Mastery + Start Farm + Select Method = Melee de verdade!
+		-- FIX SIMPLES: Q,o,d nao existiam, dava erro e parava o script!
+		-- Agora so usa SaveSettings, sem chamar funcao que pode nao existir!
 		if g then
 			SaveSettings("Select Method Farm Mastery", "Melee")
 			SaveSettings("Farm Mastery", true)
 			SaveSettings("Start Farm", true)
-			SaveSettings("Auto Farm Active", false)
-			pcall(function() SyncMasteryToggle("Farm Mastery", true) end)
-			pcall(function() SyncMasteryToggle("Start Farm", true) end)
-		elseif not g then
+		else
 			SaveSettings("Farm Mastery", false)
 			SaveSettings("Start Farm", false)
-			SaveSettings("Auto Farm Active", GetSelectedIndividualFarm() ~= nil)
-			pcall(function() SyncMasteryToggle("Farm Mastery", false) end)
-			pcall(function() SyncMasteryToggle("Start Farm", false) end)
 		end
 		if g then
 			spawn(function()
 				while Settings["Auto Farm Mastery 600 Melees"] and (task.wait()) do
 					local f, f = pcall(function()
 						local R = DetectMeleeFarmMastery()
-						if not R then return end -- FIX: Se todos ja estao 600, R = nil, nao da erro!
+						if not R then return end
 						if
 							not game.Players.LocalPlayer.Character:FindFirstChild(R)
 							and not game.Players.LocalPlayer.Backpack:FindFirstChild(R)
@@ -23306,22 +23299,14 @@ MasteryWeaponSection.CreateToggle(
 		Default = Settings["Auto Farm Mastery 600 Sword In Inventory"] or false,
 	},
 	function(g)
-		-- FIX: Q, o, d NAO EXISTIAM! Mesmo bug do Melee!
-		-- Antes: Q = true / o:SetStage(true) / d:SetValue("Sword") -> o e d eram nil, dava erro!
-		-- Agora: Liga Farm Mastery + Start Farm + Select Method = Sword de verdade!
+		-- FIX SIMPLES: Q,o,d nao existiam!
 		if g then
 			SaveSettings("Select Method Farm Mastery", "Sword")
 			SaveSettings("Farm Mastery", true)
 			SaveSettings("Start Farm", true)
-			SaveSettings("Auto Farm Active", false)
-			pcall(function() SyncMasteryToggle("Farm Mastery", true) end)
-			pcall(function() SyncMasteryToggle("Start Farm", true) end)
-		elseif not g then
+		else
 			SaveSettings("Farm Mastery", false)
 			SaveSettings("Start Farm", false)
-			SaveSettings("Auto Farm Active", GetSelectedIndividualFarm() ~= nil)
-			pcall(function() SyncMasteryToggle("Farm Mastery", false) end)
-			pcall(function() SyncMasteryToggle("Start Farm", false) end)
 		end
 		if g then
 			spawn(function()
