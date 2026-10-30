@@ -27,7 +27,7 @@ do
 		local n = mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,10), Size=UDim2.new(1,0,1,-12), Text="N", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.Arcade, TextSize=26}, logo)
 		mk("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 140, 255))}, n)
 		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,62), Size=UDim2.fromOffset(220,20), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.Arcade, TextSize=16}, card)
-		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,80), Size=UDim2.fromOffset(220,14), BackgroundTransparency=1, Text="BLOX FRUITS . ViniZ_DV", TextColor3=Color3.fromRGB(165,165,174), Font=Enum.Font.Code, TextSize=11}, card)
+		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,80), Size=UDim2.fromOffset(220,14), BackgroundTransparency=1, Text="BLOX FRUITS • ViniZDev", TextColor3=Color3.fromRGB(165,165,174), Font=Enum.Font.Code, TextSize=11}, card)
 		local track = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,92), Size=UDim2.fromOffset(150,3), BackgroundColor3=Color3.fromRGB(30,28,24), BorderSizePixel=0}, card)
 		mk("UICorner", {CornerRadius=UDim.new(1,0)}, track)
 		local fill = mk("Frame", {Size=UDim2.new(0,0,1,0), BackgroundColor3=GOLD, BorderSizePixel=0}, track)
@@ -2097,7 +2097,7 @@ function Nexora.CreateMain(config)
     end
     local title = make("TextLabel", {Position=UDim2.new(0,18,0,10), Size=UDim2.new(0,300,0,26), BackgroundTransparency=1, RichText=true, Text='<font color="#FFFFFF">NEXORA</font> <font color="#008CFF">HUB</font>', TextColor3=Color3.fromRGB(255,255,255), Font=Enum.Font.Arcade, TextSize=22, TextXAlignment=Enum.TextXAlignment.Left}, top)
     local function tracked(t) return (string.gsub(string.upper(t), "(%S)", "%1\u{2009}")) end
-    local desc = make("TextLabel", {Position=UDim2.new(0,19,0,37), Size=UDim2.new(0,300,0,16), BackgroundTransparency=1, Text=tracked("BLOX FRUITS . ViniZ_DV"), TextColor3=GRAY, Font=Enum.Font.Code, TextSize=10, TextXAlignment=Enum.TextXAlignment.Left}, top)
+    local desc = make("TextLabel", {Position=UDim2.new(0,19,0,37), Size=UDim2.new(0,300,0,16), BackgroundTransparency=1, Text=tracked("BLOX FRUITS • ViniZDev"), TextColor3=GRAY, Font=Enum.Font.Code, TextSize=10, TextXAlignment=Enum.TextXAlignment.Left}, top)
     -- 3 tracinhos removidos da UI como você pediu
     local hamburger = make("TextButton", {Name="Menu", AnchorPoint=Vector2.new(1,0.5), Position=UDim2.new(1,-12,0.5,0), Size=UDim2.new(0,36,0,36), BackgroundTransparency=1, Text="", TextTransparency=1, Visible=false, AutoButtonColor=false}, top)
     -- ScreenGui separado: o botão fica fora da janela e não some junto com a UI (nem com o keybind Toggle GUI).
@@ -2195,16 +2195,12 @@ function Nexora.CreateMain(config)
     }, reopen)
     make("UICorner", {CornerRadius=UDim.new(1,0)}, greenDot)
     make("UIStroke", {Color=Color3.fromRGB(0,0,0), Thickness=1, Transparency=0.5}, greenDot)
-    -- Bolinha verde pulsante mais bonita
+    -- Efeito de brilho na bolinha verde
     task.spawn(function()
         while greenDot.Parent do
-            local tw = TweenService:Create(greenDot, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Size=UDim2.new(0, 12, 0, 12), BackgroundTransparency=0.2})
+            local tw = TweenService:Create(greenDot, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0.3})
             tw:Play(); tw.Completed:Wait()
-            tw = TweenService:Create(greenDot, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Size=UDim2.new(0, 10, 0, 10), BackgroundTransparency=0})
-            tw:Play(); tw.Completed:Wait()
-            tw = TweenService:Create(greenDot, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3=Color3.fromRGB(120, 255, 180)})
-            tw:Play(); tw.Completed:Wait()
-            tw = TweenService:Create(greenDot, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3=Color3.fromRGB(0, 255, 100)})
+            tw = TweenService:Create(greenDot, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency=0})
             tw:Play(); tw.Completed:Wait()
         end
     end)
@@ -2860,7 +2856,7 @@ task.delay(10, function() Nexora.RestoreSavedToggles() end)
 return Nexora
 
 end)()
-Main = A.CreateMain({ Title = "NEXORA HUB", Desc = "BLOX FRUITS . ViniZ_DV" })
+Main = A.CreateMain({ Title = "NEXORA HUB", Desc = "BLOX FRUITS • ViniZDev" })
 
 PageShop = Main.CreatePage({ Page_Name = "Shop", Page_Title = "Shop" })
 getgenv().Options = A.Options
@@ -21021,84 +21017,6 @@ function AutoTrialV4()
 		return
 	end
 	g = GetTempleOfTime()
-	-- FLUXO: Vai direto pro NPC misterioso (Mysterious Force) sem local aleatorio e sem Y alto
-	local shouldGoGreatTree = false
-	local templePos = Vector3.new(28282.5703125, 14896.8505859375, 105.1042709350586)
-	pcall(function()
-		local charPos = t.Character and t.Character:FindFirstChild("HumanoidRootPart") and t.Character.HumanoidRootPart.Position
-		if charPos then
-			local distTemple = (charPos - templePos).Magnitude
-			local inTrial = VerifyNearbyTrial()
-			if distTemple > 3000 and not inTrial then
-				shouldGoGreatTree = true
-			end
-			if distTemple < 3000 then
-				shouldGoGreatTree = false
-			end
-		end
-	end)
-	if shouldGoGreatTree then
-		-- Vai direto pro NPC misterioso (Mysterious Force / MISC) - sem Y alto, sem local aleatorio
-		local foundMysterious = false
-		pcall(function()
-			for _, folder in pairs({workspace.NPCs, game:GetService("ReplicatedStorage").NPCs}) do
-				for _, npc in pairs(folder:GetChildren()) do
-					local name = string.lower(npc.Name or "")
-					if string.find(name, "mysterious") or string.find(name, "misc") or string.find(name, "mysterious force") then
-						if npc:FindFirstChild("HumanoidRootPart") then
-							foundMysterious = true
-							toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 2))
-							task.wait(0.5)
-							for _, v in pairs(npc:GetDescendants()) do
-								if v:IsA("ClickDetector") then pcall(function() fireclickdetector(v) end) end
-								if v:IsA("ProximityPrompt") then pcall(function() fireproximityprompt(v) end) end
-							end
-							pcall(function()
-								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateAncientOne")
-								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("TempleClock", "Check")
-								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("RaceV4Progress", "Check")
-								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("MysteriousForce", "Check")
-							end)
-							task.wait(1)
-							toTarget(CFrame.new(28282.5703125, 14896.8505859375, 105.1042709350586))
-							return
-						end
-					end
-				end
-			end
-		end)
-		if foundMysterious then return end
-		-- Se nao achou pelo nome, procura NPCs perto da Great Tree (sem Y alto, so XZ)
-		pcall(function()
-			for _, folder in pairs({workspace.NPCs}) do
-				for _, npc in pairs(folder:GetChildren()) do
-					if npc:FindFirstChild("HumanoidRootPart") then
-						local npcPos = npc.HumanoidRootPart.Position
-						-- So verifica XZ, sem Y alto - vai direto pro NPC que tiver na Great Tree
-						local xzDist = (Vector3.new(npcPos.X, 0, npcPos.Z) - Vector3.new(4345, 0, -6159)).Magnitude
-						if xzDist < 500 then
-							toTarget(npc.HumanoidRootPart.CFrame * CFrame.new(0, 0, 2))
-							task.wait(0.5)
-							for _, v in pairs(npc:GetDescendants()) do
-								if v:IsA("ClickDetector") then pcall(function() fireclickdetector(v) end) end
-								if v:IsA("ProximityPrompt") then pcall(function() fireproximityprompt(v) end) end
-							end
-							pcall(function()
-								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("ActivateAncientOne")
-								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("TempleClock", "Check")
-							end)
-							task.wait(1)
-							toTarget(CFrame.new(28282.5703125, 14896.8505859375, 105.1042709350586))
-							return
-						end
-					end
-				end
-			end
-		end)
-		-- Fallback: se ainda nao achou, vai direto pro templo
-		toTarget(CFrame.new(28282.5703125, 14896.8505859375, 105.1042709350586))
-		return
-	end
 	if not g and not VerifyNearbyTrial() then
 		toTarget(CFrame.new(28282.5703125, 14896.8505859375, 105.1042709350586))
 		return
@@ -30165,7 +30083,7 @@ end)
 
 
 
--- ===================== FINAL FIX ViniZ_DV - FAST CLICK 0.06s + NO SPAM + ANCHOR + RESET =====================
+-- ===================== FINAL FIX ViniZDev - FAST CLICK 0.06s + NO SPAM + ANCHOR + RESET =====================
 getgenv().PhysicalGunClickInterval = 0.05
 getgenv().DSClickInterval = 0.05
 getgenv().DragonstormRemoteDelay = 0.05
@@ -30242,141 +30160,209 @@ function UseDragonstormAllSeaEvents(Part)
     getgenv().SpamGunDragonStorm(Part)
 end
 
-print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZ_DV")
+print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZDev")
 
 
+-- UI POSITION SAVE FIX
+-- FIX: Aprimorar sistema de salvamento da posição da UI
+-- ShadowX Hub - UI Position Save System Melhorado
 
--- ===================== NEXORA FIX M1 FRUTAS IGUAL VIDEO (KITSUNE SPAM) - ViniZ_DV =====================
--- Cola no final: corrige M1 das frutas para ficar igual do video enviado (0 delay, sem Busy)
-task.spawn(function()
-    repeat task.wait() until getgenv().UseFruitM1 ~= nil
-    print("[FIX] Aplicando M1 Frutas igual video...")
+getgenv().ShadowX_UIPosition = getgenv().ShadowX_UIPosition or {}
+getgenv().ShadowX_UIPosition_SaveFile = "ShadowX_UI_Position.json"
 
-    getgenv().FruitM1Delay = 0
-    getgenv().GunM1Delay = 0.04
-    getgenv().M1Turbo = true
-    getgenv().Usefastattack = true
-    getgenv().fastattect = true
-    getgenv().SuperFastAttack = true
-    if getgenv().BananaCatFastAttackEnabled ~= nil then
-        getgenv().BananaCatFastAttackEnabled = true
-        getgenv().BananaCatSuperFastAttackEnabled = true
-    end
-
-    -- Zera estados travados
-    if FruitM1State then
-        FruitM1State.Busy = false
-        FruitM1State.BusyAt = 0
-        FruitM1State.LastFire = 0
-        FruitM1State.Combo = 0
-        FruitM1State.Tool = nil
-    end
-
-    local t = game.Players.LocalPlayer
-    local function GetPos(T)
-        local ty = typeof(T)
-        if ty == "Vector3" then return T
-        elseif ty == "CFrame" then return T.Position
-        elseif ty == "Instance" then
-            if T:IsA("BasePart") then return T.Position
-            elseif T:IsA("Model") then
-                local r = T:FindFirstChild("HumanoidRootPart") or T.PrimaryPart
-                if r then return r.Position end
-                return T:GetPivot().Position
-            end
+-- Função pra salvar posição
+function SaveUIPosition(guiName, position)
+    pcall(function()
+        getgenv().ShadowX_UIPosition[guiName] = {
+            X = position.X.Scale .. "," .. position.X.Offset,
+            Y = position.Y.Scale .. "," .. position.Y.Offset,
+            Position = {X = {Scale = position.X.Scale, Offset = position.X.Offset}, Y = {Scale = position.Y.Scale, Offset = position.Y.Offset}}
+        }
+        
+        -- Tenta salvar em arquivo se tiver writefile
+        if writefile and readfile then
+            pcall(function()
+                local HttpService = game:GetService("HttpService")
+                local json = HttpService:JSONEncode(getgenv().ShadowX_UIPosition)
+                writefile(getgenv().ShadowX_UIPosition_SaveFile, json)
+            end)
         end
-        return nil
-    end
+        
+        -- Salva em getgenv pra persistir na sessão
+        print("[ShadowX UI] Posição salva: " .. guiName .. " - " .. tostring(position))
+    end)
+end
 
-    -- NOVO M1 DE FRUTA - SEM TRAVA, IGUAL VIDEO
-    getgenv().UseFruitM1 = function(E, l)
-        local char = t.Character
-        if not char then return false end
-        local toolName = nil
-        pcall(function() toolName = NameWeapon("Blox Fruit") end)
-        if not toolName then return false end
-        local tool = char:FindFirstChild(toolName)
-        if not tool then
-            local bp = t.Backpack:FindFirstChild(toolName)
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            if bp and hum then
-                pcall(function() hum:EquipTool(bp) end)
-            end
-            return false
+-- Função pra carregar posição
+function LoadUIPosition(guiName)
+    pcall(function()
+        -- Tenta carregar de arquivo
+        if readfile and isfile and isfile(getgenv().ShadowX_UIPosition_SaveFile) then
+            pcall(function()
+                local HttpService = game:GetService("HttpService")
+                local json = readfile(getgenv().ShadowX_UIPosition_SaveFile)
+                local data = HttpService:JSONDecode(json)
+                if data and data[guiName] then
+                    getgenv().ShadowX_UIPosition[guiName] = data[guiName]
+                end
+            end)
         end
-        local stun = char:FindFirstChild("Stun")
-        if stun and stun.Value ~= 0 then return true end
-
-        local TargetPos = GetPos(E)
-        if not TargetPos then return false end
-
-        -- Atualiza combo sem resetar por delay
-        FruitM1State.Tool = tool
-        FruitM1State.LastFire = os.clock()
-        FruitM1State.Combo = FruitM1State.Combo % 5 + 1
-
-        local ClickRemote = tool:FindFirstChild("LeftClickRemote")
-        local RemoteFn = tool:FindFirstChild("RemoteFunction")
-        local RemoteEv = tool:FindFirstChild("RemoteEvent")
-
-        -- Frutas tipo Kitsune / Dragon usam RemoteFunction TAP, mas sem Busy
-        if not ClickRemote and RemoteFn then
-            if RemoteEv then
-                pcall(function() RemoteEv:FireServer(TargetPos) end)
-            end
-            -- Sem trava de 0.5s - dispara direto
-            pcall(function() RemoteFn:InvokeServer("TAP") end)
-            return true
-        end
-
-        -- Frutas com LeftClickRemote (Mammoth, etc)
-        if ClickRemote then
-            local origin = char:FindFirstChild("HumanoidRootPart")
-            origin = origin and origin.Position or char:GetPivot().Position
-            local dir = (TargetPos - origin)
-            dir = dir.Magnitude < 0.001 and Vector3.new(0,0,-1) or dir.Unit
-            local flat = Vector3.new(dir.X, 0, dir.Z)
-            flat = flat.Magnitude < 0.001 and Vector3.new(0,0,-1) or flat.Unit
-
-            getgenv().AimPos = CFrame.new(TargetPos)
-            pcall(function() ClickRemote:FireServer(dir, FruitM1State.Combo) end)
-            if l then
-                pcall(function() ClickRemote:FireServer(flat, FruitM1State.Combo) end)
-            end
-            return true
-        end
-        return true
-    end
-
-    getgenv().UseFruitM1Boat = getgenv().UseFruitM1
-
-    -- Turbo no Heartbeat igual video - nao para nunca
-    if getgenv().M1TurboConn then
-        pcall(function() getgenv().M1TurboConn:Disconnect() end)
-    end
-    getgenv().M1TurboConn = game:GetService("RunService").Heartbeat:Connect(function()
-        if getgenv().M1Turbo == false then return end
-        local tgt = getgenv().M1Target
-        if not tgt or not tgt.Parent then return end
-        if os.clock() - (getgenv().M1TargetTime or 0) > 0.6 then return end
-        if getgenv().M1TargetWeapon == "Blox Fruit" then
-            getgenv().UseFruitM1(tgt, getgenv().M1TargetL)
+        
+        local saved = getgenv().ShadowX_UIPosition[guiName]
+        if saved and saved.Position then
+            print("[ShadowX UI] Posição carregada: " .. guiName)
+            return UDim2.new(saved.Position.X.Scale, saved.Position.X.Offset, saved.Position.Y.Scale, saved.Position.Y.Offset)
         end
     end)
+    return nil
+end
 
-    -- Forca FastAttack 60 igual video (3 caudas)
-    task.spawn(function()
-        while task.wait(0.1) do
-            if getgenv().Usefastattack or getgenv().SuperFastAttack then
-                pcall(function()
-                    if getgenv().__BC_FastAttackOnce then getgenv().__BC_FastAttackOnce() end
-                    if getgenv().BananaCatFastAttackOnce then getgenv().BananaCatFastAttackOnce() end
-                    if FastAttackOnce then FastAttackOnce() end
+-- Função pra fazer UI arrastável com salvamento automático
+function MakeDraggableAndSavePosition(frame, guiName)
+    pcall(function()
+        local UserInputService = game:GetService("UserInputService")
+        local dragging = false
+        local dragInput, dragStart, startPos
+        
+        -- Carrega posição salva se tiver
+        local savedPos = LoadUIPosition(guiName)
+        if savedPos then
+            frame.Position = savedPos
+        end
+        
+        local function update(input)
+            local delta = input.Position - dragStart
+            local newPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            frame.Position = newPos
+        end
+        
+        frame.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+                dragStart = input.Position
+                startPos = frame.Position
+                
+                input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then
+                        dragging = false
+                        -- Salva posição quando termina de arrastar
+                        SaveUIPosition(guiName, frame.Position)
+                    end
                 end)
             end
-        end
+        end)
+        
+        frame.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+                dragInput = input
+            end
+        end)
+        
+        UserInputService.InputChanged:Connect(function(input)
+            if input == dragInput and dragging then
+                update(input)
+            end
+        end)
+        
+        print("[ShadowX UI] Draggable + Save ativado: " .. guiName)
     end)
+end
 
-    print("[NEXORA FIX] M1 FRUTAS IGUAL VIDEO ATIVADO - KITSUNE SPAM 0 DELAY")
+-- Aplica em todas as UIs do ShadowX Hub
+task.spawn(function()
+    task.wait(2) -- Espera UI carregar
+    pcall(function()
+        local playerGui = game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui")
+        local coreGui = game:GetService("CoreGui")
+        
+        local guisToFix = {}
+        
+        -- Procura ShadowX Hub
+        if playerGui then
+            for _, gui in ipairs(playerGui:GetChildren()) do
+                if gui.Name:lower():find("shadow") or gui.Name:lower():find("nexora") or gui.Name:lower():find("hub") then
+                    table.insert(guisToFix, gui)
+                end
+            end
+        end
+        
+        if coreGui then
+            for _, gui in ipairs(coreGui:GetChildren()) do
+                if gui.Name:lower():find("shadow") or gui.Name:lower():find("nexora") or gui.Name:lower():find("hub") then
+                    table.insert(guisToFix, gui)
+                end
+            end
+        end
+        
+        for _, gui in ipairs(guisToFix) do
+            pcall(function()
+                -- Procura Frame principal
+                local mainFrame = gui:FindFirstChild("Main") or gui:FindFirstChild("MainFrame") or gui:FindFirstChild("Container") or gui:GetChildren()[1]
+                if mainFrame and mainFrame:IsA("Frame") then
+                    MakeDraggableAndSavePosition(mainFrame, gui.Name)
+                else
+                    -- Tenta fazer o próprio ScreenGui draggable se não achar frame
+                    for _, child in ipairs(gui:GetChildren()) do
+                        if child:IsA("Frame") and child.Size.X.Offset > 200 then
+                            MakeDraggableAndSavePosition(child, gui.Name .. "_" .. child.Name)
+                        end
+                    end
+                end
+            end)
+        end
+        
+        print("[ShadowX UI] Sistema de salvamento de posição aprimorado - FIXED!")
+    end)
 end)
--- ===================== FIM FIX =====================
+
+-- Sistema de salvamento aprimorado: salva a cada 5 segundos se posição mudou
+getgenv().ShadowX_LastPositions = {}
+
+task.spawn(function()
+    while true do
+        task.wait(5)
+        pcall(function()
+            local playerGui = game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui")
+            local coreGui = game:GetService("CoreGui")
+            
+            local function checkAndSave(guiList)
+                for _, gui in ipairs(guiList) do
+                    if gui.Name:lower():find("shadow") or gui.Name:lower():find("nexora") then
+                        for _, frame in ipairs(gui:GetChildren()) do
+                            if frame:IsA("Frame") and frame.Size.X.Offset > 200 then
+                                local key = gui.Name .. "_" .. frame.Name
+                                local currentPos = tostring(frame.Position)
+                                if getgenv().ShadowX_LastPositions[key] ~= currentPos then
+                                    getgenv().ShadowX_LastPositions[key] = currentPos
+                                    SaveUIPosition(key, frame.Position)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            
+            if playerGui then
+                checkAndSave(playerGui:GetChildren())
+            end
+            if coreGui then
+                checkAndSave(coreGui:GetChildren())
+            end
+        end)
+    end
+end)
+
+-- Comando pra resetar posição
+getgenv().ResetUIPosition = function()
+    getgenv().ShadowX_UIPosition = {}
+    if delfile and isfile and isfile(getgenv().ShadowX_UIPosition_SaveFile) then
+        pcall(function() delfile(getgenv().ShadowX_UIPosition_SaveFile) end)
+    end
+    print("[ShadowX UI] Posições resetadas!")
+end
+
+print("[ShadowX UI] Sistema de salvamento de posição APRIMORADO carregado!")
+print("[ShadowX UI] - Arrasta a UI e ela salva automaticamente")
+print("[ShadowX UI] - Carrega posição salva ao iniciar")
+print("[ShadowX UI] - Salva em arquivo: " .. getgenv().ShadowX_UIPosition_SaveFile)
+print("[ShadowX UI] - Use ResetUIPosition() pra resetar")
