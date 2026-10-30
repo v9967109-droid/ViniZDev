@@ -26992,19 +26992,6 @@ do
 				if Settings["Random Devil Fruit"] then
 					local playerGui = game:GetService("Players").LocalPlayer:FindFirstChildOfClass("PlayerGui")
 					local spinnerWindow = playerGui and playerGui:FindFirstChild("SpinnerWindow")
-					-- FIX ZIOLES GACHA BOX $463,800
-						pcall(function()
-							local playerGui = game:GetService("Players").LocalPlayer:FindFirstChildOfClass("PlayerGui")
-							if playerGui then
-								for _, btn in ipairs(playerGui:GetDescendants()) do
-									if btn:IsA("TextButton") and (tostring(btn.Text):find("463,800") or tostring(btn.Text):find("463800")) then
-										for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do pcall(function() conn:Fire() end) end
-										pcall(function() btn:Activate() end)
-										break
-									end
-								end
-							end
-						end)
 					if not spinnerWindow or not spinnerWindow.Enabled then
 						RandomFruit()
 					else
