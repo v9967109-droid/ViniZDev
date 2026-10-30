@@ -8526,6 +8526,102 @@ _("Melee", { "Z", "X", "C" })
 _("Sword", { "Z", "X" })
 _("Gun", { "Z", "X" })
 _("Blox Fruit", { "Z", "X", "C", "V", "F" })
+-- ==================== USE SKULL GUITAR TYRANT - ABAIXO HOLD SKILLS ====================
+-- Criado abaixo de Hold Skills, na mesma aba Setting Hold And Select
+SkullGuitarTyrantSection = SettingSkillMain.CreateSection("Use Skull Guitar Tyrant")
+SkullGuitarTyrantSection.CreateToggle(
+    { Title = "Use Skull Guitar Tyrant", Desc = nil, Default = Settings["Use Skull Guitar Tyrant"] == nil and true or Settings["Use Skull Guitar Tyrant"] },
+    function(b)
+        SaveSettings("Use Skull Guitar Tyrant", b)
+        getgenv().UseSkullGuitarTyrant = b
+        print("[Tyrant] Use Skull Guitar Tyrant: " .. tostring(b))
+    end
+)
+SkullGuitarTyrantSection.CreateDropdown(
+    { Title = "Select Skill", List = {"Z", "X", "Z + X"}, Search = true, Selected = true, Default = Settings["Select Skill Skull Guitar"] or "Z" },
+    function(s)
+        SaveSettings("Select Skill Skull Guitar", s)
+        getgenv().SkullGuitarTyrantSkill = s
+        print("[Tyrant] Select Skill: " .. tostring(s))
+    end
+)
+-- Defaults - Ja vem ativado padrao
+if Settings["Use Skull Guitar Tyrant"] == nil then
+    Settings["Use Skull Guitar Tyrant"] = true
+    getgenv().UseSkullGuitarTyrant = true
+end
+if Settings["Select Skill Skull Guitar"] == nil then
+    Settings["Select Skill Skull Guitar"] = "Z"
+    getgenv().SkullGuitarTyrantSkill = "Z"
+end
+getgenv().UseSkullGuitarTyrant = Settings["Use Skull Guitar Tyrant"]
+getgenv().SkullGuitarTyrantSkill = Settings["Select Skill Skull Guitar"]
+-- Funcao pra quebrar vasos SO com skill selecionada
+getgenv().BreakVaseWithSelectedSkill = function(vase)
+    pcall(function()
+        if not getgenv().UseSkullGuitarTyrant then return end
+        local player = game:GetService("Players").LocalPlayer
+        if not player or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
+        local playerRoot = player.Character.HumanoidRootPart
+        local vasePos = nil
+        if vase:IsA("Model") and vase:FindFirstChild("HumanoidRootPart") then vasePos = vase.HumanoidRootPart.Position
+        elseif vase:FindFirstChild("Handle") then vasePos = vase.Handle.Position
+        elseif vase:IsA("BasePart") then vasePos = vase.Position end
+        if not vasePos then return end
+        playerRoot.CFrame = CFrame.new(vasePos + Vector3.new(0, 3, 0))
+        task.wait(0.2)
+        local char = player.Character
+        local tool = char:FindFirstChild("Skull Guitar")
+        if not tool then
+            local guitar = player.Backpack:FindFirstChild("Skull Guitar")
+            if guitar then char.Humanoid:EquipTool(guitar) task.wait(0.3) tool = char:FindFirstChild("Skull Guitar") end
+        end
+        if not tool then return end
+        local selected = getgenv().SkullGuitarTyrantSkill or "Z"
+        local vim = game:GetService("VirtualInputManager")
+        local keyMap = {Z=Enum.KeyCode.Z, X=Enum.KeyCode.X}
+        local function ClickSkill(key)
+            local keyCode = keyMap[key]
+            if not keyCode then return end
+            vim:SendKeyEvent(true, keyCode, false, game)
+            task.wait(0.08)
+            vim:SendKeyEvent(false, keyCode, false, game)
+            task.wait(0.1)
+            tool:Activate()
+            task.wait(0.3)
+        end
+        if selected == "Z" then
+            ClickSkill("Z") task.wait(0.8)
+            if vase and vase.Parent then ClickSkill("Z") end
+        elseif selected == "X" then
+            ClickSkill("X") task.wait(1.0)
+            if vase and vase.Parent then ClickSkill("X") end
+        elseif selected == "Z + X" then
+            ClickSkill("Z") task.wait(0.8)
+            if vase and vase.Parent then ClickSkill("X") end
+            task.wait(1.0)
+            if vase and vase.Parent then ClickSkill("Z") end
+        end
+    end)
+end
+-- Loop Farm Tyrant usando SO skills selecionadas
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        pcall(function()
+            if getgenv().UseSkullGuitarTyrant and Settings and Settings["Farm Tyrant"] then
+                for _, obj in ipairs(workspace:GetChildren()) do
+                    local name = obj.Name:lower()
+                    if name:find("vase") or name:find("vaso") then
+                        getgenv().BreakVaseWithSelectedSkill(obj)
+                        task.wait(0.5)
+                    end
+                end
+            end
+        end)
+    end
+end)
+-- ==================== FIM USE SKULL GUITAR TYRANT ====================
 FarmMain = Main.CreatePage({ Page_Name = "Farming", Page_Title = "Farming" })
 SettingAutoFarmSection = FarmMain.CreateSection("Farming")
 -- Individual farm toggles. Each method keeps its own state; no Select Method Farm dropdown.
@@ -30161,238 +30257,3 @@ function UseDragonstormAllSeaEvents(Part)
 end
 
 print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZDev")
-
-
--- FIX USE SKULL GUITAR TYRANT
--- FIX: Setting Hold And Select - Abaixo Hold Skills -> Use Skull Guitar Tyrant
--- Toggle ativado por padrao + Select Skill (Z, X) + So usa skills da skill pra quebrar vasos
-
-getgenv().UseSkullGuitarTyrant = true -- Ja vem ativado padrao
-getgenv().SkullGuitarTyrantSkill = "Z" -- Padrao Z (Abanador de Almas)
-getgenv().SkullGuitarTyrantSkillsList = {"Z", "X", "Z + X"}
-
--- Salva em Settings pra persistir
-if Settings then
-    if Settings["Use Skull Guitar Tyrant"] == nil then
-        Settings["Use Skull Guitar Tyrant"] = true -- Padrao ativado
-    end
-    if Settings["Select Skill Skull Guitar"] == nil then
-        Settings["Select Skill Skull Guitar"] = "Z"
-    end
-    getgenv().UseSkullGuitarTyrant = Settings["Use Skull Guitar Tyrant"]
-    getgenv().SkullGuitarTyrantSkill = Settings["Select Skill Skull Guitar"]
-end
-
--- Funcao pra quebrar vasos SO com skill selecionada
-function BreakVaseWithSelectedSkill(vase)
-    pcall(function()
-        local player = game:GetService("Players").LocalPlayer
-        if not player or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
-        
-        -- Se toggle desligado, nao faz nada (volta pro metodo antigo)
-        if not getgenv().UseSkullGuitarTyrant then return end
-        
-        local playerRoot = player.Character.HumanoidRootPart
-        local vasePos = nil
-        if vase:IsA("Model") and vase:FindFirstChild("HumanoidRootPart") then vasePos = vase.HumanoidRootPart.Position
-        elseif vase:FindFirstChild("Handle") then vasePos = vase.Handle.Position
-        elseif vase:IsA("BasePart") then vasePos = vase.Position end
-        if not vasePos then return end
-        
-        playerRoot.CFrame = CFrame.new(vasePos + Vector3.new(0, 3, 0))
-        task.wait(0.2)
-        
-        -- Equipa Skull Guitar
-        local char = player.Character
-        local tool = char:FindFirstChild("Skull Guitar")
-        if not tool then
-            local guitar = player.Backpack:FindFirstChild("Skull Guitar")
-            if guitar then
-                char.Humanoid:EquipTool(guitar)
-                task.wait(0.3)
-                tool = char:FindFirstChild("Skull Guitar")
-            end
-        end
-        if not tool then return end
-        
-        -- SO USA AS SKILLS DA SKILL SELECIONADA
-        local selected = getgenv().SkullGuitarTyrantSkill or "Z"
-        local vim = game:GetService("VirtualInputManager")
-        local keyMap = {Z=Enum.KeyCode.Z, X=Enum.KeyCode.X}
-        
-        local function ClickSkill(key)
-            local keyCode = keyMap[key]
-            if not keyCode then return end
-            vim:SendKeyEvent(true, keyCode, false, game)
-            task.wait(0.08)
-            vim:SendKeyEvent(false, keyCode, false, game)
-            task.wait(0.1)
-            tool:Activate()
-            task.wait(0.3)
-            print("[Tyrant Skull Guitar] Usou skill: " .. key .. " (Select: " .. selected .. ")")
-        end
-        
-        if selected == "Z" then
-            ClickSkill("Z")
-            task.wait(0.8)
-            if vase and vase.Parent then ClickSkill("Z") end
-        elseif selected == "X" then
-            ClickSkill("X")
-            task.wait(1.0)
-            if vase and vase.Parent then ClickSkill("X") end
-        elseif selected == "Z + X" then
-            ClickSkill("Z")
-            task.wait(0.8)
-            if vase and vase.Parent then ClickSkill("X") end
-            task.wait(1.0)
-            if vase and vase.Parent then ClickSkill("Z") end
-        end
-    end)
-end
-
--- Cria UI na aba Setting Hold And Select - Abaixo Hold Skills
-task.spawn(function()
-    task.wait(3) -- Espera UI carregar
-    pcall(function()
-        local player = game:GetService("Players").LocalPlayer
-        local playerGui = player:FindFirstChild("PlayerGui")
-        local coreGui = game:GetService("CoreGui")
-        
-        local function FindSettingHoldTab()
-            for _, gui in ipairs({playerGui, coreGui}) do
-                if gui then
-                    for _, desc in ipairs(gui:GetDescendants()) do
-                        if desc:IsA("TextLabel") and desc.Text:lower():find("hold skills") then
-                            return desc
-                        end
-                    end
-                end
-            end
-            return nil
-        end
-        
-        local holdLabel = FindSettingHoldTab()
-        if holdLabel then
-            local parent = holdLabel.Parent
-            -- Cria frame Use Skull Guitar Tyrant abaixo de Hold Skills
-            local frame = Instance.new("Frame")
-            frame.Name = "UseSkullGuitarTyrantFrame"
-            frame.Size = UDim2.new(1, -10, 0, 110)
-            frame.Position = UDim2.new(0, 5, 0, holdLabel.Position.Y.Offset + 80)
-            frame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-            frame.BorderSizePixel = 0
-            frame.Parent = parent
-            
-            local corner = Instance.new("UICorner")
-            corner.CornerRadius = UDim.new(0, 8)
-            corner.Parent = frame
-            
-            local title = Instance.new("TextLabel")
-            title.Size = UDim2.new(1, -10, 0, 25)
-            title.Position = UDim2.new(0, 5, 0, 5)
-            title.BackgroundTransparency = 1
-            title.Text = "Use Skull Guitar Tyrant"
-            title.TextColor3 = Color3.fromRGB(255, 255, 255)
-            title.Font = Enum.Font.GothamBold
-            title.TextSize = 14
-            title.TextXAlignment = Enum.TextXAlignment.Left
-            title.Parent = frame
-            
-            -- Toggle - Ja vem ativado padrao
-            local toggleBtn = Instance.new("TextButton")
-            toggleBtn.Size = UDim2.new(0, 50, 0, 25)
-            toggleBtn.Position = UDim2.new(1, -55, 0, 5)
-            toggleBtn.BackgroundColor3 = getgenv().UseSkullGuitarTyrant and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(80, 80, 80)
-            toggleBtn.Text = getgenv().UseSkullGuitarTyrant and "ON" or "OFF"
-            toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            toggleBtn.Font = Enum.Font.GothamBold
-            toggleBtn.TextSize = 12
-            toggleBtn.Parent = frame
-            
-            local toggleCorner = Instance.new("UICorner")
-            toggleCorner.CornerRadius = UDim.new(0, 12)
-            toggleCorner.Parent = toggleBtn
-            
-            toggleBtn.MouseButton1Click:Connect(function()
-                getgenv().UseSkullGuitarTyrant = not getgenv().UseSkullGuitarTyrant
-                if Settings then Settings["Use Skull Guitar Tyrant"] = getgenv().UseSkullGuitarTyrant end
-                toggleBtn.BackgroundColor3 = getgenv().UseSkullGuitarTyrant and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(80, 80, 80)
-                toggleBtn.Text = getgenv().UseSkullGuitarTyrant and "ON" or "OFF"
-                print("[Tyrant] Use Skull Guitar Tyrant: " .. tostring(getgenv().UseSkullGuitarTyrant))
-            end)
-            
-            -- Select Skill Label
-            local selectLabel = Instance.new("TextLabel")
-            selectLabel.Size = UDim2.new(1, -10, 0, 20)
-            selectLabel.Position = UDim2.new(0, 5, 0, 35)
-            selectLabel.BackgroundTransparency = 1
-            selectLabel.Text = "Select Skill"
-            selectLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-            selectLabel.Font = Enum.Font.Gotham
-            selectLabel.TextSize = 12
-            selectLabel.TextXAlignment = Enum.TextXAlignment.Left
-            selectLabel.Parent = frame
-            
-            -- Select Skill Dropdown (Z, X, Z+X)
-            local dropdownBtn = Instance.new("TextButton")
-            dropdownBtn.Size = UDim2.new(1, -10, 0, 30)
-            dropdownBtn.Position = UDim2.new(0, 5, 0, 60)
-            dropdownBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-            dropdownBtn.Text = getgenv().SkullGuitarTyrantSkill .. "  v"
-            dropdownBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            dropdownBtn.Font = Enum.Font.GothamBold
-            dropdownBtn.TextSize = 13
-            dropdownBtn.Parent = frame
-            
-            local dropCorner = Instance.new("UICorner")
-            dropCorner.CornerRadius = UDim.new(0, 6)
-            dropCorner.Parent = dropdownBtn
-            
-            local currentIdx = 1
-            for i, v in ipairs(getgenv().SkullGuitarTyrantSkillsList) do
-                if v == getgenv().SkullGuitarTyrantSkill then currentIdx = i end
-            end
-            
-            dropdownBtn.MouseButton1Click:Connect(function()
-                currentIdx = currentIdx + 1
-                if currentIdx > #getgenv().SkullGuitarTyrantSkillsList then currentIdx = 1 end
-                local selected = getgenv().SkullGuitarTyrantSkillsList[currentIdx]
-                getgenv().SkullGuitarTyrantSkill = selected
-                if Settings then Settings["Select Skill Skull Guitar"] = selected end
-                dropdownBtn.Text = selected .. "  v"
-                print("[Tyrant] Select Skill: " .. selected)
-            end)
-            
-            print("[Tyrant UI] Use Skull Guitar Tyrant criado - Abaixo Hold Skills - Padrao ON")
-        else
-            print("[Tyrant UI] Hold Skills nao encontrado, criando fallback")
-        end
-    end)
-end)
-
--- Loop farm Tyrant usando SO skills selecionadas
-task.spawn(function()
-    while true do
-        task.wait(0.5)
-        pcall(function()
-            if getgenv().UseSkullGuitarTyrant and (Settings and Settings["Farm Tyrant"]) then
-                for _, obj in ipairs(workspace:GetChildren()) do
-                    local name = obj.Name:lower()
-                    if name:find("vase") or name:find("vaso") then
-                        BreakVaseWithSelectedSkill(obj)
-                        task.wait(0.5)
-                    end
-                end
-            end
-        end)
-    end
-end)
-
--- Override pra usar so skills selecionadas quando quebrar vasos
-if _G.BreakVaseWithSkills then
-    _G.OldBreakVaseWithSkills = _G.BreakVaseWithSkills
-    _G.BreakVaseWithSkills = BreakVaseWithSelectedSkill
-end
-getgenv().BreakVaseWithSelectedSkill = BreakVaseWithSelectedSkill
-
-print("[Tyrant] Use Skull Guitar Tyrant - ATIVADO PADRAO ON - Select Skill: " .. getgenv().SkullGuitarTyrantSkill)
