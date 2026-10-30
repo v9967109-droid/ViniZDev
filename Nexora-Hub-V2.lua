@@ -7704,9 +7704,9 @@ getgenv().SpamGunDragonStorm = function(E)
 	if not d or not E or not E.Position then
 		return
 	end
-	-- FIX: So atira a cada 2 segundos, nao spam rapido!
+	-- 1 CLICK POR SEGUNDO, NAO SPAM RAPIDO!
 	local now = os.clock()
-	if now - (getgenv().__DragonStormSpamLast or 0) < 2 then
+	if now - (getgenv().__DragonStormSpamLast or 0) < 1 then
 		return
 	end
 	getgenv().__DragonStormSpamLast = now
@@ -7717,7 +7717,6 @@ getgenv().SpamGunDragonStorm = function(E)
 	if reloading then
 		return
 	end
-	-- REMOTES MELHORES: Validator + ShootGunEvent + TAP + Activate, LENTO 2s
 	pcall(function()
 		local l = getupvalues(require(L.Controllers.CombatController).Attack)[9]
 		local I, _, o, V, N, y, P =
@@ -7788,8 +7787,8 @@ function DragonstormPhysicalClick(force, toolName)
 	toolName = toolName or "Dragonstorm"
 	local now = os.clock()
 	local lastKey = "__PhysicalClickLast_" .. tostring(toolName)
-	-- FIX: Click de 2 segundos LENTO, nao rapido! Intervalo 2s tambem!
-	local interval = getgenv().PhysicalGunClickInterval or getgenv().DSClickInterval or 2
+	-- FIX: 1 CLICK POR SEGUNDO, NAO SEGURAR!
+	local interval = getgenv().PhysicalGunClickInterval or getgenv().DSClickInterval or 1
 	if not force and now - (getgenv()[lastKey] or 0) < interval then
 		return false
 	end
@@ -7801,16 +7800,16 @@ function DragonstormPhysicalClick(force, toolName)
 			local vp = Camera.ViewportSize
 			local x, y = math.floor(vp.X / 2), 2
 			local VIM = game:GetService("VirtualInputManager")
-			-- CLICK NA TELA DRAGON STORM DE 2 SEGUNDOS LENTO!
+			-- 1 CLICK POR SEGUNDO, CLICK RAPIDO NAO SEGURAR!
 			VIM:SendMouseMoveEvent(x, y, game)
 			task.wait(0.03)
 			VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
-			task.wait(2) -- SEGURA 2 SEGUNDOS!
+			task.wait(0.05)
 			VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
 			pcall(function()
 				local tx, ty = x, math.max(64, math.floor(vp.Y * 0.12))
 				VIM:SendTouchEvent(1, 0, tx, ty)
-				task.wait(2) -- 2 SEGUNDOS MOBILE!
+				task.wait(0.05)
 				VIM:SendTouchEvent(1, 2, tx, ty)
 			end)
 			pcall(function()
@@ -15792,23 +15791,29 @@ function SpinBoat()
 	end
 end
 function NoclipBoat(P)
-	-- FIX: Agora NAO bate mais nas paredes! Deixa TUDO sem colisao, incluindo VehicleSeat!
+	-- FIX: VehicleSeat com colisao pra player conseguir sentar!
+	-- Barco sem colisao nas paredes, mas VehicleSeat com colisao pra sentar!
 	if not P then return end
 	for _, part in ipairs(P:GetDescendants()) do
 		if part:IsA("BasePart") then
-			part.CanCollide = false
-			part.CanTouch = false
-			pcall(function()
-				part.CanQuery = false
-			end)
+			if part:IsA("VehicleSeat") or part:IsA("Seat") then
+				part.CanCollide = true -- VehicleSeat COM colisao pra sentar!
+			else
+				part.CanCollide = false
+				part.CanTouch = false
+				pcall(function()
+					part.CanQuery = false
+				end)
+			end
 		end
 	end
 	pcall(function()
-		if P.PrimaryPart then
+		if P.PrimaryPart and not P.PrimaryPart:IsA("VehicleSeat") then
 			P.PrimaryPart.CanCollide = false
 		end
 	end)
 end
+
 function TurnOffNoclipBoat(P)
 	if not P then return end
 	for _, part in ipairs(P:GetDescendants()) do
