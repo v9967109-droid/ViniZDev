@@ -8531,25 +8531,38 @@ _("Blox Fruit", { "Z", "X", "C", "V", "F" })
 -- Farm original continua igual: ele decide quando ir pros vasos, quando matar Skull Slayers, etc.
 -- Use Skills SO troca o ATAQUE quando o farm original ja esta no vaso!
 -- Se Use Skills OFF -> farm original 100% igual, sem nenhuma mudanca!
-if type(Settings["Select Skills Skull Guitar"]) == "table" then
-    local tbl = Settings["Select Skills Skull Guitar"]
-    if tbl["Z"] then Settings["Select Skills Skull Guitar"] = "Z"
-    elseif tbl["X"] then Settings["Select Skills Skull Guitar"] = "X"
-    else Settings["Select Skills Skull Guitar"] = "Z" end
+-- FIX SAVE MULTI: Se Settings antigo era string "Z"/"X", converte pra tabela {Z=true} ou {X=true}
+if type(Settings["Select Skills Skull Guitar"]) == "string" then
+    local old = Settings["Select Skills Skull Guitar"]
+    if old == "Z" then Settings["Select Skills Skull Guitar"] = {Z = true, X = false}
+    elseif old == "X" then Settings["Select Skills Skull Guitar"] = {Z = false, X = true}
+    else Settings["Select Skills Skull Guitar"] = {Z = true, X = true} end
+    SaveSettings("Select Skills Skull Guitar", "Z", Settings["Select Skills Skull Guitar"].Z)
+    SaveSettings("Select Skills Skull Guitar", "X", Settings["Select Skills Skull Guitar"].X)
 end
-if Settings["Select Skills Skull Guitar"] ~= "Z" and Settings["Select Skills Skull Guitar"] ~= "X" then
-    Settings["Select Skills Skull Guitar"] = "Z"
+if type(Settings["Select Skills Skull Guitar"]) ~= "table" then
+    Settings["Select Skills Skull Guitar"] = {Z = true, X = true}
 end
+-- Garante que pelo menos uma skill esta marcada (padrao Z e X ligados)
+if Settings["Select Skills Skull Guitar"].Z == nil and Settings["Select Skills Skull Guitar"].X == nil then
+    Settings["Select Skills Skull Guitar"] = {Z = true, X = true}
+end
+if Settings["Select Skills Skull Guitar"].Z == nil then Settings["Select Skills Skull Guitar"].Z = true end
+if Settings["Select Skills Skull Guitar"].X == nil then Settings["Select Skills Skull Guitar"].X = true end
 if Settings["Use Skills"] == nil then Settings["Use Skills"] = true end
 getgenv().UseSkills = Settings["Use Skills"]
-getgenv().UseSkillsSelected = Settings["Select Skills Skull Guitar"]
+getgenv().UseSkillsSelected = Settings["Select Skills Skull Guitar"] -- Tabela {Z=true, X=true}
 SelectSkillsUseSkillsSection = SettingSkillMain.CreateSection("Use Skills Vases Tyrant")
+-- MULTI-SELECT Z,X: Pode marcar as duas ao mesmo tempo!
+-- Igual Select Skills Melee/Sword/Gun la em cima: usa tabela {Z=true, X=true}
 SelectSkillsUseSkillsSection.CreateDropdown(
-    { Title = "Select Skills Skull Guitar", List = {"Z", "X"}, Search = true, Selected = false, Default = Settings["Select Skills Skull Guitar"] or "Z" },
-    function(s)
-        SaveSettings("Select Skills Skull Guitar", s)
-        getgenv().UseSkillsSelected = s
+    { Title = "Select Skills Skull Guitar", List = PrepareMultiSelectList({Z = false, X = false}, Settings["Select Skills Skull Guitar"], true), Search = true, Selected = true, Default = Settings["Select Skills Skull Guitar"] or nil },
+    function(key, val)
+        -- key = "Z" ou "X", val = true/false (marcado ou nao)
+        SaveSettings("Select Skills Skull Guitar", key, val)
+        getgenv().UseSkillsSelected = Settings["Select Skills Skull Guitar"]
         pcall(function() writefile(FolderName .. "/" .. SaveFileName, HttpService:JSONEncode(Settings)) end)
+        print("[Tyrant] Select Skills Skull Guitar SAVE: " .. tostring(key) .. " = " .. tostring(val))
     end
 )
 SelectSkillsUseSkillsSection.CreateToggle(
@@ -8565,19 +8578,44 @@ SelectSkillsUseSkillsSection.CreateToggle(
 getgenv().UseSkullGuitarSkillAttack = function(hitPart)
     if not getgenv().UseSkills then return false end
     if not Settings or not Settings["Use Skills"] then return false end
-    local sel = getgenv().UseSkillsSelected or Settings["Select Skills Skull Guitar"] or "Z"
+    -- MULTI-SELECT: Usa Z e X se os dois estiverem marcados!
+    local tbl = Settings["Select Skills Skull Guitar"] or getgenv().UseSkillsSelected or {Z = true, X = true}
+    -- Se tbl for string antiga "Z"/"X", converte
+    if type(tbl) == "string" then
+        if tbl == "Z" then tbl = {Z = true, X = false}
+        elseif tbl == "X" then tbl = {Z = false, X = true}
+        else tbl = {Z = true, X = true} end
+    end
     local vim = game:GetService("VirtualInputManager")
     local km = {Z=Enum.KeyCode.Z, X=Enum.KeyCode.X}
-    local kc = km[sel]
-    if not kc then return false end
-    vim:SendKeyEvent(true, kc, false, game)
-    task.wait(0.08)
-    vim:SendKeyEvent(false, kc, false, game)
-    task.wait(0.1)
-    local char = game:GetService("Players").LocalPlayer.Character
-    local tool = char and char:FindFirstChild("Skull Guitar")
-    if tool then tool:Activate() end
-    return true
+    local used = false
+    -- Usa Z se marcado
+    if tbl.Z then
+        local kc = km.Z
+        vim:SendKeyEvent(true, kc, false, game)
+        task.wait(0.08)
+        vim:SendKeyEvent(false, kc, false, game)
+        task.wait(0.1)
+        local char = game:GetService("Players").LocalPlayer.Character
+        local tool = char and char:FindFirstChild("Skull Guitar")
+        if tool then tool:Activate() end
+        used = true
+        task.wait(0.5)
+    end
+    -- Usa X se marcado (pode usar as duas ao mesmo tempo!)
+    if tbl.X then
+        local kc = km.X
+        vim:SendKeyEvent(true, kc, false, game)
+        task.wait(0.08)
+        vim:SendKeyEvent(false, kc, false, game)
+        task.wait(0.1)
+        local char = game:GetService("Players").LocalPlayer.Character
+        local tool = char and char:FindFirstChild("Skull Guitar")
+        if tool then tool:Activate() end
+        used = true
+        task.wait(0.5)
+    end
+    return used
 end
 -- ==================== FIM USE SKILLS ====================
 FarmMain = Main.CreatePage({ Page_Name = "Farming", Page_Title = "Farming" })
@@ -25295,117 +25333,217 @@ function DetectPlayerESP()
 	end
 end
 function ESPPlayer()
-	local b = DetectPlayerESP()
-	if b then
-		local s = Instance.new("IntValue", b)
-		s.Name = "Ignored"
-		local TeamText = Drawing.new("Text")
-		TeamText.Visible = false
-		TeamText.Transparency = 1
-		TeamText.Text = "Team"
-		TeamText.Color = Color3.fromRGB(255, 255, 255)
-		TeamText.Size = 14
-		TeamText.Outline = true
-		TeamText.OutlineColor = Color3.fromRGB(0, 0, 0)
-		TeamText.Center = true
-		TeamText.Font = 2
-		local NameText = Drawing.new("Text")
-		NameText.Visible = false
-		NameText.Transparency = 1
-		NameText.Text = b.Name
-		NameText.Color = Color3.fromRGB(255, 255, 255)
-		NameText.Size = 16
-		NameText.Outline = true
-		NameText.OutlineColor = Color3.fromRGB(0, 0, 0)
-		NameText.Center = true
-		NameText.Font = 2
-		local HpText = Drawing.new("Text")
-		HpText.Visible = false
-		HpText.Transparency = 1
-		HpText.Text = "HP"
-		HpText.Color = Color3.fromRGB(0, 255, 0)
-		HpText.Size = 14
-		HpText.Outline = true
-		HpText.OutlineColor = Color3.fromRGB(0, 0, 0)
-		HpText.Center = true
-		HpText.Font = 2
-		local DistText = Drawing.new("Text")
-		DistText.Visible = false
-		DistText.Transparency = 1
-		DistText.Text = "Dist"
-		DistText.Color = Color3.fromRGB(255, 255, 255)
-		DistText.Size = 14
-		DistText.Outline = true
-		DistText.OutlineColor = Color3.fromRGB(0, 0, 0)
-		DistText.Center = true
-		DistText.Font = 2
-		spawn(function()
-			repeat
-				task.wait()
-				local g, f = game.workspace.CurrentCamera:WorldToViewportPoint(b.HumanoidRootPart.Position)
-				if f then
-					local plr = game.Players:FindFirstChild(b.Name)
-					local teamName = "No Team"
-					local teamColor = Color3.fromRGB(255, 255, 255)
-					if plr and plr.Team then
-						teamName = plr.Team.Name
-						if teamName:lower():find("pirate") or teamName:lower():find("pirata") then
-							teamColor = Color3.fromRGB(255, 50, 50)
-						elseif teamName:lower():find("marine") then
-							teamColor = Color3.fromRGB(80, 130, 255)
-						else
-							teamColor = Color3.fromRGB(255, 215, 0)
-						end
-					end
-					local dist = math.round(t:DistanceFromCharacter(b.HumanoidRootPart.Position))
-					local hp = math.round(b.Humanoid.Health)
-					local maxHp = math.round(b.Humanoid.MaxHealth)
-					local hpPercent = math.floor((hp / maxHp) * 100)
-					TeamText.Text = "[" .. teamName .. "]"
-					TeamText.Color = teamColor
-					NameText.Text = b.Name
-					NameText.Color = Color3.fromRGB(255, 255, 255)
-					HpText.Text = "HP: " .. hp .. "/" .. maxHp .. " (" .. hpPercent .. "%)"
-					HpText.Color = Color3.fromRGB(0, 255, 0)
-					DistText.Text = "Dist: " .. dist .. "m"
-					DistText.Color = Color3.fromRGB(255, 255, 255)
-					local scale = 1
-					if dist < 30 then
-						scale = 1.8
-					elseif dist < 60 then
-						scale = 1.5
-					elseif dist < 100 then
-						scale = 1.3
-					elseif dist < 200 then
-						scale = 1.1
-					end
-					TeamText.Size = math.floor(14 * scale)
-					NameText.Size = math.floor(16 * scale)
-					HpText.Size = math.floor(14 * scale)
-					DistText.Size = math.floor(14 * scale)
-					TeamText.Position = Vector2.new(g.X, g.Y - 50 * scale)
-					NameText.Position = Vector2.new(g.X, g.Y - 35 * scale)
-					HpText.Position = Vector2.new(g.X, g.Y - 20 * scale)
-					DistText.Position = Vector2.new(g.X, g.Y - 5)
-					TeamText.Visible = true
-					NameText.Visible = true
-					HpText.Visible = true
-					DistText.Visible = true
-				else
-					TeamText.Visible = false
-					NameText.Visible = false
-					HpText.Visible = false
-					DistText.Visible = false
-				end
-			until not b or not b.Parent or not Settings["ESP Player"]
-			TeamText:Remove()
-			NameText:Remove()
-			HpText:Remove()
-			DistText:Remove()
-			if b.Parent then s:Destroy() end
-		end)
-	end
+    local b = DetectPlayerESP()
+    if b then
+        local s = Instance.new("IntValue", b)
+        s.Name = "Ignored"
+        -- ===== ESP PLAYER BONITO - V2 =====
+        -- Box em volta do player (Square, borda colorida por time)
+        local Box = Drawing.new("Square")
+        Box.Visible = false
+        Box.Filled = false
+        Box.Thickness = 2
+        Box.Color = Color3.fromRGB(0, 170, 255)
+        Box.Transparency = 1
+        -- Background do nome (painel preto transparente atras dos textos)
+        local NameBg = Drawing.new("Square")
+        NameBg.Visible = false
+        NameBg.Filled = true
+        NameBg.Color = Color3.fromRGB(0, 0, 0)
+        NameBg.Transparency = 0.55
+        -- Barra de HP fundo
+        local HpBg = Drawing.new("Square")
+        HpBg.Visible = false
+        HpBg.Filled = true
+        HpBg.Color = Color3.fromRGB(20, 20, 20)
+        HpBg.Transparency = 0.8
+        -- Barra de HP fill (muda cor por HP%)
+        local HpBar = Drawing.new("Square")
+        HpBar.Visible = false
+        HpBar.Filled = true
+        HpBar.Color = Color3.fromRGB(0, 255, 0)
+        HpBar.Transparency = 1
+        -- Texto do time (badge colorido)
+        local TeamText = Drawing.new("Text")
+        TeamText.Visible = false
+        TeamText.Transparency = 1
+        TeamText.Text = "Team"
+        TeamText.Color = Color3.fromRGB(255, 255, 255)
+        TeamText.Size = 13
+        TeamText.Outline = true
+        TeamText.OutlineColor = Color3.fromRGB(0, 0, 0)
+        TeamText.Center = true
+        TeamText.Font = 2
+        -- Nome (mais bonito, maior, branco/ciano)
+        local NameText = Drawing.new("Text")
+        NameText.Visible = false
+        NameText.Transparency = 1
+        NameText.Text = b.Name
+        NameText.Color = Color3.fromRGB(255, 255, 255)
+        NameText.Size = 17
+        NameText.Outline = true
+        NameText.OutlineColor = Color3.fromRGB(0, 0, 0)
+        NameText.Center = true
+        NameText.Font = 2
+        -- HP Texto (cor por HP%)
+        local HpText = Drawing.new("Text")
+        HpText.Visible = false
+        HpText.Transparency = 1
+        HpText.Text = "HP"
+        HpText.Color = Color3.fromRGB(0, 255, 0)
+        HpText.Size = 13
+        HpText.Outline = true
+        HpText.OutlineColor = Color3.fromRGB(0, 0, 0)
+        HpText.Center = true
+        HpText.Font = 2
+        -- Distancia (cor por distancia)
+        local DistText = Drawing.new("Text")
+        DistText.Visible = false
+        DistText.Transparency = 1
+        DistText.Text = "Dist"
+        DistText.Color = Color3.fromRGB(200, 200, 255)
+        DistText.Size = 13
+        DistText.Outline = true
+        DistText.OutlineColor = Color3.fromRGB(0, 0, 0)
+        DistText.Center = true
+        DistText.Font = 2
+        -- Level / Bounty se tiver
+        local LevelText = Drawing.new("Text")
+        LevelText.Visible = false
+        LevelText.Transparency = 1
+        LevelText.Text = ""
+        LevelText.Color = Color3.fromRGB(255, 215, 0)
+        LevelText.Size = 12
+        LevelText.Outline = true
+        LevelText.OutlineColor = Color3.fromRGB(0, 0, 0)
+        LevelText.Center = true
+        LevelText.Font = 2
+        spawn(function()
+            repeat
+                task.wait()
+                local g, f = game.workspace.CurrentCamera:WorldToViewportPoint(b.HumanoidRootPart.Position)
+                if f then
+                    local plr = game.Players:FindFirstChild(b.Name)
+                    local teamName = "No Team"
+                    local teamColor = Color3.fromRGB(255, 255, 255)
+                    if plr and plr.Team then
+                        teamName = plr.Team.Name
+                        if teamName:lower():find("pirate") or teamName:lower():find("pirata") then
+                            teamColor = Color3.fromRGB(255, 50, 50)
+                        elseif teamName:lower():find("marine") then
+                            teamColor = Color3.fromRGB(80, 130, 255)
+                        else
+                            teamColor = Color3.fromRGB(255, 215, 0)
+                        end
+                    end
+                    local dist = math.round(t:DistanceFromCharacter(b.HumanoidRootPart.Position))
+                    local hp = math.round(b.Humanoid.Health)
+                    local maxHp = math.round(b.Humanoid.MaxHealth)
+                    local hpPercent = math.clamp(hp / maxHp, 0, 1)
+                    local hpPercentInt = math.floor(hpPercent * 100)
+                    -- Cor do HP: verde >50%, amarelo 25-50%, vermelho <25%
+                    local hpColor = Color3.fromRGB(0, 255, 0)
+                    if hpPercent < 0.25 then hpColor = Color3.fromRGB(255, 30, 30)
+                    elseif hpPercent < 0.5 then hpColor = Color3.fromRGB(255, 200, 0) end
+                    -- Cor da distancia: verde perto, amarelo medio, cinza longe
+                    local distColor = Color3.fromRGB(100, 255, 100)
+                    if dist > 200 then distColor = Color3.fromRGB(180, 180, 200)
+                    elseif dist > 100 then distColor = Color3.fromRGB(255, 220, 100) end
+                    -- Level / Bounty
+                    local lvlText = ""
+                    pcall(function()
+                        if plr and plr:FindFirstChild("leaderstats") and plr.leaderstats:FindFirstChild("Bounty/Honor") then
+                            lvlText = "Bounty: " .. tostring(plr.leaderstats["Bounty/Honor"].Value)
+                        elseif plr and plr.Data and plr.Data:FindFirstChild("Level") then
+                            lvlText = "Lv. " .. tostring(plr.Data.Level.Value)
+                        end
+                    end)
+                    TeamText.Text = "[" .. teamName .. "]"
+                    TeamText.Color = teamColor
+                    NameText.Text = b.Name
+                    -- Nome ciano se inimigo (time diferente), branco se mesmo time
+                    local localPlr = game.Players.LocalPlayer
+                    if localPlr and plr and localPlr.Team and plr.Team and localPlr.Team ~= plr.Team then
+                        NameText.Color = Color3.fromRGB(0, 220, 255)
+                    else
+                        NameText.Color = Color3.fromRGB(255, 255, 255)
+                    end
+                    HpText.Text = "HP: " .. hp .. "/" .. maxHp .. " (" .. hpPercentInt .. "%)"
+                    HpText.Color = hpColor
+                    DistText.Text = dist .. "m"
+                    DistText.Color = distColor
+                    LevelText.Text = lvlText
+                    local scale = 1
+                    if dist < 30 then scale = 1.8
+                    elseif dist < 60 then scale = 1.5
+                    elseif dist < 100 then scale = 1.3
+                    elseif dist < 200 then scale = 1.1 end
+                    TeamText.Size = math.floor(13 * scale)
+                    NameText.Size = math.floor(17 * scale)
+                    HpText.Size = math.floor(13 * scale)
+                    DistText.Size = math.floor(13 * scale)
+                    LevelText.Size = math.floor(12 * scale)
+                    -- Posicoes
+                    local baseY = g.Y - 50 * scale
+                    TeamText.Position = Vector2.new(g.X, baseY - 30 * scale)
+                    NameText.Position = Vector2.new(g.X, baseY - 15 * scale)
+                    HpText.Position = Vector2.new(g.X, baseY)
+                    DistText.Position = Vector2.new(g.X, baseY + 15 * scale)
+                    LevelText.Position = Vector2.new(g.X, baseY + 30 * scale)
+                    -- Box em volta do player (calcula tamanho por distancia)
+                    local boxW = 60 * scale
+                    local boxH = 100 * scale
+                    Box.Size = Vector2.new(boxW, boxH)
+                    Box.Position = Vector2.new(g.X - boxW / 2, g.Y - boxH / 2 - 10)
+                    Box.Color = teamColor
+                    Box.Thickness = 2
+                    -- Background atras do nome (largura pelo nome)
+                    local nameW = NameText.TextBounds.X + 16
+                    NameBg.Size = Vector2.new(nameW, 62 * scale)
+                    NameBg.Position = Vector2.new(g.X - nameW / 2, baseY - 35 * scale)
+                    -- Barra de HP (largura 60, altura 6)
+                    local barW = 60 * scale
+                    HpBg.Size = Vector2.new(barW, 6)
+                    HpBg.Position = Vector2.new(g.X - barW / 2, baseY + 12 * scale)
+                    HpBar.Size = Vector2.new(barW * hpPercent, 6)
+                    HpBar.Position = Vector2.new(g.X - barW / 2, baseY + 12 * scale)
+                    HpBar.Color = hpColor
+                    -- Mostra tudo
+                    Box.Visible = true
+                    NameBg.Visible = true
+                    HpBg.Visible = true
+                    HpBar.Visible = true
+                    TeamText.Visible = true
+                    NameText.Visible = true
+                    HpText.Visible = true
+                    DistText.Visible = true
+                    LevelText.Visible = lvlText ~= ""
+                else
+                    Box.Visible = false
+                    NameBg.Visible = false
+                    HpBg.Visible = false
+                    HpBar.Visible = false
+                    TeamText.Visible = false
+                    NameText.Visible = false
+                    HpText.Visible = false
+                    DistText.Visible = false
+                    LevelText.Visible = false
+                end
+            until not b or not b.Parent or not Settings["ESP Player"]
+            Box:Remove()
+            NameBg:Remove()
+            HpBg:Remove()
+            HpBar:Remove()
+            TeamText:Remove()
+            NameText:Remove()
+            HpText:Remove()
+            DistText:Remove()
+            LevelText:Remove()
+            if b.Parent then s:Destroy() end
+        end)
+    end
 end
+
 ESPSection.CreateToggle({ Title = "ESP Player", Desc = nil, Default = Settings["ESP Player"] or false }, function(b)
 	if b then
 		spawn(function()
