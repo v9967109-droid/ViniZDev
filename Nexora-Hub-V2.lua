@@ -7704,6 +7704,12 @@ getgenv().SpamGunDragonStorm = function(E)
 	if not d or not E or not E.Position then
 		return
 	end
+	-- FIX: So atira a cada 2 segundos, nao spam rapido!
+	local now = os.clock()
+	if now - (getgenv().__DragonStormSpamLast or 0) < 2 then
+		return
+	end
+	getgenv().__DragonStormSpamLast = now
 	local reloading = false
 	pcall(function()
 		reloading = require(m.CombatUtil):IsGunReloading(d)
@@ -7711,7 +7717,7 @@ getgenv().SpamGunDragonStorm = function(E)
 	if reloading then
 		return
 	end
-	-- REMOTES MELHORES: Validator + ShootGunEvent multiplo + TAP + Activate
+	-- REMOTES MELHORES: Validator + ShootGunEvent + TAP + Activate, LENTO 2s
 	pcall(function()
 		local l = getupvalues(require(L.Controllers.CombatController).Attack)[9]
 		local I, _, o, V, N, y, P =
@@ -7734,17 +7740,12 @@ getgenv().SpamGunDragonStorm = function(E)
 		debug.setupvalue(l, 14, N)
 		debug.setupvalue(l, 12, y)
 		debug.setupvalue(l, 18, P)
-		for i = 1, 3 do
-			L.Remotes.Validator2:FireServer(math.floor(d2 / V * 16777215), P + i)
-		end
+		L.Remotes.Validator2:FireServer(math.floor(d2 / V * 16777215), P)
 	end)
 	pcall(function()
 		local net = m.Net:FindFirstChild("RE/ShootGunEvent")
 		if net then
-			for i = 1, 5 do
-				net:FireServer(E.Position, { E })
-				task.wait(0.02)
-			end
+			net:FireServer(E.Position, { E })
 		end
 	end)
 	pcall(function()
@@ -7787,7 +7788,8 @@ function DragonstormPhysicalClick(force, toolName)
 	toolName = toolName or "Dragonstorm"
 	local now = os.clock()
 	local lastKey = "__PhysicalClickLast_" .. tostring(toolName)
-	local interval = getgenv().PhysicalGunClickInterval or getgenv().DSClickInterval or 0.1
+	-- FIX: Click de 2 segundos LENTO, nao rapido! Intervalo 2s tambem!
+	local interval = getgenv().PhysicalGunClickInterval or getgenv().DSClickInterval or 2
 	if not force and now - (getgenv()[lastKey] or 0) < interval then
 		return false
 	end
@@ -7799,11 +7801,11 @@ function DragonstormPhysicalClick(force, toolName)
 			local vp = Camera.ViewportSize
 			local x, y = math.floor(vp.X / 2), 2
 			local VIM = game:GetService("VirtualInputManager")
-			-- CLICK NA TELA DRAGON STORM DE 2 SEGUNDOS (pedido do user)
+			-- CLICK NA TELA DRAGON STORM DE 2 SEGUNDOS LENTO!
 			VIM:SendMouseMoveEvent(x, y, game)
 			task.wait(0.03)
 			VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
-			task.wait(2) -- 2 SEGUNDOS SEGURANDO!
+			task.wait(2) -- SEGURA 2 SEGUNDOS!
 			VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
 			pcall(function()
 				local tx, ty = x, math.max(64, math.floor(vp.Y * 0.12))
@@ -7813,18 +7815,7 @@ function DragonstormPhysicalClick(force, toolName)
 			end)
 			pcall(function()
 				local tool = t.Character and t.Character:FindFirstChild(toolName)
-				if tool then
-					for i = 1, 3 do
-						tool:Activate()
-						task.wait(0.05)
-					end
-				end
-			end)
-			pcall(function()
-				local VU = game:GetService("VirtualUser")
-				VU:CaptureController()
-				VU:ClickButton1(Vector2.new(x, y))
-				VU:ClickButton1(Vector2.new(x, y))
+				if tool then tool:Activate() end
 			end)
 		end)
 	end)
@@ -15801,23 +15792,57 @@ function SpinBoat()
 	end
 end
 function NoclipBoat(P)
-	-- Mantem os assentos colidiveis: desativar CanCollide no VehicleSeat
-	-- pode fazer o jogador ser ejetado durante a navegacao.
+	-- FIX: Agora NAO bate mais nas paredes! Deixa TUDO sem colisao, incluindo VehicleSeat!
 	if not P then return end
 	for _, part in ipairs(P:GetDescendants()) do
-		if part:IsA("BasePart") and not part:IsA("VehicleSeat") and not part:IsA("Seat") then
+		if part:IsA("BasePart") then
 			part.CanCollide = false
+			part.CanTouch = false
+			pcall(function()
+				part.CanQuery = false
+			end)
 		end
 	end
+	pcall(function()
+		if P.PrimaryPart then
+			P.PrimaryPart.CanCollide = false
+		end
+	end)
 end
 function TurnOffNoclipBoat(P)
 	if not P then return end
 	for _, part in ipairs(P:GetDescendants()) do
-		if part:IsA("BasePart") and not part:IsA("VehicleSeat") and not part:IsA("Seat") then
+		if part:IsA("BasePart") then
 			part.CanCollide = true
+			part.CanTouch = true
+			pcall(function()
+				part.CanQuery = true
+			end)
 		end
 	end
 end
+
+-- FIX EXTRA: Loop global que garante barco NUNCA bata na parede quando No collision boat ON
+task.spawn(function()
+	while task.wait(0.1) do
+		pcall(function()
+			if Settings["No collision boat"] then
+				local boat = nil
+				if getSeatedBoat then boat = getSeatedBoat() end
+				if not boat and checkboat then boat = checkboat() end
+				if not boat and checkboatFind then boat = checkboatFind() end
+				if not boat and CheckSeaEventBoat then boat = CheckSeaEventBoat() end
+				if boat then
+					for _, part in ipairs(boat:GetDescendants()) do
+						if part:IsA("BasePart") then
+							part.CanCollide = false
+						end
+					end
+				end
+			end
+		end)
+	end
+end)
 -- Sea Event: use the nearest owned boat so an old/far boat is not followed.
 function CheckSeaEventBoat()
 	local player = t
@@ -18424,7 +18449,7 @@ end)
 BoatSettingSection.CreateToggle({ Title = "No collision boat", Desc = "Deixa o barco sem colisao (atravessa tudo)", Default = Settings["No collision boat"] == nil and true or Settings["No collision boat"] }, function(b)
 	if b then
 		spawn(function()
-			while Settings["No collision boat"] and (task.wait(0.3)) do
+			while Settings["No collision boat"] and (task.wait(0.05)) do
 				pcall(function()
 					local boat = nil
 					if getSeatedBoat then boat = getSeatedBoat() end
