@@ -5989,29 +5989,40 @@ task.spawn(function()
 end)
 
 
-function SetNoClip(l)
-	getgenv().noclip = l
-	local Q = t.Character
-	if not Q then
+function SetNoClip(enable)
+	getgenv().noclip = enable
+	local Char = t.Character
+	if not Char then
 		return
 	end
-	local S, L = Q:FindFirstChild("HumanoidRootPart"), Q:FindFirstChildOfClass("Humanoid")
-	if not l then
-		for l, l in ipairs(Q:GetDescendants()) do
-			if l:IsA("BasePart") then
-				l.CanCollide = true
+	local Root, Hum = Char:FindFirstChild("HumanoidRootPart"), Char:FindFirstChildOfClass("Humanoid")
+	if not enable then
+		-- FIX BUG: variavel l,l shadow bug, corrigido pra idx, part
+		for _, part in ipairs(Char:GetDescendants()) do
+			if part:IsA("BasePart") then
+				pcall(function() part.CanCollide = true end)
 			end
 		end
-		if L then
-			L.PlatformStand = false
+		if Hum then
+			pcall(function() Hum.PlatformStand = false end)
 		end
-		if S and (S:FindFirstChild("FloatForce")) and not ToggleNoclip() then
-			S.FloatForce:Destroy()
+		if Root then
+			pcall(function()
+				local ff = Root:FindFirstChild("FloatForce")
+				if ff and not ToggleNoclip() then
+					ff:Destroy()
+				end
+			end)
 		end
 	end
 end
 function ToggleNoclip()
+	-- FIX: protecao se Settings ou g nao existir
+	if not Settings then
+		return getgenv().noclip or false
+	end
 	if
+
 		Settings["Auto Farm Active"]
 		or Settings["Start Farm"]
 		or Settings["Auto Present Event"]
@@ -6115,16 +6126,24 @@ function ToggleNoclip()
 		end
 	end
 end
--- Character + equipped Tool noclip enforcement.
+-- Character + equipped Tool noclip enforcement (FIX: nao bater nas paredes).
 do
     task.spawn(function()
-        while task.wait() do
-            if ToggleNoclip() then
+        while task.wait(0.1) do
+            -- FIX: pcall pra nao quebrar se ToggleNoclip der erro
+            local shouldNoclip = false
+            pcall(function()
+                shouldNoclip = ToggleNoclip()
+            end)
+            if shouldNoclip then
                 local Character = t.Character
                 if Character then
                     for _, Part in ipairs(Character:GetDescendants()) do
                         if Part:IsA("BasePart") then
-                            Part.CanCollide = false
+                            -- FIX: nao mexer em HumanoidRootPart se tiver FloatForce? Deixa sem colisao mesmo
+                            pcall(function()
+                                Part.CanCollide = false
+                            end)
                         end
                     end
                 end
@@ -7704,7 +7723,7 @@ getgenv().SpamGunDragonStorm = function(E)
 	if not d or not E or not E.Position then
 		return
 	end
-	-- 1 CLICK POR SEGUNDO, NAO SPAM RAPIDO!
+	-- FIX SEA EVENT: 1 click por segundo mas remotes triplos e AimPos
 	local now = os.clock()
 	if now - (getgenv().__DragonStormSpamLast or 0) < 1 then
 		return
@@ -7717,6 +7736,11 @@ getgenv().SpamGunDragonStorm = function(E)
 	if reloading then
 		return
 	end
+	-- AimPos pra Sea Event
+	pcall(function()
+		getgenv().AimPos = CFrame.new(E.Position)
+	end)
+	-- REMOTES MELHORES SEA EVENT: Validator + ShootGunEvent + TAP + Activate
 	pcall(function()
 		local l = getupvalues(require(L.Controllers.CombatController).Attack)[9]
 		local I, _, o, V, N, y, P =
@@ -7739,21 +7763,32 @@ getgenv().SpamGunDragonStorm = function(E)
 		debug.setupvalue(l, 14, N)
 		debug.setupvalue(l, 12, y)
 		debug.setupvalue(l, 18, P)
+		-- 2x Validator pra garantir
 		L.Remotes.Validator2:FireServer(math.floor(d2 / V * 16777215), P)
+		L.Remotes.Validator2:FireServer(math.floor(d2 / V * 16777215), P + 1)
 	end)
 	pcall(function()
 		local net = m.Net:FindFirstChild("RE/ShootGunEvent")
 		if net then
-			net:FireServer(E.Position, { E })
+			-- 3x tiro pra Sea Event (mais dano)
+			for i = 1, 3 do
+				net:FireServer(E.Position, { E })
+				task.wait(0.05)
+			end
 		end
 	end)
 	pcall(function()
 		local remote = d:FindFirstChild("RemoteEvent")
 		if remote then
-			remote:FireServer("TAP", E.Position)
+			for i = 1, 2 do
+				remote:FireServer("TAP", E.Position)
+				task.wait(0.05)
+			end
 		end
 	end)
 	pcall(function()
+		d:Activate()
+		task.wait(0.05)
 		d:Activate()
 	end)
 end
@@ -7787,7 +7822,6 @@ function DragonstormPhysicalClick(force, toolName)
 	toolName = toolName or "Dragonstorm"
 	local now = os.clock()
 	local lastKey = "__PhysicalClickLast_" .. tostring(toolName)
-	-- FIX: 1 CLICK POR SEGUNDO, NAO SEGURAR!
 	local interval = getgenv().PhysicalGunClickInterval or getgenv().DSClickInterval or 1
 	if not force and now - (getgenv()[lastKey] or 0) < interval then
 		return false
@@ -7800,7 +7834,7 @@ function DragonstormPhysicalClick(force, toolName)
 			local vp = Camera.ViewportSize
 			local x, y = math.floor(vp.X / 2), 2
 			local VIM = game:GetService("VirtualInputManager")
-			-- 1 CLICK POR SEGUNDO, CLICK RAPIDO NAO SEGURAR!
+			-- 1 CLICK POR SEGUNDO SEA EVENT
 			VIM:SendMouseMoveEvent(x, y, game)
 			task.wait(0.03)
 			VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
@@ -16077,7 +16111,6 @@ function UseDragonstormAllSeaEvents(Part)
 	local Char = t.Character
 	local Has = t.Backpack:FindFirstChild("Dragonstorm") or (Char and Char:FindFirstChild("Dragonstorm"))
 	if not Has then
-		-- Loads Dragonstorm like the other toggles do, at most once every 1.5s.
 		if not CheckItemInventory("Dragonstorm") then
 			WarnOnce("NoDragonstormAll", "Auto Use Dragon Storm: Dragonstorm was not found in your inventory.")
 			return
@@ -16091,12 +16124,33 @@ function UseDragonstormAllSeaEvents(Part)
 		end
 		return
 	end
-	-- Só a Dragonstorm: equipa só quando preciso e nunca puxa outra Gun
-	-- (antes UseSkillGun() equipava a primeira Gun da mochila direto).
-	if not EquipOnlyIfNeeded("Dragonstorm", 1.0) then
+	if not EquipOnlyIfNeeded("Dragonstorm", 0.5) then
 		return
 	end
-	DragonstormPhysicalClick()
+	-- FIX REMOTES SEA EVENT: AimPos + Click + Remotes melhorados
+	pcall(function()
+		getgenv().AimPos = CFrame.new(Part.Position)
+	end)
+	DragonstormPhysicalClick(true)
+	-- Remotes diretos aqui tambem, nao so via SpamGunDragonStorm
+	pcall(function()
+		local tool = Char and Char:FindFirstChild("Dragonstorm")
+		if tool then
+			tool:Activate()
+			local remote = tool:FindFirstChild("RemoteEvent")
+			if remote then
+				remote:FireServer("TAP", Part.Position)
+			end
+		end
+	end)
+	pcall(function()
+		local rs = game:GetService("ReplicatedStorage")
+		local net = rs:FindFirstChild("Modules") and rs.Modules:FindFirstChild("Net")
+		local shoot = net and net:FindFirstChild("RE/ShootGunEvent")
+		if shoot then
+			shoot:FireServer(Part.Position, { Part })
+		end
+	end)
 	SpamGunDragonStorm(Part)
 	if t:DistanceFromCharacter(Part.Position) < 400 then
 		UseDragonstormSkill()
