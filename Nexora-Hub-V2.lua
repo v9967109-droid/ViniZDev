@@ -8527,53 +8527,79 @@ _("Sword", { "Z", "X" })
 _("Gun", { "Z", "X" })
 _("Blox Fruit", { "Z", "X", "C", "V", "F" })
 -- ==================== USE SKILLS VASES TYRANT - ABAIXO HOLD SKILLS ====================
--- Igual a aba Select Skills la em cima (Melee, Sword, Gun, Blox Fruit)
--- Mas essa e SO para as skills da Skull Guitar, abaixo de Hold Skills
-SelectSkillsSkullGuitarSection = SettingSkillMain.CreateSection("Use Skills Vases Tyrant")
-SelectSkillsSkullGuitarSection.CreateDropdown(
+-- Seccao igual Select Skills la em cima, mas SO para Skull Guitar, abaixo Hold Skills
+SelectSkillsUseSkillsSection = SettingSkillMain.CreateSection("Use Skills Vases Tyrant")
+SelectSkillsUseSkillsSection.CreateDropdown(
     { Title = "Select Skills Skull Guitar", List = {"Z", "X"}, Search = true, Selected = true, Default = Settings["Select Skills Skull Guitar"] or "Z" },
     function(s)
         SaveSettings("Select Skills Skull Guitar", s)
-        getgenv().SkullGuitarTyrantSkill = s
-        getgenv().SelectSkillsSkullGuitar = s
+        getgenv().UseSkillsSelected = s
         print("[Tyrant] Select Skills Skull Guitar: " .. tostring(s))
     end
 )
-SelectSkillsSkullGuitarSection.CreateToggle(
-    { Title = "Use Skills", Desc = nil, Default = Settings["Use Skull Guitar Tyrant"] == nil and true or Settings["Use Skull Guitar Tyrant"] },
+SelectSkillsUseSkillsSection.CreateToggle(
+    { Title = "Use Skills", Desc = nil, Default = Settings["Use Skills"] == nil and true or Settings["Use Skills"] },
     function(b)
-        SaveSettings("Use Skull Guitar Tyrant", b)
-        getgenv().UseSkullGuitarTyrant = b
+        SaveSettings("Use Skills", b)
+        getgenv().UseSkills = b
         print("[Tyrant] Use Skills: " .. tostring(b))
     end
 )
--- Defaults - Ja vem ativado padrao
-if Settings["Use Skull Guitar Tyrant"] == nil then
-    Settings["Use Skull Guitar Tyrant"] = true
-    getgenv().UseSkullGuitarTyrant = true
-end
-if Settings["Select Skills Skull Guitar"] == nil then
-    Settings["Select Skills Skull Guitar"] = "Z"
-    getgenv().SkullGuitarTyrantSkill = "Z"
-    getgenv().SelectSkillsSkullGuitar = "Z"
-end
-getgenv().UseSkullGuitarTyrant = Settings["Use Skull Guitar Tyrant"]
-getgenv().SkullGuitarTyrantSkill = Settings["Select Skills Skull Guitar"]
-getgenv().SelectSkillsSkullGuitar = Settings["Select Skills Skull Guitar"]
--- Funcao pra quebrar vasos SO com skill selecionada da Skull Guitar
-getgenv().BreakVaseWithSelectedSkill = function(vase)
+if Settings["Use Skills"] == nil then Settings["Use Skills"] = true getgenv().UseSkills = true end
+if Settings["Select Skills Skull Guitar"] == nil then Settings["Select Skills Skull Guitar"] = "Z" getgenv().UseSkillsSelected = "Z" end
+getgenv().UseSkills = Settings["Use Skills"]
+getgenv().UseSkillsSelected = Settings["Select Skills Skull Guitar"]
+-- FIX: Quebrar vasos (Tree) com skills - CORRIGIDO
+-- Antes: Procurava "Vase" e Settings["Farm Tyrant"] - NUNCA achava!
+-- Agora: Procura "Tree" em EagleBossArena e Settings["Auto Farm Tyrant of the Skies"]
+getgenv().BreakVaseWithSelectedSkill = function()
     pcall(function()
-        if not getgenv().UseSkullGuitarTyrant then return end
+        if not getgenv().UseSkills then return end
+        -- CORRECAO 1: Setting correto e Auto Farm Tyrant of the Skies, nao Farm Tyrant
+        if not (Settings and Settings["Auto Farm Tyrant of the Skies"]) then return end
         local player = game:GetService("Players").LocalPlayer
         if not player or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
         local playerRoot = player.Character.HumanoidRootPart
-        local vasePos = nil
-        if vase:IsA("Model") and vase:FindFirstChild("HumanoidRootPart") then vasePos = vase.HumanoidRootPart.Position
-        elseif vase:FindFirstChild("Handle") then vasePos = vase.Handle.Position
-        elseif vase:IsA("BasePart") then vasePos = vase.Position end
-        if not vasePos then return end
-        playerRoot.CFrame = CFrame.new(vasePos + Vector3.new(0, 3, 0))
+        -- CORRECAO 2: Vasos sao chamados "Tree" em EagleBossArena, nao "Vase"!
+        local tree = nil
+        -- Tenta usar DetectModelDestroyTyrant original se existir
+        if DetectModelDestroyTyrant then
+            tree = DetectModelDestroyTyrant()
+        end
+        -- Fallback: Procura Tree manualmente
+        if not tree then
+            local tiki = workspace.Map and workspace.Map:FindFirstChild("TikiOutpost")
+            local arena = tiki and tiki:FindFirstChild("IslandModel", true) and tiki.IslandModel:FindFirstChild("EagleBossArena", true)
+            if arena then
+                for _, child in ipairs(arena:GetChildren()) do
+                    if child.Name == "Tree" and not child:GetAttribute("AlreadyDestroyedClient") then
+                        tree = child
+                        break
+                    end
+                end
+            end
+        end
+        -- Fallback 2: Procura qualquer Tree perto
+        if not tree then
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj.Name == "Tree" and obj:IsA("Model") then
+                    local hrp = obj:FindFirstChild("HumanoidRootPart", true) or obj:FindFirstChildWhichIsA("BasePart", true)
+                    if hrp and (hrp.Position - playerRoot.Position).Magnitude < 200 then
+                        tree = obj
+                        break
+                    end
+                end
+            end
+        end
+        if not tree then return end
+        print("[Tyrant] Tree/Vaso encontrado: " .. tree.Name .. " - Quebrando com skill " .. tostring(getgenv().UseSkillsSelected))
+        -- Teleporta perto do Tree
+        local targetPart = tree:FindFirstChild("HumanoidRootPart", true) or tree:FindFirstChild("Handle", true) or tree:FindFirstChildWhichIsA("BasePart", true)
+        if not targetPart then return end
+        local vasePos = targetPart.Position
+        playerRoot.CFrame = CFrame.new(vasePos + Vector3.new(0, 5, 0))
         task.wait(0.2)
+        -- Equipa Skull Guitar
         local char = player.Character
         local tool = char:FindFirstChild("Skull Guitar")
         if not tool then
@@ -8581,40 +8607,47 @@ getgenv().BreakVaseWithSelectedSkill = function(vase)
             if guitar then char.Humanoid:EquipTool(guitar) task.wait(0.3) tool = char:FindFirstChild("Skull Guitar") end
         end
         if not tool then return end
-        local selected = getgenv().SkullGuitarTyrantSkill or getgenv().SelectSkillsSkullGuitar or "Z"
+        -- SO USA SKILL SELECIONADA - Z ou X
+        local selected = getgenv().UseSkillsSelected or "Z"
         local vim = game:GetService("VirtualInputManager")
         local keyMap = {Z=Enum.KeyCode.Z, X=Enum.KeyCode.X}
         local function ClickSkill(key)
             local keyCode = keyMap[key]
             if not keyCode then return end
+            -- Metodo 1: Tecla direto
             vim:SendKeyEvent(true, keyCode, false, game)
             task.wait(0.08)
             vim:SendKeyEvent(false, keyCode, false, game)
             task.wait(0.1)
+            -- Metodo 2: Activate
             tool:Activate()
-            task.wait(0.3)
+            task.wait(0.2)
+            -- Metodo 3: SpamGunSkullGuitar se existir (metodo original do hub)
+            if getgenv().SpamGunSkullGuitar then
+                pcall(function() getgenv().SpamGunSkullGuitar(targetPart) end)
+            end
+            print("[Tyrant] Skill usada: " .. key .. " na Tree")
         end
         if selected == "Z" then
             ClickSkill("Z") task.wait(0.8)
-            if vase and vase.Parent then ClickSkill("Z") end
+            if tree and tree.Parent then ClickSkill("Z") end
+            task.wait(0.8)
+            if tree and tree.Parent then ClickSkill("Z") end
         elseif selected == "X" then
             ClickSkill("X") task.wait(1.0)
-            if vase and vase.Parent then ClickSkill("X") end
+            if tree and tree.Parent then ClickSkill("X") end
+            task.wait(1.0)
+            if tree and tree.Parent then ClickSkill("X") end
         end
     end)
 end
+-- Loop que realmente quebra os vasos com skills
 task.spawn(function()
     while true do
-        task.wait(0.5)
+        task.wait(0.3)
         pcall(function()
-            if getgenv().UseSkullGuitarTyrant and Settings and Settings["Farm Tyrant"] then
-                for _, obj in ipairs(workspace:GetChildren()) do
-                    local name = obj.Name:lower()
-                    if name:find("vase") or name:find("vaso") then
-                        getgenv().BreakVaseWithSelectedSkill(obj)
-                        task.wait(0.5)
-                    end
-                end
+            if getgenv().UseSkills and Settings and Settings["Auto Farm Tyrant of the Skies"] then
+                getgenv().BreakVaseWithSelectedSkill()
             end
         end)
     end
