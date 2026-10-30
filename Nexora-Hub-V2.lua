@@ -26982,31 +26982,46 @@ task.spawn(function()
 	end
 end)
 
--- Loops dedicados de Random Fruit e Store Fruit (FIX: gira de verdade + mensagem verde)
+-- Loops dedicados de Random Fruit e Store Fruit (FIX: Zioles Gacha Box $463,800 + Fruit Spinner)
 do
 	getgenv().__FruitGen = (getgenv().__FruitGen or 0) + 1
 	local FruitGen = getgenv().__FruitGen
 	task.spawn(function()
-		while task.wait(0.5) and getgenv().__FruitGen == FruitGen do
+		while task.wait(0.3) and getgenv().__FruitGen == FruitGen do
 			pcall(function()
 				if Settings["Random Devil Fruit"] then
-					local playerGui = game:GetService("Players").LocalPlayer:FindFirstChildOfClass("PlayerGui")
-					local spinnerWindow = playerGui and playerGui:FindFirstChild("SpinnerWindow")
-					if not spinnerWindow or not spinnerWindow.Enabled then
-						RandomFruit()
-					else
-						-- GIRO AUTOMATICO QUE FUNCIONA DE VERDADE!
+					local Players = game:GetService("Players")
+					local LocalPlayer = Players.LocalPlayer
+					local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+					if not playerGui then return end
+					-- 1) ZIOLES GACHA BOX $463,800 AUTO CLICK!
+					for _, btn in ipairs(playerGui:GetDescendants()) do
+						if btn:IsA("TextButton") then
+							local txt = tostring(btn.Text or "")
+							if txt:find("463,800") or txt:find("463800") then
+								for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do
+									pcall(function() conn:Fire() end)
+								end
+								pcall(function() btn:Activate() end)
+								if tick() - (getgenv().__LastGreenMsg or 0) > 2 then
+									getgenv().__LastGreenMsg = tick()
+									A.CreateNoti({Title = "Nexora Hub", Desc = "<font color='#00FF00'>Comprando... You got a random Blox Fruit! Girando!</font>", ShowTime = 4})
+								end
+								break
+							end
+						end
+					end
+					-- 2) FRUIT SPINNER AUTO GIRAR!
+					local spinnerWindow = playerGui:FindFirstChild("SpinnerWindow")
+					if spinnerWindow and spinnerWindow.Enabled then
 						getgenv().__SpinOpenedAt = getgenv().__SpinOpenedAt or tick()
-						-- Tenta girar de varios jeitos
 						pcall(function()
-							local ReplicatedStorage = game:GetService("ReplicatedStorage")
-							local CommF = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_")
+							local CommF = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes") and game.ReplicatedStorage.Remotes:FindFirstChild("CommF_")
 							if CommF then
 								CommF:InvokeServer("Cousin", "Spin")
 								CommF:InvokeServer("Zioles", "Spin")
 								CommF:InvokeServer("BloxFruitsGacha", "Spin")
 								CommF:InvokeServer("Cousin", "Roll")
-								CommF:InvokeServer("Gacha", "Spin")
 							end
 						end)
 						pcall(function()
@@ -27016,59 +27031,29 @@ do
 							if Spinner then
 								if Spinner.Spin then pcall(function() Spinner:Spin() end) end
 								if Spinner.Roll then pcall(function() Spinner:Roll() end) end
-								if Spinner.Open then pcall(function() Spinner:Open() end) end
 								if Spinner.Start then pcall(function() Spinner:Start() end) end
 							end
 						end)
-						-- Clica nos botoes da UI do SpinnerWindow
 						pcall(function()
-							local playerGui = game:GetService("Players").LocalPlayer:FindFirstChildOfClass("PlayerGui")
-							local win = playerGui and playerGui:FindFirstChild("SpinnerWindow")
-							if win then
-								for _, btn in ipairs(win:GetDescendants()) do
-									if btn:IsA("TextButton") or btn:IsA("ImageButton") then
-										local txt = string.lower(tostring(btn.Text or "") .. tostring(btn.Name or ""))
-										if string.find(txt, "spin") or string.find(txt, "roll") or string.find(txt, "buy") or string.find(txt, "gacha") then
-											pcall(function()
-												for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do
-													conn:Fire()
-												end
-												btn:Activate()
-											end)
-										end
+							for _, btn in ipairs(spinnerWindow:GetDescendants()) do
+								if btn:IsA("TextButton") or btn:IsA("ImageButton") then
+									for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do
+										pcall(function() conn:Fire() end)
 									end
-								end
-								-- Procura AboveSpinner
-								local above = win:FindFirstChild("AboveSpinner") or win:FindFirstChild("Frame") or win
-								if above then
-									for _, btn in ipairs(above:GetDescendants()) do
-										if btn:IsA("TextButton") then
-											pcall(function()
-												for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do conn:Fire() end
-												btn:Activate()
-											end)
-										end
-									end
+									pcall(function() btn:Activate() end)
 								end
 							end
 						end)
-						-- Mensagem verde SO quando girar! (quando SpinnerWindow aberta)
 						if tick() - getgenv().__SpinOpenedAt > 0.5 and tick() - (getgenv().__LastGreenMsg or 0) > 3 then
 							getgenv().__LastGreenMsg = tick()
-							pcall(function()
-								A.CreateNoti({Title = "Nexora Hub", Desc = "<font color='#00FF00'>Girando... You got a random Blox Fruit!</font>", ShowTime = 4})
-							end)
+							A.CreateNoti({Title = "Nexora Hub", Desc = "<font color='#00FF00'>Girando Fruit Spinner... You got a random Blox Fruit!</font>", ShowTime = 4})
 						end
-						-- Fecha sozinho apos girar
-						if tick() - getgenv().__SpinOpenedAt > 3 then
-							pcall(function() 
-								local ReplicatedStorage = game:GetService("ReplicatedStorage")
-								local Spinner = require(ReplicatedStorage.Controllers.UI.Spinner)
-								Spinner:Close() 
-							end)
+						if tick() - getgenv().__SpinOpenedAt > 5 then
 							pcall(function() spinnerWindow.Enabled = false end)
 							getgenv().__SpinOpenedAt = nil
 						end
+					else
+						RandomFruit()
 					end
 				end
 			end)
@@ -27087,6 +27072,9 @@ do
 			end
 		end
 	end)
+end
+
+
 end
 
 
