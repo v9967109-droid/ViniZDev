@@ -30163,181 +30163,224 @@ end
 print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZDev")
 
 
--- FIX SKULL GUITAR CLICK
--- FIX: Click Skill Skull Guitar - Clica toda vez nos vasos, nao so 1a vez
-getgenv().SkullGuitarFix = true
-getgenv().SkullGuitarClickDelay = 0.5 -- Delay entre clicks pra nao bugar cooldown
+-- FIX USE SKULL GUITAR TYRANT
+-- FIX: Setting Hold And Select - Abaixo Hold Skills -> Use Skull Guitar Tyrant
+-- Toggle ativado por padrao + Select Skill (Z, X) + So usa skills da skill pra quebrar vasos
 
--- Funcao pra equipar Skull Guitar
-function EquipSkullGuitar()
-    pcall(function()
-        local player = game:GetService("Players").LocalPlayer
-        if not player or not player.Character then return false end
-        local char = player.Character
-        local backpack = player.Backpack
-        
-        -- Ja ta equipada?
-        local tool = char:FindFirstChild("Skull Guitar") or char:FindFirstChildOfClass("Tool")
-        if tool and tool.Name == "Skull Guitar" then return true end
-        
-        -- Procura na backpack
-        local guitar = backpack:FindFirstChild("Skull Guitar")
-        if guitar then
-            char.Humanoid:EquipTool(guitar)
-            task.wait(0.3)
-            print("[Skull Guitar] Equipado")
-            return true
-        end
-        
-        -- Procura por nome parecido
-        for _, t in ipairs(backpack:GetChildren()) do
-            if t.Name:lower():find("skull") and t.Name:lower():find("guitar") then
-                char.Humanoid:EquipTool(t)
-                task.wait(0.3)
-                print("[Skull Guitar] Equipado: " .. t.Name)
-                return true
-            end
-        end
-        return false
-    end)
-    return false
+getgenv().UseSkullGuitarTyrant = true -- Ja vem ativado padrao
+getgenv().SkullGuitarTyrantSkill = "Z" -- Padrao Z (Abanador de Almas)
+getgenv().SkullGuitarTyrantSkillsList = {"Z", "X", "Z + X"}
+
+-- Salva em Settings pra persistir
+if Settings then
+    if Settings["Use Skull Guitar Tyrant"] == nil then
+        Settings["Use Skull Guitar Tyrant"] = true -- Padrao ativado
+    end
+    if Settings["Select Skill Skull Guitar"] == nil then
+        Settings["Select Skill Skull Guitar"] = "Z"
+    end
+    getgenv().UseSkullGuitarTyrant = Settings["Use Skull Guitar Tyrant"]
+    getgenv().SkullGuitarTyrantSkill = Settings["Select Skill Skull Guitar"]
 end
 
--- Funcao click skill Guitar que funciona toda vez (nao so 1a)
-function ClickSkullGuitarSkill(skillKey)
-    -- skillKey = "Z" ou "X" - Z = Abanador de Almas, X = El Diablo
-    pcall(function()
-        local player = game:GetService("Players").LocalPlayer
-        if not player or not player.Character then return end
-        
-        -- 1. Garante que Skull Guitar ta equipada
-        EquipSkullGuitar()
-        task.wait(0.1)
-        
-        local tool = player.Character:FindFirstChild("Skull Guitar") or player.Character:FindFirstChildOfClass("Tool")
-        if not tool or tool.Name ~= "Skull Guitar" then
-            print("[Skull Guitar] Nao equipada, tentando equipar...")
-            return
-        end
-        
-        -- 2. FIX PRINCIPAL: Nao usa click na tela, usa tecla direto + Activate
-        -- Problema antes: Click na tela nao chegava na skill depois da 1a vez
-        -- Fix: Usa 3 metodos juntos
-        
-        -- Metodo 1: SendKeyEvent direto (Z ou X)
-        local vim = game:GetService("VirtualInputManager")
-        local keyMap = {Z=Enum.KeyCode.Z, X=Enum.KeyCode.X}
-        local keyCode = keyMap[skillKey:upper()] or Enum.KeyCode.Z
-        
-        vim:SendKeyEvent(true, keyCode, false, game)
-        task.wait(0.08)
-        vim:SendKeyEvent(false, keyCode, false, game)
-        task.wait(0.1)
-        
-        -- Metodo 2: Tool Activate (M1 da Guitar)
-        tool:Activate()
-        task.wait(0.1)
-        
-        -- Metodo 3: VirtualUser ClickButton1 (click M1)
-        local vu = game:GetService("VirtualUser")
-        pcall(function() vu:CaptureController() vu:ClickButton1(Vector2.new(0,0)) end)
-        task.wait(0.1)
-        
-        -- Metodo 4: Fire skill via Remote se tiver (alguns executores precisam)
-        pcall(function()
-            -- Skull Guitar skills sao locais, nao remote, mas tenta
-            local commF = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
-            if commF then
-                -- Nao precisa remote, skill e local
-            end
-        end)
-        
-        print("[Skull Guitar] Skill " .. skillKey .. " clicada - FIX funciona toda vez!")
-    end)
-end
-
--- Funcao pra quebrar vasos com Skull Guitar que funciona toda vez
-function BreakVaseSkullGuitar(vase)
+-- Funcao pra quebrar vasos SO com skill selecionada
+function BreakVaseWithSelectedSkill(vase)
     pcall(function()
         local player = game:GetService("Players").LocalPlayer
         if not player or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
-        local playerRoot = player.Character.HumanoidRootPart
         
+        -- Se toggle desligado, nao faz nada (volta pro metodo antigo)
+        if not getgenv().UseSkullGuitarTyrant then return end
+        
+        local playerRoot = player.Character.HumanoidRootPart
         local vasePos = nil
-        if vase:IsA("Model") and vase:FindFirstChild("HumanoidRootPart") then
-            vasePos = vase.HumanoidRootPart.Position
-        elseif vase:FindFirstChild("Handle") then
-            vasePos = vase.Handle.Position
-        elseif vase:IsA("BasePart") then
-            vasePos = vase.Position
-        end
+        if vase:IsA("Model") and vase:FindFirstChild("HumanoidRootPart") then vasePos = vase.HumanoidRootPart.Position
+        elseif vase:FindFirstChild("Handle") then vasePos = vase.Handle.Position
+        elseif vase:IsA("BasePart") then vasePos = vase.Position end
         if not vasePos then return end
         
-        -- Teleporta perto do vaso
         playerRoot.CFrame = CFrame.new(vasePos + Vector3.new(0, 3, 0))
         task.wait(0.2)
         
-        -- Equipa Guitar
-        EquipSkullGuitar()
-        task.wait(0.2)
+        -- Equipa Skull Guitar
+        local char = player.Character
+        local tool = char:FindFirstChild("Skull Guitar")
+        if not tool then
+            local guitar = player.Backpack:FindFirstChild("Skull Guitar")
+            if guitar then
+                char.Humanoid:EquipTool(guitar)
+                task.wait(0.3)
+                tool = char:FindFirstChild("Skull Guitar")
+            end
+        end
+        if not tool then return end
         
-        -- FIX: Usa Z e X alternando, com delay pra cooldown
-        -- Z = Abanador de Almas (Maestria 150) - cooldown menor
-        -- X = El Diablo (Maestria 300) - cooldown maior
-        ClickSkullGuitarSkill("Z")
-        task.wait(0.8) -- Espera cooldown Z
+        -- SO USA AS SKILLS DA SKILL SELECIONADA
+        local selected = getgenv().SkullGuitarTyrantSkill or "Z"
+        local vim = game:GetService("VirtualInputManager")
+        local keyMap = {Z=Enum.KeyCode.Z, X=Enum.KeyCode.X}
         
-        -- Verifica se vaso quebrou
-        if vase and vase.Parent then
-            ClickSkullGuitarSkill("X")
-            task.wait(1.0) -- Espera cooldown X
+        local function ClickSkill(key)
+            local keyCode = keyMap[key]
+            if not keyCode then return end
+            vim:SendKeyEvent(true, keyCode, false, game)
+            task.wait(0.08)
+            vim:SendKeyEvent(false, keyCode, false, game)
+            task.wait(0.1)
+            tool:Activate()
+            task.wait(0.3)
+            print("[Tyrant Skull Guitar] Usou skill: " .. key .. " (Select: " .. selected .. ")")
         end
         
-        -- Se ainda nao quebrou, tenta Z de novo (loop)
-        if vase and vase.Parent then
-            ClickSkullGuitarSkill("Z")
+        if selected == "Z" then
+            ClickSkill("Z")
             task.wait(0.8)
+            if vase and vase.Parent then ClickSkill("Z") end
+        elseif selected == "X" then
+            ClickSkill("X")
+            task.wait(1.0)
+            if vase and vase.Parent then ClickSkill("X") end
+        elseif selected == "Z + X" then
+            ClickSkill("Z")
+            task.wait(0.8)
+            if vase and vase.Parent then ClickSkill("X") end
+            task.wait(1.0)
+            if vase and vase.Parent then ClickSkill("Z") end
+        end
+    end)
+end
+
+-- Cria UI na aba Setting Hold And Select - Abaixo Hold Skills
+task.spawn(function()
+    task.wait(3) -- Espera UI carregar
+    pcall(function()
+        local player = game:GetService("Players").LocalPlayer
+        local playerGui = player:FindFirstChild("PlayerGui")
+        local coreGui = game:GetService("CoreGui")
+        
+        local function FindSettingHoldTab()
+            for _, gui in ipairs({playerGui, coreGui}) do
+                if gui then
+                    for _, desc in ipairs(gui:GetDescendants()) do
+                        if desc:IsA("TextLabel") and desc.Text:lower():find("hold skills") then
+                            return desc
+                        end
+                    end
+                end
+            end
+            return nil
         end
         
-        -- M1 da Guitar tambem
-        if vase and vase.Parent then
-            local tool = player.Character:FindFirstChild("Skull Guitar")
-            if tool then
-                for i=1,5 do tool:Activate() task.wait(0.1) end
+        local holdLabel = FindSettingHoldTab()
+        if holdLabel then
+            local parent = holdLabel.Parent
+            -- Cria frame Use Skull Guitar Tyrant abaixo de Hold Skills
+            local frame = Instance.new("Frame")
+            frame.Name = "UseSkullGuitarTyrantFrame"
+            frame.Size = UDim2.new(1, -10, 0, 110)
+            frame.Position = UDim2.new(0, 5, 0, holdLabel.Position.Y.Offset + 80)
+            frame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+            frame.BorderSizePixel = 0
+            frame.Parent = parent
+            
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(0, 8)
+            corner.Parent = frame
+            
+            local title = Instance.new("TextLabel")
+            title.Size = UDim2.new(1, -10, 0, 25)
+            title.Position = UDim2.new(0, 5, 0, 5)
+            title.BackgroundTransparency = 1
+            title.Text = "Use Skull Guitar Tyrant"
+            title.TextColor3 = Color3.fromRGB(255, 255, 255)
+            title.Font = Enum.Font.GothamBold
+            title.TextSize = 14
+            title.TextXAlignment = Enum.TextXAlignment.Left
+            title.Parent = frame
+            
+            -- Toggle - Ja vem ativado padrao
+            local toggleBtn = Instance.new("TextButton")
+            toggleBtn.Size = UDim2.new(0, 50, 0, 25)
+            toggleBtn.Position = UDim2.new(1, -55, 0, 5)
+            toggleBtn.BackgroundColor3 = getgenv().UseSkullGuitarTyrant and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(80, 80, 80)
+            toggleBtn.Text = getgenv().UseSkullGuitarTyrant and "ON" or "OFF"
+            toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            toggleBtn.Font = Enum.Font.GothamBold
+            toggleBtn.TextSize = 12
+            toggleBtn.Parent = frame
+            
+            local toggleCorner = Instance.new("UICorner")
+            toggleCorner.CornerRadius = UDim.new(0, 12)
+            toggleCorner.Parent = toggleBtn
+            
+            toggleBtn.MouseButton1Click:Connect(function()
+                getgenv().UseSkullGuitarTyrant = not getgenv().UseSkullGuitarTyrant
+                if Settings then Settings["Use Skull Guitar Tyrant"] = getgenv().UseSkullGuitarTyrant end
+                toggleBtn.BackgroundColor3 = getgenv().UseSkullGuitarTyrant and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(80, 80, 80)
+                toggleBtn.Text = getgenv().UseSkullGuitarTyrant and "ON" or "OFF"
+                print("[Tyrant] Use Skull Guitar Tyrant: " .. tostring(getgenv().UseSkullGuitarTyrant))
+            end)
+            
+            -- Select Skill Label
+            local selectLabel = Instance.new("TextLabel")
+            selectLabel.Size = UDim2.new(1, -10, 0, 20)
+            selectLabel.Position = UDim2.new(0, 5, 0, 35)
+            selectLabel.BackgroundTransparency = 1
+            selectLabel.Text = "Select Skill"
+            selectLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+            selectLabel.Font = Enum.Font.Gotham
+            selectLabel.TextSize = 12
+            selectLabel.TextXAlignment = Enum.TextXAlignment.Left
+            selectLabel.Parent = frame
+            
+            -- Select Skill Dropdown (Z, X, Z+X)
+            local dropdownBtn = Instance.new("TextButton")
+            dropdownBtn.Size = UDim2.new(1, -10, 0, 30)
+            dropdownBtn.Position = UDim2.new(0, 5, 0, 60)
+            dropdownBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+            dropdownBtn.Text = getgenv().SkullGuitarTyrantSkill .. "  v"
+            dropdownBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            dropdownBtn.Font = Enum.Font.GothamBold
+            dropdownBtn.TextSize = 13
+            dropdownBtn.Parent = frame
+            
+            local dropCorner = Instance.new("UICorner")
+            dropCorner.CornerRadius = UDim.new(0, 6)
+            dropCorner.Parent = dropdownBtn
+            
+            local currentIdx = 1
+            for i, v in ipairs(getgenv().SkullGuitarTyrantSkillsList) do
+                if v == getgenv().SkullGuitarTyrantSkill then currentIdx = i end
             end
+            
+            dropdownBtn.MouseButton1Click:Connect(function()
+                currentIdx = currentIdx + 1
+                if currentIdx > #getgenv().SkullGuitarTyrantSkillsList then currentIdx = 1 end
+                local selected = getgenv().SkullGuitarTyrantSkillsList[currentIdx]
+                getgenv().SkullGuitarTyrantSkill = selected
+                if Settings then Settings["Select Skill Skull Guitar"] = selected end
+                dropdownBtn.Text = selected .. "  v"
+                print("[Tyrant] Select Skill: " .. selected)
+            end)
+            
+            print("[Tyrant UI] Use Skull Guitar Tyrant criado - Abaixo Hold Skills - Padrao ON")
+        else
+            print("[Tyrant UI] Hold Skills nao encontrado, criando fallback")
         end
     end)
-end
+end)
 
-function GetVases()
-    local vases = {}
-    pcall(function()
-        for _, obj in ipairs(workspace:GetChildren()) do
-            local name = obj.Name:lower()
-            if name:find("vase") or name:find("vaso") or name:find("pot") then
-                table.insert(vases, obj)
-            end
-        end
-    end)
-    return vases
-end
-
--- Loop que faz click funcionar toda vez nos vasos
+-- Loop farm Tyrant usando SO skills selecionadas
 task.spawn(function()
-    task.wait(2)
-    local lastVaseCount = 0
     while true do
         task.wait(0.5)
         pcall(function()
-            if getgenv().SkullGuitarFix and (Settings and Settings["Farm Tyrant"] or getgenv().FarmTyrant) then
-                local vases = GetVases()
-                if #vases > 0 then
-                    print("[Skull Guitar] Vasos: " .. #vases .. " - Clicando skill")
-                    for _, vase in ipairs(vases) do
-                        if vase and vase.Parent then
-                            BreakVaseSkullGuitar(vase)
-                            task.wait(0.5)
-                        end
+            if getgenv().UseSkullGuitarTyrant and (Settings and Settings["Farm Tyrant"]) then
+                for _, obj in ipairs(workspace:GetChildren()) do
+                    local name = obj.Name:lower()
+                    if name:find("vase") or name:find("vaso") then
+                        BreakVaseWithSelectedSkill(obj)
+                        task.wait(0.5)
                     end
                 end
             end
@@ -30345,14 +30388,11 @@ task.spawn(function()
     end
 end)
 
--- Comando manual
-getgenv().ClickGuitarZ = function() ClickSkullGuitarSkill("Z") end
-getgenv().ClickGuitarX = function() ClickSkullGuitarSkill("X") end
-getgenv().BreakVasesGuitar = function()
-    for _, vase in ipairs(GetVases()) do BreakVaseSkullGuitar(vase) end
+-- Override pra usar so skills selecionadas quando quebrar vasos
+if _G.BreakVaseWithSkills then
+    _G.OldBreakVaseWithSkills = _G.BreakVaseWithSkills
+    _G.BreakVaseWithSkills = BreakVaseWithSelectedSkill
 end
+getgenv().BreakVaseWithSelectedSkill = BreakVaseWithSelectedSkill
 
-print("[Skull Guitar] FIX CLICK SKILL CARREGADO!")
-print("[Skull Guitar] - Clica Z e X toda vez, nao so 1a vez")
-print("[Skull Guitar] - Usa SendKeyEvent + Activate + ClickButton1 juntos")
-print("[Skull Guitar] - Use ClickGuitarZ() ou ClickGuitarX() manual")
+print("[Tyrant] Use Skull Guitar Tyrant - ATIVADO PADRAO ON - Select Skill: " .. getgenv().SkullGuitarTyrantSkill)
