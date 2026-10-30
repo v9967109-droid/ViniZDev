@@ -8788,7 +8788,7 @@ MasteryFarmSection = FarmMain.CreateSection("Mastery Farm")
 MasteryFarmSection.CreateDropdown(
 	{
 		Title = "Select Method Farm Mastery",
-		List = { "Melee", "Sword", "Blox Fruit", "Gun" },
+		List = { "Blox Fruit", "Gun", "Sword" },
 		Search = true,
 		Selected = false,
 		Default = Settings["Select Method Farm Mastery"] or nil,
@@ -8797,69 +8797,6 @@ MasteryFarmSection.CreateDropdown(
 		SaveSettings("Select Method Farm Mastery", V)
 	end
 )
--- FIX FARM MASTERY 600 - Igual Banana Cat Hub!
--- Banana Cat Hub tem: ["METHOD"] = "Half" [350] ou "Full" [600]
--- Nosso antes nao tinha isso, farmava sem saber quando parar em 600!
-MasteryFarmSection.CreateDropdown(
-	{
-		Title = "Mastery Method 600",
-		List = { "Half [350]", "Full [600]" },
-		Search = true,
-		Selected = false,
-		Default = Settings["Mastery Method 600"] or "Full [600]",
-	},
-	function(V)
-		SaveSettings("Mastery Method 600", V)
-		getgenv().MasteryTarget = V == "Half [350]" and 350 or 600
-	end
-)
-if Settings["Mastery Method 600"] == nil then Settings["Mastery Method 600"] = "Full [600]" end
-getgenv().MasteryTarget = Settings["Mastery Method 600"] == "Half [350]" and 350 or 600
--- Funcao pra pegar mastery atual da arma selecionada (igual Banana Hub checa)
--- FIX MASTERY 600 SWORD/MELEE: Le mastery real do inventario via CommF GetInventory
-getgenv().GetCurrentMastery = function()
-    local method = Settings["Select Method Farm Mastery"]
-    local weaponName = NameWeapon(method)
-    if not weaponName then return 0, "None" end
-    local mastery = 0
-    pcall(function()
-        -- Pega mastery via ReplicatedStorage Remotes CommF GetInventory (igual hub usa pra ler mastery)
-        local inv = game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("GetInventory")
-        if inv then
-            for _, item in ipairs(inv) do
-                if item.Name == weaponName or item.ItemId and tostring(item.ItemId) == tostring(weaponName) then
-                    -- Mastery fica em item.Mastery ou item.Value?
-                    if item.Mastery then mastery = tonumber(item.Mastery) or 0 end
-                end
-            end
-        end
-        -- Fallback: tenta ler via Data (Player Data)
-        if mastery == 0 then
-            local plr = game:GetService("Players").LocalPlayer
-            local dataFolder = plr:FindFirstChild("Data")
-            if dataFolder then
-                local toolData = dataFolder:FindFirstChild(weaponName)
-                if toolData and toolData:FindFirstChild("Mastery") then
-                    mastery = tonumber(toolData.Mastery.Value) or 0
-                end
-            end
-        end
-        -- Fallback 2: Usa o sistema do hub que ja le mastery (J.MASTERY)
-        if mastery == 0 and getgenv().GetMasteryFromHub then
-            mastery = getgenv().GetMasteryFromHub(weaponName) or 0
-        end
-    end)
-    return mastery, weaponName
-end
--- Checa se ja chegou em 600 (ou 350) e para
-getgenv().IsMasteryMaxed = function()
-    local target = getgenv().MasteryTarget or 600
-    local cur, name = getgenv().GetCurrentMastery()
-    if cur >= target then
-        return true, cur, name, target
-    end
-    return false, cur, name, target
-end
 MasteryFarmSection.CreateSlider(
 	{ Title = "Health %", Min = 0, Max = 100, Default = Settings["Health %"] or 40, Precise = true },
 	function(V)
@@ -9245,14 +9182,6 @@ function FarmMastery(V)
 		UsedualFlock()
 		return
 	end
-	-- FIX 600: Se ja chegou no target (350 ou 600), para e avisa (igual Banana Hub)
-	if getgenv().IsMasteryMaxed then
-		local maxed, cur, name, target = getgenv().IsMasteryMaxed()
-		if maxed then
-			-- Ja esta 600, nao precisa farmar mais!
-			return
-		end
-	end
 	if V.Humanoid.Health / V.Humanoid.MaxHealth > (Settings["Health %"] or 100) / 100 then
 		UsedualFlock()
 		return
@@ -9288,40 +9217,18 @@ function FarmMastery(V)
 			return
 		end
 	end
-	-- FIX 600 SWORD/MELEE: Usa TODAS as skills em sequencia, nao so 1!
-    -- Antes: H(F) pegava so 1 skill por vez, mastery subia lento!
-    -- Agora: Melee usa Z,X,C - Sword usa Z,X - Blox Fruit usa Z,X,C,V,F!
-    local skillList = {}
-    if F.ToolTip == "Melee" then
-        skillList = {"Z", "X", "C"}
-    elseif F.ToolTip == "Sword" then
-        skillList = {"Z", "X"}
-    elseif F.ToolTip == "Gun" then
-        skillList = {"Z", "X"}
-    else
-        skillList = {"Z", "X", "C", "V", "F"}
-    end
-    for _, skillKey in ipairs(skillList) do
-        local selKey = "Select Skills " .. F.ToolTip
-        local isSelected = true
-        pcall(function()
-            if Settings[selKey] and Settings[selKey][skillKey] ~= nil then
-                isSelected = Settings[selKey][skillKey]
-            end
-        end)
-        if isSelected then
-            local holdTime = Settings["Skill " .. skillKey .. " " .. F.ToolTip] or 0.5
-            local vim = game:GetService("VirtualInputManager")
-            vim:SendKeyEvent(true, Enum.KeyCode[skillKey], false, game)
-            if Settings["Use skill fast dont hold"] then
-                task.wait(0.05)
-            else
-                task.wait(holdTime)
-            end
-            vim:SendKeyEvent(false, Enum.KeyCode[skillKey], false, game)
-            task.wait(0.05)
-        end
-    end
+	C = H(F)
+	if C then
+		V, J = Settings["Skill " .. C .. " " .. F.ToolTip] or 0.5, game:GetService("VirtualInputManager")
+		J:SendKeyEvent(true, C, false, game)
+		if Settings["Use skill fast dont hold"] then
+			task.wait(0.05)
+		else
+			task.wait(V)
+		end
+		J:SendKeyEvent(false, C, false, game)
+	end
+end
 getgenv().StackFarm = true
 getgenv().StackFarmOther = true
 StackFarm = getgenv().StackFarm
@@ -10261,16 +10168,6 @@ end
 local function HauntedCastleMasteryFarm()
 	if not Settings["Farm Mastery"] or not Settings["Start Farm"] then
 		return
-	end
-	-- FIX 600: Se ja chegou no target, para o farm (igual Banana Hub METHOD Full)
-	if getgenv().IsMasteryMaxed then
-		local maxed, cur, name, target = getgenv().IsMasteryMaxed()
-		if maxed then
-			pcall(function()
-				A.CreateNoti({ Title = "ShadowX Hub", Desc = name .. " Mastery " .. cur .. "/" .. target .. " MAX!", ShowTime = 5 })
-			end)
-			return
-		end
 	end
 	local character = t.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart")
@@ -23235,8 +23132,7 @@ end
 MasteryWeaponSection.CreateToggle(
 	{ Title = "Auto Farm Mastery 600 Melees", Desc = nil, Default = Settings["Auto Farm Mastery 600 Melees"] or false },
 	function(g)
-		-- FIX SIMPLES: Q,o,d nao existiam, dava erro e parava o script!
-		-- Agora so usa SaveSettings, sem chamar funcao que pode nao existir!
+		-- FIX: Q,o,d nao existiam, dava erro e parava!
 		if g then
 			SaveSettings("Select Method Farm Mastery", "Melee")
 			SaveSettings("Farm Mastery", true)
@@ -23299,7 +23195,7 @@ MasteryWeaponSection.CreateToggle(
 		Default = Settings["Auto Farm Mastery 600 Sword In Inventory"] or false,
 	},
 	function(g)
-		-- FIX SIMPLES: Q,o,d nao existiam!
+		-- FIX: Q,o,d nao existiam!
 		if g then
 			SaveSettings("Select Method Farm Mastery", "Sword")
 			SaveSettings("Farm Mastery", true)
