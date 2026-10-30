@@ -15827,27 +15827,6 @@ function TurnOffNoclipBoat(P)
 	end
 end
 
--- FIX EXTRA: Loop global que garante barco NUNCA bata na parede quando No collision boat ON
-task.spawn(function()
-	while task.wait(0.1) do
-		pcall(function()
-			if Settings["No collision boat"] then
-				local boat = nil
-				if getSeatedBoat then boat = getSeatedBoat() end
-				if not boat and checkboat then boat = checkboat() end
-				if not boat and checkboatFind then boat = checkboatFind() end
-				if not boat and CheckSeaEventBoat then boat = CheckSeaEventBoat() end
-				if boat then
-					for _, part in ipairs(boat:GetDescendants()) do
-						if part:IsA("BasePart") then
-							part.CanCollide = false
-						end
-					end
-				end
-			end
-		end)
-	end
-end)
 -- Sea Event: use the nearest owned boat so an old/far boat is not followed.
 function CheckSeaEventBoat()
 	local player = t
@@ -18448,27 +18427,6 @@ BoatSettingSection.CreateToggle({ Title = "Fly Boat", Desc = nil, Default = Sett
 		end)
 	end
 	SaveSettings("Fly Boat", s)
-end)
--- NOVA TOGGLE ABAIXO DE FLY BOAT - NO COLLISION BOAT
--- Quando ligada, deixa o barco SEM colisao (no clip, CanCollide = false)
-BoatSettingSection.CreateToggle({ Title = "No collision boat", Desc = "Deixa o barco sem colisao (atravessa tudo)", Default = Settings["No collision boat"] == nil and true or Settings["No collision boat"] }, function(b)
-	if b then
-		spawn(function()
-			while Settings["No collision boat"] and (task.wait(0.05)) do
-				pcall(function()
-					local boat = nil
-					if getSeatedBoat then boat = getSeatedBoat() end
-					if not boat and checkboat then boat = checkboat() end
-					if not boat and checkboatFind then boat = checkboatFind() end
-					if not boat and CheckSeaEventBoat then boat = CheckSeaEventBoat() end
-					if boat then
-						NoclipBoat(boat)
-					end
-				end)
-			end
-		end)
-	end
-	SaveSettings("No collision boat", b)
 end)
 R = Settings["Value Speed Fly Boat"]
 BoatSettingSection.CreateSlider(
