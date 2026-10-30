@@ -25337,24 +25337,9 @@ function ESPPlayer()
     if b then
         local s = Instance.new("IntValue", b)
         s.Name = "Ignored"
-        -- ===== ESP PLAYER SEM FUNDO PRETO - MAIS VISIVEL =====
-        -- SEM NameBg, SEM HpBg preto - poluia a tela!
-        -- Agora so Box + Barra HP + Textos com outline FORTE pra ficar visivel
-        -- SEM BOX em volta! Tirado, poluia a tela!
-        -- local Box = Drawing.new("Square") -- REMOVIDO
-        -- Barra de HP - SEM fundo preto, so a barra colorida + borda branca fina
-        local HpBar = Drawing.new("Square")
-        HpBar.Visible = false
-        HpBar.Filled = true
-        HpBar.Color = Color3.fromRGB(0, 255, 0)
-        HpBar.Transparency = 1
-        -- Borda da barra HP (pra ficar visivel sem fundo preto)
-        local HpBarBorder = Drawing.new("Square")
-        HpBarBorder.Visible = false
-        HpBarBorder.Filled = false
-        HpBarBorder.Thickness = 1
-        HpBarBorder.Color = Color3.fromRGB(255, 255, 255)
-        HpBarBorder.Transparency = 0.9
+        -- ===== ESP PLAYER SO TEXTO - SEM BOX, SEM FUNDO PRETO, SEM QUADRADO =====
+        -- SEM Box, SEM NameBg, SEM HpBg, SEM HpBar, SEM HpBarBorder
+        -- So 5 textos, nome sempre BRANCO!
         local TeamText = Drawing.new("Text")
         TeamText.Visible = false
         TeamText.Transparency = 1
@@ -25379,7 +25364,7 @@ function ESPPlayer()
         HpText.Visible = false
         HpText.Transparency = 1
         HpText.Text = "HP"
-        HpText.Color = Color3.fromRGB(0, 255, 0)
+        HpText.Color = Color3.fromRGB(0, 255, 80)
         HpText.Size = 15
         HpText.Outline = true
         HpText.OutlineColor = Color3.fromRGB(0, 0, 0)
@@ -25428,7 +25413,6 @@ function ESPPlayer()
                     local maxHp = math.round(b.Humanoid.MaxHealth)
                     local hpPercent = math.clamp(hp / maxHp, 0, 1)
                     local hpPercentInt = math.floor(hpPercent * 100)
-                    -- Cor HP mais viva: verde neon, amarelo vivo, vermelho vivo
                     local hpColor = Color3.fromRGB(0, 255, 80)
                     if hpPercent < 0.25 then hpColor = Color3.fromRGB(255, 30, 30)
                     elseif hpPercent < 0.5 then hpColor = Color3.fromRGB(255, 210, 0) end
@@ -25446,12 +25430,8 @@ function ESPPlayer()
                     TeamText.Text = "[" .. teamName .. "]"
                     TeamText.Color = teamColor
                     NameText.Text = b.Name
-                    local localPlr = game.Players.LocalPlayer
-                    if localPlr and plr and localPlr.Team and plr.Team and localPlr.Team ~= plr.Team then
-                        NameText.Color = Color3.fromRGB(0, 230, 255)
-                    else
-                        NameText.Color = Color3.fromRGB(255, 255, 255)
-                    end
+                    -- NOME SEMPRE BRANCO! Nao muda pra ciano mais!
+                    NameText.Color = Color3.fromRGB(255, 255, 255)
                     HpText.Text = "HP: " .. hp .. "/" .. maxHp .. " (" .. hpPercentInt .. "%)"
                     HpText.Color = hpColor
                     DistText.Text = dist .. "m"
@@ -25473,24 +25453,12 @@ function ESPPlayer()
                     HpText.Position = Vector2.new(g.X, baseY)
                     DistText.Position = Vector2.new(g.X, baseY + 15 * scale)
                     LevelText.Position = Vector2.new(g.X, baseY + 30 * scale)
-                    -- SEM BOX - removido
-                    -- Barra HP SEM fundo preto - so barra + borda branca
-                    local barW = 70 * scale
-                    HpBarBorder.Size = Vector2.new(barW, 7)
-                    HpBarBorder.Position = Vector2.new(g.X - barW / 2, baseY + 12 * scale)
-                    HpBar.Size = Vector2.new(barW * hpPercent, 7)
-                    HpBar.Position = Vector2.new(g.X - barW / 2, baseY + 12 * scale)
-                    HpBar.Color = hpColor
-                    HpBarBorder.Visible = true
-                    HpBar.Visible = true
                     TeamText.Visible = true
                     NameText.Visible = true
                     HpText.Visible = true
                     DistText.Visible = true
                     LevelText.Visible = lvlText ~= ""
                 else
-                    HpBarBorder.Visible = false
-                    HpBar.Visible = false
                     TeamText.Visible = false
                     NameText.Visible = false
                     HpText.Visible = false
@@ -25498,8 +25466,6 @@ function ESPPlayer()
                     LevelText.Visible = false
                 end
             until not b or not b.Parent or not Settings["ESP Player"]
-            HpBarBorder:Remove()
-            HpBar:Remove()
             TeamText:Remove()
             NameText:Remove()
             HpText:Remove()
