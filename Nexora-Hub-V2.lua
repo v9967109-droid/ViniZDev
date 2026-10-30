@@ -8526,10 +8526,10 @@ _("Melee", { "Z", "X", "C" })
 _("Sword", { "Z", "X" })
 _("Gun", { "Z", "X" })
 _("Blox Fruit", { "Z", "X", "C", "V", "F" })
--- ==================== USE SKILLS TYRANT BOSS - ABAIXO HOLD SKILLS ====================
+-- ==================== USE SKILLS VASES TYRANT - ABAIXO HOLD SKILLS ====================
 -- Igual a aba Select Skills la em cima (Melee, Sword, Gun, Blox Fruit)
 -- Mas essa e SO para as skills da Skull Guitar, abaixo de Hold Skills
-SelectSkillsSkullGuitarSection = SettingSkillMain.CreateSection("Use Skills Tyrant Boss")
+SelectSkillsSkullGuitarSection = SettingSkillMain.CreateSection("Use Skills Vases Tyrant")
 SelectSkillsSkullGuitarSection.CreateDropdown(
     { Title = "Select Skills Skull Guitar", List = {"Z", "X"}, Search = true, Selected = true, Default = Settings["Select Skills Skull Guitar"] or "Z" },
     function(s)
@@ -8540,11 +8540,11 @@ SelectSkillsSkullGuitarSection.CreateDropdown(
     end
 )
 SelectSkillsSkullGuitarSection.CreateToggle(
-    { Title = "Use Skull Guitar Tyrant", Desc = nil, Default = Settings["Use Skull Guitar Tyrant"] == nil and true or Settings["Use Skull Guitar Tyrant"] },
+    { Title = "Use Skills", Desc = nil, Default = Settings["Use Skull Guitar Tyrant"] == nil and true or Settings["Use Skull Guitar Tyrant"] },
     function(b)
         SaveSettings("Use Skull Guitar Tyrant", b)
         getgenv().UseSkullGuitarTyrant = b
-        print("[Tyrant] Use Skull Guitar Tyrant: " .. tostring(b))
+        print("[Tyrant] Use Skills: " .. tostring(b))
     end
 )
 -- Defaults - Ja vem ativado padrao
@@ -8619,7 +8619,7 @@ task.spawn(function()
         end)
     end
 end)
--- ==================== FIM USE SKILLS TYRANT BOSS ====================
+-- ==================== FIM USE SKILLS VASES TYRANT ====================
 FarmMain = Main.CreatePage({ Page_Name = "Farming", Page_Title = "Farming" })
 SettingAutoFarmSection = FarmMain.CreateSection("Farming")
 -- Individual farm toggles. Each method keeps its own state; no Select Method Farm dropdown.
