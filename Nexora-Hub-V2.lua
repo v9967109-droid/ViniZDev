@@ -23132,7 +23132,7 @@ end
 MasteryWeaponSection.CreateToggle(
 	{ Title = "Auto Farm Mastery 600 Melees", Desc = nil, Default = Settings["Auto Farm Mastery 600 Melees"] or false },
 	function(g)
-		-- FIX: Q,o,d nao existiam, dava erro e parava!
+		-- FIX TROCA 600: Agora pula quem ja tem 600 e vai pro proximo!
 		if g then
 			SaveSettings("Select Method Farm Mastery", "Melee")
 			SaveSettings("Farm Mastery", true)
@@ -23143,31 +23143,35 @@ MasteryWeaponSection.CreateToggle(
 		end
 		if g then
 			spawn(function()
-				while Settings["Auto Farm Mastery 600 Melees"] and (task.wait()) do
-					local f, f = pcall(function()
+				while Settings["Auto Farm Mastery 600 Melees"] and (task.wait(0.5)) do
+					local s, e = pcall(function()
 						local R = DetectMeleeFarmMastery()
-						if not R then return end
-						if
-							not game.Players.LocalPlayer.Character:FindFirstChild(R)
-							and not game.Players.LocalPlayer.Backpack:FindFirstChild(R)
-						then
+						if not R then
+							-- Todos ja tem 600!
+							A.CreateNoti({ Title = "ShadowX Hub", Desc = "All Melees 600!", ShowTime = 5 })
+							return
+						end
+						-- Se nao tem o melee, compra!
+						if not game.Players.LocalPlayer.Character:FindFirstChild(R) and not game.Players.LocalPlayer.Backpack:FindFirstChild(R) then
 							if R == "Dragon Claw" then
-								game.ReplicatedStorage.Remotes.CommF_:InvokeServer(
-									"BlackbeardReward",
-									"DragonClaw",
-									"1"
-								)
-								game.ReplicatedStorage.Remotes.CommF_:InvokeServer(
-									"BlackbeardReward",
-									"DragonClaw",
-									"2"
-								)
-								return
+								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BlackbeardReward","DragonClaw","1")
+								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("BlackbeardReward","DragonClaw","2")
+							else
+								local m = string.gsub(R, " ", "")
+								game.ReplicatedStorage.Remotes.CommF_:InvokeServer("Buy" .. m)
 							end
-							local m = string.gsub(R, " ", "")
-							game.ReplicatedStorage.Remotes.CommF_:InvokeServer("Buy" .. m)
-						elseif (CheckMasteryMelee(R) or 0) >= 600 then
+							return
+						end
+						-- Se ja tem 600, bota na blacklist e troca pro proximo!
+						local mastery = CheckMasteryMelee(R) or 0
+						if mastery >= 600 then
 							table.insert(BlMeleeFarmMastery, R)
+							A.CreateNoti({ Title = "ShadowX Hub", Desc = R .. " 600! Indo pro proximo...", ShowTime = 3 })
+							return
+						end
+						-- Se ainda nao tem 600, equipa esse melee pra farmar!
+						if game.Players.LocalPlayer.Backpack:FindFirstChild(R) then
+							pcall(function() equiptool(R) end)
 						end
 					end)
 				end
@@ -23195,7 +23199,7 @@ MasteryWeaponSection.CreateToggle(
 		Default = Settings["Auto Farm Mastery 600 Sword In Inventory"] or false,
 	},
 	function(g)
-		-- FIX: Q,o,d nao existiam!
+		-- FIX TROCA 600 SWORD: Pula quem ja tem 600!
 		if g then
 			SaveSettings("Select Method Farm Mastery", "Sword")
 			SaveSettings("Farm Mastery", true)
@@ -23206,11 +23210,22 @@ MasteryWeaponSection.CreateToggle(
 		end
 		if g then
 			spawn(function()
-				while Settings["Auto Farm Mastery 600 Sword In Inventory"] and (task.wait()) do
+				while Settings["Auto Farm Mastery 600 Sword In Inventory"] and (task.wait(0.5)) do
 					pcall(function()
 						local f = DetectSwordUnlock()
-						if f and not t.Backpack:FindFirstChild(f) and not t.Character:FindFirstChild(f) then
+						if not f then
+							-- Todas swords ja tem 600!
+							A.CreateNoti({ Title = "ShadowX Hub", Desc = "All Swords 600!", ShowTime = 5 })
+							return
+						end
+						-- Se nao tem a sword no inventario, carrega!
+						if not t.Backpack:FindFirstChild(f) and not t.Character:FindFirstChild(f) then
 							game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("LoadItem", f)
+							return
+						end
+						-- Equipa a sword que precisa de maestria!
+						if t.Backpack:FindFirstChild(f) then
+							pcall(function() equiptool(f) end)
 						end
 					end)
 				end
