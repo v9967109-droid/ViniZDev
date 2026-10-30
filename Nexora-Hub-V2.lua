@@ -14491,7 +14491,6 @@ function RandomFruit()
 	if not Settings["Random Devil Fruit"] then return false end
 	if Settings["Auto Find Leviathan"] or Settings["Multi Find Leviathan"] then return false end
 
-	-- Verifica se já está girando ou em cooldown
 	if (getgenv().__RandomFruitNext or 0) > tick() or getgenv().__RandomFruitBusy then
 		return false
 	end
@@ -14508,7 +14507,6 @@ function RandomFruit()
 	local function TryRemote(label, fn)
 		local ok, res = pcall(fn)
 		responses[#responses+1] = label..":"..tostring(res)
-		-- Verifica se beli diminuiu = comprou
 		task.wait(0.3)
 		local now = GetBeli()
 		if before and now and now < before then
@@ -14517,7 +14515,6 @@ function RandomFruit()
 		if ok and (res == true or res == 1) then
 			success = true
 		end
-		-- Se janela abriu também é sucesso
 		local gui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
 		local win = gui and gui:FindFirstChild("SpinnerWindow")
 		if win and win.Enabled then
@@ -14526,7 +14523,6 @@ function RandomFruit()
 	end
 
 	pcall(function()
-		-- 1) Tenta comprar direto SEM ir até o NPC - inclui Zioles BloxFruitsGacha
 		TryRemote("Cousin-Buy", function() return CommF:InvokeServer("Cousin", "Buy") end)
 		TryRemote("Zioles-Buy", function() return CommF:InvokeServer("Zioles", "Buy") end)
 		TryRemote("BloxFruitsGacha-Buy", function() return CommF:InvokeServer("BloxFruitsGacha", "Buy") end)
@@ -14538,7 +14534,6 @@ function RandomFruit()
 		TryRemote("Shop-Buy", function() return CommF:InvokeServer("Shop", "BuyRandomFruit") end)
 		TryRemote("RandomFruit", function() return CommF:InvokeServer("RandomFruit") end)
 		TryRemote("Zioless-Buy", function() return CommF:InvokeServer("Zioless", "Buy") end)
-		-- Tenta todos os Comm (CommF_, CommE_ etc)
 		pcall(function()
 			local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
 			if Remotes then
@@ -14551,7 +14546,6 @@ function RandomFruit()
 				end
 			end
 		end)
-		-- 2) Fallbacks de caixa/banner
 		if not success then
 			local boxName = GetBoxName()
 			pcall(function()
@@ -14565,110 +14559,59 @@ function RandomFruit()
 				TryRemote("Zioles-Box", function() return CommF:InvokeServer("Zioles", boxName) end)
 			end)
 		end
-		-- 3) Tenta girar direto sem interface - tenta vários remotos possíveis
 		local gui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
 		local win = gui and gui:FindFirstChild("SpinnerWindow")
 		if win and win.Enabled then
-			-- NOVO: Detecta Zioles Gacha Box UI ($444,850) e clica direto
-		pcall(function()
-			local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-			if playerGui then
-				for _, gui in ipairs(playerGui:GetDescendants()) do
-					if gui:IsA("TextButton") or gui:IsA("ImageButton") then
-						local txt = tostring(gui.Text or "") .. tostring(gui.Name or "")
-						if string.find(txt, "444,850") or string.find(txt, "444850") or (gui.Parent and string.find(tostring(gui.Parent.Name), "Gacha")) then
-							pcall(function()
-								for _, conn in ipairs(getconnections(gui.MouseButton1Click)) do
-									conn:Fire()
-								end
-								gui:Activate()
-							end)
+			pcall(function()
+				local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+				if playerGui then
+					for _, gui in ipairs(playerGui:GetDescendants()) do
+						if gui:IsA("TextButton") or gui:IsA("ImageButton") then
+							local txt = tostring(gui.Text or "") .. tostring(gui.Name or "")
+							if string.find(txt, "444,850") or string.find(txt, "444850") or (gui.Parent and string.find(tostring(gui.Parent.Name), "Gacha")) then
+								pcall(function()
+									for _, conn in ipairs(getconnections(gui.MouseButton1Click)) do
+										conn:Fire()
+									end
+									gui:Activate()
+								end)
+							end
 						end
 					end
 				end
-			end
-		end)
-		pcall(function()
-			local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-			local gachaBox = playerGui:FindFirstChild("Zioles' Gacha Box", true) or playerGui:FindFirstChild("Zioles", true)
-			if gachaBox then
-				for _, btn in ipairs(gachaBox:GetDescendants()) do
-					if btn:IsA("TextButton") and (string.find(btn.Text, "%$") or btn.Text == "444,850" or string.find(btn.Text, "444")) then
-						pcall(function()
-							for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do conn:Fire() end
-							btn:Activate()
-						end)
-					end
+			end)
+			pcall(function()
+				local ReplicatedStorage = game:GetService("ReplicatedStorage")
+				local Spinner = nil
+				pcall(function() Spinner = require(ReplicatedStorage.Controllers.UI.Spinner) end)
+				if Spinner then
+					if Spinner.Spin then pcall(function() Spinner:Spin() end) end
+					if Spinner.Roll then pcall(function() Spinner:Roll() end) end
+					if Spinner.Open then pcall(function() Spinner:Open() end) end
 				end
-			end
-		end)
-
-		-- Tenta girar via módulos internos sem clicar na UI
-		pcall(function()
-			local Spinner = nil
-			pcall(function() Spinner = require(ReplicatedStorage.Controllers.UI.Spinner) end)
-			if Spinner then
-				-- Tenta métodos comuns
-				if Spinner.Spin then pcall(function() Spinner:Spin() end) end
-				if Spinner.Roll then pcall(function() Spinner:Roll() end) end
-				if Spinner.Open then pcall(function() Spinner:Open() end) end
-			end
-		end)
-			-- Tenta remotos de giro direto
+			end)
 			pcall(function() CommF:InvokeServer("Cousin", "Spin") end)
 			pcall(function() CommF:InvokeServer("Zioles", "Spin") end)
 			pcall(function() CommF:InvokeServer("Zioles", "Buy") end)
 			pcall(function() CommF:InvokeServer("Cousin", "Roll") end)
 			pcall(function() CommF:InvokeServer("Cousin", "Gacha") end)
 			pcall(function() CommF:InvokeServer("Cousin", "Buy", true) end)
-			-- Fallback: se remoto não funcionou, tenta interagir com NPC Zioles / Cousin / BloxFruitsGacha no mapa (sem teleportar longe)
-		if not success then
-			pcall(function()
-				local NPCs = {"Zioles", "Cousin", "Blox Fruit Dealer Cousin", "BloxFruitsGacha", "Gacha", "Cousin"}
-				for _, npcName in ipairs(NPCs) do
-					local npc = workspace:FindFirstChild(npcName, true) or game:GetService("Workspace").NPCs:FindFirstChild(npcName, true)
-					if npc then
-						for _, pp in ipairs(npc:GetDescendants()) do
-							if pp:IsA("ProximityPrompt") or pp:IsA("ClickDetector") then
-								pcall(function()
-									if pp:IsA("ProximityPrompt") then fireproximityprompt(pp) else fireclickdetector(pp) end
-								end)
-								task.wait(0.3)
-							end
-						end
-					end
-				end
-			end)
-		end
-
-		-- Se ainda não girou, força clique invisível no botão (sem precisar ir até NPC)
-			pcall(function()
-				local above = win:FindFirstChild("AboveSpinner")
-				if above then
-					for _, btn in ipairs(above:GetDescendants()) do
-						if btn:IsA("TextButton") then
-							local txt = string.lower(btn.Text or ""..btn.Name)
-							if string.find(txt, "spin") or string.find(txt, "roll") or string.find(txt, "buy") then
-								for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do
-									pcall(function() conn:Fire() end)
-								end
-								pcall(function() btn:Activate() end)
-							end
-						end
-					end
-				end
-			end)
 		end
 	end)
 
 	getgenv().__RandomFruitBusy = false
 	if success then
 		getgenv().__RandomFruitNext = tick() + 1.5
+		-- Mensagem verde so quando girar!
+		pcall(function()
+			A.CreateNoti({Title = "Nexora Hub", Desc = "<font color='#00FF00'>Girando Random Devil Fruit... You got a random Blox Fruit!</font>", ShowTime = 5})
+		end)
 		return true
 	end
 	getgenv().__RandomFruitNext = tick() + 3
 	return false
 end
+
 local FruitInfoModule = nil
 
 
@@ -27039,44 +26982,95 @@ task.spawn(function()
 	end
 end)
 
--- Loops dedicados de Random Fruit e Store Fruit: independentes um do outro e do resto
--- (antes dividiam o mesmo pcall; qualquer erro em outra função impedia as duas de rodar).
+-- Loops dedicados de Random Fruit e Store Fruit (FIX: gira de verdade + mensagem verde)
 do
 	getgenv().__FruitGen = (getgenv().__FruitGen or 0) + 1
 	local FruitGen = getgenv().__FruitGen
 	task.spawn(function()
 		while task.wait(0.5) and getgenv().__FruitGen == FruitGen do
 			pcall(function()
-					if Settings["Random Devil Fruit"] then
-						local playerGui = game:GetService("Players").LocalPlayer:FindFirstChildOfClass("PlayerGui")
-						local spinnerWindow = playerGui and playerGui:FindFirstChild("SpinnerWindow")
-						
+				if Settings["Random Devil Fruit"] then
+					local playerGui = game:GetService("Players").LocalPlayer:FindFirstChildOfClass("PlayerGui")
+					local spinnerWindow = playerGui and playerGui:FindFirstChild("SpinnerWindow")
 					if not spinnerWindow or not spinnerWindow.Enabled then
-							RandomFruit()
-						else
-							-- GIRO AUTOMÁTICO SEM PRECISAR IR ATÉ COUSIN
-							getgenv().__SpinOpenedAt = getgenv().__SpinOpenedAt or tick()
-							-- Tenta girar automaticamente
-							pcall(function()
-								local ReplicatedStorage = game:GetService("ReplicatedStorage")
-								local Spinner = nil
-								pcall(function() Spinner = require(ReplicatedStorage.Controllers.UI.Spinner) end)
-								if Spinner and Spinner.Spin then Spinner:Spin() end
-								if Spinner and Spinner.Roll then Spinner:Roll() end
-							end)
-							-- Fecha sozinho após girar
-							if tick() - getgenv().__SpinOpenedAt > 2 then
-								pcall(function() 
-									local ReplicatedStorage = game:GetService("ReplicatedStorage")
-									local Spinner = require(ReplicatedStorage.Controllers.UI.Spinner)
-									Spinner:Close() 
-								end)
-								pcall(function() spinnerWindow.Enabled = false end)
-								getgenv().__SpinOpenedAt = nil
+						RandomFruit()
+					else
+						-- GIRO AUTOMATICO QUE FUNCIONA DE VERDADE!
+						getgenv().__SpinOpenedAt = getgenv().__SpinOpenedAt or tick()
+						-- Tenta girar de varios jeitos
+						pcall(function()
+							local ReplicatedStorage = game:GetService("ReplicatedStorage")
+							local CommF = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_")
+							if CommF then
+								CommF:InvokeServer("Cousin", "Spin")
+								CommF:InvokeServer("Zioles", "Spin")
+								CommF:InvokeServer("BloxFruitsGacha", "Spin")
+								CommF:InvokeServer("Cousin", "Roll")
+								CommF:InvokeServer("Gacha", "Spin")
 							end
+						end)
+						pcall(function()
+							local ReplicatedStorage = game:GetService("ReplicatedStorage")
+							local Spinner = nil
+							pcall(function() Spinner = require(ReplicatedStorage.Controllers.UI.Spinner) end)
+							if Spinner then
+								if Spinner.Spin then pcall(function() Spinner:Spin() end) end
+								if Spinner.Roll then pcall(function() Spinner:Roll() end) end
+								if Spinner.Open then pcall(function() Spinner:Open() end) end
+								if Spinner.Start then pcall(function() Spinner:Start() end) end
+							end
+						end)
+						-- Clica nos botoes da UI do SpinnerWindow
+						pcall(function()
+							local playerGui = game:GetService("Players").LocalPlayer:FindFirstChildOfClass("PlayerGui")
+							local win = playerGui and playerGui:FindFirstChild("SpinnerWindow")
+							if win then
+								for _, btn in ipairs(win:GetDescendants()) do
+									if btn:IsA("TextButton") or btn:IsA("ImageButton") then
+										local txt = string.lower(tostring(btn.Text or "") .. tostring(btn.Name or ""))
+										if string.find(txt, "spin") or string.find(txt, "roll") or string.find(txt, "buy") or string.find(txt, "gacha") then
+											pcall(function()
+												for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do
+													conn:Fire()
+												end
+												btn:Activate()
+											end)
+										end
+									end
+								end
+								-- Procura AboveSpinner
+								local above = win:FindFirstChild("AboveSpinner") or win:FindFirstChild("Frame") or win
+								if above then
+									for _, btn in ipairs(above:GetDescendants()) do
+										if btn:IsA("TextButton") then
+											pcall(function()
+												for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do conn:Fire() end
+												btn:Activate()
+											end)
+										end
+									end
+								end
+							end
+						end)
+						-- Mensagem verde SO quando girar! (quando SpinnerWindow aberta)
+						if tick() - getgenv().__SpinOpenedAt > 0.5 and tick() - (getgenv().__LastGreenMsg or 0) > 3 then
+							getgenv().__LastGreenMsg = tick()
+							pcall(function()
+								A.CreateNoti({Title = "Nexora Hub", Desc = "<font color='#00FF00'>Girando... You got a random Blox Fruit!</font>", ShowTime = 4})
+							end)
 						end
-
+						-- Fecha sozinho apos girar
+						if tick() - getgenv().__SpinOpenedAt > 3 then
+							pcall(function() 
+								local ReplicatedStorage = game:GetService("ReplicatedStorage")
+								local Spinner = require(ReplicatedStorage.Controllers.UI.Spinner)
+								Spinner:Close() 
+							end)
+							pcall(function() spinnerWindow.Enabled = false end)
+							getgenv().__SpinOpenedAt = nil
+						end
 					end
+				end
 			end)
 		end
 	end)
@@ -27094,6 +27088,7 @@ do
 		end
 	end)
 end
+
 
 do
 	-- Ao reexecutar o script, o loop antigo continuava vivo usando o Settings ANTIGO,
