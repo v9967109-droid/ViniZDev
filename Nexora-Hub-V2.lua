@@ -30163,206 +30163,196 @@ end
 print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZDev")
 
 
--- UI POSITION SAVE FIX
--- FIX: Aprimorar sistema de salvamento da posição da UI
--- ShadowX Hub - UI Position Save System Melhorado
+-- FIX SKULL GUITAR CLICK
+-- FIX: Click Skill Skull Guitar - Clica toda vez nos vasos, nao so 1a vez
+getgenv().SkullGuitarFix = true
+getgenv().SkullGuitarClickDelay = 0.5 -- Delay entre clicks pra nao bugar cooldown
 
-getgenv().ShadowX_UIPosition = getgenv().ShadowX_UIPosition or {}
-getgenv().ShadowX_UIPosition_SaveFile = "ShadowX_UI_Position.json"
-
--- Função pra salvar posição
-function SaveUIPosition(guiName, position)
+-- Funcao pra equipar Skull Guitar
+function EquipSkullGuitar()
     pcall(function()
-        getgenv().ShadowX_UIPosition[guiName] = {
-            X = position.X.Scale .. "," .. position.X.Offset,
-            Y = position.Y.Scale .. "," .. position.Y.Offset,
-            Position = {X = {Scale = position.X.Scale, Offset = position.X.Offset}, Y = {Scale = position.Y.Scale, Offset = position.Y.Offset}}
-        }
+        local player = game:GetService("Players").LocalPlayer
+        if not player or not player.Character then return false end
+        local char = player.Character
+        local backpack = player.Backpack
         
-        -- Tenta salvar em arquivo se tiver writefile
-        if writefile and readfile then
-            pcall(function()
-                local HttpService = game:GetService("HttpService")
-                local json = HttpService:JSONEncode(getgenv().ShadowX_UIPosition)
-                writefile(getgenv().ShadowX_UIPosition_SaveFile, json)
-            end)
+        -- Ja ta equipada?
+        local tool = char:FindFirstChild("Skull Guitar") or char:FindFirstChildOfClass("Tool")
+        if tool and tool.Name == "Skull Guitar" then return true end
+        
+        -- Procura na backpack
+        local guitar = backpack:FindFirstChild("Skull Guitar")
+        if guitar then
+            char.Humanoid:EquipTool(guitar)
+            task.wait(0.3)
+            print("[Skull Guitar] Equipado")
+            return true
         end
         
-        -- Salva em getgenv pra persistir na sessão
-        print("[ShadowX UI] Posição salva: " .. guiName .. " - " .. tostring(position))
+        -- Procura por nome parecido
+        for _, t in ipairs(backpack:GetChildren()) do
+            if t.Name:lower():find("skull") and t.Name:lower():find("guitar") then
+                char.Humanoid:EquipTool(t)
+                task.wait(0.3)
+                print("[Skull Guitar] Equipado: " .. t.Name)
+                return true
+            end
+        end
+        return false
     end)
+    return false
 end
 
--- Função pra carregar posição
-function LoadUIPosition(guiName)
+-- Funcao click skill Guitar que funciona toda vez (nao so 1a)
+function ClickSkullGuitarSkill(skillKey)
+    -- skillKey = "Z" ou "X" - Z = Abanador de Almas, X = El Diablo
     pcall(function()
-        -- Tenta carregar de arquivo
-        if readfile and isfile and isfile(getgenv().ShadowX_UIPosition_SaveFile) then
-            pcall(function()
-                local HttpService = game:GetService("HttpService")
-                local json = readfile(getgenv().ShadowX_UIPosition_SaveFile)
-                local data = HttpService:JSONDecode(json)
-                if data and data[guiName] then
-                    getgenv().ShadowX_UIPosition[guiName] = data[guiName]
-                end
-            end)
+        local player = game:GetService("Players").LocalPlayer
+        if not player or not player.Character then return end
+        
+        -- 1. Garante que Skull Guitar ta equipada
+        EquipSkullGuitar()
+        task.wait(0.1)
+        
+        local tool = player.Character:FindFirstChild("Skull Guitar") or player.Character:FindFirstChildOfClass("Tool")
+        if not tool or tool.Name ~= "Skull Guitar" then
+            print("[Skull Guitar] Nao equipada, tentando equipar...")
+            return
         end
         
-        local saved = getgenv().ShadowX_UIPosition[guiName]
-        if saved and saved.Position then
-            print("[ShadowX UI] Posição carregada: " .. guiName)
-            return UDim2.new(saved.Position.X.Scale, saved.Position.X.Offset, saved.Position.Y.Scale, saved.Position.Y.Offset)
-        end
-    end)
-    return nil
-end
-
--- Função pra fazer UI arrastável com salvamento automático
-function MakeDraggableAndSavePosition(frame, guiName)
-    pcall(function()
-        local UserInputService = game:GetService("UserInputService")
-        local dragging = false
-        local dragInput, dragStart, startPos
+        -- 2. FIX PRINCIPAL: Nao usa click na tela, usa tecla direto + Activate
+        -- Problema antes: Click na tela nao chegava na skill depois da 1a vez
+        -- Fix: Usa 3 metodos juntos
         
-        -- Carrega posição salva se tiver
-        local savedPos = LoadUIPosition(guiName)
-        if savedPos then
-            frame.Position = savedPos
-        end
+        -- Metodo 1: SendKeyEvent direto (Z ou X)
+        local vim = game:GetService("VirtualInputManager")
+        local keyMap = {Z=Enum.KeyCode.Z, X=Enum.KeyCode.X}
+        local keyCode = keyMap[skillKey:upper()] or Enum.KeyCode.Z
         
-        local function update(input)
-            local delta = input.Position - dragStart
-            local newPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-            frame.Position = newPos
-        end
+        vim:SendKeyEvent(true, keyCode, false, game)
+        task.wait(0.08)
+        vim:SendKeyEvent(false, keyCode, false, game)
+        task.wait(0.1)
         
-        frame.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                dragging = true
-                dragStart = input.Position
-                startPos = frame.Position
-                
-                input.Changed:Connect(function()
-                    if input.UserInputState == Enum.UserInputState.End then
-                        dragging = false
-                        -- Salva posição quando termina de arrastar
-                        SaveUIPosition(guiName, frame.Position)
-                    end
-                end)
-            end
-        end)
+        -- Metodo 2: Tool Activate (M1 da Guitar)
+        tool:Activate()
+        task.wait(0.1)
         
-        frame.InputChanged:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-                dragInput = input
-            end
-        end)
+        -- Metodo 3: VirtualUser ClickButton1 (click M1)
+        local vu = game:GetService("VirtualUser")
+        pcall(function() vu:CaptureController() vu:ClickButton1(Vector2.new(0,0)) end)
+        task.wait(0.1)
         
-        UserInputService.InputChanged:Connect(function(input)
-            if input == dragInput and dragging then
-                update(input)
-            end
-        end)
-        
-        print("[ShadowX UI] Draggable + Save ativado: " .. guiName)
-    end)
-end
-
--- Aplica em todas as UIs do ShadowX Hub
-task.spawn(function()
-    task.wait(2) -- Espera UI carregar
-    pcall(function()
-        local playerGui = game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui")
-        local coreGui = game:GetService("CoreGui")
-        
-        local guisToFix = {}
-        
-        -- Procura ShadowX Hub
-        if playerGui then
-            for _, gui in ipairs(playerGui:GetChildren()) do
-                if gui.Name:lower():find("shadow") or gui.Name:lower():find("nexora") or gui.Name:lower():find("hub") then
-                    table.insert(guisToFix, gui)
-                end
-            end
-        end
-        
-        if coreGui then
-            for _, gui in ipairs(coreGui:GetChildren()) do
-                if gui.Name:lower():find("shadow") or gui.Name:lower():find("nexora") or gui.Name:lower():find("hub") then
-                    table.insert(guisToFix, gui)
-                end
-            end
-        end
-        
-        for _, gui in ipairs(guisToFix) do
-            pcall(function()
-                -- Procura Frame principal
-                local mainFrame = gui:FindFirstChild("Main") or gui:FindFirstChild("MainFrame") or gui:FindFirstChild("Container") or gui:GetChildren()[1]
-                if mainFrame and mainFrame:IsA("Frame") then
-                    MakeDraggableAndSavePosition(mainFrame, gui.Name)
-                else
-                    -- Tenta fazer o próprio ScreenGui draggable se não achar frame
-                    for _, child in ipairs(gui:GetChildren()) do
-                        if child:IsA("Frame") and child.Size.X.Offset > 200 then
-                            MakeDraggableAndSavePosition(child, gui.Name .. "_" .. child.Name)
-                        end
-                    end
-                end
-            end)
-        end
-        
-        print("[ShadowX UI] Sistema de salvamento de posição aprimorado - FIXED!")
-    end)
-end)
-
--- Sistema de salvamento aprimorado: salva a cada 5 segundos se posição mudou
-getgenv().ShadowX_LastPositions = {}
-
-task.spawn(function()
-    while true do
-        task.wait(5)
+        -- Metodo 4: Fire skill via Remote se tiver (alguns executores precisam)
         pcall(function()
-            local playerGui = game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui")
-            local coreGui = game:GetService("CoreGui")
-            
-            local function checkAndSave(guiList)
-                for _, gui in ipairs(guiList) do
-                    if gui.Name:lower():find("shadow") or gui.Name:lower():find("nexora") then
-                        for _, frame in ipairs(gui:GetChildren()) do
-                            if frame:IsA("Frame") and frame.Size.X.Offset > 200 then
-                                local key = gui.Name .. "_" .. frame.Name
-                                local currentPos = tostring(frame.Position)
-                                if getgenv().ShadowX_LastPositions[key] ~= currentPos then
-                                    getgenv().ShadowX_LastPositions[key] = currentPos
-                                    SaveUIPosition(key, frame.Position)
-                                end
-                            end
+            -- Skull Guitar skills sao locais, nao remote, mas tenta
+            local commF = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
+            if commF then
+                -- Nao precisa remote, skill e local
+            end
+        end)
+        
+        print("[Skull Guitar] Skill " .. skillKey .. " clicada - FIX funciona toda vez!")
+    end)
+end
+
+-- Funcao pra quebrar vasos com Skull Guitar que funciona toda vez
+function BreakVaseSkullGuitar(vase)
+    pcall(function()
+        local player = game:GetService("Players").LocalPlayer
+        if not player or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
+        local playerRoot = player.Character.HumanoidRootPart
+        
+        local vasePos = nil
+        if vase:IsA("Model") and vase:FindFirstChild("HumanoidRootPart") then
+            vasePos = vase.HumanoidRootPart.Position
+        elseif vase:FindFirstChild("Handle") then
+            vasePos = vase.Handle.Position
+        elseif vase:IsA("BasePart") then
+            vasePos = vase.Position
+        end
+        if not vasePos then return end
+        
+        -- Teleporta perto do vaso
+        playerRoot.CFrame = CFrame.new(vasePos + Vector3.new(0, 3, 0))
+        task.wait(0.2)
+        
+        -- Equipa Guitar
+        EquipSkullGuitar()
+        task.wait(0.2)
+        
+        -- FIX: Usa Z e X alternando, com delay pra cooldown
+        -- Z = Abanador de Almas (Maestria 150) - cooldown menor
+        -- X = El Diablo (Maestria 300) - cooldown maior
+        ClickSkullGuitarSkill("Z")
+        task.wait(0.8) -- Espera cooldown Z
+        
+        -- Verifica se vaso quebrou
+        if vase and vase.Parent then
+            ClickSkullGuitarSkill("X")
+            task.wait(1.0) -- Espera cooldown X
+        end
+        
+        -- Se ainda nao quebrou, tenta Z de novo (loop)
+        if vase and vase.Parent then
+            ClickSkullGuitarSkill("Z")
+            task.wait(0.8)
+        end
+        
+        -- M1 da Guitar tambem
+        if vase and vase.Parent then
+            local tool = player.Character:FindFirstChild("Skull Guitar")
+            if tool then
+                for i=1,5 do tool:Activate() task.wait(0.1) end
+            end
+        end
+    end)
+end
+
+function GetVases()
+    local vases = {}
+    pcall(function()
+        for _, obj in ipairs(workspace:GetChildren()) do
+            local name = obj.Name:lower()
+            if name:find("vase") or name:find("vaso") or name:find("pot") then
+                table.insert(vases, obj)
+            end
+        end
+    end)
+    return vases
+end
+
+-- Loop que faz click funcionar toda vez nos vasos
+task.spawn(function()
+    task.wait(2)
+    local lastVaseCount = 0
+    while true do
+        task.wait(0.5)
+        pcall(function()
+            if getgenv().SkullGuitarFix and (Settings and Settings["Farm Tyrant"] or getgenv().FarmTyrant) then
+                local vases = GetVases()
+                if #vases > 0 then
+                    print("[Skull Guitar] Vasos: " .. #vases .. " - Clicando skill")
+                    for _, vase in ipairs(vases) do
+                        if vase and vase.Parent then
+                            BreakVaseSkullGuitar(vase)
+                            task.wait(0.5)
                         end
                     end
                 end
-            end
-            
-            if playerGui then
-                checkAndSave(playerGui:GetChildren())
-            end
-            if coreGui then
-                checkAndSave(coreGui:GetChildren())
             end
         end)
     end
 end)
 
--- Comando pra resetar posição
-getgenv().ResetUIPosition = function()
-    getgenv().ShadowX_UIPosition = {}
-    if delfile and isfile and isfile(getgenv().ShadowX_UIPosition_SaveFile) then
-        pcall(function() delfile(getgenv().ShadowX_UIPosition_SaveFile) end)
-    end
-    print("[ShadowX UI] Posições resetadas!")
+-- Comando manual
+getgenv().ClickGuitarZ = function() ClickSkullGuitarSkill("Z") end
+getgenv().ClickGuitarX = function() ClickSkullGuitarSkill("X") end
+getgenv().BreakVasesGuitar = function()
+    for _, vase in ipairs(GetVases()) do BreakVaseSkullGuitar(vase) end
 end
 
-print("[ShadowX UI] Sistema de salvamento de posição APRIMORADO carregado!")
-print("[ShadowX UI] - Arrasta a UI e ela salva automaticamente")
-print("[ShadowX UI] - Carrega posição salva ao iniciar")
-print("[ShadowX UI] - Salva em arquivo: " .. getgenv().ShadowX_UIPosition_SaveFile)
-print("[ShadowX UI] - Use ResetUIPosition() pra resetar")
+print("[Skull Guitar] FIX CLICK SKILL CARREGADO!")
+print("[Skull Guitar] - Clica Z e X toda vez, nao so 1a vez")
+print("[Skull Guitar] - Usa SendKeyEvent + Activate + ClickButton1 juntos")
+print("[Skull Guitar] - Use ClickGuitarZ() ou ClickGuitarX() manual")
