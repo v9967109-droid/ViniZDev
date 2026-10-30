@@ -8549,12 +8549,50 @@ if Settings["Use Skills"] == nil then Settings["Use Skills"] = true getgenv().Us
 if Settings["Select Skills Skull Guitar"] == nil then Settings["Select Skills Skull Guitar"] = "Z" getgenv().UseSkillsSelected = "Z" end
 getgenv().UseSkills = Settings["Use Skills"]
 getgenv().UseSkillsSelected = Settings["Select Skills Skull Guitar"]
--- FIX: Quebrar vasos (Tree) com skills - CORRIGIDO
+-- FIX: Quebrar vasos (Tree) com skills - CORRIGIDO + SO DEPOIS DOS 4 OLHOS
 -- Antes: Procurava "Vase" e Settings["Farm Tyrant"] - NUNCA achava!
 -- Agora: Procura "Tree" em EagleBossArena e Settings["Auto Farm Tyrant of the Skies"]
+-- NOVO FIX: So quebra vasos DEPOIS dos 4 olhos das estatuas ativados!
+getgenv().GetTyrantEyesCount = function()
+    local count = 0
+    pcall(function()
+        -- Procura olhos nas estatuas do TikiOutpost / EagleBossArena
+        local tiki = workspace.Map and workspace.Map:FindFirstChild("TikiOutpost")
+        if tiki then
+            local island = tiki:FindFirstChild("IslandModel", true)
+            if island then
+                for i=1,4 do
+                    local eye = island:FindFirstChild("Eye"..i, true)
+                    if eye and eye.Transparency == 1 then
+                        count = count + 1
+                    end
+                end
+            end
+        end
+        -- Fallback: Procura em workspace inteiro
+        if count == 0 then
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj.Name:match("Eye%d") and obj.Transparency == 1 then
+                    count = count + 1
+                end
+            end
+            -- Limita a 4
+            if count > 4 then count = 4 end
+        end
+    end)
+    return count
+end
+
 getgenv().BreakVaseWithSelectedSkill = function()
     pcall(function()
         if not getgenv().UseSkills then return end
+        -- NOVO: So quebra vasos DEPOIS dos 4 olhos ativados!
+        local eyes = getgenv().GetTyrantEyesCount()
+        if eyes < 4 then
+            -- Ainda nao tem 4 olhos, nao vai bater nos vasos!
+            -- Espera os olhos ativarem primeiro
+            return
+        end
         -- CORRECAO 1: Setting correto e Auto Farm Tyrant of the Skies, nao Farm Tyrant
         if not (Settings and Settings["Auto Farm Tyrant of the Skies"]) then return end
         local player = game:GetService("Players").LocalPlayer
@@ -8647,6 +8685,11 @@ task.spawn(function()
         task.wait(0.3)
         pcall(function()
             if getgenv().UseSkills and Settings and Settings["Auto Farm Tyrant of the Skies"] then
+                local eyes = getgenv().GetTyrantEyesCount and getgenv().GetTyrantEyesCount() or 0
+                if eyes < 4 then
+                    -- print("[Tyrant] Esperando 4 olhos: " .. eyes .. "/4 - Nao vai bater nos vasos ainda!")
+                    return
+                end
                 getgenv().BreakVaseWithSelectedSkill()
             end
         end)
