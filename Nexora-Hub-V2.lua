@@ -25422,7 +25422,25 @@ function ESPPlayer()
                     local lvlText = ""
                     pcall(function()
                         if plr and plr:FindFirstChild("leaderstats") and plr.leaderstats:FindFirstChild("Bounty/Honor") then
-                            lvlText = "Bounty: " .. tostring(plr.leaderstats["Bounty/Honor"].Value)
+                            local bv = tonumber(plr.leaderstats["Bounty/Honor"].Value) or 0
+                            -- Formata Bounty tipo 2,0m / 12,3m / 12,9m / 13,1m / 12,3k
+                            local fmt = tostring(bv)
+                            if bv >= 1000000 then
+                                local v = bv / 1000000
+                                local s = string.format("%.1f", v):gsub("%.", ",")
+                                -- Se for 2,0m deixa so 2m (tira ,0)
+                                if s:sub(-2) == ",0" then s = s:sub(1, -3) end
+                                fmt = s .. "m"
+                            elseif bv >= 1000 then
+                                local v = bv / 1000
+                                local s = string.format("%.1f", v):gsub("%.", ",")
+                                -- Se for 50,0k deixa so 50k (tira ,0)
+                                if s:sub(-2) == ",0" then s = s:sub(1, -3) end
+                                fmt = s .. "k"
+                            else
+                                fmt = tostring(bv)
+                            end
+                            lvlText = "Bounty: " .. fmt
                         elseif plr and plr.Data and plr.Data:FindFirstChild("Level") then
                             lvlText = "Lv. " .. tostring(plr.Data.Level.Value)
                         end
