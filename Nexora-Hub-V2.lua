@@ -11749,7 +11749,7 @@ task.spawn(function()
 	end
 end)
 FarmotherMain = Main.CreatePage({ Page_Name = "Farming Other", Page_Title = "Farming Other" })
--- SPOKY SECTION DENTRO DE FARMING OTHER - DEBUG FIX
+-- SPOKY SECTION DENTRO DE FARMING OTHER - SEM CONTINUE - FIX
 SpokyHalloweenSection = FarmotherMain.CreateSection("Spoky Event - Halloween 2026")
 SpokyHalloweenSection.CreateToggle(
     { Title = "Auto Halloween Trick Or Treat", Desc = "Porta a porta + 2 Bosses", Default = false },
@@ -11770,7 +11770,7 @@ SpokyHalloweenSection.CreateToggle(
     end
 )
 SpokyHalloweenSection.CreateToggle(
-    { Title = "Auto Farm Pumpkins", Desc = "Aboboras DEBUG - sem pcall", Default = false },
+    { Title = "Auto Farm Pumpkins", Desc = "Aboboras SEM CONTINUE", Default = false },
     function(V)
         getgenv().Settings = getgenv().Settings or {}
         Settings = getgenv().Settings
@@ -11778,7 +11778,7 @@ SpokyHalloweenSection.CreateToggle(
         pcall(function() SaveSettings("Auto Farm Pumpkins", V) end)
         if V then
             pcall(function()
-                game:GetService("StarterGui"):SetCore("SendNotification", {Title="Pumpkin", Text="Iniciado - procurando aboboras!", Duration=3})
+                game:GetService("StarterGui"):SetCore("SendNotification", {Title="Pumpkin", Text="Ligado! Indo farmar!", Duration=3})
             end)
         end
     end
@@ -30450,176 +30450,138 @@ end
 print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZDev")
 
 
-pcall(function()
-    if not getgenv().Settings then getgenv().Settings = {} end
-    if not Settings then Settings = getgenv().Settings end
-    Settings["Auto Halloween Trick Or Treat"] = Settings["Auto Halloween Trick Or Treat"] or false
-    Settings["Auto Spoky Gacha"] = Settings["Auto Spoky Gacha"] or false
-    Settings["Auto Farm Pumpkins"] = Settings["Auto Farm Pumpkins"] or false
-    
-    -- PUMPKIN FARM SIMPLES - SEM PCALL DENTRO, DIRETO
-    spawn(function()
-        while true do
-            task.wait(0.5)
-            if Settings["Auto Farm Pumpkins"] ~= true then
-                continue
-            end
-            
+-- SEM CONTINUE - Usa if
+if not getgenv().Settings then getgenv().Settings = {} end
+if not Settings then Settings = getgenv().Settings end
+Settings["Auto Halloween Trick Or Treat"] = Settings["Auto Halloween Trick Or Treat"] or false
+Settings["Auto Spoky Gacha"] = Settings["Auto Spoky Gacha"] or false
+Settings["Auto Farm Pumpkins"] = Settings["Auto Farm Pumpkins"] or false
+
+spawn(function()
+    while task.wait(0.5) do
+        if Settings["Auto Farm Pumpkins"] == true then
             local player = game:GetService("Players").LocalPlayer
-            if not player or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
-                continue
-            end
-            local hrp = player.Character.HumanoidRootPart
-            
-            -- Procura aboboras em todo workspace
-            local pumpkins = {}
-            
-            -- Busca por nome
-            for _, v in ipairs(workspace:GetDescendants()) do
-                if v:IsA("BasePart") or v:IsA("Model") or v:IsA("MeshPart") then
-                    local lname = string.lower(v.Name)
-                    if string.find(lname, "pumpkin") and not string.find(lname, "bits") then
-                        local pos = nil
-                        if v:IsA("BasePart") then pos = v.Position else 
-                            local ok, piv = pcall(function() return v:GetPivot().Position end)
-                            if ok then pos = piv end
-                        end
-                        if pos then
-                            table.insert(pumpkins, {obj = v, pos = pos})
+            if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local hrp = player.Character.HumanoidRootPart
+                local pumpkins = {}
+                for _, v in ipairs(workspace:GetDescendants()) do
+                    if v:IsA("BasePart") or v:IsA("MeshPart") or v:IsA("Model") then
+                        local lname = string.lower(v.Name)
+                        if string.find(lname, "pumpkin") and not string.find(lname, "bits") and not string.find(lname, "core") then
+                            local pos = nil
+                            pcall(function()
+                                if v:IsA("BasePart") then pos = v.Position else pos = v:GetPivot().Position end
+                            end)
+                            if pos then
+                                table.insert(pumpkins, {obj = v, pos = pos})
+                            end
                         end
                     end
                 end
-            end
-            
-            -- Se nao achou por nome, procura por Mesh com cor laranja
-            if #pumpkins == 0 then
-                for _, v in ipairs(workspace:GetDescendants()) do
-                    if v:IsA("MeshPart") or v:IsA("Part") then
-                        if v.Size.Magnitude > 2 and v.Size.Magnitude < 15 then
-                            local isOrange = false
-                            if v.Color then
-                                if v.Color.R > 0.7 and v.Color.G > 0.3 and v.Color.G < 0.8 and v.Color.B < 0.5 then
-                                    isOrange = true
+                
+                if #pumpkins > 0 then
+                    local nearest = nil
+                    local minDist = 999999
+                    for _, p in ipairs(pumpkins) do
+                        local dist = (hrp.Position - p.pos).Magnitude
+                        if dist < minDist then
+                            minDist = dist
+                            nearest = p
+                        end
+                    end
+                    if nearest then
+                        pcall(function()
+                            game:GetService("StarterGui"):SetCore("SendNotification", {Title="Pumpkin", Text="Achou! Dist "..math.floor(minDist), Duration=2})
+                        end)
+                        local targetCFrame = CFrame.new(nearest.pos + Vector3.new(0,8,0))
+                        if getgenv().toTarget then
+                            pcall(function() getgenv().toTarget(targetCFrame) end)
+                        elseif toTarget then
+                            pcall(function() toTarget(targetCFrame) end)
+                        else
+                            hrp.CFrame = targetCFrame
+                        end
+                        task.wait(0.8)
+                        for i = 1,15 do
+                            if Settings["Auto Farm Pumpkins"] ~= true then break end
+                            local tool = player.Character:FindFirstChildOfClass("Tool")
+                            if not tool then
+                                tool = player.Backpack:FindFirstChildOfClass("Tool")
+                                if tool then
+                                    pcall(function() player.Character.Humanoid:EquipTool(tool) end)
+                                    task.wait(0.2)
                                 end
                             end
-                            if isOrange or string.find(string.lower(v.Parent.Name), "pumpkin") then
-                                table.insert(pumpkins, {obj = v, pos = v.Position})
+                            if tool then
+                                pcall(function() tool:Activate() end)
+                            end
+                            task.wait(0.15)
+                            if not nearest.obj.Parent then
+                                break
+                            end
+                        end
+                    end
+                else
+                    -- Nao achou, procura por cor laranja
+                    for _, v in ipairs(workspace:GetDescendants()) do
+                        if v:IsA("MeshPart") or v:IsA("Part") then
+                            if v.Size.Magnitude > 2 and v.Size.Magnitude < 12 then
+                                if v.Color and v.Color.R > 0.7 and v.Color.G < 0.8 and v.Color.B < 0.5 then
+                                    if string.lower(v.Parent.Name):find("pump") or string.lower(v.Name):find("pump") then
+                                        local targetCFrame = CFrame.new(v.Position + Vector3.new(0,8,0))
+                                        if getgenv().toTarget then pcall(function() getgenv().toTarget(targetCFrame) end)
+                                        elseif toTarget then pcall(function() toTarget(targetCFrame) end)
+                                        else hrp.CFrame = targetCFrame end
+                                        task.wait(0.5)
+                                        local tool = player.Character:FindFirstChildOfClass("Tool") or player.Backpack:FindFirstChildOfClass("Tool")
+                                        if tool then pcall(function() player.Character.Humanoid:EquipTool(tool) tool:Activate() end) end
+                                        break
+                                    end
+                                end
                             end
                         end
                     end
                 end
             end
-            
-            if #pumpkins == 0 then
-                -- Notifica que nao achou
-                if tick() % 10 < 0.5 then
-                    pcall(function()
-                        game:GetService("StarterGui"):SetCore("SendNotification", {Title="Pumpkin", Text="Nenhuma abobora achada! Procurando...", Duration=2})
-                    end)
-                end
-                continue
-            end
-            
-            -- Pega mais proxima
-            local nearest = nil
-            local minDist = 999999
-            for _, p in ipairs(pumpkins) do
-                local dist = (hrp.Position - p.pos).Magnitude
-                if dist < minDist then
-                    minDist = dist
-                    nearest = p
-                end
-            end
-            
-            if nearest then
-                pcall(function()
-                    game:GetService("StarterGui"):SetCore("SendNotification", {Title="Pumpkin", Text="Indo ate abobora! Dist: "..math.floor(minDist), Duration=2})
-                end)
-                
-                -- Vai ate ela
-                local targetCFrame = CFrame.new(nearest.pos + Vector3.new(0,8,0))
-                -- Tenta toTarget, se nao, CFrame direto
-                local moved = false
-                if getgenv().toTarget then
-                    pcall(function() getgenv().toTarget(targetCFrame) moved = true end)
-                end
-                if not moved and toTarget then
-                    pcall(function() toTarget(targetCFrame) moved = true end)
-                end
-                if not moved then
-                    hrp.CFrame = targetCFrame
-                end
-                
-                task.wait(0.8)
-                
-                -- Bate
-                for i = 1,15 do
-                    if Settings["Auto Farm Pumpkins"] ~= true then break end
-                    local tool = player.Character:FindFirstChildOfClass("Tool")
-                    if not tool then
-                        tool = player.Backpack:FindFirstChildOfClass("Tool")
-                        if tool then
-                            pcall(function() player.Character.Humanoid:EquipTool(tool) end)
-                            task.wait(0.2)
-                        end
-                    end
-                    if tool then
-                        pcall(function() tool:Activate() end)
-                    end
-                    -- Ataca com Z
-                    pcall(function()
-                        game:GetService("VirtualInputManager"):SendKeyEvent(true, "Z", false, game)
-                        task.wait(0.05)
-                        game:GetService("VirtualInputManager"):SendKeyEvent(false, "Z", false, game)
-                    end)
-                    task.wait(0.15)
-                    
-                    -- Verifica se quebrou
-                    if not nearest.obj.Parent then
-                        pcall(function()
-                            game:GetService("StarterGui"):SetCore("SendNotification", {Title="Pumpkin", Text="Abobora quebrada! Procurando proxima...", Duration=2})
-                        end)
-                        break
-                    end
-                end
-            end
         end
-    end)
-    
-    -- Halloween e Gacha simples
-    spawn(function()
-        while true do
-            task.wait(1)
-            if Settings["Auto Halloween Trick Or Treat"] ~= true then continue end
+    end
+end)
+
+spawn(function()
+    while task.wait(1) do
+        if Settings["Auto Halloween Trick Or Treat"] == true then
             local player = game:GetService("Players").LocalPlayer
-            if not player or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then continue end
-            local hrp = player.Character.HumanoidRootPart
-            local mansionPos = Vector3.new(-12471, 374, -7551)
-            local doors = {}
-            for _, v in ipairs(workspace:GetDescendants()) do
-                if v:IsA("ProximityPrompt") then
-                    local parent = v.Parent
-                    if parent and parent:IsA("BasePart") and (parent.Position - mansionPos).Magnitude < 1600 then
-                        local text = ((v.ObjectText or "") .. " " .. (v.ActionText or "") .. " " .. parent.Name):lower()
-                        if text:find("trick") or text:find("treat") or text:find("knock") or text:find("door") or text:find("candy") then
-                            table.insert(doors, {prompt = v, pos = parent.Position})
+            if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local hrp = player.Character.HumanoidRootPart
+                local mansionPos = Vector3.new(-12471, 374, -7551)
+                local doors = {}
+                for _, v in ipairs(workspace:GetDescendants()) do
+                    if v:IsA("ProximityPrompt") then
+                        local parent = v.Parent
+                        if parent and parent:IsA("BasePart") and (parent.Position - mansionPos).Magnitude < 1600 then
+                            local text = ((v.ObjectText or "") .. " " .. (v.ActionText or "") .. " " .. parent.Name):lower()
+                            if text:find("trick") or text:find("treat") or text:find("knock") or text:find("door") or text:find("candy") then
+                                table.insert(doors, {prompt = v, pos = parent.Position})
+                            end
                         end
                     end
                 end
-            end
-            if #doors > 0 then
-                table.sort(doors, function(a,b) return (a.prompt:GetAttribute("LastHalloween") or 0) < (b.prompt:GetAttribute("LastHalloween") or 0) end)
-                local door = doors[1]
-                local last = door.prompt:GetAttribute("LastHalloween")
-                if not last or tick() - last > 20 then
-                    local targetCFrame = CFrame.new(door.pos + Vector3.new(0,5,0))
-                    if getgenv().toTarget then pcall(function() getgenv().toTarget(targetCFrame) end) else if toTarget then pcall(function() toTarget(targetCFrame) end) else hrp.CFrame = targetCFrame end end
-                    task.wait(0.6)
-                    pcall(function() fireproximityprompt(door.prompt, 0) task.wait(0.3) fireproximityprompt(door.prompt, 1) end)
-                    door.prompt:SetAttribute("LastHalloween", tick())
+                if #doors > 0 then
+                    table.sort(doors, function(a,b) return (a.prompt:GetAttribute("LastHalloween") or 0) < (b.prompt:GetAttribute("LastHalloween") or 0) end)
+                    local door = doors[1]
+                    local last = door.prompt:GetAttribute("LastHalloween")
+                    if not last or tick() - last > 20 then
+                        local targetCFrame = CFrame.new(door.pos + Vector3.new(0,5,0))
+                        if getgenv().toTarget then pcall(function() getgenv().toTarget(targetCFrame) end)
+                        elseif toTarget then pcall(function() toTarget(targetCFrame) end)
+                        else hrp.CFrame = targetCFrame end
+                        task.wait(0.6)
+                        pcall(function() fireproximityprompt(door.prompt, 0) task.wait(0.3) fireproximityprompt(door.prompt, 1) end)
+                        door.prompt:SetAttribute("LastHalloween", tick())
+                    end
                 end
             end
         end
-    end)
+    end
 end)
 
