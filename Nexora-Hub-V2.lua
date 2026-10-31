@@ -3313,6 +3313,86 @@ do
     AdvanceLabels[4] = SectionAdvance.CreateLabel({ Title = "Spin-Spin - $7,500" })
     AdvanceLabels[5] = SectionAdvance.CreateLabel({ Title = "Rocket-Rocket - $5,000" })
     
+    -- CRIA SCROLLS AZUIS DEPOIS - NAO PARA EXECUCAO, TUDO EM PCALL!
+    local NormalScrollFrame = nil
+    local AdvanceScrollFrame = nil
+    pcall(function()
+        -- Pega card da SectionNormal
+        local tempRow = NormalLabels[1].Object.Parent
+        local cardNormal = tempRow.Parent
+        -- Cria container com altura fixa 140 para Normal
+        local containerNormal = Instance.new("Frame")
+        containerNormal.Name = "NormalStockScrollContainer"
+        containerNormal.Size = UDim2.new(1, 0, 0, 140)
+        containerNormal.BackgroundTransparency = 1
+        containerNormal.Parent = cardNormal
+        -- Cria ScrollingFrame azul
+        local scrollNormal = Instance.new("ScrollingFrame")
+        scrollNormal.Name = "NormalStockScroll"
+        scrollNormal.Size = UDim2.new(1, 0, 1, 0)
+        scrollNormal.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        scrollNormal.BackgroundTransparency = 0
+        scrollNormal.BorderSizePixel = 0
+        scrollNormal.ScrollBarThickness = 6
+        scrollNormal.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
+        scrollNormal.CanvasSize = UDim2.new(0, 0, 0, 0)
+        scrollNormal.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        scrollNormal.Parent = containerNormal
+        local cornerN = Instance.new("UICorner")
+        cornerN.CornerRadius = UDim.new(0, 6)
+        cornerN.Parent = scrollNormal
+        local layoutN = Instance.new("UIListLayout")
+        layoutN.Padding = UDim.new(0, 2)
+        layoutN.SortOrder = Enum.SortOrder.LayoutOrder
+        layoutN.Parent = scrollNormal
+        NormalScrollFrame = scrollNormal
+        -- Move labels existentes para dentro do scroll
+        for i=1,6 do
+            if NormalLabels[i] and NormalLabels[i].Object then
+                local row = NormalLabels[i].Object.Parent
+                if row then
+                    row.Parent = scrollNormal
+                end
+            end
+        end
+    end)
+    pcall(function()
+        local tempRow = AdvanceLabels[1].Object.Parent
+        local cardAdvance = tempRow.Parent
+        local containerAdvance = Instance.new("Frame")
+        containerAdvance.Name = "MirageStockScrollContainer"
+        containerAdvance.Size = UDim2.new(1, 0, 0, 140)
+        containerAdvance.BackgroundTransparency = 1
+        containerAdvance.Parent = cardAdvance
+        local scrollAdvance = Instance.new("ScrollingFrame")
+        scrollAdvance.Name = "MirageStockScroll"
+        scrollAdvance.Size = UDim2.new(1, 0, 1, 0)
+        scrollAdvance.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        scrollAdvance.BackgroundTransparency = 0
+        scrollAdvance.BorderSizePixel = 0
+        scrollAdvance.ScrollBarThickness = 6
+        scrollAdvance.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
+        scrollAdvance.CanvasSize = UDim2.new(0, 0, 0, 0)
+        scrollAdvance.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        scrollAdvance.Parent = containerAdvance
+        local cornerA = Instance.new("UICorner")
+        cornerA.CornerRadius = UDim.new(0, 6)
+        cornerA.Parent = scrollAdvance
+        local layoutA = Instance.new("UIListLayout")
+        layoutA.Padding = UDim.new(0, 2)
+        layoutA.SortOrder = Enum.SortOrder.LayoutOrder
+        layoutA.Parent = scrollAdvance
+        AdvanceScrollFrame = scrollAdvance
+        for i=1,5 do
+            if AdvanceLabels[i] and AdvanceLabels[i].Object then
+                local row = AdvanceLabels[i].Object.Parent
+                if row then
+                    row.Parent = scrollAdvance
+                end
+            end
+        end
+    end)
+    
     -- PATCH FIX: estoque 100% dinamico - usa lista real da loja
     local function ParseFruit(v)
         if type(v)=="table" then
@@ -3338,7 +3418,18 @@ do
     end
     local function Ensure(section, labels, need)
         for i=#labels+1, need do
-            labels[i] = section.CreateLabel({ Title = "Slot "..i..": Loading..." })
+            local lbl = section.CreateLabel({ Title = "Slot "..i..": Loading..." })
+            labels[i] = lbl
+            -- Move novo label para dentro do scroll se existir
+            pcall(function()
+                if section == SectionNormal and NormalScrollFrame and lbl.Object then
+                    local row = lbl.Object.Parent
+                    if row then row.Parent = NormalScrollFrame end
+                elseif section == SectionAdvance and AdvanceScrollFrame and lbl.Object then
+                    local row = lbl.Object.Parent
+                    if row then row.Parent = AdvanceScrollFrame end
+                end
+            end)
         end
     end
     local function UpdateStock(section, labels, stock)
@@ -15404,44 +15495,56 @@ do
 	pcall(function() if getgenv().__BoatRaiseConn then getgenv().__BoatRaiseConn:Disconnect() end end)
 	getgenv().__BoatRaiseConn = game:GetService("RunService").Heartbeat:Connect(function()
 		if getgenv().__BoatRaiseGen ~= gen then return end
-		if not Settings["Raise Boat Manual Drive"] then
-			-- V13 FIX: Quando desativado, NÃO fica resetando todo frame (isso travava o player)
-			-- O reset já é feito uma vez no toggle callback. Aqui só retorna pra não interferir no sentar/and ar
+		if not Settings["Raise Boat Manual Drive"] then return end
+		-- FIX TOTAL: Se Auto Find Leviathan ativo, DESLIGA TOTALMENTE Raise Boat! Nao interrompe NENHUM desvio!
+		if Settings["Auto Find Leviathan"] or Settings["Multi Find Leviathan"] then
 			return
 		end
-		-- V13: Raise Boat Manual Drive totalmente independente - não bloqueia nenhuma outra função de barco
-		-- Só trava o Y, mantendo X/Z livre, pode coexistir com Sea Event, Leviathan, Prehistoric, etc.
+		-- Se tiver desvio/dodge ativo, tambem nao trava
+		if getgenv().Doding or getgenv().ReadyToDodge then return end
+		if getgenv().PosDodgeskill and getgenv().PosDodgeskill > 0 then return end
+		if getgenv().PathSeaBeast or getgenv().PathTerrorshark or getgenv().PathAnimationSeabit then return end
 		pcall(function()
 			local char = t.Character
 			local hum = char and char:FindFirstChildOfClass("Humanoid")
 			local seat = hum and hum.SeatPart
-			if not seat or not seat:IsA("VehicleSeat") then return end
+			if not seat or not seat:IsA("VehicleSeat") then
+				if getgenv().__LastRaisedBoat and getgenv().__LastRaisedBoat.Parent then
+					local boat = getgenv().__LastRaisedBoat
+					local boats = workspace:FindFirstChild("Boats")
+					if not boats or boat.Parent ~= boats then getgenv().__LastRaisedBoat = nil return end
+					local base = boat:GetAttribute("NexoraBaseY") or 8
+					local height = math.clamp(tonumber(Settings["Boat Height"]) or 175, 5, 175)
+					local targetY = base + height
+					local pivot = boat:GetPivot()
+					if math.abs(pivot.Position.Y - targetY) > 0.05 then
+						local pos = pivot.Position
+						local rot = pivot - pos
+						boat:PivotTo(CFrame.new(pos.X, targetY, pos.Z) * rot)
+					end
+				end
+				return
+			end
 			local boat = seat:FindFirstAncestorOfClass("Model")
 			local boats = workspace:FindFirstChild("Boats")
 			if not boat or not boats or boat.Parent ~= boats then return end
-			-- Altura "normal" do barco na água, medida na primeira vez que o vemos.
+			getgenv().__LastRaisedBoat = boat
 			local base = boat:GetAttribute("NexoraBaseY")
-			if not base then
-				base = (seat.Position.Y < 30) and seat.Position.Y or 8
-				boat:SetAttribute("NexoraBaseY", base)
-			end
+			if not base then base = (seat.Position.Y < 30) and seat.Position.Y or 8 boat:SetAttribute("NexoraBaseY", base) end
 			local height = math.clamp(tonumber(Settings["Boat Height"]) or 175, 5, 175)
 			local targetY = base + height
 			local pivot = boat:GetPivot()
-			-- trava Y sem interferir na velocidade
 			if math.abs(pivot.Position.Y - targetY) > 0.05 then
 				local pos = pivot.Position
 				local rot = pivot - pos
 				boat:PivotTo(CFrame.new(pos.X, targetY, pos.Z) * rot)
 			end
-			-- só zera Y, mantém X/Z (velocidade do barco)
 			local v = seat.AssemblyLinearVelocity
-			if math.abs(v.Y) > 0.01 then
-				seat.AssemblyLinearVelocity = Vector3.new(v.X, 0, v.Z)
-			end
+			if math.abs(v.Y) > 0.01 then seat.AssemblyLinearVelocity = Vector3.new(v.X, 0, v.Z) end
 		end)
 	end)
 end
+
 SettingSeaEventSection.CreateToggle(
 	{ Title = "Auto Dodge Skill Terrorshark", Desc = nil, Default = Settings["Auto Dodge Skill Terrorshark"] or false },
 	function(l)
@@ -16594,11 +16697,19 @@ function AutoSpawnKitsune()
 			if getgenv().TweenBoatBack then getgenv().TweenBoatBack:Pause() getgenv().TweenBoatBack:Cancel() end
 			local seat = boat:FindFirstChild("VehicleSeat", true)
 			if seat then
-				seat.Throttle = 0
 				seat.ThrottleFloat = 0
-				seat.Steer = 0
-				seat.SteerFloat = 0
-				seat.Anchored = false
+				seat.Throttle = 0
+				seat.MaxSpeed = 0
+				seat.Velocity = Vector3.new(0,0,0)
+				seat.AssemblyLinearVelocity = Vector3.new(0,0,0)
+			end
+			for _,v in ipairs(boat:GetDescendants()) do
+				if v:IsA("BasePart") then
+					v.Anchored = false
+					v.Velocity = Vector3.new(0,0,0)
+					v.AssemblyLinearVelocity = Vector3.new(0,0,0)
+					v.AssemblyAngularVelocity = Vector3.new(0,0,0)
+				end
 			end
 		end)
 	end
