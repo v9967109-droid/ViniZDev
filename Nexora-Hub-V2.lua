@@ -16793,7 +16793,7 @@ function AutoSpawnKitsune()
 		return
 	end
 
-	-- FIX KITSUNE SEM Y FIXO - Usa Y real do barco mas garante visibilidade!
+	-- FIX KITSUNE BARCO INVISIVEL - Nao ancora VehicleSeat!
 	pcall(function()
 		NoclipBoat(P)
 	end)
@@ -16810,13 +16810,25 @@ function AutoSpawnKitsune()
 		if getgenv().KitsuneState == "dough_stopped" then
 			pcall(function()
 				if getgenv().TweenBoat then getgenv().TweenBoat:Pause() getgenv().TweenBoat:Cancel() end
+				-- FIX: Nao ancora VehicleSeat! So corpo do barco!
 				for _,v in ipairs(P:GetDescendants()) do
 					if v:IsA("BasePart") then
-						v.Anchored = true
-						v.CanCollide = true
-						v.Transparency = 0
-						pcall(function() v.CanQuery = true end)
+						if v:IsA("VehicleSeat") or v:IsA("Seat") then
+							v.Anchored = false
+							v.CanCollide = true
+							v.Transparency = 0
+						else
+							v.Anchored = true
+							v.CanCollide = true
+							v.Transparency = 0
+							pcall(function() v.CanQuery = true end)
+						end
 					end
+				end
+				local seat = P:FindFirstChild("VehicleSeat", true)
+				if seat then
+					seat.Throttle = 0
+					seat.ThrottleFloat = 0
 				end
 			end)
 			return
@@ -16826,13 +16838,15 @@ function AutoSpawnKitsune()
 			pcall(function()
 				for _,v in ipairs(P:GetDescendants()) do
 					if v:IsA("BasePart") then
-						v.CanCollide = true
+						if not (v:IsA("VehicleSeat") or v:IsA("Seat")) then
+							v.CanCollide = false
+						else
+							v.CanCollide = true
+						end
 						v.Transparency = 0
 						pcall(function() v.CanQuery = true end)
 					end
 				end
-				local seat = P:FindFirstChild("VehicleSeat", true)
-				if seat then seat.CanCollide = true end
 			end)
 			if not t.Character.Humanoid.Sit then 
 				toTarget(P.VehicleSeat.CFrame) 
@@ -16845,10 +16859,21 @@ function AutoSpawnKitsune()
 				if getgenv().TweenBoat then getgenv().TweenBoat:Pause() getgenv().TweenBoat:Cancel() end
 				for _,v in ipairs(P:GetDescendants()) do
 					if v:IsA("BasePart") then
-						v.Anchored = true
-						v.CanCollide = true
-						v.Transparency = 0
+						if v:IsA("VehicleSeat") or v:IsA("Seat") then
+							v.Anchored = false
+							v.CanCollide = true
+							v.Transparency = 0
+						else
+							v.Anchored = true
+							v.CanCollide = true
+							v.Transparency = 0
+						end
 					end
+				end
+				local seat = P:FindFirstChild("VehicleSeat", true)
+				if seat then
+					seat.Throttle = 0
+					seat.ThrottleFloat = 0
 				end
 			end)
 			getgenv().KitsuneState = "dough_stopped"
@@ -16862,14 +16887,25 @@ function AutoSpawnKitsune()
 			if getgenv().TweenBoatBack then getgenv().TweenBoatBack:Pause() getgenv().TweenBoatBack:Cancel() end
 			for _,v in ipairs(P:GetDescendants()) do
 				if v:IsA("BasePart") then
-					v.Anchored = true
-					v.CanCollide = true
-					v.CanTouch = true
-					v.Transparency = 0
-					pcall(function() v.CanQuery = true end)
+					if v:IsA("VehicleSeat") or v:IsA("Seat") then
+						v.Anchored = false
+						v.CanCollide = true
+						v.Transparency = 0
+					else
+						v.Anchored = true
+						v.CanCollide = true
+						v.CanTouch = true
+						v.Transparency = 0
+						pcall(function() v.CanQuery = true end)
+					end
 					v.Velocity = Vector3.new(0,0,0)
 					v.AssemblyLinearVelocity = Vector3.new(0,0,0)
 				end
+			end
+			local seat = P:FindFirstChild("VehicleSeat", true)
+			if seat then
+				seat.Throttle = 0
+				seat.ThrottleFloat = 0
 			end
 		end)
 		if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) end
@@ -16881,8 +16917,11 @@ function AutoSpawnKitsune()
 		pcall(function()
 			for _,v in ipairs(P:GetDescendants()) do
 				if v:IsA("BasePart") then
-					v.Anchored = false
-					v.CanCollide = true
+					if v:IsA("VehicleSeat") or v:IsA("Seat") then
+						v.CanCollide = true
+					else
+						v.CanCollide = false
+					end
 					v.Transparency = 0
 					pcall(function() v.CanQuery = true end)
 				end
@@ -16906,11 +16945,22 @@ function AutoSpawnKitsune()
 				if getgenv().TweenBoat then getgenv().TweenBoat:Pause() getgenv().TweenBoat:Cancel() end
 				for _,v in ipairs(P:GetDescendants()) do
 					if v:IsA("BasePart") then
-						v.Anchored = true
-						v.CanCollide = true
-						v.Transparency = 0
-						v.Velocity = Vector3.new(0,0,0)
+						if v:IsA("VehicleSeat") or v:IsA("Seat") then
+							v.Anchored = false
+							v.CanCollide = true
+							v.Transparency = 0
+						else
+							v.Anchored = true
+							v.CanCollide = true
+							v.Transparency = 0
+							v.Velocity = Vector3.new(0,0,0)
+						end
 					end
+				end
+				local seat = P:FindFirstChild("VehicleSeat", true)
+				if seat then
+					seat.Throttle = 0
+					seat.ThrottleFloat = 0
 				end
 			end)
 			NotifyOnce("arrived6", "Nexora Hub - Kitsune", "Arrived at Sea 6 - Full moon - Boat Visible!", 5)
@@ -16923,9 +16973,13 @@ function AutoSpawnKitsune()
 			pcall(function()
 				for _,v in ipairs(P:GetDescendants()) do
 					if v:IsA("BasePart") then
-						v.Anchored = false
-						v.CanCollide = true
+						if v:IsA("VehicleSeat") or v:IsA("Seat") then
+							v.CanCollide = true
+						else
+							v.CanCollide = false
+						end
 						v.Transparency = 0
+						pcall(function() v.CanQuery = true end)
 					end
 				end
 			end)
@@ -16937,15 +16991,33 @@ function AutoSpawnKitsune()
 			NotifyOnce("mar5", "Nexora Hub - Kitsune", "No full moon, sailing to Sea 5 to wait - Boat Visible", 5)
 			getgenv().KitsuneState = "going_sea5"
 		else
+			-- FIX CRITICO: Chegou no Sea 5 esperando lua - NAO ANCORA VehicleSeat! So corpo!
+			-- Se ancorar VehicleSeat, barco fica invisivel!
 			pcall(function()
 				if getgenv().TweenBoat then getgenv().TweenBoat:Pause() getgenv().TweenBoat:Cancel() end
 				for _,v in ipairs(P:GetDescendants()) do
 					if v:IsA("BasePart") then
-						v.Anchored = true
-						v.CanCollide = true
-						v.Transparency = 0
-						v.Velocity = Vector3.new(0,0,0)
+						if v:IsA("VehicleSeat") or v:IsA("Seat") then
+							v.Anchored = false -- NAO ANCORA VehicleSeat! Senao fica invisivel!
+							v.CanCollide = true
+							v.Transparency = 0
+							pcall(function() v.CanQuery = true end)
+						else
+							v.Anchored = true
+							v.CanCollide = true
+							v.Transparency = 0
+							pcall(function() v.CanQuery = true end)
+							v.Velocity = Vector3.new(0,0,0)
+							v.AssemblyLinearVelocity = Vector3.new(0,0,0)
+						end
 					end
+				end
+				local seat = P:FindFirstChild("VehicleSeat", true)
+				if seat then
+					seat.Throttle = 0
+					seat.ThrottleFloat = 0
+					seat.MaxSpeed = 0
+					seat.Velocity = Vector3.new(0,0,0)
 				end
 			end)
 			getgenv().KitsuneState = "waiting_sea5"
