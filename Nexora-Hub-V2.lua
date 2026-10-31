@@ -5980,7 +5980,7 @@ task.spawn(function()
 			if not char then return end
 			local root = char:FindFirstChild("HumanoidRootPart")
 			if not root then return end
-			local anyActive = Settings["Raise Boat Manual Drive"] or Settings["Fly Boat"] or Settings["Start Farm"] or Settings["Auto Find Leviathan"] or Settings["Auto Find Prehistoric Island"] or Settings["Auto Multi Find Prehistoric Island"] or Settings["Auto Event Prehistoric Island"] or Settings["Auto Sea Event"] or Settings["Teleport To Fruit"] or Settings["Auto Farm Level"] or Settings["Tween Boat To Frozen Dimension"] or Settings["Multi Find Leviathan"] or Settings["Auto Farm Bone"] or Settings["Auto Farm Ectoplasm"] or Settings["Auto Elite Hunter"] or Settings["Auto Factory"] or Settings["Auto Raid"] or Settings["Tween Safe if have Items"] or Settings["Auto Present Event"] or Settings["Auto Celestial Soldier"] or Settings["Auto Attack Dungeon"] or Settings["Auto Fishing"] or Settings["Auto Get Ghoul"] or Settings["Auto Get Cyborg"] or Settings["Auto Trial"] or Settings["Auto Pull Lever"] or Settings["Drive Boat To Tiki"] or Settings["Drive Boat To Hydra"] or Settings["Auto Fire Shoot Heart Leviathan"] or Settings["Auto Spawn Kitsune Island"] or Settings["Teleport To Kitsune Island"] or Settings["Auto Collect Soul Ember"] or Settings["Auto Summon Soul Ember"]
+			local anyActive = Settings["Raise Boat Manual Drive"] or Settings["Fly Boat"] or Settings["Start Farm"] or Settings["Auto Find Leviathan"] or Settings["Auto Find Prehistoric Island"] or Settings["Auto Multi Find Prehistoric Island"] or Settings["Auto Event Prehistoric Island"] or Settings["Auto Sea Event"] or Settings["Teleport To Fruit"] or Settings["Auto Farm Level"] or Settings["Tween Boat To Frozen Dimension"] or Settings["Multi Find Leviathan"] or Settings["Auto Farm Bone"] or Settings["Auto Farm Ectoplasm"] or Settings["Auto Elite Hunter"] or Settings["Auto Factory"] or Settings["Auto Raid"] or Settings["Tween Safe if have Items"] or Settings["Auto Present Event"] or Settings["Auto Celestial Soldier"] or Settings["Auto Attack Dungeon"] or Settings["Auto Fishing"] or Settings["Auto Get Ghoul"] or Settings["Auto Get Cyborg"] or Settings["Auto Trial"] or Settings["Auto Pull Lever"] or Settings["Drive Boat To Tiki"] or Settings["Drive Boat To Hydra"] or Settings["Auto Fire Shoot Heart Leviathan"]
 			if not anyActive and getgenv().noclip then
 				ForceResetAirState()
 			end
@@ -15412,11 +15412,40 @@ do
 		-- V13: Raise Boat Manual Drive totalmente independente - não bloqueia nenhuma outra função de barco
 		-- Só trava o Y, mantendo X/Z livre, pode coexistir com Sea Event, Leviathan, Prehistoric, etc.
 		pcall(function()
-			local char = t.Character
+local char = t.Character
 			local hum = char and char:FindFirstChildOfClass("Humanoid")
 			local seat = hum and hum.SeatPart
-			if not seat or not seat:IsA("VehicleSeat") then return end
+			if not seat or not seat:IsA("VehicleSeat") then
+				-- FEATURE: Player saiu do vehicle seat, MAS Raise Boat Manual Drive ATIVO = barco FICA NO AR!
+				if getgenv().__LastRaisedBoat and getgenv().__LastRaisedBoat.Parent then
+					local boat = getgenv().__LastRaisedBoat
+					local boats = workspace:FindFirstChild("Boats")
+					if boats and boat.Parent == boats then
+						local base = boat:GetAttribute("NexoraBaseY") or 8
+						local height = math.clamp(tonumber(Settings["Boat Height"]) or 175, 5, 175)
+						local targetY = base + height
+						local pivot = boat:GetPivot()
+						if math.abs(pivot.Position.Y - targetY) > 0.05 then
+							local pos = pivot.Position
+							local rot = pivot - pos
+							boat:PivotTo(CFrame.new(pos.X, targetY, pos.Z) * rot)
+						end
+						pcall(function()
+							for _, part in ipairs(boat:GetDescendants()) do
+								if part:IsA("BasePart") then
+									local v = part.AssemblyLinearVelocity
+									if math.abs(v.Y) > 0.1 then
+										part.AssemblyLinearVelocity = Vector3.new(v.X, 0, v.Z)
+									end
+								end
+							end
+						end)
+					end
+				end
+				return
+			end
 			local boat = seat:FindFirstAncestorOfClass("Model")
+			getgenv().__LastRaisedBoat = boat
 			local boats = workspace:FindFirstChild("Boats")
 			if not boat or not boats or boat.Parent ~= boats then return end
 			-- Altura "normal" do barco na água, medida na primeira vez que o vemos.
@@ -16571,11 +16600,9 @@ function DetectIslandKitsune()
 	end
 end
 function AutoSpawnKitsune()
-	-- FIX: Nao depende mais de Raise Boat Manual Drive! Anti-bug!
 	local y, P = game.Lighting.ClockTime, checkboat()
 	getgenv().KitsuneNotifyFlags = getgenv().KitsuneNotifyFlags or {lastKey = "", lastTime = 0}
 	getgenv().KitsuneState = getgenv().KitsuneState or "none"
-	getgenv().KitsuneLastBoatBuy = getgenv().KitsuneLastBoatBuy or 0
 
 	local function NotifyOnce(key, title, desc, time)
 		local now = tick()
@@ -16592,30 +16619,22 @@ function AutoSpawnKitsune()
 
 	local function StopBoatParado(boat)
 		pcall(function()
-			if getgenv().TweenBoat then 
-				pcall(function() getgenv().TweenBoat:Pause() end)
-				pcall(function() getgenv().TweenBoat:Cancel() end)
-			end
-			if getgenv().TweenBoatBack then 
-				pcall(function() getgenv().TweenBoatBack:Pause() end)
-				pcall(function() getgenv().TweenBoatBack:Cancel() end)
-			end
+			if getgenv().TweenBoat then getgenv().TweenBoat:Pause() getgenv().TweenBoat:Cancel() end
+			if getgenv().TweenBoatBack then getgenv().TweenBoatBack:Pause() getgenv().TweenBoatBack:Cancel() end
 			local seat = boat:FindFirstChild("VehicleSeat", true)
 			if seat then
 				seat.ThrottleFloat = 0
 				seat.Throttle = 0
 				seat.MaxSpeed = 0
-				pcall(function() seat.Velocity = Vector3.new(0,0,0) end)
-				pcall(function() seat.AssemblyLinearVelocity = Vector3.new(0,0,0) end)
+				seat.Velocity = Vector3.new(0,0,0)
+				seat.AssemblyLinearVelocity = Vector3.new(0,0,0)
 			end
 			for _,v in ipairs(boat:GetDescendants()) do
 				if v:IsA("BasePart") then
-					pcall(function()
-						v.Anchored = false
-						v.Velocity = Vector3.new(0,0,0)
-						v.AssemblyLinearVelocity = Vector3.new(0,0,0)
-						v.AssemblyAngularVelocity = Vector3.new(0,0,0)
-					end)
+					v.Anchored = false
+					v.Velocity = Vector3.new(0,0,0)
+					v.AssemblyLinearVelocity = Vector3.new(0,0,0)
+					v.AssemblyAngularVelocity = Vector3.new(0,0,0)
 				end
 			end
 		end)
@@ -16624,9 +16643,7 @@ function AutoSpawnKitsune()
 	local function UnanchorBoat(boat)
 		pcall(function()
 			for _,v in ipairs(boat:GetDescendants()) do
-				if v:IsA("BasePart") then 
-					pcall(function() v.Anchored = false end)
-				end
+				if v:IsA("BasePart") then v.Anchored = false end
 			end
 		end)
 	end
@@ -16644,6 +16661,7 @@ function AutoSpawnKitsune()
 		return dead
 	end
 
+	-- Hop Server logic se ativado
 	if Settings["Hop Server Kitsune Island"] then
 		local Y = CheckMoon()
 		if not (Y == "Full Moon" and math.floor(18 - y) <= 5 and math.floor(18 - y) >= 0 or Y == "Next Night" or Y == "Full Moon" and y <= 5 and math.floor(5 - y) >= 11) then
@@ -16652,29 +16670,24 @@ function AutoSpawnKitsune()
 		end
 	end
 
+	-- Verifica se barco está longe ou morto
 	local isBoatFar = false
 	local boatDead = false
 	if P then
 		pcall(function()
-			if P:FindFirstChild("VehicleSeat", true) then
-				local seat = P:FindFirstChild("VehicleSeat", true)
-				if seat and t:DistanceFromCharacter(seat.Position) >= 3500 then isBoatFar = true end
-			end
+			if t:DistanceFromCharacter(P.VehicleSeat.Position) >= 3500 then isBoatFar = true end
 			if IsBoatDead(P) then boatDead = true end
 		end)
 	end
 
 	if boatDead then
 		pcall(function()
-			NotifyOnce("boat_dead", "Nexora Hub - Kitsune", "Boat destroyed! Respawning", 4)
+			NotifyOnce("boat_dead", "Nexora Hub - Kitsune", "Boat destroyed! Respawning to buy new one", 4)
 			getgenv().KitsuneState = "none"
 			getgenv().KitsuneNotifyFlags.lastKey = ""
 			UnanchorBoat(P)
-			if tick() - getgenv().KitsuneLastBoatBuy > 5 then
-				getgenv().KitsuneLastBoatBuy = tick()
-				if t.Character and t.Character:FindFirstChild("Humanoid") then
-					t.Character.Humanoid.Health = 0
-				end
+			if t.Character and t.Character:FindFirstChild("Humanoid") then
+				t.Character.Humanoid.Health = 0
 			end
 		end)
 		return
@@ -16682,9 +16695,6 @@ function AutoSpawnKitsune()
 
 	if not P or isBoatFar then
 		if isBoatFar then NotifyOnce("far", "Nexora Hub - Kitsune", "Boat too far, buying new one", 4) end
-		if tick() - getgenv().KitsuneLastBoatBuy < 3 then
-			return
-		end
 		local Y = CFrame.new(-13.488054275512695, 10.311711311340332, 2927.692)
 		Y = if game.PlaceId == getgenv().CheckPlaceId then (CFrame.new(-16204.0810546875, 9.0863618850708, 479.2259521484375)) else Y
 		if (Y.Position - t.Character.HumanoidRootPart.Position).Magnitude > 8 then
@@ -16693,29 +16703,14 @@ function AutoSpawnKitsune()
 			local Y = Settings["Select Boat"]
 			if not Y then WarnOnce("SelectBoat", "Select boat in Sea Event > Select Boat first.") return end
 			local H = Y == "Brigade"
-			pcall(function()
-				game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyBoat", if H or Y == "GrandBrigade" then "Pirate" .. Y else Y)
-			end)
-			getgenv().KitsuneLastBoatBuy = tick()
+			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyBoat", if H or Y == "GrandBrigade" then "Pirate" .. Y else Y)
 			task.wait(1)
 		end
 		getgenv().KitsuneState = "none"
 		return
 	end
 
-	pcall(function() NoclipBoat(P) end)
-	pcall(function()
-		for _, part in ipairs(P:GetDescendants()) do
-			if part:IsA("BasePart") then
-				if part:IsA("VehicleSeat") or part:IsA("Seat") then
-					part.CanCollide = true
-				else
-					part.CanCollide = false
-				end
-			end
-		end
-	end)
-
+	NoclipBoat(P)
 	local boatY = P.WorldPivot.Y
 	local isFullMoon = CheckMoon() == "Full Moon"
 	local isDough = IsDoughSea()
@@ -16724,6 +16719,7 @@ function AutoSpawnKitsune()
 	local zone6Pos = CFrame.new(-32975.9921875, boatY, 25963.7109375) * CFrame.new(0, 0, 500)
 	local alternativeDoughPos = CFrame.new(-26017.931640625, boatY, 5657.8837890625)
 
+	-- Dough Sea detectado
 	if isDough then
 		if getgenv().KitsuneState == "dough_stopped" then
 			StopBoatParado(P)
@@ -16731,12 +16727,8 @@ function AutoSpawnKitsune()
 		end
 		if (P.VehicleSeat.Position - alternativeDoughPos.Position).Magnitude > 300 then
 			UnanchorBoat(P)
-			if not t.Character.Humanoid.Sit then 
-				toTarget(P.VehicleSeat.CFrame) 
-			else 
-				pcall(function() manageTween(P.VehicleSeat, alternativeDoughPos, 350, "TweenBoat") end)
-			end
-			NotifyOnce("dough", "Nexora Hub - Kitsune", "Dough Sea detected! Going safe", 5)
+			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) else manageTween(P.VehicleSeat, alternativeDoughPos, 350, "TweenBoat") end
+			NotifyOnce("dough", "Nexora Hub - Kitsune", "Dough Sea detected! Going to safe point, not Sea 6", 5)
 		else
 			StopBoatParado(P)
 			getgenv().KitsuneState = "dough_stopped"
@@ -16744,51 +16736,44 @@ function AutoSpawnKitsune()
 		return
 	end
 
+	-- Ja chegou no Mar 6 e está parado
 	if getgenv().KitsuneState == "arrived_sea6" then
 		StopBoatParado(P)
-		if not t.Character.Humanoid.Sit then 
-			pcall(function() toTarget(P.VehicleSeat.CFrame) end)
-		end
+		if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) end
 		return
 	end
 
+	-- LOGICA DO ZERO: Compra barco -> vai pro Mar 5 se nao tiver lua cheia, se tiver lua cheia vai direto pro Mar 6, se nao tiver espera no Mar 5 ate lua cheia aparecer e ai vai pro Mar 6
+
 	if isFullMoon then
+		-- Lua cheia: vai direto pro Mar 6
 		UnanchorBoat(P)
 		local distToZone6 = (P.VehicleSeat.Position - zone6Pos.Position).Magnitude
 		if distToZone6 > 300 then
-			if not t.Character.Humanoid.Sit then 
-				toTarget(P.VehicleSeat.CFrame) 
-			else 
-				pcall(function() manageTween(P.VehicleSeat, zone6Pos, 350, "TweenBoat") end)
-			end
-			NotifyOnce("mar6_full", "Nexora Hub - Kitsune", "Full moon! Sailing to Sea 6", 5)
+			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) else manageTween(P.VehicleSeat, zone6Pos, 350, "TweenBoat") end
+			NotifyOnce("mar6_full", "Nexora Hub - Kitsune", "Full moon detected! Sailing directly to Sea 6", 5)
 			getgenv().KitsuneState = "going_sea6"
 		else
 			StopBoatParado(P)
-			NotifyOnce("arrived6", "Nexora Hub - Kitsune", "Arrived at Sea 6", 5)
+			NotifyOnce("arrived6", "Nexora Hub - Kitsune", "Arrived at Sea 6 - Full moon", 5)
 			getgenv().KitsuneState = "arrived_sea6"
 		end
 	else
+		-- Sem lua cheia: vai pro Mar 5 e espera la
 		local distToZone5 = (P.VehicleSeat.Position - zone5Pos.Position).Magnitude
 		if distToZone5 > 400 then
+			-- Ainda nao chegou no Mar 5, navegando
 			UnanchorBoat(P)
-			if not t.Character.Humanoid.Sit then 
-				toTarget(P.VehicleSeat.CFrame) 
-			else 
-				pcall(function() manageTween(P.VehicleSeat, zone5Pos, 350, "TweenBoat") end)
-			end
-			NotifyOnce("mar5", "Nexora Hub - Kitsune", "No full moon, sailing to Sea 5", 5)
+			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) else manageTween(P.VehicleSeat, zone5Pos, 350, "TweenBoat") end
+			NotifyOnce("mar5", "Nexora Hub - Kitsune", "No full moon, sailing to Sea 5 to wait", 5)
 			getgenv().KitsuneState = "going_sea5"
 		else
+			-- Chegou no Mar 5, espera parado ate lua cheia
 			StopBoatParado(P)
 			getgenv().KitsuneState = "waiting_sea5"
-			NotifyOnce("waiting5", "Nexora Hub - Kitsune", "Arrived Sea 5. Waiting full moon", 6)
+			NotifyOnce("waiting5", "Nexora Hub - Kitsune", "Arrived at Sea 5. Waiting for full moon to go to Sea 6", 6)
 		end
 	end
-end
-
-
-
 end
 
 
