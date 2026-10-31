@@ -16592,27 +16592,33 @@ function AutoSpawnKitsune()
 		pcall(function()
 			if getgenv().TweenBoat then getgenv().TweenBoat:Pause() getgenv().TweenBoat:Cancel() end
 			if getgenv().TweenBoatBack then getgenv().TweenBoatBack:Pause() getgenv().TweenBoatBack:Cancel() end
+			-- NUNCA ancora barco inteiro! So VehicleSeat controla!
 			local seat = boat:FindFirstChild("VehicleSeat", true)
 			if seat then
 				seat.ThrottleFloat = 0
 				seat.Throttle = 0
+				seat.SteerFloat = 0
+				seat.Steer = 0
 				seat.Velocity = Vector3.new(0,0,0)
 				seat.AssemblyLinearVelocity = Vector3.new(0,0,0)
+				seat.AssemblyAngularVelocity = Vector3.new(0,0,0)
+				-- VehicleSeat NAO ancorado! So ele controla o barco!
+				seat.Anchored = false
+				seat.CanCollide = true
 			end
+			-- Corpo do barco: NAO ancorado, so deixa visivel!
 			for _,v in ipairs(boat:GetDescendants()) do
 				if v:IsA("BasePart") then
-					if v.Name == "VehicleSeat" or v:IsA("VehicleSeat") or v:IsA("Seat") then
-						v.Anchored = false
-						v.CanCollide = true
-						v.Transparency = 0
-					else
-						v.Anchored = true
-						v.CanCollide = true
-						v.Transparency = 0
-						pcall(function() v.CanQuery = true end)
+					if not (v:IsA("VehicleSeat") or v:IsA("Seat")) then
+						v.Anchored = false -- NUNCA ancora corpo! Senao buga!
+						v.CanCollide = false -- Sem colisao no corpo pra nao bugar
+						v.Transparency = 0 -- Visivel!
+						pcall(function() 
+							v.CanQuery = true 
+							v.CanTouch = true
+						end)
 						v.Velocity = Vector3.new(0,0,0)
 						v.AssemblyLinearVelocity = Vector3.new(0,0,0)
-						v.AssemblyAngularVelocity = Vector3.new(0,0,0)
 					end
 				end
 			end
@@ -16722,10 +16728,8 @@ function AutoSpawnKitsune()
 		return
 	end
 
-	-- LOGICA DO ZERO: Compra barco -> vai pro Mar 5 se nao tiver lua cheia, se tiver lua cheia vai direto pro Mar 6, se nao tiver espera no Mar 5 ate lua cheia aparecer e ai vai pro Mar 6
-
+	-- LOGICA: Sea 5 espera lua, Sea 6 com lua cheia
 	if isFullMoon then
-		-- Lua cheia: vai direto pro Mar 6
 		UnanchorBoat(P)
 		local distToZone6 = (P.VehicleSeat.Position - zone6Pos.Position).Magnitude
 		if distToZone6 > 300 then
@@ -16738,16 +16742,13 @@ function AutoSpawnKitsune()
 			getgenv().KitsuneState = "arrived_sea6"
 		end
 	else
-		-- Sem lua cheia: vai pro Mar 5 e espera la
 		local distToZone5 = (P.VehicleSeat.Position - zone5Pos.Position).Magnitude
 		if distToZone5 > 400 then
-			-- Ainda nao chegou no Mar 5, navegando
 			UnanchorBoat(P)
 			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) else manageTween(P.VehicleSeat, zone5Pos, 350, "TweenBoat") end
 			NotifyOnce("mar5", "Nexora Hub - Kitsune", "No full moon, sailing to Sea 5 to wait", 5)
 			getgenv().KitsuneState = "going_sea5"
 		else
-			-- Chegou no Mar 5, espera parado ate lua cheia
 			StopBoatParado(P)
 			getgenv().KitsuneState = "waiting_sea5"
 			NotifyOnce("waiting5", "Nexora Hub - Kitsune", "Arrived at Sea 5. Waiting for full moon to go to Sea 6", 6)
