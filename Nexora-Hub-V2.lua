@@ -11749,10 +11749,10 @@ task.spawn(function()
 	end
 end)
 FarmotherMain = Main.CreatePage({ Page_Name = "Farming Other", Page_Title = "Farming Other" })
--- SPOKY SECTION DENTRO DE FARMING OTHER - SEM CONTINUE - FIX
-SpokyHalloweenSection = FarmotherMain.CreateSection("Spoky Event - Halloween 2026")
+-- HELLFIRE HALLOWEEN 2026 - OFICIAL - 31/10/2026 - 3 TOGGLES
+SpokyHalloweenSection = FarmotherMain.CreateSection("Hellfire Halloween 2026 [OFICIAL]")
 SpokyHalloweenSection.CreateToggle(
-    { Title = "Auto Halloween Trick Or Treat", Desc = "Porta a porta + 2 Bosses", Default = false },
+    { Title = "Auto Halloween Trick Or Treat", Desc = "Harvest Moon XX:00 10min + Portas 3 Seas + Candy Corn", Default = false },
     function(V)
         getgenv().Settings = getgenv().Settings or {}
         Settings = getgenv().Settings
@@ -11761,26 +11761,26 @@ SpokyHalloweenSection.CreateToggle(
     end
 )
 SpokyHalloweenSection.CreateToggle(
-    { Title = "Auto Spoky Gacha", Desc = "Gas Hellfire + Tiger", Default = false },
+    { Title = "Auto Jack-O-Lantern Hunt", Desc = "Aboboras sempre ativas + Pumpkin Bits + NPC", Default = false },
     function(V)
         getgenv().Settings = getgenv().Settings or {}
         Settings = getgenv().Settings
-        Settings["Auto Spoky Gacha"] = V
-        pcall(function() SaveSettings("Auto Spoky Gacha", V) end)
+        Settings["Auto Jack-O-Lantern Hunt"] = V
+        pcall(function() SaveSettings("Auto Jack-O-Lantern Hunt", V) end)
+        if V then
+            pcall(function()
+                game:GetService("StarterGui"):SetCore("SendNotification", {Title="Halloween 2026", Text="Jack-O-Lantern Hunt ligado!", Duration=3})
+            end)
+        end
     end
 )
 SpokyHalloweenSection.CreateToggle(
-    { Title = "Auto Farm Pumpkins", Desc = "Aboboras SEM CONTINUE", Default = false },
+    { Title = "Auto Spooky Gacha + Bosses", Desc = "Gacha 2x/h + Hell Rider + Werewolf + Portais", Default = false },
     function(V)
         getgenv().Settings = getgenv().Settings or {}
         Settings = getgenv().Settings
-        Settings["Auto Farm Pumpkins"] = V
-        pcall(function() SaveSettings("Auto Farm Pumpkins", V) end)
-        if V then
-            pcall(function()
-                game:GetService("StarterGui"):SetCore("SendNotification", {Title="Pumpkin", Text="Ligado! Indo farmar!", Duration=3})
-            end)
-        end
+        Settings["Auto Spooky Gacha + Bosses"] = V
+        pcall(function() SaveSettings("Auto Spooky Gacha + Bosses", V) end)
     end
 )
 
@@ -30450,93 +30450,63 @@ end
 print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZDev")
 
 
--- SEM CONTINUE - Usa if
 if not getgenv().Settings then getgenv().Settings = {} end
 if not Settings then Settings = getgenv().Settings end
 Settings["Auto Halloween Trick Or Treat"] = Settings["Auto Halloween Trick Or Treat"] or false
-Settings["Auto Spoky Gacha"] = Settings["Auto Spoky Gacha"] or false
-Settings["Auto Farm Pumpkins"] = Settings["Auto Farm Pumpkins"] or false
+Settings["Auto Jack-O-Lantern Hunt"] = Settings["Auto Jack-O-Lantern Hunt"] or false
+Settings["Auto Spooky Gacha + Bosses"] = Settings["Auto Spooky Gacha + Bosses"] or false
 
+-- HELLFIRE HALLOWEEN 2026 OFICIAL - Baseado no patch notes de hoje 31/10/2026
 spawn(function()
-    while task.wait(0.5) do
-        if Settings["Auto Farm Pumpkins"] == true then
+    while task.wait(1) do
+        if Settings["Auto Halloween Trick Or Treat"] == true then
             local player = game:GetService("Players").LocalPlayer
             if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                 local hrp = player.Character.HumanoidRootPart
-                local pumpkins = {}
+                local hour = os.date("*t").min
+                -- Harvest Moon acontece todo XX:00 por 10 min
+                -- Fora disso ainda pode farmar aboboras
+                
+                -- Procura portas em todo mapa (3 Seas)
+                local doors = {}
+                local mansionPos = Vector3.new(-12471, 374, -7551)
+                -- Procura em 3 locais principais: Mansion Floating Turtle, Middle Town Sea1, Cafe Sea2
                 for _, v in ipairs(workspace:GetDescendants()) do
-                    if v:IsA("BasePart") or v:IsA("MeshPart") or v:IsA("Model") then
-                        local lname = string.lower(v.Name)
-                        if string.find(lname, "pumpkin") and not string.find(lname, "bits") and not string.find(lname, "core") then
-                            local pos = nil
-                            pcall(function()
-                                if v:IsA("BasePart") then pos = v.Position else pos = v:GetPivot().Position end
-                            end)
-                            if pos then
-                                table.insert(pumpkins, {obj = v, pos = pos})
+                    if v:IsA("ProximityPrompt") then
+                        local parent = v.Parent
+                        if parent and parent:IsA("BasePart") then
+                            local text = ((v.ObjectText or "") .. " " .. (v.ActionText or "") .. " " .. parent.Name):lower()
+                            if text:find("trick") or text:find("treat") or text:find("knock") or text:find("door") or text:find("candy") or text:find("halloween") then
+                                table.insert(doors, {prompt = v, pos = parent.Position, text = text})
                             end
                         end
                     end
                 end
                 
-                if #pumpkins > 0 then
-                    local nearest = nil
-                    local minDist = 999999
-                    for _, p in ipairs(pumpkins) do
-                        local dist = (hrp.Position - p.pos).Magnitude
-                        if dist < minDist then
-                            minDist = dist
-                            nearest = p
-                        end
-                    end
-                    if nearest then
-                        pcall(function()
-                            game:GetService("StarterGui"):SetCore("SendNotification", {Title="Pumpkin", Text="Achou! Dist "..math.floor(minDist), Duration=2})
-                        end)
-                        local targetCFrame = CFrame.new(nearest.pos + Vector3.new(0,8,0))
-                        if getgenv().toTarget then
-                            pcall(function() getgenv().toTarget(targetCFrame) end)
-                        elseif toTarget then
-                            pcall(function() toTarget(targetCFrame) end)
-                        else
-                            hrp.CFrame = targetCFrame
-                        end
+                -- Se achou portas, vai na mais proxima que nao foi visitada
+                if #doors > 0 then
+                    table.sort(doors, function(a,b)
+                        local lastA = a.prompt:GetAttribute("LastHalloween") or 0
+                        local lastB = b.prompt:GetAttribute("LastHalloween") or 0
+                        return lastA < lastB
+                    end)
+                    local door = doors[1]
+                    local last = door.prompt:GetAttribute("LastHalloween")
+                    if not last or tick() - last > 15 then
+                        local targetCFrame = CFrame.new(door.pos + Vector3.new(0,5,0))
+                        if getgenv().toTarget then pcall(function() getgenv().toTarget(targetCFrame) end)
+                        elseif toTarget then pcall(function() toTarget(targetCFrame) end)
+                        else hrp.CFrame = targetCFrame end
+                        task.wait(0.6)
+                        pcall(function() fireproximityprompt(door.prompt, 0) task.wait(0.3) fireproximityprompt(door.prompt, 1) end)
+                        door.prompt:SetAttribute("LastHalloween", tick())
                         task.wait(0.8)
-                        for i = 1,15 do
-                            if Settings["Auto Farm Pumpkins"] ~= true then break end
-                            local tool = player.Character:FindFirstChildOfClass("Tool")
-                            if not tool then
-                                tool = player.Backpack:FindFirstChildOfClass("Tool")
-                                if tool then
-                                    pcall(function() player.Character.Humanoid:EquipTool(tool) end)
-                                    task.wait(0.2)
-                                end
-                            end
-                            if tool then
-                                pcall(function() tool:Activate() end)
-                            end
-                            task.wait(0.15)
-                            if not nearest.obj.Parent then
-                                break
-                            end
-                        end
-                    end
-                else
-                    -- Nao achou, procura por cor laranja
-                    for _, v in ipairs(workspace:GetDescendants()) do
-                        if v:IsA("MeshPart") or v:IsA("Part") then
-                            if v.Size.Magnitude > 2 and v.Size.Magnitude < 12 then
-                                if v.Color and v.Color.R > 0.7 and v.Color.G < 0.8 and v.Color.B < 0.5 then
-                                    if string.lower(v.Parent.Name):find("pump") or string.lower(v.Name):find("pump") then
-                                        local targetCFrame = CFrame.new(v.Position + Vector3.new(0,8,0))
-                                        if getgenv().toTarget then pcall(function() getgenv().toTarget(targetCFrame) end)
-                                        elseif toTarget then pcall(function() toTarget(targetCFrame) end)
-                                        else hrp.CFrame = targetCFrame end
-                                        task.wait(0.5)
-                                        local tool = player.Character:FindFirstChildOfClass("Tool") or player.Backpack:FindFirstChildOfClass("Tool")
-                                        if tool then pcall(function() player.Character.Humanoid:EquipTool(tool) tool:Activate() end) end
-                                        break
-                                    end
+                        -- Lida com minigames e escolhas
+                        for _, gui in ipairs(player.PlayerGui:GetDescendants()) do
+                            if gui:IsA("TextButton") and gui.Visible then
+                                local txt = (gui.Text or ""):lower()
+                                if txt:find("trick") or txt:find("treat") or txt:find("candy") or txt:find("yes") or txt:find("accept") or txt:find("continue") or txt:find("ok") or txt:find("confirm") then
+                                    pcall(function() gui:Activate() end)
                                 end
                             end
                         end
@@ -30548,36 +30518,192 @@ spawn(function()
 end)
 
 spawn(function()
-    while task.wait(1) do
-        if Settings["Auto Halloween Trick Or Treat"] == true then
+    while task.wait(0.5) do
+        if Settings["Auto Jack-O-Lantern Hunt"] == true then
             local player = game:GetService("Players").LocalPlayer
             if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                 local hrp = player.Character.HumanoidRootPart
-                local mansionPos = Vector3.new(-12471, 374, -7551)
-                local doors = {}
+                local pumpkins = {}
+                
+                -- Metodo 1: Tags
+                pcall(function()
+                    for _, tag in ipairs({"Pumpkin", "JackOLantern", "HalloweenPumpkin", "Pumpkin2026"}) do
+                        for _, obj in ipairs(game:GetService("CollectionService"):GetTagged(tag)) do
+                            local pos = nil
+                            pcall(function() pos = obj:IsA("BasePart") and obj.Position or obj:GetPivot().Position end)
+                            if pos then table.insert(pumpkins, {obj = obj, pos = pos}) end
+                        end
+                    end
+                end)
+                
+                -- Metodo 2: Nome pumpkin
                 for _, v in ipairs(workspace:GetDescendants()) do
-                    if v:IsA("ProximityPrompt") then
-                        local parent = v.Parent
-                        if parent and parent:IsA("BasePart") and (parent.Position - mansionPos).Magnitude < 1600 then
-                            local text = ((v.ObjectText or "") .. " " .. (v.ActionText or "") .. " " .. parent.Name):lower()
-                            if text:find("trick") or text:find("treat") or text:find("knock") or text:find("door") or text:find("candy") then
-                                table.insert(doors, {prompt = v, pos = parent.Position})
+                    if v:IsA("BasePart") or v:IsA("Model") or v:IsA("MeshPart") then
+                        local lname = string.lower(v.Name)
+                        if string.find(lname, "pumpkin") and not string.find(lname, "bits") and not string.find(lname, "seed") then
+                            local pos = nil
+                            pcall(function()
+                                if v:IsA("BasePart") then pos = v.Position else pos = v:GetPivot().Position end
+                            end)
+                            if pos then
+                                local dup = false
+                                for _, p in ipairs(pumpkins) do if (p.pos - pos).Magnitude < 8 then dup = true break end end
+                                if not dup then table.insert(pumpkins, {obj = v, pos = pos}) end
                             end
                         end
                     end
                 end
-                if #doors > 0 then
-                    table.sort(doors, function(a,b) return (a.prompt:GetAttribute("LastHalloween") or 0) < (b.prompt:GetAttribute("LastHalloween") or 0) end)
-                    local door = doors[1]
-                    local last = door.prompt:GetAttribute("LastHalloween")
-                    if not last or tick() - last > 20 then
-                        local targetCFrame = CFrame.new(door.pos + Vector3.new(0,5,0))
+                
+                -- NPC que vira da abobora (da mais Pumpkin Bits e Candy Corn)
+                local pumpkinNPC = nil
+                local minDistNPC = 999999
+                for _, v in ipairs(workspace.Enemies:GetChildren()) do
+                    if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
+                        local lname = string.lower(v.Name)
+                        if string.find(lname, "pumpkin") or string.find(lname, "jack") or string.find(lname, "lantern") then
+                            local dist = (hrp.Position - v.HumanoidRootPart.Position).Magnitude
+                            if dist < minDistNPC then minDistNPC = dist pumpkinNPC = v end
+                        end
+                    end
+                end
+                if pumpkinNPC then
+                    local targetCFrame = pumpkinNPC.HumanoidRootPart.CFrame * CFrame.new(0,8,5)
+                    if getgenv().toTarget then pcall(function() getgenv().toTarget(targetCFrame) end)
+                    elseif toTarget then pcall(function() toTarget(targetCFrame) end)
+                    else hrp.CFrame = targetCFrame end
+                    local tool = player.Character:FindFirstChildOfClass("Tool") or player.Backpack:FindFirstChildOfClass("Tool")
+                    if tool then pcall(function() player.Character.Humanoid:EquipTool(tool) end) end
+                    for _, k in ipairs({"Z","X","C","V","F"}) do
+                        pcall(function()
+                            game:GetService("VirtualInputManager"):SendKeyEvent(true, k, false, game)
+                            task.wait(0.08)
+                            game:GetService("VirtualInputManager"):SendKeyEvent(false, k, false, game)
+                        end)
+                    end
+                else
+                    if #pumpkins > 0 then
+                        local nearest = nil
+                        local minDist = 999999
+                        for _, p in ipairs(pumpkins) do
+                            local dist = (hrp.Position - p.pos).Magnitude
+                            if dist < minDist then minDist = dist nearest = p end
+                        end
+                        if nearest then
+                            if minDist > 5 then
+                                local targetCFrame = CFrame.new(nearest.pos + Vector3.new(0,8,0))
+                                if getgenv().toTarget then pcall(function() getgenv().toTarget(targetCFrame) end)
+                                elseif toTarget then pcall(function() toTarget(targetCFrame) end)
+                                else hrp.CFrame = targetCFrame end
+                                task.wait(0.5)
+                            end
+                            local tool = player.Character:FindFirstChildOfClass("Tool") or player.Backpack:FindFirstChildOfClass("Tool")
+                            if tool then pcall(function() player.Character.Humanoid:EquipTool(tool) end) end
+                            for i = 1,10 do
+                                if Settings["Auto Jack-O-Lantern Hunt"] ~= true then break end
+                                pcall(function()
+                                    local t = player.Character:FindFirstChildOfClass("Tool")
+                                    if t then t:Activate() end
+                                end)
+                                task.wait(0.15)
+                                if not nearest.obj.Parent then break end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+spawn(function()
+    while task.wait(1) do
+        if Settings["Auto Spooky Gacha + Bosses"] == true then
+            local player = game:GetService("Players").LocalPlayer
+            if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local hrp = player.Character.HumanoidRootPart
+                
+                -- 1. Bosses: Hell Rider (porta em chamas) e Werewolf
+                local bosses = {}
+                for _, v in ipairs(workspace.Enemies:GetChildren()) do
+                    if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
+                        local lname = string.lower(v.Name)
+                        if string.find(lname, "werewolf") or string.find(lname, "hell rider") or string.find(lname, "hellrider") or string.find(lname, "great pumpkin") or string.find(lname, "pumpkin king") then
+                            table.insert(bosses, v)
+                        end
+                    end
+                end
+                if #bosses > 0 then
+                    local nearest = nil
+                    local minDist = 999999
+                    for _, b in ipairs(bosses) do
+                        local dist = (hrp.Position - b.HumanoidRootPart.Position).Magnitude
+                        if dist < minDist then minDist = dist nearest = b end
+                    end
+                    if nearest then
+                        local targetCFrame = nearest.HumanoidRootPart.CFrame * CFrame.new(0,10,5)
                         if getgenv().toTarget then pcall(function() getgenv().toTarget(targetCFrame) end)
                         elseif toTarget then pcall(function() toTarget(targetCFrame) end)
                         else hrp.CFrame = targetCFrame end
-                        task.wait(0.6)
-                        pcall(function() fireproximityprompt(door.prompt, 0) task.wait(0.3) fireproximityprompt(door.prompt, 1) end)
-                        door.prompt:SetAttribute("LastHalloween", tick())
+                        local tool = player.Character:FindFirstChildOfClass("Tool") or player.Backpack:FindFirstChildOfClass("Tool")
+                        if tool then pcall(function() player.Character.Humanoid:EquipTool(tool) end) end
+                        for _, k in ipairs({"Z","X","C","V","F"}) do
+                            pcall(function()
+                                game:GetService("VirtualInputManager"):SendKeyEvent(true, k, false, game)
+                                task.wait(0.1)
+                                game:GetService("VirtualInputManager"):SendKeyEvent(false, k, false, game)
+                            end)
+                        end
+                    else
+                        -- 2. Portais de Hell Rider e Werewolf
+                        local portals = {}
+                        for _, v in ipairs(workspace:GetDescendants()) do
+                            if v:IsA("BasePart") or v:IsA("Model") then
+                                local lname = string.lower(v.Name)
+                                local pname = v.Parent and string.lower(v.Parent.Name) or ""
+                                if string.find(lname, "portal") or string.find(pname, "portal") then
+                                    if string.find(pname, "werewolf") or string.find(pname, "hell") or string.find(pname, "rider") or string.find(lname, "werewolf") or string.find(lname, "hell") or string.find(pname, "pumpkin") then
+                                        local pos = nil
+                                        pcall(function() if v:IsA("BasePart") then pos = v.Position else pos = v:GetPivot().Position end end)
+                                        if pos then table.insert(portals, {obj = v, pos = pos}) end
+                                    end
+                                end
+                            end
+                        end
+                        if #portals > 0 then
+                            local nearestP = nil
+                            local minDistP = 999999
+                            for _, p in ipairs(portals) do
+                                local dist = (hrp.Position - p.pos).Magnitude
+                                if dist < minDistP then minDistP = dist nearestP = p end
+                            end
+                            if nearestP then
+                                local targetCFrame = CFrame.new(nearestP.pos + Vector3.new(0,5,0))
+                                if getgenv().toTarget then pcall(function() getgenv().toTarget(targetCFrame) end)
+                                elseif toTarget then pcall(function() toTarget(targetCFrame) end)
+                                else hrp.CFrame = targetCFrame end
+                            end
+                        else
+                            -- 3. Spooky Gacha - 2x por hora - Locais: Middle Town Sea1, Cafe Sea2, Mansion Sea3
+                            for _, v in ipairs(workspace:GetDescendants()) do
+                                if v:IsA("ProximityPrompt") then
+                                    local text = ((v.ObjectText or "") .. " " .. (v.ActionText or "")):lower()
+                                    if text:find("gacha") or text:find("spooky") or text:find("haunted") or text:find("zioles") then
+                                        local parent = v.Parent
+                                        local pos = nil
+                                        if parent and parent:IsA("BasePart") then pos = parent.Position else pcall(function() pos = parent:GetPivot().Position end) end
+                                        if pos then
+                                            local targetCFrame = CFrame.new(pos + Vector3.new(0,5,0))
+                                            if getgenv().toTarget then pcall(function() getgenv().toTarget(targetCFrame) end)
+                                            elseif toTarget then pcall(function() toTarget(targetCFrame) end)
+                                            else hrp.CFrame = targetCFrame end
+                                            task.wait(0.5)
+                                            pcall(function() fireproximityprompt(v, 0) task.wait(0.2) fireproximityprompt(v, 1) end)
+                                            break
+                                        end
+                                    end
+                                end
+                            end
+                        end
                     end
                 end
             end
