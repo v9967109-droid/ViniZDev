@@ -3295,150 +3295,104 @@ do
     end)
     
     local SectionNormal = PageStatusAndServer.CreateSection("Normal Fruit Stock - Normal Dealer")
-    SectionNormal.CreateLabel({ Title = "Fruits on sale at the normal dealer [SCROLL]" })
+    SectionNormal.CreateLabel({ Title = "Fruits on sale at the normal dealer [SCROLL AZUL]" })
     local NormalLabels = {}
-    local NormalScrollFrame = nil
-    -- Cria lista com scroll usando Instance.new direto (sem depender de make)
-    pcall(function()
-        -- Pega o card da SectionNormal via label temporaria
-        local tempLabel = SectionNormal.CreateLabel({ Title = "TEMP_FOR_CARD" })
-        local tempObj = tempLabel.Object
-        local rowFrame = tempObj.Parent
-        local cardFrame = rowFrame.Parent
-        -- Cria container com altura fixa 140
-        local container = Instance.new("Frame")
-        container.Name = "NormalStockScrollContainer"
-        container.Size = UDim2.new(1, 0, 0, 140)
-        container.BackgroundTransparency = 1
-        container.Parent = cardFrame
-        -- Remove temp
-        pcall(function() rowFrame:Destroy() end)
-        -- Cria ScrollingFrame
-        local scroll = Instance.new("ScrollingFrame")
-        scroll.Name = "NormalStockScroll"
-        scroll.Size = UDim2.new(1, 0, 1, 0)
-        scroll.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-        scroll.BackgroundTransparency = 0.2
-        scroll.BorderSizePixel = 0
-        scroll.ScrollBarThickness = 6
-        scroll.ScrollBarImageColor3 = Color3.fromRGB(0, 191, 255)
-        scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-        scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-        scroll.Parent = container
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 6)
-        corner.Parent = scroll
-        local padding = Instance.new("UIPadding")
-        padding.PaddingTop = UDim.new(0, 4)
-        padding.PaddingBottom = UDim.new(0, 4)
-        padding.PaddingLeft = UDim.new(0, 6)
-        padding.PaddingRight = UDim.new(0, 6)
-        padding.Parent = scroll
-        local layout = Instance.new("UIListLayout")
-        layout.Padding = UDim.new(0, 3)
-        layout.SortOrder = Enum.SortOrder.LayoutOrder
-        layout.Parent = scroll
-        NormalScrollFrame = scroll
-        -- Cria 6 labels iniciais
-        for i=1,6 do
-            local rowInner = Instance.new("Frame")
-            rowInner.Size = UDim2.new(1, 0, 0, 20)
-            rowInner.BackgroundTransparency = 1
-            rowInner.Parent = scroll
-            local txt = Instance.new("TextLabel")
-            txt.BackgroundTransparency = 1
-            txt.Text = "Loading..."
-            txt.TextColor3 = Color3.fromRGB(200, 200, 210)
-            txt.Font = Enum.Font.SourceSansBold
-            txt.TextSize = 11
-            txt.TextXAlignment = Enum.TextXAlignment.Left
-            txt.Size = UDim2.new(1, 0, 1, 0)
-            txt.Parent = rowInner
-                        NormalLabels[i] = {Object = txt, SetText = function(a, b) 
-                local val = b or a
-                if type(val)=="table" then val = val.Title or val.Text or "" end
-                if txt then txt.Text = tostring(val or "") end
-            end}
-        end
-    end)
-    if #NormalLabels == 0 then
-        -- Fallback
-        NormalLabels[1] = SectionNormal.CreateLabel({ Title = "Ghost-Ghost - $940,000" })
-        NormalLabels[2] = SectionNormal.CreateLabel({ Title = "Light-Light - $650,000" })
-        NormalLabels[3] = SectionNormal.CreateLabel({ Title = "Spin-Spin - $7,500" })
-        NormalLabels[4] = SectionNormal.CreateLabel({ Title = "Rocket-Rocket - $5,000" })
-        NormalLabels[5] = SectionNormal.CreateLabel({ Title = "Loading..." })
-        NormalLabels[6] = SectionNormal.CreateLabel({ Title = "Loading..." })
-    end
+    NormalLabels[1] = SectionNormal.CreateLabel({ Title = "Ghost-Ghost - $940,000" })
+    NormalLabels[2] = SectionNormal.CreateLabel({ Title = "Light-Light - $650,000" })
+    NormalLabels[3] = SectionNormal.CreateLabel({ Title = "Spin-Spin - $7,500" })
+    NormalLabels[4] = SectionNormal.CreateLabel({ Title = "Rocket-Rocket - $5,000" })
+    NormalLabels[5] = SectionNormal.CreateLabel({ Title = "Loading..." })
+    NormalLabels[6] = SectionNormal.CreateLabel({ Title = "Loading..." })
     
     local SectionAdvance = PageStatusAndServer.CreateSection("Advance Fruit Stock - Mirage Island Dealer")
-    SectionAdvance.CreateLabel({ Title = "Fruits on sale at the Mirage Island dealer [SCROLL]" })
+    SectionAdvance.CreateLabel({ Title = "Fruits on sale at the Mirage Island dealer [SCROLL AZUL]" })
     local AdvanceLabels = {}
+    AdvanceLabels[1] = SectionAdvance.CreateLabel({ Title = "Flame-Flame - $250,000" })
+    AdvanceLabels[2] = SectionAdvance.CreateLabel({ Title = "Smoke-Smoke - $100,000" })
+    AdvanceLabels[3] = SectionAdvance.CreateLabel({ Title = "Bomb-Bomb - $80,000" })
+    AdvanceLabels[4] = SectionAdvance.CreateLabel({ Title = "Spin-Spin - $7,500" })
+    AdvanceLabels[5] = SectionAdvance.CreateLabel({ Title = "Rocket-Rocket - $5,000" })
+    
+    -- CRIA SCROLLS AZUIS DEPOIS - NAO PARA EXECUCAO, TUDO EM PCALL!
+    local NormalScrollFrame = nil
     local AdvanceScrollFrame = nil
     pcall(function()
-        local tempLabel = SectionAdvance.CreateLabel({ Title = "TEMP_FOR_CARD2" })
-        local tempObj = tempLabel.Object
-        local rowFrame = tempObj.Parent
-        local cardFrame = rowFrame.Parent
-        local container = Instance.new("Frame")
-        container.Name = "MirageStockScrollContainer"
-        container.Size = UDim2.new(1, 0, 0, 140)
-        container.BackgroundTransparency = 1
-        container.Parent = cardFrame
-        pcall(function() rowFrame:Destroy() end)
-        local scroll = Instance.new("ScrollingFrame")
-        scroll.Name = "MirageStockScroll"
-        scroll.Size = UDim2.new(1, 0, 1, 0)
-        scroll.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-        scroll.BackgroundTransparency = 0.2
-        scroll.BorderSizePixel = 0
-        scroll.ScrollBarThickness = 6
-        scroll.ScrollBarImageColor3 = Color3.fromRGB(0, 191, 255)
-        scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-        scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-        scroll.Parent = container
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 6)
-        corner.Parent = scroll
-        local padding = Instance.new("UIPadding")
-        padding.PaddingTop = UDim.new(0, 4)
-        padding.PaddingBottom = UDim.new(0, 4)
-        padding.PaddingLeft = UDim.new(0, 6)
-        padding.PaddingRight = UDim.new(0, 6)
-        padding.Parent = scroll
-        local layout = Instance.new("UIListLayout")
-        layout.Padding = UDim.new(0, 3)
-        layout.SortOrder = Enum.SortOrder.LayoutOrder
-        layout.Parent = scroll
-        AdvanceScrollFrame = scroll
-        for i=1,5 do
-            local rowInner = Instance.new("Frame")
-            rowInner.Size = UDim2.new(1, 0, 0, 20)
-            rowInner.BackgroundTransparency = 1
-            rowInner.Parent = scroll
-            local txt = Instance.new("TextLabel")
-            txt.BackgroundTransparency = 1
-            txt.Text = "Loading..."
-            txt.TextColor3 = Color3.fromRGB(200, 200, 210)
-            txt.Font = Enum.Font.SourceSansBold
-            txt.TextSize = 11
-            txt.TextXAlignment = Enum.TextXAlignment.Left
-            txt.Size = UDim2.new(1, 0, 1, 0)
-            txt.Parent = rowInner
-            AdvanceLabels[i] = {Object = txt, SetText = function(a, b) 
-                local val = b or a
-                if type(val)=="table" then val = val.Title or val.Text or "" end
-                if txt then txt.Text = tostring(val or "") end
-            end}
+        -- Pega card da SectionNormal
+        local tempRow = NormalLabels[1].Object.Parent
+        local cardNormal = tempRow.Parent
+        -- Cria container com altura fixa 140 para Normal
+        local containerNormal = Instance.new("Frame")
+        containerNormal.Name = "NormalStockScrollContainer"
+        containerNormal.Size = UDim2.new(1, 0, 0, 140)
+        containerNormal.BackgroundTransparency = 1
+        containerNormal.Parent = cardNormal
+        -- Cria ScrollingFrame azul
+        local scrollNormal = Instance.new("ScrollingFrame")
+        scrollNormal.Name = "NormalStockScroll"
+        scrollNormal.Size = UDim2.new(1, 0, 1, 0)
+        scrollNormal.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+        scrollNormal.BackgroundTransparency = 0.15
+        scrollNormal.BorderSizePixel = 0
+        scrollNormal.ScrollBarThickness = 6
+        scrollNormal.ScrollBarImageColor3 = Color3.fromRGB(0, 191, 255)
+        scrollNormal.CanvasSize = UDim2.new(0, 0, 0, 0)
+        scrollNormal.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        scrollNormal.Parent = containerNormal
+        local cornerN = Instance.new("UICorner")
+        cornerN.CornerRadius = UDim.new(0, 6)
+        cornerN.Parent = scrollNormal
+        local layoutN = Instance.new("UIListLayout")
+        layoutN.Padding = UDim.new(0, 2)
+        layoutN.SortOrder = Enum.SortOrder.LayoutOrder
+        layoutN.Parent = scrollNormal
+        NormalScrollFrame = scrollNormal
+        -- Move labels existentes para dentro do scroll
+        for i=1,6 do
+            if NormalLabels[i] and NormalLabels[i].Object then
+                local row = NormalLabels[i].Object.Parent
+                if row then
+                    row.Parent = scrollNormal
+                end
+            end
         end
     end)
-    if #AdvanceLabels == 0 then
-        AdvanceLabels[1] = SectionAdvance.CreateLabel({ Title = "Flame-Flame - $250,000" })
-        AdvanceLabels[2] = SectionAdvance.CreateLabel({ Title = "Smoke-Smoke - $100,000" })
-        AdvanceLabels[3] = SectionAdvance.CreateLabel({ Title = "Bomb-Bomb - $80,000" })
-        AdvanceLabels[4] = SectionAdvance.CreateLabel({ Title = "Spin-Spin - $7,500" })
-        AdvanceLabels[5] = SectionAdvance.CreateLabel({ Title = "Rocket-Rocket - $5,000" })
-    end
+    pcall(function()
+        local tempRow = AdvanceLabels[1].Object.Parent
+        local cardAdvance = tempRow.Parent
+        local containerAdvance = Instance.new("Frame")
+        containerAdvance.Name = "MirageStockScrollContainer"
+        containerAdvance.Size = UDim2.new(1, 0, 0, 140)
+        containerAdvance.BackgroundTransparency = 1
+        containerAdvance.Parent = cardAdvance
+        local scrollAdvance = Instance.new("ScrollingFrame")
+        scrollAdvance.Name = "MirageStockScroll"
+        scrollAdvance.Size = UDim2.new(1, 0, 1, 0)
+        scrollAdvance.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+        scrollAdvance.BackgroundTransparency = 0.15
+        scrollAdvance.BorderSizePixel = 0
+        scrollAdvance.ScrollBarThickness = 6
+        scrollAdvance.ScrollBarImageColor3 = Color3.fromRGB(0, 191, 255)
+        scrollAdvance.CanvasSize = UDim2.new(0, 0, 0, 0)
+        scrollAdvance.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        scrollAdvance.Parent = containerAdvance
+        local cornerA = Instance.new("UICorner")
+        cornerA.CornerRadius = UDim.new(0, 6)
+        cornerA.Parent = scrollAdvance
+        local layoutA = Instance.new("UIListLayout")
+        layoutA.Padding = UDim.new(0, 2)
+        layoutA.SortOrder = Enum.SortOrder.LayoutOrder
+        layoutA.Parent = scrollAdvance
+        AdvanceScrollFrame = scrollAdvance
+        for i=1,5 do
+            if AdvanceLabels[i] and AdvanceLabels[i].Object then
+                local row = AdvanceLabels[i].Object.Parent
+                if row then
+                    row.Parent = scrollAdvance
+                end
+            end
+        end
+    end)
+    
     -- PATCH FIX: estoque 100% dinamico - usa lista real da loja
     local function ParseFruit(v)
         if type(v)=="table" then
@@ -3464,84 +3418,33 @@ do
     end
     local function Ensure(section, labels, need)
         for i=#labels+1, need do
-            local created = false
+            local lbl = section.CreateLabel({ Title = "Slot "..i..": Loading..." })
+            labels[i] = lbl
+            -- Move novo label para dentro do scroll se existir
             pcall(function()
-                if section == SectionNormal and NormalScrollFrame then
-                    local rowInner = Instance.new("Frame")
-                    rowInner.Size = UDim2.new(1, 0, 0, 20)
-                    rowInner.BackgroundTransparency = 1
-                    rowInner.Parent = NormalScrollFrame
-                    local txt = Instance.new("TextLabel")
-                    txt.BackgroundTransparency = 1
-                    txt.Text = "Slot "..i..": Loading..."
-                    txt.TextColor3 = Color3.fromRGB(200, 200, 210)
-                    txt.Font = Enum.Font.SourceSansBold
-                    txt.TextSize = 11
-                    txt.TextXAlignment = Enum.TextXAlignment.Left
-                    txt.Size = UDim2.new(1, 0, 1, 0)
-                    txt.Parent = rowInner
-                    labels[i] = {Object = txt, SetText = function(a, b) 
-                        local val = b or a
-                        if type(val)=="table" then val = val.Title or val.Text or "" end
-                        if txt then txt.Text = tostring(val or "") end
-                    end}
-                    created = true
-                elseif section == SectionAdvance and AdvanceScrollFrame then
-                    local rowInner = Instance.new("Frame")
-                    rowInner.Size = UDim2.new(1, 0, 0, 20)
-                    rowInner.BackgroundTransparency = 1
-                    rowInner.Parent = AdvanceScrollFrame
-                    local txt = Instance.new("TextLabel")
-                    txt.BackgroundTransparency = 1
-                    txt.Text = "Slot "..i..": Loading..."
-                    txt.TextColor3 = Color3.fromRGB(200, 200, 210)
-                    txt.Font = Enum.Font.SourceSansBold
-                    txt.TextSize = 11
-                    txt.TextXAlignment = Enum.TextXAlignment.Left
-                    txt.Size = UDim2.new(1, 0, 1, 0)
-                    txt.Parent = rowInner
-                    labels[i] = {Object = txt, SetText = function(a, b) 
-                        local val = b or a
-                        if type(val)=="table" then val = val.Title or val.Text or "" end
-                        if txt then txt.Text = tostring(val or "") end
-                    end}
-                    created = true
+                if section == SectionNormal and NormalScrollFrame and lbl.Object then
+                    local row = lbl.Object.Parent
+                    if row then row.Parent = NormalScrollFrame end
+                elseif section == SectionAdvance and AdvanceScrollFrame and lbl.Object then
+                    local row = lbl.Object.Parent
+                    if row then row.Parent = AdvanceScrollFrame end
                 end
             end)
-            if not created then
-                labels[i] = section.CreateLabel({ Title = "Slot "..i..": Loading..." })
-            end
         end
     end
     local function UpdateStock(section, labels, stock)
         if not stock or type(stock)~="table" then return end
         local list = {}
         if #stock>0 then list=stock else for k,v in pairs(stock) do if type(v)=="table" then table.insert(list,v) elseif type(k)=="string" then table.insert(list,{Name=k, Price=v}) end end end
-        -- FILTRA SO AS QUE DA PRA COMPRAR
+        -- FILTRA SÓ AS QUE DÁ PRA COMPRAR
         local filtered = {}
         for _, v in ipairs(list) do
             local name, price = ParseFruit(v)
             if name then table.insert(filtered, {Name=name, Price=price, _raw=v}) end
         end
         if #filtered==0 then
-            pcall(function()
-                if labels[1] then 
-                    local txt = "Nenhuma fruta no stock agora"
-                    if labels[1].SetText then
-                        labels[1].SetText(labels[1], txt)
-                    end
-                    if labels[1].Object then
-                        labels[1].Object.Text = txt
-                    end
-                end
-                for i=2, #labels do 
-                    if labels[i] then 
-                        local txt2 = "Slot "..i..": Empty"
-                        if labels[i].SetText then labels[i].SetText(labels[i], txt2) end
-                        if labels[i].Object then labels[i].Object.Text = txt2 end
-                    end 
-                end
-            end)
+            if labels[1] then labels[1].SetText("Nenhuma fruta no stock agora") end
+            for i=2, #labels do if labels[i] then labels[i].SetText("Slot "..i..": Empty") end end
             return
         end
         Ensure(section, labels, #filtered)
@@ -3549,32 +3452,10 @@ do
             if labels[i] then
                 local disp = data.Name
                 if not disp:find("-") then disp = disp.."-"..disp end
-                local finalText = disp .. FormatPrice(data.Price)
-                pcall(function()
-                    -- Tenta todos os jeitos de setar texto
-                    if labels[i].SetText then
-                        labels[i].SetText(labels[i], finalText)
-                        labels[i].SetText(finalText)
-                    end
-                    if labels[i].Object then
-                        labels[i].Object.Text = finalText
-                    end
-                    -- Se labels[i] for direto TextLabel
-                    if labels[i].Text ~= nil then
-                        labels[i].Text = finalText
-                    end
-                end)
+                labels[i].SetText(disp .. FormatPrice(data.Price))
             end
         end
-        for i=#filtered+1, #labels do 
-            pcall(function()
-                if labels[i] then 
-                    local txtEmpty = "Slot "..i..": Empty"
-                    if labels[i].SetText then labels[i].SetText(labels[i], txtEmpty) end
-                    if labels[i].Object then labels[i].Object.Text = txtEmpty end
-                end 
-            end)
-        end
+        for i=#filtered+1, #labels do if labels[i] then labels[i].SetText("Slot "..i..": Empty") end end
     end
 
     spawn(function()
@@ -3598,10 +3479,6 @@ do
                 UpdateStock(SectionAdvance, AdvanceLabels, mirageStock)
             end)
         end
-    end)
-end
-
-
     end)
 end
 
@@ -15618,47 +15495,25 @@ do
 	pcall(function() if getgenv().__BoatRaiseConn then getgenv().__BoatRaiseConn:Disconnect() end end)
 	getgenv().__BoatRaiseConn = game:GetService("RunService").Heartbeat:Connect(function()
 		if getgenv().__BoatRaiseGen ~= gen then return end
-		if not Settings["Raise Boat Manual Drive"] then
-			return
-		end
-		-- FIX TOTAL: Auto Find Leviathan ativo = Raise Boat NAO interrompe NENHUM desvio!
+		if not Settings["Raise Boat Manual Drive"] then return end
+		-- FIX TOTAL: Auto Find Leviathan ativo = NAO interrompe NENHUM desvio!
 		local isLeviathanMode = Settings["Auto Find Leviathan"] or Settings["Multi Find Leviathan"] or Settings["Auto Find Prehistoric Island"] or Settings["Auto Multi Find Prehistoric Island"] or Settings["Auto Event Prehistoric Island"] or Settings["Auto Sea Event"]
 		if isLeviathanMode then
-			-- Se tiver QUALQUER tipo de desvio/dodge ativo, NAO faz nada!
-			if getgenv().Doding or getgenv().ReadyToDodge then
-				return
-			end
-			if getgenv().PosDodgeskill and getgenv().PosDodgeskill > 0 then
-				return
-			end
-			if getgenv().PathSeaBeast or getgenv().PathTerrorshark or getgenv().PathAnimationSeabit then
-				return
-			end
-			-- Se tiver Seabeast/Terrorshark/Shark detectado, nao trava
-			if getgenv().SeaBeastSpawn or getgenv().TerrorsharkSpawn then
-				return
-			end
+			if getgenv().Doding or getgenv().ReadyToDodge then return end
+			if getgenv().PosDodgeskill and getgenv().PosDodgeskill > 0 then return end
+			if getgenv().PathSeaBeast or getgenv().PathTerrorshark or getgenv().PathAnimationSeabit then return end
 		end
 		pcall(function()
 			local char = t.Character
 			local hum = char and char:FindFirstChildOfClass("Humanoid")
 			local seat = hum and hum.SeatPart
 			if not seat or not seat:IsA("VehicleSeat") then
-				-- Barco fica no ar quando sai, MAS se Leviathan ativo com desvio, NAO trava!
-				if isLeviathanMode and (getgenv().Doding or (getgenv().PosDodgeskill and getgenv().PosDodgeskill > 0) or getgenv().PathSeaBeast) then
-					return
-				end
+				if isLeviathanMode and (getgenv().Doding or (getgenv().PosDodgeskill and getgenv().PosDodgeskill > 0) or getgenv().PathSeaBeast) then return end
 				if getgenv().__LastRaisedBoat and getgenv().__LastRaisedBoat.Parent then
 					local boat = getgenv().__LastRaisedBoat
 					local boats = workspace:FindFirstChild("Boats")
-					if not boats or boat.Parent ~= boats then
-						getgenv().__LastRaisedBoat = nil
-						return
-					end
-					-- Se Leviathan ativo, NAO forca altura, deixa livre!
-					if isLeviathanMode then
-						return
-					end
+					if not boats or boat.Parent ~= boats then getgenv().__LastRaisedBoat = nil return end
+					if isLeviathanMode then return end
 					local base = boat:GetAttribute("NexoraBaseY") or 8
 					local height = math.clamp(tonumber(Settings["Boat Height"]) or 175, 5, 175)
 					local targetY = base + height
@@ -15676,17 +15531,11 @@ do
 			if not boat or not boats or boat.Parent ~= boats then return end
 			getgenv().__LastRaisedBoat = boat
 			local base = boat:GetAttribute("NexoraBaseY")
-			if not base then
-				base = (seat.Position.Y < 30) and seat.Position.Y or 8
-				boat:SetAttribute("NexoraBaseY", base)
-			end
+			if not base then base = (seat.Position.Y < 30) and seat.Position.Y or 8 boat:SetAttribute("NexoraBaseY", base) end
 			local height = math.clamp(tonumber(Settings["Boat Height"]) or 175, 5, 175)
 			local targetY = base + height
 			local pivot = boat:GetPivot()
-			-- FIX LEVIATHAN: So trava Y se NAO tiver Leviathan ativo ou se barco ta muito baixo!
 			if isLeviathanMode then
-				-- Em modo Leviathan, so garante que nao afunde, mas nao forca altura exata!
-				-- Deixa barco desviar livre, so evita cair na agua
 				if pivot.Position.Y < base - 5 then
 					local pos = pivot.Position
 					local rot = pivot - pos
@@ -15694,16 +15543,13 @@ do
 				end
 				return
 			end
-			-- Modo normal (sem Leviathan): trava Y normal
 			if math.abs(pivot.Position.Y - targetY) > 0.05 then
 				local pos = pivot.Position
 				local rot = pivot - pos
 				boat:PivotTo(CFrame.new(pos.X, targetY, pos.Z) * rot)
 			end
 			local v = seat.AssemblyLinearVelocity
-			if math.abs(v.Y) > 0.01 then
-				seat.AssemblyLinearVelocity = Vector3.new(v.X, 0, v.Z)
-			end
+			if math.abs(v.Y) > 0.01 then seat.AssemblyLinearVelocity = Vector3.new(v.X, 0, v.Z) end
 		end)
 	end)
 end
