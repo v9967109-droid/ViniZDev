@@ -16620,7 +16620,6 @@ function AutoSpawnKitsune()
 	end
 
 	local function UnanchorBoat(boat)
-	local function UnanchorBoat(boat)
 		pcall(function()
 			for _,v in ipairs(boat:GetDescendants()) do
 				if v:IsA("BasePart") then v.Anchored = false end
