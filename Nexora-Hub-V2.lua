@@ -3321,7 +3321,7 @@ do
         scroll.BackgroundTransparency = 0.2
         scroll.BorderSizePixel = 0
         scroll.ScrollBarThickness = 6
-        scroll.ScrollBarImageColor3 = Color3.fromRGB(255, 215, 0)
+        scroll.ScrollBarImageColor3 = Color3.fromRGB(0, 191, 255)
         scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
         scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
         scroll.Parent = container
@@ -3354,9 +3354,10 @@ do
             txt.TextXAlignment = Enum.TextXAlignment.Left
             txt.Size = UDim2.new(1, 0, 1, 0)
             txt.Parent = rowInner
-            NormalLabels[i] = {SetText = function(self, val) 
-                if type(val)=="table" then val = val.Title or "" end
-                txt.Text = tostring(val or "")
+                        NormalLabels[i] = {SetText = function(a, b) 
+                local val = b or a
+                if type(val)=="table" then val = val.Title or val.Text or "" end
+                if txt then txt.Text = tostring(val or "") end
             end}
         end
     end)
@@ -3424,9 +3425,10 @@ do
             txt.TextXAlignment = Enum.TextXAlignment.Left
             txt.Size = UDim2.new(1, 0, 1, 0)
             txt.Parent = rowInner
-            AdvanceLabels[i] = {SetText = function(self, val) 
-                if type(val)=="table" then val = val.Title or "" end
-                txt.Text = tostring(val or "")
+            AdvanceLabels[i] = {SetText = function(a, b) 
+                local val = b or a
+                if type(val)=="table" then val = val.Title or val.Text or "" end
+                if txt then txt.Text = tostring(val or "") end
             end}
         end
     end)
@@ -3478,9 +3480,10 @@ do
                     txt.TextXAlignment = Enum.TextXAlignment.Left
                     txt.Size = UDim2.new(1, 0, 1, 0)
                     txt.Parent = rowInner
-                    labels[i] = {SetText = function(self, val) 
-                        if type(val)=="table" then val = val.Title or "" end
-                        txt.Text = tostring(val or "")
+                    labels[i] = {SetText = function(a, b) 
+                        local val = b or a
+                        if type(val)=="table" then val = val.Title or val.Text or "" end
+                        if txt then txt.Text = tostring(val or "") end
                     end}
                     created = true
                 elseif section == SectionAdvance and AdvanceScrollFrame then
@@ -3497,9 +3500,10 @@ do
                     txt.TextXAlignment = Enum.TextXAlignment.Left
                     txt.Size = UDim2.new(1, 0, 1, 0)
                     txt.Parent = rowInner
-                    labels[i] = {SetText = function(self, val) 
-                        if type(val)=="table" then val = val.Title or "" end
-                        txt.Text = tostring(val or "")
+                    labels[i] = {SetText = function(a, b) 
+                        local val = b or a
+                        if type(val)=="table" then val = val.Title or val.Text or "" end
+                        if txt then txt.Text = tostring(val or "") end
                     end}
                     created = true
                 end
@@ -3529,7 +3533,17 @@ do
             if labels[i] then
                 local disp = data.Name
                 if not disp:find("-") then disp = disp.."-"..disp end
-                labels[i].SetText(disp .. FormatPrice(data.Price))
+                local txt = disp .. FormatPrice(data.Price)
+                pcall(function()
+                    if labels[i].SetText then
+                        -- Tenta chamar como metodo e como funcao direta
+                        if labels[i].Object then
+                            labels[i]:SetText(txt)
+                        else
+                            labels[i].SetText(txt)
+                        end
+                    end
+                end)
             end
         end
         for i=#filtered+1, #labels do if labels[i] then labels[i].SetText("Slot "..i..": Empty") end end
