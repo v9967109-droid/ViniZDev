@@ -15496,39 +15496,14 @@ do
 	getgenv().__BoatRaiseConn = game:GetService("RunService").Heartbeat:Connect(function()
 		if getgenv().__BoatRaiseGen ~= gen then return end
 		if not Settings["Raise Boat Manual Drive"] then return end
-		-- FIX TOTAL: Se Auto Find Leviathan ativo, NAO trava NENHUM desvio!
-		local isLeviathanActive = Settings["Auto Find Leviathan"] or Settings["Multi Find Leviathan"]
-		if isLeviathanActive then
-			-- Se Auto Find Leviathan ativo, Raise Boat NAO faz nada! Deixa Leviathan desviar livre!
-			-- So mantem barco no ar se sair do seat, mas nao trava durante farm
-			pcall(function()
-				local char = t.Character
-				local hum = char and char:FindFirstChildOfClass("Humanoid")
-				local seat = hum and hum.SeatPart
-				if not seat or not seat:IsA("VehicleSeat") then
-					-- So mantem barco no ar quando sai do seat, mesmo com Leviathan
-					if getgenv().__LastRaisedBoat and getgenv().__LastRaisedBoat.Parent then
-						local boat = getgenv().__LastRaisedBoat
-						local boats = workspace:FindFirstChild("Boats")
-						if not boats or boat.Parent ~= boats then getgenv().__LastRaisedBoat = nil return end
-						local base = boat:GetAttribute("NexoraBaseY") or 8
-						local height = math.clamp(tonumber(Settings["Boat Height"]) or 175, 5, 175)
-						local targetY = base + height
-						local pivot = boat:GetPivot()
-						if math.abs(pivot.Position.Y - targetY) > 0.05 then
-							local pos = pivot.Position
-							local rot = pivot - pos
-							boat:PivotTo(CFrame.new(pos.X, targetY, pos.Z) * rot)
-						end
-					end
-				end
-			end)
-			return -- NAO trava barco durante Auto Find Leviathan! Deixa desviar!
+		-- FIX TOTAL: Se Auto Find Leviathan ativo, DESLIGA TOTALMENTE Raise Boat! Nao interrompe NENHUM desvio!
+		if Settings["Auto Find Leviathan"] or Settings["Multi Find Leviathan"] then
+			return
 		end
-		-- Para Auto Sea Event, funciona normal (nao e Leviathan)
+		-- Se tiver desvio/dodge ativo, tambem nao trava
 		if getgenv().Doding or getgenv().ReadyToDodge then return end
 		if getgenv().PosDodgeskill and getgenv().PosDodgeskill > 0 then return end
-		if getgenv().PathSeaBeast or getgenv().PathTerrorshark then return end
+		if getgenv().PathSeaBeast or getgenv().PathTerrorshark or getgenv().PathAnimationSeabit then return end
 		pcall(function()
 			local char = t.Character
 			local hum = char and char:FindFirstChildOfClass("Humanoid")
