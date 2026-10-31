@@ -3295,80 +3295,73 @@ do
     end)
     
     local SectionNormal = PageStatusAndServer.CreateSection("Normal Fruit Stock - Normal Dealer")
-    SectionNormal.CreateLabel({ Title = "Fruits on sale at the normal dealer (scroll)" })
-    -- SCROLLABLE LIST para nao ficar grande!
-    local NormalScrollRow = (function()
-        -- Cria row com altura fixa 130 e ScrollingFrame dentro
-        local r = (function()
-            -- row(130) manual
-            local frame = nil
-            pcall(function()
-                frame = make("Frame", {Size=UDim2.new(1,0,0,130),BackgroundTransparency=1}, nil)
-            end)
-            return frame
-        end)()
-        return r
-    end)()
-    -- Vamos criar Scrollable de forma compativel com a lib
-    local NormalScrollFrame = nil
+    SectionNormal.CreateLabel({ Title = "Fruits on sale at the normal dealer [SCROLL]" })
     local NormalLabels = {}
+    local NormalScrollFrame = nil
+    -- Cria lista com scroll usando Instance.new direto (sem depender de make)
     pcall(function()
-        -- Tenta criar ScrollingFrame dentro da Section
-        -- Usa o card da section se possivel, senao cria row manual
-        local card = nil
-        -- Procura o card da section via debug? Usa make direto na Page
-        -- Cria row de 130px dentro da SectionNormal
-        local r = make("Frame", {Size=UDim2.new(1,0,0,130),BackgroundTransparency=1, Name="NormalStockScrollContainer"}, nil)
-        -- Adiciona na section via CreateLabel hack: cria label e pega parent
-        -- Metodo mais simples: cria ScrollingFrame como filho do primeiro label's parent
-        -- Vamos usar a propria Section para criar um container scrollavel
+        -- Pega o card da SectionNormal via label temporaria
+        local tempLabel = SectionNormal.CreateLabel({ Title = "TEMP_FOR_CARD" })
+        local tempObj = tempLabel.Object
+        local rowFrame = tempObj.Parent
+        local cardFrame = rowFrame.Parent
+        -- Cria container com altura fixa 140
+        local container = Instance.new("Frame")
+        container.Name = "NormalStockScrollContainer"
+        container.Size = UDim2.new(1, 0, 0, 140)
+        container.BackgroundTransparency = 1
+        container.Parent = cardFrame
+        -- Remove temp
+        pcall(function() rowFrame:Destroy() end)
         -- Cria ScrollingFrame
-        NormalScrollFrame = make("ScrollingFrame", {
-            Size=UDim2.new(1,0,1,0),
-            BackgroundColor3=Color3.fromRGB(20,20,25),
-            BackgroundTransparency=0.3,
-            BorderSizePixel=0,
-            ScrollBarThickness=4,
-            ScrollBarImageColor3=Color3.fromRGB(255, 215, 0),
-            CanvasSize=UDim2.new(0,0,0,0),
-            AutomaticCanvasSize=Enum.AutomaticSize.Y,
-            Name="NormalStockScroll"
-        }, r)
-        make("UICorner", {CornerRadius=UDim.new(0,6)}, NormalScrollFrame)
-        make("UIPadding", {PaddingTop=UDim.new(0,4),PaddingBottom=UDim.new(0,4),PaddingLeft=UDim.new(0,6),PaddingRight=UDim.new(0,6)}, NormalScrollFrame)
-        local layout = make("UIListLayout", {Padding=UDim.new(0,3), SortOrder=Enum.SortOrder.LayoutOrder}, NormalScrollFrame)
-        -- Adiciona o row container na section: precisa parentar no card da section
-        -- Pega o primeiro row criado pela section e usa seu parent (o card)
-        pcall(function()
-            -- Tenta achar o card via SectionNormal: cria label temporaria e pega seu parent's parent
-            local temp = SectionNormal.CreateLabel({ Title = "temp" })
-            local tempObj = temp.Object
-            local parent = tempObj.Parent -- row
-            local cardFound = parent.Parent -- card
-            if cardFound then
-                r.Parent = cardFound
-                -- Remove temp label row
-                pcall(function() parent:Destroy() end)
-            end
-        end)
-        -- Cria 6 labels iniciais dentro do scroll
+        local scroll = Instance.new("ScrollingFrame")
+        scroll.Name = "NormalStockScroll"
+        scroll.Size = UDim2.new(1, 0, 1, 0)
+        scroll.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+        scroll.BackgroundTransparency = 0.2
+        scroll.BorderSizePixel = 0
+        scroll.ScrollBarThickness = 6
+        scroll.ScrollBarImageColor3 = Color3.fromRGB(255, 215, 0)
+        scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+        scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        scroll.Parent = container
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 6)
+        corner.Parent = scroll
+        local padding = Instance.new("UIPadding")
+        padding.PaddingTop = UDim.new(0, 4)
+        padding.PaddingBottom = UDim.new(0, 4)
+        padding.PaddingLeft = UDim.new(0, 6)
+        padding.PaddingRight = UDim.new(0, 6)
+        padding.Parent = scroll
+        local layout = Instance.new("UIListLayout")
+        layout.Padding = UDim.new(0, 3)
+        layout.SortOrder = Enum.SortOrder.LayoutOrder
+        layout.Parent = scroll
+        NormalScrollFrame = scroll
+        -- Cria 6 labels iniciais
         for i=1,6 do
-            local rowInner = make("Frame", {Size=UDim2.new(1,0,0,20), BackgroundTransparency=1}, NormalScrollFrame)
-            local txt = make("TextLabel", {
-                BackgroundTransparency=1, Text="Loading...", TextColor3=Color3.fromRGB(165,165,174),
-                Font=Enum.Font.SourceSansBold, TextSize=11, TextXAlignment=Enum.TextXAlignment.Left,
-                Size=UDim2.new(1,0,1,0)
-            }, rowInner)
-            NormalLabels[i] = {Object=txt, SetText=function(self, value) txt.Text=tostring(value or "") end, GetText=function() return txt.Text end}
-            -- Corrige para compatibilidade: SetText como metodo
-            NormalLabels[i].SetText = function(val) 
+            local rowInner = Instance.new("Frame")
+            rowInner.Size = UDim2.new(1, 0, 0, 20)
+            rowInner.BackgroundTransparency = 1
+            rowInner.Parent = scroll
+            local txt = Instance.new("TextLabel")
+            txt.BackgroundTransparency = 1
+            txt.Text = "Loading..."
+            txt.TextColor3 = Color3.fromRGB(200, 200, 210)
+            txt.Font = Enum.Font.SourceSansBold
+            txt.TextSize = 11
+            txt.TextXAlignment = Enum.TextXAlignment.Left
+            txt.Size = UDim2.new(1, 0, 1, 0)
+            txt.Parent = rowInner
+            NormalLabels[i] = {SetText = function(self, val) 
                 if type(val)=="table" then val = val.Title or "" end
                 txt.Text = tostring(val or "")
-            end
+            end}
         end
     end)
-    -- Fallback se falhar: usa labels normais
     if #NormalLabels == 0 then
+        -- Fallback
         NormalLabels[1] = SectionNormal.CreateLabel({ Title = "Ghost-Ghost - $940,000" })
         NormalLabels[2] = SectionNormal.CreateLabel({ Title = "Light-Light - $650,000" })
         NormalLabels[3] = SectionNormal.CreateLabel({ Title = "Spin-Spin - $7,500" })
@@ -3378,47 +3371,63 @@ do
     end
     
     local SectionAdvance = PageStatusAndServer.CreateSection("Advance Fruit Stock - Mirage Island Dealer")
-    SectionAdvance.CreateLabel({ Title = "Fruits on sale at the Mirage Island dealer (scroll)" })
+    SectionAdvance.CreateLabel({ Title = "Fruits on sale at the Mirage Island dealer [SCROLL]" })
     local AdvanceLabels = {}
     local AdvanceScrollFrame = nil
     pcall(function()
-        local r = make("Frame", {Size=UDim2.new(1,0,0,130),BackgroundTransparency=1, Name="MirageStockScrollContainer"}, nil)
-        AdvanceScrollFrame = make("ScrollingFrame", {
-            Size=UDim2.new(1,0,1,0),
-            BackgroundColor3=Color3.fromRGB(20,20,25),
-            BackgroundTransparency=0.3,
-            BorderSizePixel=0,
-            ScrollBarThickness=4,
-            ScrollBarImageColor3=Color3.fromRGB(0, 191, 255),
-            CanvasSize=UDim2.new(0,0,0,0),
-            AutomaticCanvasSize=Enum.AutomaticSize.Y,
-            Name="MirageStockScroll"
-        }, r)
-        make("UICorner", {CornerRadius=UDim.new(0,6)}, AdvanceScrollFrame)
-        make("UIPadding", {PaddingTop=UDim.new(0,4),PaddingBottom=UDim.new(0,4),PaddingLeft=UDim.new(0,6),PaddingRight=UDim.new(0,6)}, AdvanceScrollFrame)
-        make("UIListLayout", {Padding=UDim.new(0,3), SortOrder=Enum.SortOrder.LayoutOrder}, AdvanceScrollFrame)
-        pcall(function()
-            local temp = SectionAdvance.CreateLabel({ Title = "temp" })
-            local tempObj = temp.Object
-            local parent = tempObj.Parent
-            local cardFound = parent.Parent
-            if cardFound then
-                r.Parent = cardFound
-                pcall(function() parent:Destroy() end)
-            end
-        end)
+        local tempLabel = SectionAdvance.CreateLabel({ Title = "TEMP_FOR_CARD2" })
+        local tempObj = tempLabel.Object
+        local rowFrame = tempObj.Parent
+        local cardFrame = rowFrame.Parent
+        local container = Instance.new("Frame")
+        container.Name = "MirageStockScrollContainer"
+        container.Size = UDim2.new(1, 0, 0, 140)
+        container.BackgroundTransparency = 1
+        container.Parent = cardFrame
+        pcall(function() rowFrame:Destroy() end)
+        local scroll = Instance.new("ScrollingFrame")
+        scroll.Name = "MirageStockScroll"
+        scroll.Size = UDim2.new(1, 0, 1, 0)
+        scroll.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+        scroll.BackgroundTransparency = 0.2
+        scroll.BorderSizePixel = 0
+        scroll.ScrollBarThickness = 6
+        scroll.ScrollBarImageColor3 = Color3.fromRGB(0, 191, 255)
+        scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+        scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        scroll.Parent = container
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 6)
+        corner.Parent = scroll
+        local padding = Instance.new("UIPadding")
+        padding.PaddingTop = UDim.new(0, 4)
+        padding.PaddingBottom = UDim.new(0, 4)
+        padding.PaddingLeft = UDim.new(0, 6)
+        padding.PaddingRight = UDim.new(0, 6)
+        padding.Parent = scroll
+        local layout = Instance.new("UIListLayout")
+        layout.Padding = UDim.new(0, 3)
+        layout.SortOrder = Enum.SortOrder.LayoutOrder
+        layout.Parent = scroll
+        AdvanceScrollFrame = scroll
         for i=1,5 do
-            local rowInner = make("Frame", {Size=UDim2.new(1,0,0,20), BackgroundTransparency=1}, AdvanceScrollFrame)
-            local txt = make("TextLabel", {
-                BackgroundTransparency=1, Text="Loading...", TextColor3=Color3.fromRGB(165,165,174),
-                Font=Enum.Font.SourceSansBold, TextSize=11, TextXAlignment=Enum.TextXAlignment.Left,
-                Size=UDim2.new(1,0,1,0)
-            }, rowInner)
-            AdvanceLabels[i] = {}
-            AdvanceLabels[i].SetText = function(val) 
+            local rowInner = Instance.new("Frame")
+            rowInner.Size = UDim2.new(1, 0, 0, 20)
+            rowInner.BackgroundTransparency = 1
+            rowInner.Parent = scroll
+            local txt = Instance.new("TextLabel")
+            txt.BackgroundTransparency = 1
+            txt.Text = "Loading..."
+            txt.TextColor3 = Color3.fromRGB(200, 200, 210)
+            txt.Font = Enum.Font.SourceSansBold
+            txt.TextSize = 11
+            txt.TextXAlignment = Enum.TextXAlignment.Left
+            txt.Size = UDim2.new(1, 0, 1, 0)
+            txt.Parent = rowInner
+            AdvanceLabels[i] = {SetText = function(self, val) 
                 if type(val)=="table" then val = val.Title or "" end
                 txt.Text = tostring(val or "")
-            end
+            end}
         end
     end)
     if #AdvanceLabels == 0 then
@@ -3428,8 +3437,6 @@ do
         AdvanceLabels[4] = SectionAdvance.CreateLabel({ Title = "Spin-Spin - $7,500" })
         AdvanceLabels[5] = SectionAdvance.CreateLabel({ Title = "Rocket-Rocket - $5,000" })
     end
-    
-    
     -- PATCH FIX: estoque 100% dinamico - usa lista real da loja
     local function ParseFruit(v)
         if type(v)=="table" then
@@ -3455,34 +3462,45 @@ do
     end
     local function Ensure(section, labels, need)
         for i=#labels+1, need do
-            -- Tenta criar dentro do ScrollFrame se existir
             local created = false
             pcall(function()
                 if section == SectionNormal and NormalScrollFrame then
-                    local rowInner = make("Frame", {Size=UDim2.new(1,0,0,20), BackgroundTransparency=1}, NormalScrollFrame)
-                    local txt = make("TextLabel", {
-                        BackgroundTransparency=1, Text="Slot "..i..": Loading...", TextColor3=Color3.fromRGB(165,165,174),
-                        Font=Enum.Font.SourceSansBold, TextSize=11, TextXAlignment=Enum.TextXAlignment.Left,
-                        Size=UDim2.new(1,0,1,0)
-                    }, rowInner)
-                    labels[i] = {}
-                    labels[i].SetText = function(val) 
+                    local rowInner = Instance.new("Frame")
+                    rowInner.Size = UDim2.new(1, 0, 0, 20)
+                    rowInner.BackgroundTransparency = 1
+                    rowInner.Parent = NormalScrollFrame
+                    local txt = Instance.new("TextLabel")
+                    txt.BackgroundTransparency = 1
+                    txt.Text = "Slot "..i..": Loading..."
+                    txt.TextColor3 = Color3.fromRGB(200, 200, 210)
+                    txt.Font = Enum.Font.SourceSansBold
+                    txt.TextSize = 11
+                    txt.TextXAlignment = Enum.TextXAlignment.Left
+                    txt.Size = UDim2.new(1, 0, 1, 0)
+                    txt.Parent = rowInner
+                    labels[i] = {SetText = function(self, val) 
                         if type(val)=="table" then val = val.Title or "" end
                         txt.Text = tostring(val or "")
-                    end
+                    end}
                     created = true
                 elseif section == SectionAdvance and AdvanceScrollFrame then
-                    local rowInner = make("Frame", {Size=UDim2.new(1,0,0,20), BackgroundTransparency=1}, AdvanceScrollFrame)
-                    local txt = make("TextLabel", {
-                        BackgroundTransparency=1, Text="Slot "..i..": Loading...", TextColor3=Color3.fromRGB(165,165,174),
-                        Font=Enum.Font.SourceSansBold, TextSize=11, TextXAlignment=Enum.TextXAlignment.Left,
-                        Size=UDim2.new(1,0,1,0)
-                    }, rowInner)
-                    labels[i] = {}
-                    labels[i].SetText = function(val) 
+                    local rowInner = Instance.new("Frame")
+                    rowInner.Size = UDim2.new(1, 0, 0, 20)
+                    rowInner.BackgroundTransparency = 1
+                    rowInner.Parent = AdvanceScrollFrame
+                    local txt = Instance.new("TextLabel")
+                    txt.BackgroundTransparency = 1
+                    txt.Text = "Slot "..i..": Loading..."
+                    txt.TextColor3 = Color3.fromRGB(200, 200, 210)
+                    txt.Font = Enum.Font.SourceSansBold
+                    txt.TextSize = 11
+                    txt.TextXAlignment = Enum.TextXAlignment.Left
+                    txt.Size = UDim2.new(1, 0, 1, 0)
+                    txt.Parent = rowInner
+                    labels[i] = {SetText = function(self, val) 
                         if type(val)=="table" then val = val.Title or "" end
                         txt.Text = tostring(val or "")
-                    end
+                    end}
                     created = true
                 end
             end)
@@ -15555,21 +15573,62 @@ do
 	getgenv().__BoatRaiseConn = game:GetService("RunService").Heartbeat:Connect(function()
 		if getgenv().__BoatRaiseGen ~= gen then return end
 		if not Settings["Raise Boat Manual Drive"] then
-			-- V13 FIX: Quando desativado, NÃO fica resetando todo frame (isso travava o player)
-			-- O reset já é feito uma vez no toggle callback. Aqui só retorna pra não interferir no sentar/and ar
 			return
 		end
-		-- V13: Raise Boat Manual Drive totalmente independente - não bloqueia nenhuma outra função de barco
-		-- Só trava o Y, mantendo X/Z livre, pode coexistir com Sea Event, Leviathan, Prehistoric, etc.
+		-- FIX TOTAL: Auto Find Leviathan ativo = Raise Boat NAO interrompe NENHUM desvio!
+		local isLeviathanMode = Settings["Auto Find Leviathan"] or Settings["Multi Find Leviathan"] or Settings["Auto Find Prehistoric Island"] or Settings["Auto Multi Find Prehistoric Island"] or Settings["Auto Event Prehistoric Island"] or Settings["Auto Sea Event"]
+		if isLeviathanMode then
+			-- Se tiver QUALQUER tipo de desvio/dodge ativo, NAO faz nada!
+			if getgenv().Doding or getgenv().ReadyToDodge then
+				return
+			end
+			if getgenv().PosDodgeskill and getgenv().PosDodgeskill > 0 then
+				return
+			end
+			if getgenv().PathSeaBeast or getgenv().PathTerrorshark or getgenv().PathAnimationSeabit then
+				return
+			end
+			-- Se tiver Seabeast/Terrorshark/Shark detectado, nao trava
+			if getgenv().SeaBeastSpawn or getgenv().TerrorsharkSpawn then
+				return
+			end
+		end
 		pcall(function()
 			local char = t.Character
 			local hum = char and char:FindFirstChildOfClass("Humanoid")
 			local seat = hum and hum.SeatPart
-			if not seat or not seat:IsA("VehicleSeat") then return end
+			if not seat or not seat:IsA("VehicleSeat") then
+				-- Barco fica no ar quando sai, MAS se Leviathan ativo com desvio, NAO trava!
+				if isLeviathanMode and (getgenv().Doding or (getgenv().PosDodgeskill and getgenv().PosDodgeskill > 0) or getgenv().PathSeaBeast) then
+					return
+				end
+				if getgenv().__LastRaisedBoat and getgenv().__LastRaisedBoat.Parent then
+					local boat = getgenv().__LastRaisedBoat
+					local boats = workspace:FindFirstChild("Boats")
+					if not boats or boat.Parent ~= boats then
+						getgenv().__LastRaisedBoat = nil
+						return
+					end
+					-- Se Leviathan ativo, NAO forca altura, deixa livre!
+					if isLeviathanMode then
+						return
+					end
+					local base = boat:GetAttribute("NexoraBaseY") or 8
+					local height = math.clamp(tonumber(Settings["Boat Height"]) or 175, 5, 175)
+					local targetY = base + height
+					local pivot = boat:GetPivot()
+					if math.abs(pivot.Position.Y - targetY) > 0.05 then
+						local pos = pivot.Position
+						local rot = pivot - pos
+						boat:PivotTo(CFrame.new(pos.X, targetY, pos.Z) * rot)
+					end
+				end
+				return
+			end
 			local boat = seat:FindFirstAncestorOfClass("Model")
 			local boats = workspace:FindFirstChild("Boats")
 			if not boat or not boats or boat.Parent ~= boats then return end
-			-- Altura "normal" do barco na água, medida na primeira vez que o vemos.
+			getgenv().__LastRaisedBoat = boat
 			local base = boat:GetAttribute("NexoraBaseY")
 			if not base then
 				base = (seat.Position.Y < 30) and seat.Position.Y or 8
@@ -15578,13 +15637,23 @@ do
 			local height = math.clamp(tonumber(Settings["Boat Height"]) or 175, 5, 175)
 			local targetY = base + height
 			local pivot = boat:GetPivot()
-			-- trava Y sem interferir na velocidade
+			-- FIX LEVIATHAN: So trava Y se NAO tiver Leviathan ativo ou se barco ta muito baixo!
+			if isLeviathanMode then
+				-- Em modo Leviathan, so garante que nao afunde, mas nao forca altura exata!
+				-- Deixa barco desviar livre, so evita cair na agua
+				if pivot.Position.Y < base - 5 then
+					local pos = pivot.Position
+					local rot = pivot - pos
+					boat:PivotTo(CFrame.new(pos.X, base, pos.Z) * rot)
+				end
+				return
+			end
+			-- Modo normal (sem Leviathan): trava Y normal
 			if math.abs(pivot.Position.Y - targetY) > 0.05 then
 				local pos = pivot.Position
 				local rot = pivot - pos
 				boat:PivotTo(CFrame.new(pos.X, targetY, pos.Z) * rot)
 			end
-			-- só zera Y, mantém X/Z (velocidade do barco)
 			local v = seat.AssemblyLinearVelocity
 			if math.abs(v.Y) > 0.01 then
 				seat.AssemblyLinearVelocity = Vector3.new(v.X, 0, v.Z)
@@ -15592,6 +15661,7 @@ do
 		end)
 	end)
 end
+
 SettingSeaEventSection.CreateToggle(
 	{ Title = "Auto Dodge Skill Terrorshark", Desc = nil, Default = Settings["Auto Dodge Skill Terrorshark"] or false },
 	function(l)
