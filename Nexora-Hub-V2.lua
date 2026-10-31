@@ -17177,7 +17177,40 @@ LeviathanEventSection.CreateToggle(
 SaveSettings("Distance Auto Buy Boat", math.clamp(tonumber(Settings["Distance Auto Buy Boat"]) or 1250, 0, 5000))
 
 function AutoBuyBoatBeastHunter()
-	if not Settings["Auto Buy Boat Beast Hunter"] or not Settings["Auto Find Leviathan"] then return end
+	-- FIX: Auto Buy Boat Beast Hunter nao depende de Raise Boat e nao buga!
+	if not Settings["Auto Buy Boat Beast Hunter"] then return end
+	if not (Settings["Auto Find Leviathan"] or Settings["Multi Find Leviathan"]) then return end
+	getgenv().BeastHunterLastBuy = getgenv().BeastHunterLastBuy or 0
+	-- Cooldown 3s pra nao comprar infinito
+	if tick() - getgenv().BeastHunterLastBuy < 3 then
+		-- Verifica se ja tem Beast Hunter valido dentro da distancia
+		local Boats = game:GetService("Workspace"):FindFirstChild("Boats")
+		local BuyDistance = math.clamp(tonumber(Settings["Distance Auto Buy Boat"]) or 1250, 0, 5000)
+		if Boats then
+			local RootForBoat = t.Character and t.Character:FindFirstChild("HumanoidRootPart")
+			for _, Boat in ipairs(Boats:GetChildren()) do
+				if Boat:IsA("Model") and Boat.Name == "Beast Hunter" then
+					local BoatHumanoid = Boat:FindFirstChild("Humanoid")
+					local Seat = Boat:FindFirstChild("VehicleSeat") or Boat:FindFirstChild("VehicleSeat", true)
+					local Alive = true
+					pcall(function()
+						if BoatHumanoid then
+							if BoatHumanoid.Value ~= nil then
+								Alive = BoatHumanoid.Value > 0
+							elseif BoatHumanoid.Health ~= nil then
+								Alive = BoatHumanoid.Health > 0
+							end
+						end
+					end)
+					local BoatDistance = RootForBoat and Seat and (Seat.Position - RootForBoat.Position).Magnitude or math.huge
+					if Alive and BoatDistance <= BuyDistance then
+						return Boat
+					end
+				end
+			end
+		end
+		return
+	end
 	local Boats = game:GetService("Workspace"):FindFirstChild("Boats")
 	local BuyDistance = math.clamp(tonumber(Settings["Distance Auto Buy Boat"]) or 1250, 0, 5000)
 	if Boats then
@@ -17185,10 +17218,21 @@ function AutoBuyBoatBeastHunter()
 		for _, Boat in ipairs(Boats:GetChildren()) do
 			if Boat:IsA("Model") and Boat.Name == "Beast Hunter" then
 				local BoatHumanoid = Boat:FindFirstChild("Humanoid")
-				local Seat = Boat:FindFirstChild("VehicleSeat")
-				local Alive = not BoatHumanoid or BoatHumanoid.Value > 0
+				local Seat = Boat:FindFirstChild("VehicleSeat") or Boat:FindFirstChild("VehicleSeat", true)
+				local Alive = true
+				pcall(function()
+					if BoatHumanoid then
+						if BoatHumanoid.Value ~= nil then
+							Alive = BoatHumanoid.Value > 0
+						elseif BoatHumanoid.Health ~= nil then
+							Alive = BoatHumanoid.Health > 0
+						end
+					end
+					-- Verifica se barco nao esta destruido
+					if not Boat.Parent then Alive = false end
+					if Boat.PrimaryPart and Boat.PrimaryPart.Position.Y < -20 then Alive = false end
+				end)
 				local BoatDistance = RootForBoat and Seat and (Seat.Position - RootForBoat.Position).Magnitude or math.huge
-				-- Só reutiliza um Beast Hunter que esteja dentro da distância escolhida.
 				if Alive and BoatDistance <= BuyDistance then
 					return Boat
 				end
@@ -17209,17 +17253,22 @@ function AutoBuyBoatBeastHunter()
 				return
 			end
 		end
-		local BuyDistance = math.clamp(tonumber(Settings["Distance Auto Buy Boat"]) or 1250, 0, 5000)
-		if BypassTp and type(BypassTp.TweenBypass) == "function" and (BoatShop.Position - Root.Position).Magnitude > BuyDistance then
+		local BuyDistance2 = math.clamp(tonumber(Settings["Distance Auto Buy Boat"]) or 1250, 0, 5000)
+		if BypassTp and type(BypassTp.TweenBypass) == "function" and (BoatShop.Position - Root.Position).Magnitude > BuyDistance2 then
 			if BypassTp.TweenBypass(BoatShop) then return end
 		end
-		toTarget(BoatShop)
+		pcall(function() toTarget(BoatShop) end)
 		return
 	end
-	game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyBoat", "Beast Hunter")
-	task.wait(0.1)
+	pcall(function()
+		game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyBoat", "Beast Hunter")
+	end)
+	getgenv().BeastHunterLastBuy = tick()
+	task.wait(0.5)
 	return checkboat()
 end
+
+function getSeatedBoat()
 
 function getSeatedBoat()
 	local char = t.Character
