@@ -3354,7 +3354,7 @@ do
             txt.TextXAlignment = Enum.TextXAlignment.Left
             txt.Size = UDim2.new(1, 0, 1, 0)
             txt.Parent = rowInner
-                        NormalLabels[i] = {SetText = function(a, b) 
+                        NormalLabels[i] = {Object = txt, SetText = function(a, b) 
                 local val = b or a
                 if type(val)=="table" then val = val.Title or val.Text or "" end
                 if txt then txt.Text = tostring(val or "") end
@@ -3425,7 +3425,7 @@ do
             txt.TextXAlignment = Enum.TextXAlignment.Left
             txt.Size = UDim2.new(1, 0, 1, 0)
             txt.Parent = rowInner
-            AdvanceLabels[i] = {SetText = function(a, b) 
+            AdvanceLabels[i] = {Object = txt, SetText = function(a, b) 
                 local val = b or a
                 if type(val)=="table" then val = val.Title or val.Text or "" end
                 if txt then txt.Text = tostring(val or "") end
@@ -3480,7 +3480,7 @@ do
                     txt.TextXAlignment = Enum.TextXAlignment.Left
                     txt.Size = UDim2.new(1, 0, 1, 0)
                     txt.Parent = rowInner
-                    labels[i] = {SetText = function(a, b) 
+                    labels[i] = {Object = txt, SetText = function(a, b) 
                         local val = b or a
                         if type(val)=="table" then val = val.Title or val.Text or "" end
                         if txt then txt.Text = tostring(val or "") end
@@ -3500,7 +3500,7 @@ do
                     txt.TextXAlignment = Enum.TextXAlignment.Left
                     txt.Size = UDim2.new(1, 0, 1, 0)
                     txt.Parent = rowInner
-                    labels[i] = {SetText = function(a, b) 
+                    labels[i] = {Object = txt, SetText = function(a, b) 
                         local val = b or a
                         if type(val)=="table" then val = val.Title or val.Text or "" end
                         if txt then txt.Text = tostring(val or "") end
@@ -3517,15 +3517,31 @@ do
         if not stock or type(stock)~="table" then return end
         local list = {}
         if #stock>0 then list=stock else for k,v in pairs(stock) do if type(v)=="table" then table.insert(list,v) elseif type(k)=="string" then table.insert(list,{Name=k, Price=v}) end end end
-        -- FILTRA SÓ AS QUE DÁ PRA COMPRAR
+        -- FILTRA SO AS QUE DA PRA COMPRAR
         local filtered = {}
         for _, v in ipairs(list) do
             local name, price = ParseFruit(v)
             if name then table.insert(filtered, {Name=name, Price=price, _raw=v}) end
         end
         if #filtered==0 then
-            if labels[1] then labels[1].SetText("Nenhuma fruta no stock agora") end
-            for i=2, #labels do if labels[i] then labels[i].SetText("Slot "..i..": Empty") end end
+            pcall(function()
+                if labels[1] then 
+                    local txt = "Nenhuma fruta no stock agora"
+                    if labels[1].SetText then
+                        labels[1].SetText(labels[1], txt)
+                    end
+                    if labels[1].Object then
+                        labels[1].Object.Text = txt
+                    end
+                end
+                for i=2, #labels do 
+                    if labels[i] then 
+                        local txt2 = "Slot "..i..": Empty"
+                        if labels[i].SetText then labels[i].SetText(labels[i], txt2) end
+                        if labels[i].Object then labels[i].Object.Text = txt2 end
+                    end 
+                end
+            end)
             return
         end
         Ensure(section, labels, #filtered)
@@ -3533,20 +3549,32 @@ do
             if labels[i] then
                 local disp = data.Name
                 if not disp:find("-") then disp = disp.."-"..disp end
-                local txt = disp .. FormatPrice(data.Price)
+                local finalText = disp .. FormatPrice(data.Price)
                 pcall(function()
+                    -- Tenta todos os jeitos de setar texto
                     if labels[i].SetText then
-                        -- Tenta chamar como metodo e como funcao direta
-                        if labels[i].Object then
-                            labels[i]:SetText(txt)
-                        else
-                            labels[i].SetText(txt)
-                        end
+                        labels[i].SetText(labels[i], finalText)
+                        labels[i].SetText(finalText)
+                    end
+                    if labels[i].Object then
+                        labels[i].Object.Text = finalText
+                    end
+                    -- Se labels[i] for direto TextLabel
+                    if labels[i].Text ~= nil then
+                        labels[i].Text = finalText
                     end
                 end)
             end
         end
-        for i=#filtered+1, #labels do if labels[i] then labels[i].SetText("Slot "..i..": Empty") end end
+        for i=#filtered+1, #labels do 
+            pcall(function()
+                if labels[i] then 
+                    local txtEmpty = "Slot "..i..": Empty"
+                    if labels[i].SetText then labels[i].SetText(labels[i], txtEmpty) end
+                    if labels[i].Object then labels[i].Object.Text = txtEmpty end
+                end 
+            end)
+        end
     end
 
     spawn(function()
@@ -3570,6 +3598,10 @@ do
                 UpdateStock(SectionAdvance, AdvanceLabels, mirageStock)
             end)
         end
+    end)
+end
+
+
     end)
 end
 
