@@ -3295,23 +3295,140 @@ do
     end)
     
     local SectionNormal = PageStatusAndServer.CreateSection("Normal Fruit Stock - Normal Dealer")
-    SectionNormal.CreateLabel({ Title = "Fruits on sale at the normal dealer" })
+    SectionNormal.CreateLabel({ Title = "Fruits on sale at the normal dealer (scroll)" })
+    -- SCROLLABLE LIST para nao ficar grande!
+    local NormalScrollRow = (function()
+        -- Cria row com altura fixa 130 e ScrollingFrame dentro
+        local r = (function()
+            -- row(130) manual
+            local frame = nil
+            pcall(function()
+                frame = make("Frame", {Size=UDim2.new(1,0,0,130),BackgroundTransparency=1}, nil)
+            end)
+            return frame
+        end)()
+        return r
+    end)()
+    -- Vamos criar Scrollable de forma compativel com a lib
+    local NormalScrollFrame = nil
     local NormalLabels = {}
-    NormalLabels[1] = SectionNormal.CreateLabel({ Title = "Ghost-Ghost - $940,000" })
-    NormalLabels[2] = SectionNormal.CreateLabel({ Title = "Light-Light - $650,000" })
-    NormalLabels[3] = SectionNormal.CreateLabel({ Title = "Spin-Spin - $7,500" })
-    NormalLabels[4] = SectionNormal.CreateLabel({ Title = "Rocket-Rocket - $5,000" })
-    NormalLabels[5] = SectionNormal.CreateLabel({ Title = "Loading..." })
-    NormalLabels[6] = SectionNormal.CreateLabel({ Title = "Loading..." })
+    pcall(function()
+        -- Tenta criar ScrollingFrame dentro da Section
+        -- Usa o card da section se possivel, senao cria row manual
+        local card = nil
+        -- Procura o card da section via debug? Usa make direto na Page
+        -- Cria row de 130px dentro da SectionNormal
+        local r = make("Frame", {Size=UDim2.new(1,0,0,130),BackgroundTransparency=1, Name="NormalStockScrollContainer"}, nil)
+        -- Adiciona na section via CreateLabel hack: cria label e pega parent
+        -- Metodo mais simples: cria ScrollingFrame como filho do primeiro label's parent
+        -- Vamos usar a propria Section para criar um container scrollavel
+        -- Cria ScrollingFrame
+        NormalScrollFrame = make("ScrollingFrame", {
+            Size=UDim2.new(1,0,1,0),
+            BackgroundColor3=Color3.fromRGB(20,20,25),
+            BackgroundTransparency=0.3,
+            BorderSizePixel=0,
+            ScrollBarThickness=4,
+            ScrollBarImageColor3=Color3.fromRGB(255, 215, 0),
+            CanvasSize=UDim2.new(0,0,0,0),
+            AutomaticCanvasSize=Enum.AutomaticSize.Y,
+            Name="NormalStockScroll"
+        }, r)
+        make("UICorner", {CornerRadius=UDim.new(0,6)}, NormalScrollFrame)
+        make("UIPadding", {PaddingTop=UDim.new(0,4),PaddingBottom=UDim.new(0,4),PaddingLeft=UDim.new(0,6),PaddingRight=UDim.new(0,6)}, NormalScrollFrame)
+        local layout = make("UIListLayout", {Padding=UDim.new(0,3), SortOrder=Enum.SortOrder.LayoutOrder}, NormalScrollFrame)
+        -- Adiciona o row container na section: precisa parentar no card da section
+        -- Pega o primeiro row criado pela section e usa seu parent (o card)
+        pcall(function()
+            -- Tenta achar o card via SectionNormal: cria label temporaria e pega seu parent's parent
+            local temp = SectionNormal.CreateLabel({ Title = "temp" })
+            local tempObj = temp.Object
+            local parent = tempObj.Parent -- row
+            local cardFound = parent.Parent -- card
+            if cardFound then
+                r.Parent = cardFound
+                -- Remove temp label row
+                pcall(function() parent:Destroy() end)
+            end
+        end)
+        -- Cria 6 labels iniciais dentro do scroll
+        for i=1,6 do
+            local rowInner = make("Frame", {Size=UDim2.new(1,0,0,20), BackgroundTransparency=1}, NormalScrollFrame)
+            local txt = make("TextLabel", {
+                BackgroundTransparency=1, Text="Loading...", TextColor3=Color3.fromRGB(165,165,174),
+                Font=Enum.Font.SourceSansBold, TextSize=11, TextXAlignment=Enum.TextXAlignment.Left,
+                Size=UDim2.new(1,0,1,0)
+            }, rowInner)
+            NormalLabels[i] = {Object=txt, SetText=function(self, value) txt.Text=tostring(value or "") end, GetText=function() return txt.Text end}
+            -- Corrige para compatibilidade: SetText como metodo
+            NormalLabels[i].SetText = function(val) 
+                if type(val)=="table" then val = val.Title or "" end
+                txt.Text = tostring(val or "")
+            end
+        end
+    end)
+    -- Fallback se falhar: usa labels normais
+    if #NormalLabels == 0 then
+        NormalLabels[1] = SectionNormal.CreateLabel({ Title = "Ghost-Ghost - $940,000" })
+        NormalLabels[2] = SectionNormal.CreateLabel({ Title = "Light-Light - $650,000" })
+        NormalLabels[3] = SectionNormal.CreateLabel({ Title = "Spin-Spin - $7,500" })
+        NormalLabels[4] = SectionNormal.CreateLabel({ Title = "Rocket-Rocket - $5,000" })
+        NormalLabels[5] = SectionNormal.CreateLabel({ Title = "Loading..." })
+        NormalLabels[6] = SectionNormal.CreateLabel({ Title = "Loading..." })
+    end
     
     local SectionAdvance = PageStatusAndServer.CreateSection("Advance Fruit Stock - Mirage Island Dealer")
-    SectionAdvance.CreateLabel({ Title = "Fruits on sale at the Mirage Island dealer" })
+    SectionAdvance.CreateLabel({ Title = "Fruits on sale at the Mirage Island dealer (scroll)" })
     local AdvanceLabels = {}
-    AdvanceLabels[1] = SectionAdvance.CreateLabel({ Title = "Flame-Flame - $250,000" })
-    AdvanceLabels[2] = SectionAdvance.CreateLabel({ Title = "Smoke-Smoke - $100,000" })
-    AdvanceLabels[3] = SectionAdvance.CreateLabel({ Title = "Bomb-Bomb - $80,000" })
-    AdvanceLabels[4] = SectionAdvance.CreateLabel({ Title = "Spin-Spin - $7,500" })
-    AdvanceLabels[5] = SectionAdvance.CreateLabel({ Title = "Rocket-Rocket - $5,000" })
+    local AdvanceScrollFrame = nil
+    pcall(function()
+        local r = make("Frame", {Size=UDim2.new(1,0,0,130),BackgroundTransparency=1, Name="MirageStockScrollContainer"}, nil)
+        AdvanceScrollFrame = make("ScrollingFrame", {
+            Size=UDim2.new(1,0,1,0),
+            BackgroundColor3=Color3.fromRGB(20,20,25),
+            BackgroundTransparency=0.3,
+            BorderSizePixel=0,
+            ScrollBarThickness=4,
+            ScrollBarImageColor3=Color3.fromRGB(0, 191, 255),
+            CanvasSize=UDim2.new(0,0,0,0),
+            AutomaticCanvasSize=Enum.AutomaticSize.Y,
+            Name="MirageStockScroll"
+        }, r)
+        make("UICorner", {CornerRadius=UDim.new(0,6)}, AdvanceScrollFrame)
+        make("UIPadding", {PaddingTop=UDim.new(0,4),PaddingBottom=UDim.new(0,4),PaddingLeft=UDim.new(0,6),PaddingRight=UDim.new(0,6)}, AdvanceScrollFrame)
+        make("UIListLayout", {Padding=UDim.new(0,3), SortOrder=Enum.SortOrder.LayoutOrder}, AdvanceScrollFrame)
+        pcall(function()
+            local temp = SectionAdvance.CreateLabel({ Title = "temp" })
+            local tempObj = temp.Object
+            local parent = tempObj.Parent
+            local cardFound = parent.Parent
+            if cardFound then
+                r.Parent = cardFound
+                pcall(function() parent:Destroy() end)
+            end
+        end)
+        for i=1,5 do
+            local rowInner = make("Frame", {Size=UDim2.new(1,0,0,20), BackgroundTransparency=1}, AdvanceScrollFrame)
+            local txt = make("TextLabel", {
+                BackgroundTransparency=1, Text="Loading...", TextColor3=Color3.fromRGB(165,165,174),
+                Font=Enum.Font.SourceSansBold, TextSize=11, TextXAlignment=Enum.TextXAlignment.Left,
+                Size=UDim2.new(1,0,1,0)
+            }, rowInner)
+            AdvanceLabels[i] = {}
+            AdvanceLabels[i].SetText = function(val) 
+                if type(val)=="table" then val = val.Title or "" end
+                txt.Text = tostring(val or "")
+            end
+        end
+    end)
+    if #AdvanceLabels == 0 then
+        AdvanceLabels[1] = SectionAdvance.CreateLabel({ Title = "Flame-Flame - $250,000" })
+        AdvanceLabels[2] = SectionAdvance.CreateLabel({ Title = "Smoke-Smoke - $100,000" })
+        AdvanceLabels[3] = SectionAdvance.CreateLabel({ Title = "Bomb-Bomb - $80,000" })
+        AdvanceLabels[4] = SectionAdvance.CreateLabel({ Title = "Spin-Spin - $7,500" })
+        AdvanceLabels[5] = SectionAdvance.CreateLabel({ Title = "Rocket-Rocket - $5,000" })
+    end
+    
     
     -- PATCH FIX: estoque 100% dinamico - usa lista real da loja
     local function ParseFruit(v)
@@ -3338,7 +3455,40 @@ do
     end
     local function Ensure(section, labels, need)
         for i=#labels+1, need do
-            labels[i] = section.CreateLabel({ Title = "Slot "..i..": Loading..." })
+            -- Tenta criar dentro do ScrollFrame se existir
+            local created = false
+            pcall(function()
+                if section == SectionNormal and NormalScrollFrame then
+                    local rowInner = make("Frame", {Size=UDim2.new(1,0,0,20), BackgroundTransparency=1}, NormalScrollFrame)
+                    local txt = make("TextLabel", {
+                        BackgroundTransparency=1, Text="Slot "..i..": Loading...", TextColor3=Color3.fromRGB(165,165,174),
+                        Font=Enum.Font.SourceSansBold, TextSize=11, TextXAlignment=Enum.TextXAlignment.Left,
+                        Size=UDim2.new(1,0,1,0)
+                    }, rowInner)
+                    labels[i] = {}
+                    labels[i].SetText = function(val) 
+                        if type(val)=="table" then val = val.Title or "" end
+                        txt.Text = tostring(val or "")
+                    end
+                    created = true
+                elseif section == SectionAdvance and AdvanceScrollFrame then
+                    local rowInner = make("Frame", {Size=UDim2.new(1,0,0,20), BackgroundTransparency=1}, AdvanceScrollFrame)
+                    local txt = make("TextLabel", {
+                        BackgroundTransparency=1, Text="Slot "..i..": Loading...", TextColor3=Color3.fromRGB(165,165,174),
+                        Font=Enum.Font.SourceSansBold, TextSize=11, TextXAlignment=Enum.TextXAlignment.Left,
+                        Size=UDim2.new(1,0,1,0)
+                    }, rowInner)
+                    labels[i] = {}
+                    labels[i].SetText = function(val) 
+                        if type(val)=="table" then val = val.Title or "" end
+                        txt.Text = tostring(val or "")
+                    end
+                    created = true
+                end
+            end)
+            if not created then
+                labels[i] = section.CreateLabel({ Title = "Slot "..i..": Loading..." })
+            end
         end
     end
     local function UpdateStock(section, labels, stock)
@@ -15412,40 +15562,11 @@ do
 		-- V13: Raise Boat Manual Drive totalmente independente - não bloqueia nenhuma outra função de barco
 		-- Só trava o Y, mantendo X/Z livre, pode coexistir com Sea Event, Leviathan, Prehistoric, etc.
 		pcall(function()
-local char = t.Character
+			local char = t.Character
 			local hum = char and char:FindFirstChildOfClass("Humanoid")
 			local seat = hum and hum.SeatPart
-			if not seat or not seat:IsA("VehicleSeat") then
-				-- FEATURE: Player saiu do vehicle seat, MAS Raise Boat Manual Drive ATIVO = barco FICA NO AR!
-				if getgenv().__LastRaisedBoat and getgenv().__LastRaisedBoat.Parent then
-					local boat = getgenv().__LastRaisedBoat
-					local boats = workspace:FindFirstChild("Boats")
-					if boats and boat.Parent == boats then
-						local base = boat:GetAttribute("NexoraBaseY") or 8
-						local height = math.clamp(tonumber(Settings["Boat Height"]) or 175, 5, 175)
-						local targetY = base + height
-						local pivot = boat:GetPivot()
-						if math.abs(pivot.Position.Y - targetY) > 0.05 then
-							local pos = pivot.Position
-							local rot = pivot - pos
-							boat:PivotTo(CFrame.new(pos.X, targetY, pos.Z) * rot)
-						end
-						pcall(function()
-							for _, part in ipairs(boat:GetDescendants()) do
-								if part:IsA("BasePart") then
-									local v = part.AssemblyLinearVelocity
-									if math.abs(v.Y) > 0.1 then
-										part.AssemblyLinearVelocity = Vector3.new(v.X, 0, v.Z)
-									end
-								end
-							end
-						end)
-					end
-				end
-				return
-			end
+			if not seat or not seat:IsA("VehicleSeat") then return end
 			local boat = seat:FindFirstAncestorOfClass("Model")
-			getgenv().__LastRaisedBoat = boat
 			local boats = workspace:FindFirstChild("Boats")
 			if not boat or not boats or boat.Parent ~= boats then return end
 			-- Altura "normal" do barco na água, medida na primeira vez que o vemos.
