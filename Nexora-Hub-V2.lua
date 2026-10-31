@@ -16707,14 +16707,13 @@ function AutoSpawnKitsune()
 			end
 			for _,v in ipairs(boat:GetDescendants()) do
 				if v:IsA("BasePart") then
-					if v.Name == "VehicleSeat" or v:IsA("VehicleSeat") then
+					if v.Name == "VehicleSeat" or v:IsA("VehicleSeat") or v:IsA("Seat") then
 						v.Anchored = false
 						v.CanCollide = true
 						v.Transparency = 0
 					else
 						v.Anchored = true
 						v.CanCollide = true
-						v.CanTouch = true
 						v.Transparency = 0
 						pcall(function() v.CanQuery = true end)
 						v.Velocity = Vector3.new(0,0,0)
@@ -16796,7 +16795,7 @@ function AutoSpawnKitsune()
 		return
 	end
 
-	-- FIX KITSUNE BARCO INVISIVEL - Nao ancora VehicleSeat!
+	-- KITSUNE REFEITO DO ZERO - Sem bug de barco invisivel!
 	pcall(function()
 		NoclipBoat(P)
 	end)
@@ -16806,225 +16805,53 @@ function AutoSpawnKitsune()
 
 	local zone5Pos = CFrame.new(-38480.42578125, boatY, 10350.943359375)
 	local zone6Pos = CFrame.new(-32975.9921875, boatY, 25963.7109375)
-	local zone6PosFar = CFrame.new(-32975.9921875, boatY, 25963.7109375) * CFrame.new(0, 0, 800)
 	local alternativeDoughPos = CFrame.new(-26017.931640625, boatY, 5657.8837890625)
 
 	if isDough then
 		if getgenv().KitsuneState == "dough_stopped" then
-			pcall(function()
-				if getgenv().TweenBoat then getgenv().TweenBoat:Pause() getgenv().TweenBoat:Cancel() end
-				-- FIX: Nao ancora VehicleSeat! So corpo do barco!
-				for _,v in ipairs(P:GetDescendants()) do
-					if v:IsA("BasePart") then
-						if v:IsA("VehicleSeat") or v:IsA("Seat") then
-							v.Anchored = false
-							v.CanCollide = true
-							v.Transparency = 0
-						else
-							v.Anchored = true
-							v.CanCollide = true
-							v.Transparency = 0
-							pcall(function() v.CanQuery = true end)
-						end
-					end
-				end
-				local seat = P:FindFirstChild("VehicleSeat", true)
-				if seat then
-					seat.Throttle = 0
-					seat.ThrottleFloat = 0
-				end
-			end)
+			StopBoatParado(P)
 			return
 		end
 		if (P.VehicleSeat.Position - alternativeDoughPos.Position).Magnitude > 300 then
 			UnanchorBoat(P)
-			pcall(function()
-				for _,v in ipairs(P:GetDescendants()) do
-					if v:IsA("BasePart") then
-						if not (v:IsA("VehicleSeat") or v:IsA("Seat")) then
-							v.CanCollide = false
-						else
-							v.CanCollide = true
-						end
-						v.Transparency = 0
-						pcall(function() v.CanQuery = true end)
-					end
-				end
-			end)
-			if not t.Character.Humanoid.Sit then 
-				toTarget(P.VehicleSeat.CFrame) 
-			else 
-				manageTween(P.VehicleSeat, alternativeDoughPos, 350, "TweenBoat") 
-			end
+			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) else manageTween(P.VehicleSeat, alternativeDoughPos, 350, "TweenBoat") end
 			NotifyOnce("dough", "Nexora Hub - Kitsune", "Dough Sea detected! Going to safe point, not Sea 6", 5)
 		else
-			pcall(function()
-				if getgenv().TweenBoat then getgenv().TweenBoat:Pause() getgenv().TweenBoat:Cancel() end
-				for _,v in ipairs(P:GetDescendants()) do
-					if v:IsA("BasePart") then
-						if v:IsA("VehicleSeat") or v:IsA("Seat") then
-							v.Anchored = false
-							v.CanCollide = true
-							v.Transparency = 0
-						else
-							v.Anchored = true
-							v.CanCollide = true
-							v.Transparency = 0
-						end
-					end
-				end
-				local seat = P:FindFirstChild("VehicleSeat", true)
-				if seat then
-					seat.Throttle = 0
-					seat.ThrottleFloat = 0
-				end
-			end)
+			StopBoatParado(P)
 			getgenv().KitsuneState = "dough_stopped"
 		end
 		return
 	end
 
 	if getgenv().KitsuneState == "arrived_sea6" then
-		pcall(function()
-			if getgenv().TweenBoat then getgenv().TweenBoat:Pause() getgenv().TweenBoat:Cancel() end
-			if getgenv().TweenBoatBack then getgenv().TweenBoatBack:Pause() getgenv().TweenBoatBack:Cancel() end
-			for _,v in ipairs(P:GetDescendants()) do
-				if v:IsA("BasePart") then
-					if v:IsA("VehicleSeat") or v:IsA("Seat") then
-						v.Anchored = false
-						v.CanCollide = true
-						v.Transparency = 0
-					else
-						v.Anchored = true
-						v.CanCollide = true
-						v.CanTouch = true
-						v.Transparency = 0
-						pcall(function() v.CanQuery = true end)
-					end
-					v.Velocity = Vector3.new(0,0,0)
-					v.AssemblyLinearVelocity = Vector3.new(0,0,0)
-				end
-			end
-			local seat = P:FindFirstChild("VehicleSeat", true)
-			if seat then
-				seat.Throttle = 0
-				seat.ThrottleFloat = 0
-			end
-		end)
+		StopBoatParado(P)
 		if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) end
 		return
 	end
 
 	if isFullMoon then
 		UnanchorBoat(P)
-		pcall(function()
-			for _,v in ipairs(P:GetDescendants()) do
-				if v:IsA("BasePart") then
-					if v:IsA("VehicleSeat") or v:IsA("Seat") then
-						v.CanCollide = true
-					else
-						v.CanCollide = false
-					end
-					v.Transparency = 0
-					pcall(function() v.CanQuery = true end)
-				end
-			end
-		end)
 		local distToZone6 = (P.VehicleSeat.Position - zone6Pos.Position).Magnitude
 		if distToZone6 > 300 then
-			if not t.Character.Humanoid.Sit then 
-				toTarget(P.VehicleSeat.CFrame) 
-			else 
-				if distToZone6 > 2000 then
-					manageTween(P.VehicleSeat, zone6PosFar, 350, "TweenBoat")
-				else
-					manageTween(P.VehicleSeat, zone6Pos, 350, "TweenBoat")
-				end
-			end
+			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) else manageTween(P.VehicleSeat, zone6Pos, 350, "TweenBoat") end
 			NotifyOnce("mar6_full", "Nexora Hub - Kitsune", "Full moon detected! Sailing directly to Sea 6", 5)
 			getgenv().KitsuneState = "going_sea6"
 		else
-			pcall(function()
-				if getgenv().TweenBoat then getgenv().TweenBoat:Pause() getgenv().TweenBoat:Cancel() end
-				for _,v in ipairs(P:GetDescendants()) do
-					if v:IsA("BasePart") then
-						if v:IsA("VehicleSeat") or v:IsA("Seat") then
-							v.Anchored = false
-							v.CanCollide = true
-							v.Transparency = 0
-						else
-							v.Anchored = true
-							v.CanCollide = true
-							v.Transparency = 0
-							v.Velocity = Vector3.new(0,0,0)
-						end
-					end
-				end
-				local seat = P:FindFirstChild("VehicleSeat", true)
-				if seat then
-					seat.Throttle = 0
-					seat.ThrottleFloat = 0
-				end
-			end)
-			NotifyOnce("arrived6", "Nexora Hub - Kitsune", "Arrived at Sea 6 - Full moon - Boat Visible!", 5)
+			StopBoatParado(P)
+			NotifyOnce("arrived6", "Nexora Hub - Kitsune", "Arrived at Sea 6 - Full moon", 5)
 			getgenv().KitsuneState = "arrived_sea6"
 		end
 	else
 		local distToZone5 = (P.VehicleSeat.Position - zone5Pos.Position).Magnitude
 		if distToZone5 > 400 then
 			UnanchorBoat(P)
-			pcall(function()
-				for _,v in ipairs(P:GetDescendants()) do
-					if v:IsA("BasePart") then
-						if v:IsA("VehicleSeat") or v:IsA("Seat") then
-							v.CanCollide = true
-						else
-							v.CanCollide = false
-						end
-						v.Transparency = 0
-						pcall(function() v.CanQuery = true end)
-					end
-				end
-			end)
-			if not t.Character.Humanoid.Sit then 
-				toTarget(P.VehicleSeat.CFrame) 
-			else 
-				manageTween(P.VehicleSeat, zone5Pos, 350, "TweenBoat") 
-			end
-			NotifyOnce("mar5", "Nexora Hub - Kitsune", "No full moon, sailing to Sea 5 to wait - Boat Visible", 5)
+			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) else manageTween(P.VehicleSeat, zone5Pos, 350, "TweenBoat") end
+			NotifyOnce("mar5", "Nexora Hub - Kitsune", "No full moon, sailing to Sea 5 to wait", 5)
 			getgenv().KitsuneState = "going_sea5"
 		else
-			-- FIX CRITICO: Chegou no Sea 5 esperando lua - NAO ANCORA VehicleSeat! So corpo!
-			-- Se ancorar VehicleSeat, barco fica invisivel!
-			pcall(function()
-				if getgenv().TweenBoat then getgenv().TweenBoat:Pause() getgenv().TweenBoat:Cancel() end
-				for _,v in ipairs(P:GetDescendants()) do
-					if v:IsA("BasePart") then
-						if v:IsA("VehicleSeat") or v:IsA("Seat") then
-							v.Anchored = false -- NAO ANCORA VehicleSeat! Senao fica invisivel!
-							v.CanCollide = true
-							v.Transparency = 0
-							pcall(function() v.CanQuery = true end)
-						else
-							v.Anchored = true
-							v.CanCollide = true
-							v.Transparency = 0
-							pcall(function() v.CanQuery = true end)
-							v.Velocity = Vector3.new(0,0,0)
-							v.AssemblyLinearVelocity = Vector3.new(0,0,0)
-						end
-					end
-				end
-				local seat = P:FindFirstChild("VehicleSeat", true)
-				if seat then
-					seat.Throttle = 0
-					seat.ThrottleFloat = 0
-					seat.MaxSpeed = 0
-					seat.Velocity = Vector3.new(0,0,0)
-				end
-			end)
+			StopBoatParado(P)
 			getgenv().KitsuneState = "waiting_sea5"
-			NotifyOnce("waiting5", "Nexora Hub - Kitsune", "Arrived at Sea 5. Waiting for full moon to go to Sea 6 - Boat Visible", 6)
+			NotifyOnce("waiting5", "Nexora Hub - Kitsune", "Arrived at Sea 5. Waiting for full moon to go to Sea 6", 6)
 		end
 	end
 end
