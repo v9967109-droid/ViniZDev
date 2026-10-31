@@ -11749,6 +11749,31 @@ task.spawn(function()
 	end
 end)
 FarmotherMain = Main.CreatePage({ Page_Name = "Farming Other", Page_Title = "Farming Other" })
+
+-- SPOKY EVENT - ABA NOVA - APARECE - 2 TOGGLES
+pcall(function()
+    SpokyEventMain = Main.CreatePage({ Page_Name = "Spoky Event", Page_Title = "Spoky Event" })
+    EventHalloweenSection = SpokyEventMain.CreateSection("Halloween Event 2026")
+    EventHalloweenSection.CreateToggle(
+        { Title = "Auto Halloween Trick Or Treat", Desc = "Mansao + Portal + Werewolf + Skills auto", Default = false },
+        function(V)
+            getgenv().Settings = getgenv().Settings or {}
+            Settings = getgenv().Settings
+            Settings["Auto Halloween Trick Or Treat"] = V
+            pcall(function() SaveSettings("Auto Halloween Trick Or Treat", V) end)
+        end
+    )
+    EventHalloweenSection.CreateToggle(
+        { Title = "Auto Spoky Gacha", Desc = "Spooky Gacha - Gas Hellfire + Tiger", Default = false },
+        function(V)
+            getgenv().Settings = getgenv().Settings or {}
+            Settings = getgenv().Settings
+            Settings["Auto Spoky Gacha"] = V
+            pcall(function() SaveSettings("Auto Spoky Gacha", V) end)
+        end
+    )
+end)
+
 EventEasterSection = FarmotherMain.CreateSection("Event Easter")
 EventEasterSection.CreateButton({ Title = "Open Easter Shop" }, function()
 	require(game.ReplicatedStorage.Controllers.UI.EventShop):Open("Easter2026")
@@ -13969,7 +13994,9 @@ DevilFruitSection.CreateToggle(
 	end
 )
 DevilFruitSection.CreateToggle(
-	{ Title = "Auto Store Fruit", Desc = nil, Default = Settings["Auto Store Fruit"] or false },
+	{ Title = "Auto Store Fruit", Desc = nil, Default = pcall(function() Settings["Auto Halloween Trick Or Treat"] = Settings["Auto Halloween Trick Or Treat"] or false end)
+pcall(function() Settings["Auto Spoky Gacha"] = Settings["Auto Spoky Gacha"] or false end)
+Settings["Auto Store Fruit"] or false },
 	function(y)
 		SaveSettings("Auto Store Fruit", y)
 	end
@@ -30415,37 +30442,11 @@ end
 print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZDev")
 
 
--- HALLOWEEN 2026 - ADICIONADO NO FINAL - NAO QUEBRA EXECUCAO ORIGINAL!
 pcall(function()
-    if not getgenv().Settings then getgenv().Settings = {} end
-    if not Settings then Settings = getgenv().Settings end
-    pcall(function() Settings["Auto Halloween Trick Or Treat"] = Settings["Auto Halloween Trick Or Treat"] or false end)
-    pcall(function() Settings["Auto Spoky Gacha"] = Settings["Auto Spoky Gacha"] or false end)
-    pcall(function()
-        task.wait(2)
-        if Main and Main.CreatePage then
-            local SpokyEventMain = Main.CreatePage({ Page_Name = "Spoky Event", Page_Title = "Spoky Event" })
-            local Section = SpokyEventMain.CreateSection("Halloween Event 2026")
-            Section.CreateToggle(
-                { Title = "Auto Halloween Trick Or Treat", Desc = "Mansao + Portal + Werewolf + Skills", Default = Settings["Auto Halloween Trick Or Treat"] or false },
-                function(V) 
-                    Settings["Auto Halloween Trick Or Treat"] = V
-                    pcall(function() SaveSettings("Auto Halloween Trick Or Treat", V) end)
-                end
-            )
-            Section.CreateToggle(
-                { Title = "Auto Spoky Gacha", Desc = "Spooky Gacha - Gas Hellfire", Default = Settings["Auto Spoky Gacha"] or false },
-                function(V) 
-                    Settings["Auto Spoky Gacha"] = V
-                    pcall(function() SaveSettings("Auto Spoky Gacha", V) end)
-                end
-            )
-        end
-    end)
     spawn(function()
         while task.wait(1) do
             pcall(function()
-                if not Settings["Auto Halloween Trick Or Treat"] then return end
+                if not Settings or not Settings["Auto Halloween Trick Or Treat"] then return end
                 local player = game:GetService("Players").LocalPlayer
                 if not player or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
                 local boss = nil
@@ -30521,7 +30522,7 @@ pcall(function()
     spawn(function()
         while task.wait(4) do
             pcall(function()
-                if not Settings["Auto Spoky Gacha"] then return end
+                if not Settings or not Settings["Auto Spoky Gacha"] then return end
                 local player = game:GetService("Players").LocalPlayer
                 if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
                 local mansionPos = Vector3.new(-12471, 374, -7551)
