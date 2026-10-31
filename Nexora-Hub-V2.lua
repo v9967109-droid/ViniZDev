@@ -11784,6 +11784,26 @@ EventEasterSection.CreateToggle(
 		SaveSettings("Auto Collect Egg Easter", V)
 	end
 )
+
+-- ABA NOVA - SPOKY EVENT - 2 TOGGLES APENAS!
+SpokyEventMain = Main.CreatePage({ Page_Name = "Spoky Event", Page_Title = "Spoky Event" })
+EventHalloweenSection = SpokyEventMain.CreateSection("Halloween Event 2026")
+
+EventHalloweenSection.CreateToggle(
+	{ Title = "Auto Halloween Trick Or Treat", Desc = "Mansao + Portal + Werewolf Boss + Skills auto", Default = Settings["Auto Halloween Trick Or Treat"] or false },
+	function(V)
+		SaveSettings("Auto Halloween Trick Or Treat", V)
+	end
+)
+
+EventHalloweenSection.CreateToggle(
+	{ Title = "Auto Spoky Gacha", Desc = "Spooky Gacha - Gas Hellfire + Tiger Werewolf", Default = Settings["Auto Spoky Gacha"] or false },
+	function(V)
+		SaveSettings("Auto Spoky Gacha", V)
+	end
+)
+
+
 FishingMain = Main.CreatePage({ Page_Name = "Fishing", Page_Title = "Fishing" })
 FishingSection = FishingMain.CreateSection("Fishing")
 FishingSection.CreateToggle(
@@ -12255,21 +12275,6 @@ FishingSection.CreateToggle(
 		SaveSettings("Auto Accept Quest Fishing", _)
 	end
 )
-
-EventHalloweenSection = FarmotherMain.CreateSection("Event Halloween")
-EventHalloweenSection.CreateToggle(
-	{ Title = "Auto Halloween Trick Or Treat", Desc = "Mansao + Portal + Werewolf + Skills auto", Default = Settings["Auto Halloween Trick Or Treat"] or false },
-	function(V)
-		SaveSettings("Auto Halloween Trick Or Treat", V)
-	end
-)
-EventHalloweenSection.CreateToggle(
-	{ Title = "Auto Spooky Gacha", Desc = "Halloween Gacha + Spooky Gacha - Gas Hellfire", Default = Settings["Auto Spooky Gacha"] or false },
-	function(V)
-		SaveSettings("Auto Spooky Gacha", V)
-	end
-)
-
 QuestDragonSection = FarmotherMain.CreateSection("Quest Dragon")
 function QuestDojoTrainer()
 	return game:GetService("ReplicatedStorage")
@@ -13985,7 +13990,7 @@ DevilFruitSection.CreateToggle(
 )
 DevilFruitSection.CreateToggle(
 	{ Title = "Auto Store Fruit", Desc = nil, Default = Settings["Auto Halloween Trick Or Treat"] = Settings["Auto Halloween Trick Or Treat"] or false
-Settings["Auto Spooky Gacha"] = Settings["Auto Spooky Gacha"] or false
+Settings["Auto Spoky Gacha"] = Settings["Auto Spoky Gacha"] or false
 Settings["Auto Store Fruit"] or false },
 	function(y)
 		SaveSettings("Auto Store Fruit", y)
@@ -16758,7 +16763,10 @@ end
 
 
 
--- HALLOWEEN 2026 - 2 TOGGLES SIMPLIFICADO - NAO QUEBRA
+-- SPOKY EVENT 2026 - 2 TOGGLES APENAS!
+-- 1. Auto Halloween Trick Or Treat: Mansao + Portal auto + Werewolf Boss + Skills auto
+-- 2. Auto Spoky Gacha: Unico gacha - Gas Hellfire + Tiger Werewolf
+
 getgenv().HalloweenState = "idle"
 
 function GetMansionDoors()
@@ -16801,7 +16809,7 @@ function GetPortal()
     pcall(function()
         for _, v in ipairs(workspace:GetDescendants()) do
             if v.Name:lower():find("portal") then
-                if v.Parent.Name:lower():find("werewolf") or v.Parent.Name:lower():find("observatory") or v.Parent.Name:lower():find("halloween") then
+                if v.Parent.Name:lower():find("werewolf") or v.Parent.Name:lower():find("observatory") or v.Parent.Name:lower():find("halloween") or v.Parent.Name:lower():find("hell") then
                     portal = v
                 end
             end
@@ -16817,21 +16825,22 @@ spawn(function()
             local player = game:GetService("Players").LocalPlayer
             if not player or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
 
+            -- PRIORIDADE 1: Boss + Skills auto
             local boss = GetWerewolfBoss()
             if boss and boss:FindFirstChild("HumanoidRootPart") then
                 toTarget(boss.HumanoidRootPart.CFrame * CFrame.new(0,10,5))
                 local tool = player.Character:FindFirstChildOfClass("Tool") or player.Backpack:FindFirstChildOfClass("Tool")
                 if tool then player.Character.Humanoid:EquipTool(tool) end
+                -- Skills auto Z,X,C,V,F
                 for _, k in ipairs({"Z","X","C","V","F"}) do
-                    pcall(function()
-                        game:GetService("VirtualInputManager"):SendKeyEvent(true, k, false, game)
-                        task.wait(0.1)
-                        game:GetService("VirtualInputManager"):SendKeyEvent(false, k, false, game)
-                    end)
+                    game:GetService("VirtualInputManager"):SendKeyEvent(true, k, false, game)
+                    task.wait(0.1)
+                    game:GetService("VirtualInputManager"):SendKeyEvent(false, k, false, game)
                 end
                 return
             end
 
+            -- PRIORIDADE 2: Portal auto
             local portal = GetPortal()
             if portal then
                 local pos = portal:IsA("BasePart") and portal.Position or portal:GetPivot().Position
@@ -16839,6 +16848,7 @@ spawn(function()
                 return
             end
 
+            -- PRIORIDADE 3: Portas Mansao
             local doors = GetMansionDoors()
             if #doors > 0 then
                 for _, door in ipairs(doors) do
@@ -16852,11 +16862,8 @@ spawn(function()
                         door.prompt:SetAttribute("LastHalloween", tick())
                         task.wait(0.5)
                         for _, v in ipairs(player.PlayerGui:GetDescendants()) do
-                            if v:IsA("TextButton") then
-                                local txt = v.Text:lower()
-                                if txt:find("trick") or txt:find("treat") or txt:find("candy") or txt:find("yes") then
-                                    pcall(function() v:Activate() end)
-                                end
+                            if v:IsA("TextButton") and (v.Text:lower():find("trick") or v.Text:lower():find("treat") or v.Text:lower():find("candy") or v.Text:lower():find("yes")) then
+                                pcall(function() v:Activate() end)
                             end
                         end
                         break
@@ -16875,7 +16882,7 @@ end)
 spawn(function()
     while task.wait(4) do
         pcall(function()
-            if not Settings["Auto Spooky Gacha"] then return end
+            if not Settings["Auto Spoky Gacha"] then return end
             local player = game:GetService("Players").LocalPlayer
             if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
             local mansionPos = Vector3.new(-12471, 374, -7551)
@@ -16885,7 +16892,7 @@ spawn(function()
                     if text:find("gacha") or text:find("spooky") or text:find("haunted") then
                         local parent = v.Parent
                         local pos = parent:IsA("BasePart") and parent.Position or (parent:IsA("Model") and parent:GetPivot().Position or nil)
-                        if pos and (pos - mansionPos).Magnitude < 200 then
+                        if pos and (pos - mansionPos).Magnitude < 300 then
                             toTarget(CFrame.new(pos + Vector3.new(0,5,0)))
                             task.wait(0.5)
                             fireproximityprompt(v, 0)
