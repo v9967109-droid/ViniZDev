@@ -15530,7 +15530,10 @@ do
 			if not boat or not boats or boat.Parent ~= boats then return end
 			getgenv().__LastRaisedBoat = boat
 			local base = boat:GetAttribute("NexoraBaseY")
-			if not base then base = (seat.Position.Y < 30) and seat.Position.Y or 8 boat:SetAttribute("NexoraBaseY", base) end
+			if not base then
+				base = (seat.Position.Y < 30) and seat.Position.Y or 8
+				boat:SetAttribute("NexoraBaseY", base)
+			end
 			local height = math.clamp(tonumber(Settings["Boat Height"]) or 175, 5, 175)
 			local targetY = base + height
 			local pivot = boat:GetPivot()
