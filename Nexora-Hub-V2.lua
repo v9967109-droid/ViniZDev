@@ -16699,21 +16699,32 @@ function AutoSpawnKitsune()
 			if seat then
 				seat.ThrottleFloat = 0
 				seat.Throttle = 0
-				seat.MaxSpeed = 0
 				seat.Velocity = Vector3.new(0,0,0)
 				seat.AssemblyLinearVelocity = Vector3.new(0,0,0)
 			end
 			for _,v in ipairs(boat:GetDescendants()) do
 				if v:IsA("BasePart") then
-					v.Anchored = false
-					v.Velocity = Vector3.new(0,0,0)
-					v.AssemblyLinearVelocity = Vector3.new(0,0,0)
-					v.AssemblyAngularVelocity = Vector3.new(0,0,0)
+					-- FIX KITSUNE: Barco sempre visivel!
+					if v.Name == "VehicleSeat" or v:IsA("VehicleSeat") then
+						v.Anchored = false
+						v.CanCollide = true
+						v.Transparency = 0
+					else
+						v.Anchored = true
+						v.CanCollide = true
+						v.CanTouch = true
+						v.Transparency = 0
+						pcall(function() v.CanQuery = true end)
+						v.Velocity = Vector3.new(0,0,0)
+						v.AssemblyLinearVelocity = Vector3.new(0,0,0)
+						v.AssemblyAngularVelocity = Vector3.new(0,0,0)
+					end
 				end
 			end
 		end)
 	end
 
+	local function UnanchorBoat(boat)
 	local function UnanchorBoat(boat)
 		pcall(function()
 			for _,v in ipairs(boat:GetDescendants()) do
@@ -16784,70 +16795,193 @@ function AutoSpawnKitsune()
 		return
 	end
 
-	NoclipBoat(P)
-	local boatY = P.WorldPivot.Y
+	-- FIX KITSUNE: Refazer do zero com scripts pesquisados - Nao buga barco no Sea 6!
+	pcall(function()
+		NoclipBoat(P)
+	end)
+	-- Y fixo 8 pra nao afundar, nao usa P.WorldPivot.Y que pode estar bugado!
+	local boatY = 8
 	local isFullMoon = CheckMoon() == "Full Moon"
 	local isDough = IsDoughSea()
 
+	-- Posicoes fixas com Y 8 (superficie do mar)
 	local zone5Pos = CFrame.new(-38480.42578125, boatY, 10350.943359375)
-	local zone6Pos = CFrame.new(-32975.9921875, boatY, 25963.7109375) * CFrame.new(0, 0, 500)
+	local zone6Pos = CFrame.new(-32975.9921875, boatY, 25963.7109375)
+	local zone6PosFar = CFrame.new(-32975.9921875, boatY, 25963.7109375) * CFrame.new(0, 0, 800)
 	local alternativeDoughPos = CFrame.new(-26017.931640625, boatY, 5657.8837890625)
 
-	-- Dough Sea detectado
+	-- Dough Sea detectado - vai pra safe
 	if isDough then
 		if getgenv().KitsuneState == "dough_stopped" then
-			StopBoatParado(P)
+			pcall(function()
+				if getgenv().TweenBoat then getgenv().TweenBoat:Pause() getgenv().TweenBoat:Cancel() end
+				-- Deixa barco visivel e ancorado
+				for _,v in ipairs(P:GetDescendants()) do
+					if v:IsA("BasePart") then
+						v.Anchored = true
+						v.CanCollide = true
+					end
+				end
+			end)
 			return
 		end
 		if (P.VehicleSeat.Position - alternativeDoughPos.Position).Magnitude > 300 then
 			UnanchorBoat(P)
-			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) else manageTween(P.VehicleSeat, alternativeDoughPos, 350, "TweenBoat") end
+			-- Garante barco visivel durante navegação
+			pcall(function()
+				for _,v in ipairs(P:GetDescendants()) do
+					if v:IsA("BasePart") then
+						v.CanCollide = true
+						v.Transparency = 0
+					end
+				end
+				local seat = P:FindFirstChild("VehicleSeat", true)
+				if seat then seat.CanCollide = true end
+			end)
+			if not t.Character.Humanoid.Sit then 
+				toTarget(P.VehicleSeat.CFrame) 
+			else 
+				manageTween(P.VehicleSeat, alternativeDoughPos, 350, "TweenBoat") 
+			end
 			NotifyOnce("dough", "Nexora Hub - Kitsune", "Dough Sea detected! Going to safe point, not Sea 6", 5)
 		else
-			StopBoatParado(P)
+			pcall(function()
+				if getgenv().TweenBoat then getgenv().TweenBoat:Pause() getgenv().TweenBoat:Cancel() end
+				for _,v in ipairs(P:GetDescendants()) do
+					if v:IsA("BasePart") then
+						v.Anchored = true
+						v.CanCollide = true
+						v.Transparency = 0
+					end
+				end
+			end)
 			getgenv().KitsuneState = "dough_stopped"
 		end
 		return
 	end
 
-	-- Ja chegou no Mar 6 e está parado
+	-- Ja chegou no Mar 6 e esta parado - FIX: Deixa barco visivel e ancorado!
 	if getgenv().KitsuneState == "arrived_sea6" then
-		StopBoatParado(P)
+		pcall(function()
+			if getgenv().TweenBoat then getgenv().TweenBoat:Pause() getgenv().TweenBoat:Cancel() end
+			if getgenv().TweenBoatBack then getgenv().TweenBoatBack:Pause() getgenv().TweenBoatBack:Cancel() end
+			-- FIX TOTAL: Barco visivel no Sea 6! Ancora e deixa colidivel!
+			for _,v in ipairs(P:GetDescendants()) do
+				if v:IsA("BasePart") then
+					v.Anchored = true
+					v.CanCollide = true
+					v.CanTouch = true
+					v.Transparency = 0
+					pcall(function() v.CanQuery = true end)
+					v.Velocity = Vector3.new(0,0,0)
+					v.AssemblyLinearVelocity = Vector3.new(0,0,0)
+				end
+			end
+			-- Mantem barco na superficie
+			local seat = P:FindFirstChild("VehicleSeat", true)
+			if seat and seat.Position.Y < 2 then
+				P:PivotTo(CFrame.new(seat.Position.X, boatY, seat.Position.Z))
+			end
+		end)
 		if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) end
 		return
 	end
 
-	-- LOGICA DO ZERO: Compra barco -> vai pro Mar 5 se nao tiver lua cheia, se tiver lua cheia vai direto pro Mar 6, se nao tiver espera no Mar 5 ate lua cheia aparecer e ai vai pro Mar 6
+	-- LOGICA NOVA: Baseada em scripts pesquisados - Sea 5 espera, Sea 6 so com lua cheia!
+	-- Wiki: Kitsune Island spawna so no Sea 6 durante Full Moon. Pode esperar no Sea 5 e ir pro Sea 6 quando lua cheia subir!
 
 	if isFullMoon then
 		-- Lua cheia: vai direto pro Mar 6
 		UnanchorBoat(P)
+		pcall(function()
+			-- Garante visibilidade durante navegacao
+			for _,v in ipairs(P:GetDescendants()) do
+				if v:IsA("BasePart") then
+					v.Anchored = false
+					v.CanCollide = true
+					v.Transparency = 0
+					pcall(function() v.CanQuery = true end)
+				end
+			end
+		end)
 		local distToZone6 = (P.VehicleSeat.Position - zone6Pos.Position).Magnitude
 		if distToZone6 > 300 then
-			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) else manageTween(P.VehicleSeat, zone6Pos, 350, "TweenBoat") end
+			if not t.Character.Humanoid.Sit then 
+				toTarget(P.VehicleSeat.CFrame) 
+			else 
+				-- Usa zone6PosFar pra ir mais fundo no Sea 6 (evita ficar na borda)
+				if distToZone6 > 2000 then
+					manageTween(P.VehicleSeat, zone6PosFar, 350, "TweenBoat")
+				else
+					manageTween(P.VehicleSeat, zone6Pos, 350, "TweenBoat")
+				end
+			end
 			NotifyOnce("mar6_full", "Nexora Hub - Kitsune", "Full moon detected! Sailing directly to Sea 6", 5)
 			getgenv().KitsuneState = "going_sea6"
 		else
-			StopBoatParado(P)
-			NotifyOnce("arrived6", "Nexora Hub - Kitsune", "Arrived at Sea 6 - Full moon", 5)
+			-- Chegou no Sea 6 - Ancora e deixa visivel!
+			pcall(function()
+				if getgenv().TweenBoat then getgenv().TweenBoat:Pause() getgenv().TweenBoat:Cancel() end
+				for _,v in ipairs(P:GetDescendants()) do
+					if v:IsA("BasePart") then
+						v.Anchored = true
+						v.CanCollide = true
+						v.Transparency = 0
+						v.Velocity = Vector3.new(0,0,0)
+					end
+				end
+				-- Corrige Y pra superficie
+				local seat = P:FindFirstChild("VehicleSeat", true)
+				if seat then
+					P:PivotTo(CFrame.new(seat.Position.X, boatY, seat.Position.Z))
+				end
+			end)
+			NotifyOnce("arrived6", "Nexora Hub - Kitsune", "Arrived at Sea 6 - Full moon - Boat Visible!", 5)
 			getgenv().KitsuneState = "arrived_sea6"
 		end
 	else
-		-- Sem lua cheia: vai pro Mar 5 e espera la
+		-- Sem lua cheia: vai pro Mar 5 e espera la (metodo da Wiki)
 		local distToZone5 = (P.VehicleSeat.Position - zone5Pos.Position).Magnitude
 		if distToZone5 > 400 then
 			-- Ainda nao chegou no Mar 5, navegando
 			UnanchorBoat(P)
-			if not t.Character.Humanoid.Sit then toTarget(P.VehicleSeat.CFrame) else manageTween(P.VehicleSeat, zone5Pos, 350, "TweenBoat") end
-			NotifyOnce("mar5", "Nexora Hub - Kitsune", "No full moon, sailing to Sea 5 to wait", 5)
+			pcall(function()
+				for _,v in ipairs(P:GetDescendants()) do
+					if v:IsA("BasePart") then
+						v.Anchored = false
+						v.CanCollide = true
+						v.Transparency = 0
+					end
+				end
+			end)
+			if not t.Character.Humanoid.Sit then 
+				toTarget(P.VehicleSeat.CFrame) 
+			else 
+				manageTween(P.VehicleSeat, zone5Pos, 350, "TweenBoat") 
+			end
+			NotifyOnce("mar5", "Nexora Hub - Kitsune", "No full moon, sailing to Sea 5 to wait - Boat Visible", 5)
 			getgenv().KitsuneState = "going_sea5"
 		else
-			-- Chegou no Mar 5, espera parado ate lua cheia
-			StopBoatParado(P)
+			-- Chegou no Mar 5, espera parado ate lua cheia - Ancora e deixa visivel!
+			pcall(function()
+				if getgenv().TweenBoat then getgenv().TweenBoat:Pause() getgenv().TweenBoat:Cancel() end
+				for _,v in ipairs(P:GetDescendants()) do
+					if v:IsA("BasePart") then
+						v.Anchored = true
+						v.CanCollide = true
+						v.Transparency = 0
+						v.Velocity = Vector3.new(0,0,0)
+					end
+				end
+				local seat = P:FindFirstChild("VehicleSeat", true)
+				if seat and seat.Position.Y < 2 then
+					P:PivotTo(CFrame.new(seat.Position.X, boatY, seat.Position.Z))
+				end
+			end)
 			getgenv().KitsuneState = "waiting_sea5"
-			NotifyOnce("waiting5", "Nexora Hub - Kitsune", "Arrived at Sea 5. Waiting for full moon to go to Sea 6", 6)
+			NotifyOnce("waiting5", "Nexora Hub - Kitsune", "Arrived at Sea 5. Waiting for full moon to go to Sea 6 - Boat Visible", 6)
 		end
-	end
+
 end
 
 
