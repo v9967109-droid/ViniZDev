@@ -30415,26 +30415,25 @@ end
 print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZDev")
 
 
--- SPOKY EVENT - ABA NOVA - 2 TOGGLES - EXECUTA!
+-- SPOKY EVENT DENTRO DE FARMING OTHER - 2 TOGGLES - EXECUTA!
 pcall(function()
     if not getgenv().Settings then getgenv().Settings = {} end
     if not Settings then Settings = getgenv().Settings end
     pcall(function() Settings["Auto Halloween Trick Or Treat"] = Settings["Auto Halloween Trick Or Treat"] or false end)
     pcall(function() Settings["Auto Spoky Gacha"] = Settings["Auto Spoky Gacha"] or false end)
     
-    -- Cria aba Spoky Event no FINAL do menu (executa, nao quebra)
+    -- Adiciona dentro de Farming Other mesmo!
     pcall(function()
-        if Main and Main.CreatePage then
-            local SpokyEventMain = Main.CreatePage({ Page_Name = "Spoky Event", Page_Title = "Spoky Event" })
-            local Section = SpokyEventMain.CreateSection("Halloween Event 2026")
-            Section.CreateToggle(
+        if FarmotherMain and FarmotherMain.CreateSection then
+            local SpokySection = FarmotherMain.CreateSection("Spoky Event - Halloween 2026")
+            SpokySection.CreateToggle(
                 { Title = "Auto Halloween Trick Or Treat", Desc = "Mansao + Portal + Werewolf + Skills auto", Default = Settings["Auto Halloween Trick Or Treat"] or false },
                 function(V)
                     Settings["Auto Halloween Trick Or Treat"] = V
                     pcall(function() SaveSettings("Auto Halloween Trick Or Treat", V) end)
                 end
             )
-            Section.CreateToggle(
+            SpokySection.CreateToggle(
                 { Title = "Auto Spoky Gacha", Desc = "Spooky Gacha - Gas Hellfire + Tiger", Default = Settings["Auto Spoky Gacha"] or false },
                 function(V)
                     Settings["Auto Spoky Gacha"] = V
@@ -30444,13 +30443,14 @@ pcall(function()
         end
     end)
     
-    -- Loop Halloween
+    -- Loop Halloween Trick Or Treat
     spawn(function()
         while task.wait(1) do
             pcall(function()
                 if not Settings["Auto Halloween Trick Or Treat"] then return end
                 local player = game:GetService("Players").LocalPlayer
                 if not player or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
+                -- Boss Werewolf
                 local boss = nil
                 for _, v in ipairs(workspace.Enemies:GetChildren()) do
                     if v.Name:lower():find("werewolf") or v.Name:lower():find("unbound") then
@@ -30471,6 +30471,7 @@ pcall(function()
                     end
                     return
                 end
+                -- Portal
                 local portal = nil
                 for _, v in ipairs(workspace:GetDescendants()) do
                     if v.Name:lower():find("portal") and (v.Parent.Name:lower():find("werewolf") or v.Parent.Name:lower():find("observatory")) then portal = v break end
@@ -30481,6 +30482,7 @@ pcall(function()
                     else player.Character.HumanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0,5,0)) end
                     return
                 end
+                -- Portas mansao
                 local mansionPos = Vector3.new(-12471, 374, -7551)
                 local doors = {}
                 for _, v in ipairs(workspace:GetDescendants()) do
