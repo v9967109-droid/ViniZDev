@@ -3295,7 +3295,7 @@ do
     end)
     
     local SectionNormal = PageStatusAndServer.CreateSection("Normal Fruit Stock - Normal Dealer")
-    SectionNormal.CreateLabel({ Title = "Fruits on sale at the normal dealer [SCROLL AZUL]" })
+    SectionNormal.CreateLabel({ Title = "Fruits on sale at the normal dealer" })
     local NormalLabels = {}
     NormalLabels[1] = SectionNormal.CreateLabel({ Title = "Ghost-Ghost - $940,000" })
     NormalLabels[2] = SectionNormal.CreateLabel({ Title = "Light-Light - $650,000" })
@@ -3305,7 +3305,7 @@ do
     NormalLabels[6] = SectionNormal.CreateLabel({ Title = "Loading..." })
     
     local SectionAdvance = PageStatusAndServer.CreateSection("Advance Fruit Stock - Mirage Island Dealer")
-    SectionAdvance.CreateLabel({ Title = "Fruits on sale at the Mirage Island dealer [SCROLL AZUL]" })
+    SectionAdvance.CreateLabel({ Title = "Fruits on sale at the Mirage Island dealer" })
     local AdvanceLabels = {}
     AdvanceLabels[1] = SectionAdvance.CreateLabel({ Title = "Flame-Flame - $250,000" })
     AdvanceLabels[2] = SectionAdvance.CreateLabel({ Title = "Smoke-Smoke - $100,000" })
@@ -3330,11 +3330,11 @@ do
         local scrollNormal = Instance.new("ScrollingFrame")
         scrollNormal.Name = "NormalStockScroll"
         scrollNormal.Size = UDim2.new(1, 0, 1, 0)
-        scrollNormal.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-        scrollNormal.BackgroundTransparency = 0.15
+        scrollNormal.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        scrollNormal.BackgroundTransparency = 0
         scrollNormal.BorderSizePixel = 0
         scrollNormal.ScrollBarThickness = 6
-        scrollNormal.ScrollBarImageColor3 = Color3.fromRGB(0, 191, 255)
+        scrollNormal.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
         scrollNormal.CanvasSize = UDim2.new(0, 0, 0, 0)
         scrollNormal.AutomaticCanvasSize = Enum.AutomaticSize.Y
         scrollNormal.Parent = containerNormal
@@ -3367,11 +3367,11 @@ do
         local scrollAdvance = Instance.new("ScrollingFrame")
         scrollAdvance.Name = "MirageStockScroll"
         scrollAdvance.Size = UDim2.new(1, 0, 1, 0)
-        scrollAdvance.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-        scrollAdvance.BackgroundTransparency = 0.15
+        scrollAdvance.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        scrollAdvance.BackgroundTransparency = 0
         scrollAdvance.BorderSizePixel = 0
         scrollAdvance.ScrollBarThickness = 6
-        scrollAdvance.ScrollBarImageColor3 = Color3.fromRGB(0, 191, 255)
+        scrollAdvance.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
         scrollAdvance.CanvasSize = UDim2.new(0, 0, 0, 0)
         scrollAdvance.AutomaticCanvasSize = Enum.AutomaticSize.Y
         scrollAdvance.Parent = containerAdvance
@@ -15496,24 +15496,25 @@ do
 	getgenv().__BoatRaiseConn = game:GetService("RunService").Heartbeat:Connect(function()
 		if getgenv().__BoatRaiseGen ~= gen then return end
 		if not Settings["Raise Boat Manual Drive"] then return end
-		-- FIX TOTAL: Auto Find Leviathan ativo = NAO interrompe NENHUM desvio!
-		local isLeviathanMode = Settings["Auto Find Leviathan"] or Settings["Multi Find Leviathan"] or Settings["Auto Find Prehistoric Island"] or Settings["Auto Multi Find Prehistoric Island"] or Settings["Auto Event Prehistoric Island"] or Settings["Auto Sea Event"]
-		if isLeviathanMode then
-			if getgenv().Doding or getgenv().ReadyToDodge then return end
-			if getgenv().PosDodgeskill and getgenv().PosDodgeskill > 0 then return end
-			if getgenv().PathSeaBeast or getgenv().PathTerrorshark or getgenv().PathAnimationSeabit then return end
-		end
+		-- FIX: Raise Boat + Auto Sea Event/Leviathan: FUNCIONA JUNTO, NAO INTERROMPE DESVIOS!
+		local isLeviathanDodgeMode = Settings["Auto Find Leviathan"] or Settings["Multi Find Leviathan"] or Settings["Auto Find Prehistoric Island"] or Settings["Auto Multi Find Prehistoric Island"] or Settings["Auto Event Prehistoric Island"]
+		local isSeaEventMode = Settings["Auto Sea Event"]
+		-- Se tiver desvio/dodge ativo, NAO trava barco (para todos os modos)
+		if getgenv().Doding or getgenv().ReadyToDodge then return end
+		if getgenv().PosDodgeskill and getgenv().PosDodgeskill > 0 then return end
+		if getgenv().PathSeaBeast or getgenv().PathTerrorshark or getgenv().PathAnimationSeabit then return end
 		pcall(function()
 			local char = t.Character
 			local hum = char and char:FindFirstChildOfClass("Humanoid")
 			local seat = hum and hum.SeatPart
 			if not seat or not seat:IsA("VehicleSeat") then
-				if isLeviathanMode and (getgenv().Doding or (getgenv().PosDodgeskill and getgenv().PosDodgeskill > 0) or getgenv().PathSeaBeast) then return end
+				-- Barco fica no ar quando sai
+				if isLeviathanDodgeMode and (getgenv().Doding or (getgenv().PosDodgeskill and getgenv().PosDodgeskill > 0) or getgenv().PathSeaBeast) then return end
 				if getgenv().__LastRaisedBoat and getgenv().__LastRaisedBoat.Parent then
 					local boat = getgenv().__LastRaisedBoat
 					local boats = workspace:FindFirstChild("Boats")
 					if not boats or boat.Parent ~= boats then getgenv().__LastRaisedBoat = nil return end
-					if isLeviathanMode then return end
+					-- Em modo Sea Event/Leviathan, mantem no ar mas sem forcar se tiver dodge
 					local base = boat:GetAttribute("NexoraBaseY") or 8
 					local height = math.clamp(tonumber(Settings["Boat Height"]) or 175, 5, 175)
 					local targetY = base + height
@@ -15535,14 +15536,7 @@ do
 			local height = math.clamp(tonumber(Settings["Boat Height"]) or 175, 5, 175)
 			local targetY = base + height
 			local pivot = boat:GetPivot()
-			if isLeviathanMode then
-				if pivot.Position.Y < base - 5 then
-					local pos = pivot.Position
-					local rot = pivot - pos
-					boat:PivotTo(CFrame.new(pos.X, base, pos.Z) * rot)
-				end
-				return
-			end
+			-- FUNCIONA COM AUTO SEA EVENT LIGADO! So trava Y, mantem X/Z livre!
 			if math.abs(pivot.Position.Y - targetY) > 0.05 then
 				local pos = pivot.Position
 				local rot = pivot - pos
