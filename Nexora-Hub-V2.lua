@@ -12346,6 +12346,31 @@ FishingSection.CreateToggle(
 		SaveSettings("Auto Accept Quest Fishing", _)
 	end
 )
+
+EventHalloweenSection = FarmotherMain.CreateSection("Event Halloween")
+EventHalloweenSection.CreateToggle(
+	{ Title = "Auto Halloween Trick Or Treat", Desc = "Farm doors at Mansion + Auto portal + Werewolf Boss + Skills", Default = Settings["Auto Halloween Trick Or Treat"] or false },
+	function(V)
+		SaveSettings("Auto Halloween Trick Or Treat", V)
+		pcall(function()
+			if V then
+				getgenv().AutoHalloweenTrickOrTreat()
+			end
+		end)
+	end
+)
+EventHalloweenSection.CreateToggle(
+	{ Title = "Auto Spooky Gacha", Desc = "Auto roll Halloween Gacha & Spooky Gacha - Gas Hellfire Mutation", Default = Settings["Auto Spooky Gacha"] or false },
+	function(V)
+		SaveSettings("Auto Spooky Gacha", V)
+		pcall(function()
+			if V then
+				getgenv().AutoSpookyGacha()
+			end
+		end)
+	end
+)
+
 QuestDragonSection = FarmotherMain.CreateSection("Quest Dragon")
 function QuestDojoTrainer()
 	return game:GetService("ReplicatedStorage")
@@ -14060,7 +14085,10 @@ DevilFruitSection.CreateToggle(
 	end
 )
 DevilFruitSection.CreateToggle(
-	{ Title = "Auto Store Fruit", Desc = nil, Default = Settings["Auto Store Fruit"] or false },
+	{ Title = "Auto Store Fruit", Desc = nil, Default = 
+Settings["Auto Halloween Trick Or Treat"] = Settings["Auto Halloween Trick Or Treat"] or false
+Settings["Auto Spooky Gacha"] = Settings["Auto Spooky Gacha"] or false
+Settings["Auto Store Fruit"] or false },
 	function(y)
 		SaveSettings("Auto Store Fruit", y)
 	end
@@ -15530,7 +15558,10 @@ do
 			if not boat or not boats or boat.Parent ~= boats then return end
 			getgenv().__LastRaisedBoat = boat
 			local base = boat:GetAttribute("NexoraBaseY")
-			if not base then base = (seat.Position.Y < 30) and seat.Position.Y or 8 boat:SetAttribute("NexoraBaseY", base) end
+			if not base then
+				base = (seat.Position.Y < 30) and seat.Position.Y or 8
+				boat:SetAttribute("NexoraBaseY", base)
+			end
 			local height = math.clamp(tonumber(Settings["Boat Height"]) or 175, 5, 175)
 			local targetY = base + height
 			local pivot = boat:GetPivot()
@@ -16697,19 +16728,11 @@ function AutoSpawnKitsune()
 			if getgenv().TweenBoatBack then getgenv().TweenBoatBack:Pause() getgenv().TweenBoatBack:Cancel() end
 			local seat = boat:FindFirstChild("VehicleSeat", true)
 			if seat then
-				seat.ThrottleFloat = 0
 				seat.Throttle = 0
-				seat.MaxSpeed = 0
-				seat.Velocity = Vector3.new(0,0,0)
-				seat.AssemblyLinearVelocity = Vector3.new(0,0,0)
-			end
-			for _,v in ipairs(boat:GetDescendants()) do
-				if v:IsA("BasePart") then
-					v.Anchored = false
-					v.Velocity = Vector3.new(0,0,0)
-					v.AssemblyLinearVelocity = Vector3.new(0,0,0)
-					v.AssemblyAngularVelocity = Vector3.new(0,0,0)
-				end
+				seat.ThrottleFloat = 0
+				seat.Steer = 0
+				seat.SteerFloat = 0
+				seat.Anchored = false
 			end
 		end)
 	end
@@ -16848,6 +16871,311 @@ function AutoSpawnKitsune()
 			NotifyOnce("waiting5", "Nexora Hub - Kitsune", "Arrived at Sea 5. Waiting for full moon to go to Sea 6", 6)
 		end
 	end
+end
+
+
+
+-- HALLOWEEN EVENT 2025/2026 - SIMPLIFICADO - 2 TOGGLES APENAS!
+-- 1. Auto Halloween Trick Or Treat: Farm portas Mansao + Portal automatico + Werewolf Boss + Skills automatico
+-- 2. Auto Spooky Gacha: Halloween Gacha + Spooky Gacha - Nova mutacao Gas Hellfire Mutation
+
+getgenv().HalloweenState = getgenv().HalloweenState or "idle"
+
+function GetMansionHalloweenDoors()
+    local doors = {}
+    pcall(function()
+        local mansionPos = CFrame.new(-12471, 374, -7551)
+        for _, v in ipairs(workspace:GetDescendants()) do
+            if v:IsA("ProximityPrompt") then
+                local parent = v.Parent
+                if parent and parent:IsA("BasePart") then
+                    local dist = (parent.Position - mansionPos.Position).Magnitude
+                    if dist < 1500 then
+                        local text = (v.ObjectText or "" .. " " .. (v.ActionText or "")):lower()
+                        if text:find("trick") or text:find("treat") or text:find("knock") or text:find("door") or text:find("candy") or parent.Name:lower():find("door") then
+                            table.insert(doors, {prompt = v, part = parent, pos = parent.Position, dist = dist})
+                        end
+                    end
+                end
+            end
+        end
+        table.sort(doors, function(a,b) return (a.dist or 0) < (b.dist or 0) end)
+    end)
+    return doors
+end
+
+function GetHalloweenDoors()
+    local doors = {}
+    pcall(function()
+        for _, v in ipairs(workspace:GetDescendants()) do
+            if v:IsA("ProximityPrompt") then
+                local parent = v.Parent
+                if parent then
+                    local name = parent.Name:lower()
+                    local text = (v.ObjectText or "" .. " " .. (v.ActionText or "")):lower()
+                    if name:find("door") or text:find("trick") or text:find("treat") or text:find("knock") then
+                        local pos = parent:IsA("BasePart") and parent.Position or (parent:GetPivot().Position)
+                        table.insert(doors, {prompt = v, part = parent, pos = pos})
+                    end
+                end
+            end
+        end
+    end)
+    return doors
+end
+
+function InteractWithDoor(doorData)
+    pcall(function()
+        local prompt = doorData.prompt
+        if prompt and prompt:IsA("ProximityPrompt") then
+            local player = game:GetService("Players").LocalPlayer
+            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                toTarget(CFrame.new(doorData.pos + Vector3.new(0,5,0)))
+                task.wait(0.6)
+                fireproximityprompt(prompt, 0)
+                task.wait(0.3)
+                fireproximityprompt(prompt, 1)
+                task.wait(0.5)
+            end
+        end
+    end)
+end
+
+function GetUnboundWerewolfBoss()
+    local boss = nil
+    pcall(function()
+        for _, v in ipairs(workspace.Enemies:GetChildren()) do
+            if v.Name:find("Werewolf") or v.Name:find("Unbound") or v.Name:find("Hell Rider") then
+                if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                    boss = v
+                end
+            end
+        end
+        for _, v in ipairs(workspace:GetChildren()) do
+            if (v.Name:find("Werewolf") or v.Name:find("Hell Rider")) and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                boss = v
+            end
+        end
+    end)
+    return boss
+end
+
+function GetHalloweenPortal()
+    local portal = nil
+    pcall(function()
+        for _, v in ipairs(workspace:GetDescendants()) do
+            if v.Name:lower():find("portal") then
+                local parentName = v.Parent.Name:lower()
+                if parentName:find("werewolf") or parentName:find("halloween") or parentName:find("observatory") or parentName:find("hell") or v.Name:lower():find("werewolf") or v.Name:lower():find("observatory") then
+                    portal = v
+                end
+            end
+            if v:IsA("BasePart") and v.Transparency < 1 then
+                if v:GetAttribute("IsHalloweenPortal") or (v.Name:lower():find("portal") and v:FindFirstChild("ParticleEmitter")) then
+                    portal = v
+                end
+            end
+        end
+    end)
+    return portal
+end
+
+getgenv().AutoHalloweenTrickOrTreat = function()
+    if Settings["Auto Halloween Trick Or Treat"] then
+        spawn(function()
+            while Settings["Auto Halloween Trick Or Treat"] do
+                task.wait(1)
+                pcall(function()
+                    local player = game:GetService("Players").LocalPlayer
+                    if not player or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
+
+                    -- PRIORIDADE 1: Werewolf Boss (auto fight + auto skills) - 400 Candy Corn
+                    local boss = GetUnboundWerewolfBoss()
+                    if boss and boss:FindFirstChild("HumanoidRootPart") then
+                        getgenv().HalloweenState = "fighting_werewolf"
+                        local hrp = boss.HumanoidRootPart
+                        -- Vai pro boss
+                        toTarget(hrp.CFrame * CFrame.new(0,10,5))
+                        -- Equipa tool
+                        local tool = player.Character:FindFirstChildOfClass("Tool") or player.Backpack:FindFirstChildOfClass("Tool")
+                        if tool then
+                            player.Character.Humanoid:EquipTool(tool)
+                        end
+                        -- AUTO SKILLS - Z, X, C, V, F automatico!
+                        for _, key in ipairs({"Z","X","C","V","F"}) do
+                            pcall(function()
+                                game:GetService("VirtualInputManager"):SendKeyEvent(true, key, false, game)
+                                task.wait(0.12)
+                                game:GetService("VirtualInputManager"):SendKeyEvent(false, key, false, game)
+                            end)
+                        end
+                        task.wait(0.5)
+                        return
+                    end
+
+                    -- PRIORIDADE 2: Portal automatico pro lobo!
+                    local portal = GetHalloweenPortal()
+                    if portal then
+                        getgenv().HalloweenState = "going_portal"
+                        local pos = portal:IsA("BasePart") and portal.Position or portal:GetPivot().Position
+                        toTarget(CFrame.new(pos + Vector3.new(0,5,0)))
+                        task.wait(1.2)
+                        -- Tenta interagir com portal se tiver prompt
+                        for _, v in ipairs(workspace:GetDescendants()) do
+                            if v:IsA("ProximityPrompt") then
+                                local parent = v.Parent
+                                if parent and parent:IsA("BasePart") then
+                                    if (parent.Position - pos).Magnitude < 15 then
+                                        fireproximityprompt(v, 0)
+                                        task.wait(0.3)
+                                        fireproximityprompt(v, 1)
+                                    end
+                                end
+                            end
+                        end
+                        return
+                    end
+
+                    -- PRIORIDADE 3: Farmar portas na Mansao
+                    local doors = GetMansionHalloweenDoors()
+                    if #doors == 0 then
+                        doors = GetHalloweenDoors()
+                    end
+
+                    if #doors > 0 then
+                        getgenv().HalloweenState = "farming_doors"
+                        for _, door in ipairs(doors) do
+                            if not Settings["Auto Halloween Trick Or Treat"] then break end
+                            local last = door.prompt:GetAttribute("LastHalloweenInteract")
+                            if not last or tick() - last > 35 then
+                                InteractWithDoor(door)
+                                pcall(function()
+                                    door.prompt:SetAttribute("LastHalloweenInteract", tick())
+                                end)
+                                -- Verifica NPCs e escolhas (trick or treat)
+                                task.wait(0.6)
+                                for _, v in ipairs(player.PlayerGui:GetDescendants()) do
+                                    if v:IsA("TextButton") then
+                                        local txt = v.Text:lower()
+                                        if txt:find("trick") or txt:find("treat") or txt:find("candy") or txt:find("yes") or txt:find("choice") or txt:find("knock") or txt:find("accept") then
+                                            pcall(function() v:Activate() end)
+                                            task.wait(0.2)
+                                        end
+                                    end
+                                end
+                                -- Tambem verifica prompts que aparecem depois
+                                for _, v in ipairs(workspace:GetDescendants()) do
+                                    if v:IsA("ProximityPrompt") and v.Enabled then
+                                        local parent = v.Parent
+                                        if parent and parent:IsA("BasePart") then
+                                            local dist = (parent.Position - player.Character.HumanoidRootPart.Position).Magnitude
+                                            if dist < 20 then
+                                                local txt = (v.ObjectText or "" .. " " .. (v.ActionText or "")):lower()
+                                                if txt:find("candy") or txt:find("trick") or txt:find("treat") then
+                                                    fireproximityprompt(v, 0)
+                                                    task.wait(0.2)
+                                                    fireproximityprompt(v, 1)
+                                                end
+                                            end
+                                        end
+                                    end
+                                end
+                                task.wait(1)
+                                break
+                            end
+                        end
+                    else
+                        getgenv().HalloweenState = "waiting_doors"
+                        local mansionCFrame = CFrame.new(-12471, 374, -7551)
+                        if (player.Character.HumanoidRootPart.Position - mansionCFrame.Position).Magnitude > 80 then
+                            toTarget(mansionCFrame)
+                        end
+                        task.wait(2)
+                    end
+                end)
+            end
+        end)
+    end
+end
+
+getgenv().AutoSpookyGacha = function()
+    if Settings["Auto Spooky Gacha"] then
+        spawn(function()
+            while Settings["Auto Spooky Gacha"] do
+                task.wait(4)
+                pcall(function()
+                    local player = game:GetService("Players").LocalPlayer
+                    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
+
+                    -- Verifica Candy Corn e Spooky Tokens
+                    local hasCurrency = false
+                    pcall(function()
+                        local data = player:FindFirstChild("Data")
+                        if data then
+                            local candy = data:FindFirstChild("CandyCorn") or data:FindFirstChild("Candy Corn") or data:FindFirstChild("Candy")
+                            local spooky = data:FindFirstChild("SpookyToken") or data:FindFirstChild("Spooky Token") or data:FindFirstChild("SpookyTokens")
+                            if (candy and candy.Value >= 500) or (spooky and spooky.Value >= 500) then
+                                hasCurrency = true
+                            end
+                        end
+                    end)
+
+                    -- Procura Gacha NPCs - Halloween Gacha e Spooky Gacha
+                    local mansionPos = CFrame.new(-12471, 374, -7551)
+                    for _, v in ipairs(workspace:GetDescendants()) do
+                        if v:IsA("ProximityPrompt") then
+                            local text = (v.ObjectText or "" .. " " .. (v.ActionText or "")):lower()
+                            if text:find("gacha") or text:find("haunted") or text:find("spooky") or text:find("halloween") or text:find("roll") or text:find("spin") then
+                                local parent = v.Parent
+                                local pos = parent:IsA("BasePart") and parent.Position or (parent:IsA("Model") and parent:GetPivot().Position or nil)
+                                if pos and (pos - mansionPos.Position).Magnitude < 200 then
+                                    -- Perto da Mansao - Gacha de Halloween!
+                                    toTarget(CFrame.new(pos + Vector3.new(0,5,0)))
+                                    task.wait(0.6)
+                                    fireproximityprompt(v, 0)
+                                    task.wait(0.3)
+                                    fireproximityprompt(v, 1)
+                                    task.wait(1)
+                                    -- Tenta clicar em botoes de roll
+                                    for _, gui in ipairs(player.PlayerGui:GetDescendants()) do
+                                        if gui:IsA("TextButton") then
+                                            local txt = gui.Text:lower()
+                                            if txt:find("roll") or txt:find("spin") or txt:find("gacha") or txt:find("500") or txt:find("buy") then
+                                                pcall(function() gui:Activate() end)
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+
+                    -- Tambem verifica Middle Town e Cafe (outros seas)
+                    local otherLocations = {
+                        CFrame.new(-296, 7, 90), -- Middle Town 1st Sea
+                        CFrame.new(-1442, 7, -315), -- Cafe 2nd Sea
+                    }
+                    for _, loc in ipairs(otherLocations) do
+                        if (player.Character.HumanoidRootPart.Position - loc.Position).Magnitude < 60 then
+                            for _, v in ipairs(workspace:GetDescendants()) do
+                                if v:IsA("ProximityPrompt") then
+                                    local text = (v.ObjectText or ""):lower()
+                                    if text:find("gacha") then
+                                        local parentPos = v.Parent:IsA("BasePart") and v.Parent.Position or v.Parent:GetPivot().Position
+                                        if (parentPos - loc.Position).Magnitude < 25 then
+                                            fireproximityprompt(v, 0)
+                                            task.wait(0.3)
+                                            fireproximityprompt(v, 1)
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end)
+            end
+        end)
+    end
 end
 
 
