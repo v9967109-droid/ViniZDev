@@ -11837,46 +11837,134 @@ SpokyHalloweenSection.CreateToggle(
     end
 )
 SpokyHalloweenSection.CreateToggle(
-    { Title = "Auto Jack-O-Lantern Hunt", Desc = "Aboboras sempre ativas + Pumpkin Bits + Candy Corn - Spiritual Hub Pattern", Default = Settings["Auto Jack-O-Lantern Hunt"] or false },
+    { Title = "Auto Jack-O-Lantern Hunt", Desc = "Sempre Melee + Deteccao Melhorada - Pumpkin Bits + Candy Corn", Default = Settings["Auto Jack-O-Lantern Hunt"] or false },
     function(V)
         Settings["Auto Jack-O-Lantern Hunt"] = V
         SaveSettings("Auto Jack-O-Lantern Hunt", V)
         if V then
             spawn(function()
-                while Settings["Auto Jack-O-Lantern Hunt"] and task.wait(0.4) do
+                while Settings["Auto Jack-O-Lantern Hunt"] and task.wait(0.35) do
                     pcall(function()
                         local player = game.Players.LocalPlayer
-                        if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
+                        if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") or not player.Character:FindFirstChildOfClass("Humanoid") then return end
                         local hrp = player.Character.HumanoidRootPart
-                        -- Verifica NPC abobora primeiro (da mais Pumpkin Bits e Candy Corn)
+                        local char = player.Character
+                        
+                        -- Funcao pra pegar melee sempre
+                        local function GetMeleeTool()
+                            local meleeNames = {"Combat", "Black Leg", "Electro", "Fishman", "Dragon Claw", "Superhuman", "Death Step", "Sharkman", "Electric Claw", "Dragon Talon", "Godhuman", "Sanguine Art"}
+                            for _, tool in ipairs(player.Backpack:GetChildren()) do
+                                if tool:IsA("Tool") then
+                                    for _, mName in ipairs(meleeNames) do
+                                        if string.lower(tool.Name):find(string.lower(mName)) then
+                                            return tool
+                                        end
+                                    end
+                                end
+                            end
+                            for _, tool in ipairs(char:GetChildren()) do
+                                if tool:IsA("Tool") then
+                                    for _, mName in ipairs(meleeNames) do
+                                        if string.lower(tool.Name):find(string.lower(mName)) then
+                                            return tool
+                                        end
+                                    end
+                                end
+                            end
+                            -- Fallback: qualquer Tool que parece ser melee (nao sword, nao gun, nao fruit)
+                            for _, tool in ipairs(player.Backpack:GetChildren()) do
+                                if tool:IsA("Tool") and not tool.Name:lower():find("sword") and not tool.Name:lower():find("gun") and not tool.Name:lower():find("fruit") then
+                                    return tool
+                                end
+                            end
+                            return char:FindFirstChildOfClass("Tool") or player.Backpack:FindFirstChildOfClass("Tool")
+                        end
+                        
+                        -- 1. NPC Abobora que vira inimigo (da mais Pumpkin Bits e Candy Corn) - SEMPRE MELEE
                         for _, v in ipairs(workspace.Enemies:GetChildren()) do
                             if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
                                 local lname = string.lower(v.Name)
-                                if lname:find("pumpkin") or lname:find("jack") then
-                                    toTarget(v.HumanoidRootPart.CFrame * CFrame.new(0,8,5))
-                                    local tool = player.Character:FindFirstChildOfClass("Tool") or player.Backpack:FindFirstChildOfClass("Tool")
-                                    if tool then player.Character.Humanoid:EquipTool(tool) end
-                                    for _, k in ipairs({"Z","X","C","V","F"}) do
-                                        game:GetService("VirtualInputManager"):SendKeyEvent(true, k, false, game)
-                                        task.wait(0.08)
-                                        game:GetService("VirtualInputManager"):SendKeyEvent(false, k, false, game)
+                                if lname:find("pumpkin") or lname:find("jack") or lname:find("lantern") then
+                                    toTarget(v.HumanoidRootPart.CFrame * CFrame.new(0,5,2))
+                                    local melee = GetMeleeTool()
+                                    if melee then
+                                        char.Humanoid:EquipTool(melee)
+                                        task.wait(0.15)
+                                        for i=1,3 do
+                                            pcall(function() melee:Activate() end)
+                                            pcall(function() game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,true,game,0) task.wait(0.05) game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,false,game,0) end)
+                                            task.wait(0.12)
+                                        end
                                     end
                                     return
                                 end
                             end
                         end
-                        -- Procura aboboras por nome (sempre ativas no mapa)
+                        
+                        -- 2. DETECCAO MELHORADA DOS PUMPKINS
                         local pumpkins = {}
+                        local CollectionService = game:GetService("CollectionService")
+                        
+                        -- Tenta pegar por Tag (mais confiavel)
+                        pcall(function()
+                            for _, tag in ipairs({"Pumpkin", "JackOLantern", "Jack-O-Lantern", "Halloween", "Pumpkin2026", "Jack", "Lantern"}) do
+                                for _, obj in ipairs(CollectionService:GetTagged(tag)) do
+                                    if obj and obj.Parent then
+                                        local pos = nil
+                                        pcall(function()
+                                            if obj:IsA("BasePart") then pos = obj.Position
+                                            elseif obj:IsA("Model") then pos = obj:GetPivot().Position
+                                            else pos = obj:GetPivot().Position
+                                            end
+                                        end)
+                                        if pos then table.insert(pumpkins, {obj=obj, pos=pos, source="Tag:"..tag}) end
+                                    end
+                                end
+                            end
+                        end)
+                        
+                        -- Procura por nome em todo workspace + pastas especificas
                         for _, v in ipairs(workspace:GetDescendants()) do
-                            if v:IsA("BasePart") or v:IsA("MeshPart") or v:IsA("Model") then
-                                local lname = string.lower(v.Name)
-                                if lname:find("pumpkin") and not lname:find("bits") and not lname:find("seed") then
+                            local lname = string.lower(v.Name)
+                            local parentName = v.Parent and string.lower(v.Parent.Name) or ""
+                            -- Nome contem pumpkin, jack, lantern
+                            if (lname:find("pumpkin") or lname:find("jack") or (lname:find("lantern") and not lname:find("jack-o")) or parentName:find("pumpkin") or parentName:find("jack")) then
+                                if not lname:find("bits") and not lname:find("seed") and not lname:find("material") and not lname:find("tool") and not lname:find("candy") then
                                     local pos = nil
-                                    if v:IsA("BasePart") then pos = v.Position else pcall(function() pos = v:GetPivot().Position end) end
-                                    if pos then table.insert(pumpkins, {obj=v, pos=pos}) end
+                                    pcall(function()
+                                        if v:IsA("BasePart") then pos = v.Position
+                                        elseif v:IsA("MeshPart") then pos = v.Position
+                                        elseif v:IsA("Model") then pos = v:GetPivot().Position
+                                        end
+                                    end)
+                                    if pos then table.insert(pumpkins, {obj=v, pos=pos, source="Name:"..v.Name}) end
+                                end
+                            end
+                            -- Verifica se tem ProximityPrompt de pumpkin (algumas aboboras tem prompt)
+                            if v:IsA("ProximityPrompt") then
+                                local text = ((v.ObjectText or "").." "..(v.ActionText or "").." "..(v.Parent and v.Parent.Name or "")):lower()
+                                if text:find("pumpkin") or text:find("smash") or text:find("break") then
+                                    local parent = v.Parent
+                                    local pos = nil
+                                    pcall(function()
+                                        if parent:IsA("BasePart") then pos = parent.Position else pos = parent:GetPivot().Position end
+                                    end)
+                                    if pos then table.insert(pumpkins, {obj=parent, pos=pos, source="Prompt"}) end
                                 end
                             end
                         end
+                        
+                        -- Remove duplicatas por posicao proxima
+                        local unique = {}
+                        for _, p in ipairs(pumpkins) do
+                            local isDup = false
+                            for _, u in ipairs(unique) do
+                                if (u.pos - p.pos).Magnitude < 5 then isDup = true break end
+                            end
+                            if not isDup then table.insert(unique, p) end
+                        end
+                        pumpkins = unique
+                        
                         if #pumpkins > 0 then
                             local nearest = nil
                             local minDist = math.huge
@@ -11884,14 +11972,23 @@ SpokyHalloweenSection.CreateToggle(
                                 local dist = (hrp.Position - p.pos).Magnitude
                                 if dist < minDist then minDist = dist nearest = p end
                             end
-                            if nearest and minDist < 4000 then
-                                toTarget(CFrame.new(nearest.pos + Vector3.new(0,8,0)))
-                                task.wait(0.4)
-                                local tool = player.Character:FindFirstChildOfClass("Tool") or player.Backpack:FindFirstChildOfClass("Tool")
-                                if tool then
-                                    player.Character.Humanoid:EquipTool(tool)
-                                    task.wait(0.1)
-                                    tool:Activate()
+                            if nearest and minDist < 5000 then
+                                toTarget(CFrame.new(nearest.pos + Vector3.new(0,6,0)))
+                                task.wait(0.35)
+                                local melee = GetMeleeTool()
+                                if melee then
+                                    char.Humanoid:EquipTool(melee)
+                                    task.wait(0.12)
+                                    -- SEMPRE MELEE - bate 3 vezes
+                                    for i=1,4 do
+                                        pcall(function() melee:Activate() end)
+                                        pcall(function()
+                                            game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,true,game,0)
+                                            task.wait(0.04)
+                                            game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,false,game,0)
+                                        end)
+                                        task.wait(0.1)
+                                    end
                                 end
                             end
                         end
