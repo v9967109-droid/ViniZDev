@@ -11754,48 +11754,18 @@ FarmotherMain = Main.CreatePage({ Page_Name = "Farming Other", Page_Title = "Far
 -- Lancou hoje 31/10/2026 - Estudado dos scripts que ja fazem o evento
 SpokyHalloweenSection = FarmotherMain.CreateSection("Hellfire Halloween 2026 [FINAL]")
 SpokyHalloweenSection.CreateToggle(
-    { Title = "Auto Halloween Trick Or Treat", Desc = "Harvest Moon XX:00 10min + Portas 3 Seas + Mata Werewolf + Hell Rider Gas Mutation", Default = Settings["Auto Halloween Trick Or Treat"] or false },
+    { Title = "Auto Halloween Trick Or Treat", Desc = "Harvest Moon XX:00 10min + Portas 3 Seas + Candy Corn - Quantum Onyx Pattern", Default = Settings["Auto Halloween Trick Or Treat"] or false },
     function(V)
         Settings["Auto Halloween Trick Or Treat"] = V
         SaveSettings("Auto Halloween Trick Or Treat", V)
         if V then
             spawn(function()
-                while Settings["Auto Halloween Trick Or Treat"] and task.wait(0.5) do
+                while Settings["Auto Halloween Trick Or Treat"] and task.wait(1) do
                     pcall(function()
                         local player = game.Players.LocalPlayer
                         if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
                         local hrp = player.Character.HumanoidRootPart
-                        
-                        -- 1. PRIORIDADE 1: MATAR BOSSES (Werewolf + Hell Rider Gas Mutation)
-                        for _, v in ipairs(workspace.Enemies:GetChildren()) do
-                            if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
-                                local lname = string.lower(v.Name)
-                                if lname:find("werewolf") or lname:find("unbound") or lname:find("hell rider") or lname:find("hellrider") or lname:find("gas") or lname:find("hellfire") or lname:find("great pumpkin") or lname:find("pumpkin king") then
-                                    toTarget(v.HumanoidRootPart.CFrame * CFrame.new(0,10,5))
-                                    local tool = player.Character:FindFirstChildOfClass("Tool") or player.Backpack:FindFirstChildOfClass("Tool")
-                                    if tool then player.Character.Humanoid:EquipTool(tool) end
-                                    for _, k in ipairs({"Z","X","C","V","F"}) do
-                                        game:GetService("VirtualInputManager"):SendKeyEvent(true, k, false, game)
-                                        task.wait(0.1)
-                                        game:GetService("VirtualInputManager"):SendKeyEvent(false, k, false, game)
-                                    end
-                                    return
-                                end
-                            end
-                        end
-                        
-                        -- 2. Portais de Hell Rider (porta em chamas + portais)
-                        for _, v in ipairs(workspace:GetDescendants()) do
-                            if v:IsA("BasePart") and v.Name:lower():find("portal") then
-                                local pname = v.Parent and v.Parent.Name:lower() or ""
-                                if pname:find("hell") or pname:find("rider") or pname:find("werewolf") or pname:find("gas") then
-                                    toTarget(CFrame.new(v.Position + Vector3.new(0,5,0)))
-                                    return
-                                end
-                            end
-                        end
-                        
-                        -- 3. PRIORIDADE 2: TRICK OR TREAT (portas)
+                        -- Pattern do Quantum Onyx e Spiritual Gaming Hub - procura portas com Trick/Treat
                         local doors = {}
                         for _, v in ipairs(workspace:GetDescendants()) do
                             if v:IsA("ProximityPrompt") then
@@ -11812,18 +11782,19 @@ SpokyHalloweenSection.CreateToggle(
                             table.sort(doors, function(a,b) return (a.prompt:GetAttribute("LastHalloween") or 0) < (b.prompt:GetAttribute("LastHalloween") or 0) end)
                             local door = doors[1]
                             local last = door.prompt:GetAttribute("LastHalloween")
-                            if not last or tick() - last > 10 then
+                            if not last or tick() - last > 12 then
                                 toTarget(CFrame.new(door.pos + Vector3.new(0,5,0)))
                                 task.wait(0.5)
                                 fireproximityprompt(door.prompt, 0)
                                 task.wait(0.2)
                                 fireproximityprompt(door.prompt, 1)
                                 door.prompt:SetAttribute("LastHalloween", tick())
-                                task.wait(0.5)
+                                task.wait(0.6)
+                                -- Lida com minigames e escolhas (memory, Oni, Shipwright, monster chase, Tarot)
                                 for _, gui in ipairs(player.PlayerGui:GetDescendants()) do
                                     if gui:IsA("TextButton") and gui.Visible then
                                         local txt = (gui.Text or ""):lower()
-                                        if txt:find("trick") or txt:find("treat") or txt:find("candy") or txt:find("yes") or txt:find("ok") or txt:find("continue") or txt:find("accept") or txt:find("battle") or txt:find("challenge") then
+                                        if txt:find("trick") or txt:find("treat") or txt:find("candy") or txt:find("yes") or txt:find("ok") or txt:find("continue") or txt:find("accept") then
                                             pcall(function() gui:Activate() end)
                                         end
                                     end
@@ -11837,50 +11808,58 @@ SpokyHalloweenSection.CreateToggle(
     end
 )
 SpokyHalloweenSection.CreateToggle(
-    { Title = "Auto Jack-O-Lantern Hunt", Desc = "Sempre Melee + Deteccao Melhorada - Pumpkin Bits + Candy Corn", Default = Settings["Auto Jack-O-Lantern Hunt"] or false },
+    { Title = "Auto Jack-O-Lantern Hunt", Desc = "SO ABOBORAS QUE APARECEM (evento) - Ignora decoracao + 4 clicks", Default = Settings["Auto Jack-O-Lantern Hunt"] or false },
     function(V)
         Settings["Auto Jack-O-Lantern Hunt"] = V
         SaveSettings("Auto Jack-O-Lantern Hunt", V)
         if V then
             spawn(function()
-                while Settings["Auto Jack-O-Lantern Hunt"] and task.wait(0.35) do
+                while Settings["Auto Jack-O-Lantern Hunt"] and task.wait(0.3) do
                     pcall(function()
                         local player = game.Players.LocalPlayer
                         if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") or not player.Character:FindFirstChildOfClass("Humanoid") then return end
                         local hrp = player.Character.HumanoidRootPart
                         local char = player.Character
-                        
-                        -- Funcao pra pegar melee sempre
                         local function GetMeleeTool()
                             local meleeNames = {"Combat", "Black Leg", "Electro", "Fishman", "Dragon Claw", "Superhuman", "Death Step", "Sharkman", "Electric Claw", "Dragon Talon", "Godhuman", "Sanguine Art"}
                             for _, tool in ipairs(player.Backpack:GetChildren()) do
                                 if tool:IsA("Tool") then
                                     for _, mName in ipairs(meleeNames) do
-                                        if string.lower(tool.Name):find(string.lower(mName)) then
-                                            return tool
-                                        end
+                                        if string.lower(tool.Name):find(string.lower(mName)) then return tool end
                                     end
                                 end
                             end
                             for _, tool in ipairs(char:GetChildren()) do
                                 if tool:IsA("Tool") then
                                     for _, mName in ipairs(meleeNames) do
-                                        if string.lower(tool.Name):find(string.lower(mName)) then
-                                            return tool
-                                        end
+                                        if string.lower(tool.Name):find(string.lower(mName)) then return tool end
                                     end
                                 end
                             end
-                            -- Fallback: qualquer Tool que parece ser melee (nao sword, nao gun, nao fruit)
                             for _, tool in ipairs(player.Backpack:GetChildren()) do
-                                if tool:IsA("Tool") and not tool.Name:lower():find("sword") and not tool.Name:lower():find("gun") and not tool.Name:lower():find("fruit") then
-                                    return tool
-                                end
+                                if tool:IsA("Tool") and not tool.Name:lower():find("sword") and not tool.Name:lower():find("gun") and not tool.Name:lower():find("fruit") then return tool end
                             end
                             return char:FindFirstChildOfClass("Tool") or player.Backpack:FindFirstChildOfClass("Tool")
                         end
-                        
-                        -- 1. NPC Abobora que vira inimigo (da mais Pumpkin Bits e Candy Corn) - SEMPRE MELEE
+                        local function IsDecorationPumpkin(obj)
+                            if not obj then return true end
+                            local fullPath = obj:GetFullName():lower()
+                            if fullPath:find("decor") then
+                                local hasPrompt = false
+                                pcall(function()
+                                    if obj:FindFirstChildOfClass("ProximityPrompt") then hasPrompt = true end
+                                    for _, d in ipairs(obj:GetDescendants()) do if d:IsA("ProximityPrompt") then hasPrompt = true break end end
+                                end)
+                                if hasPrompt then return false end
+                                local parent = obj.Parent
+                                while parent and parent ~= workspace do
+                                    local pname = string.lower(parent.Name)
+                                    if pname:find("decor") then return true end
+                                    parent = parent.Parent
+                                end
+                            end
+                            return false
+                        end
                         for _, v in ipairs(workspace.Enemies:GetChildren()) do
                             if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
                                 local lname = string.lower(v.Name)
@@ -11889,82 +11868,74 @@ SpokyHalloweenSection.CreateToggle(
                                     local melee = GetMeleeTool()
                                     if melee then
                                         char.Humanoid:EquipTool(melee)
-                                        task.wait(0.15)
-                                        for i=1,3 do
-                                            pcall(function() melee:Activate() end)
-                                            pcall(function() game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,true,game,0) task.wait(0.05) game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,false,game,0) end)
-                                            task.wait(0.12)
-                                        end
+                                        task.wait(0.1)
+                                        melee:Activate()
+                                        task.wait(0.1)
+                                        game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,true,game,0) task.wait(0.05) game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,false,game,0)
                                     end
                                     return
                                 end
                             end
                         end
-                        
-                        -- 2. DETECCAO MELHORADA DOS PUMPKINS
                         local pumpkins = {}
                         local CollectionService = game:GetService("CollectionService")
-                        
-                        -- Tenta pegar por Tag (mais confiavel)
                         pcall(function()
-                            for _, tag in ipairs({"Pumpkin", "JackOLantern", "Jack-O-Lantern", "Halloween", "Pumpkin2026", "Jack", "Lantern"}) do
+                            for _, tag in ipairs({"Pumpkin", "JackOLantern", "Jack-O-Lantern", "Halloween", "Pumpkin2026", "Jack", "Lantern", "HalloweenPumpkin", "EventPumpkin", "ActivePumpkin", "SpawnedPumpkin"}) do
                                 for _, obj in ipairs(CollectionService:GetTagged(tag)) do
-                                    if obj and obj.Parent then
+                                    if obj and obj.Parent and not IsDecorationPumpkin(obj) then
                                         local pos = nil
                                         pcall(function()
                                             if obj:IsA("BasePart") then pos = obj.Position
                                             elseif obj:IsA("Model") then pos = obj:GetPivot().Position
-                                            else pos = obj:GetPivot().Position
-                                            end
+                                            else pos = obj:GetPivot().Position end
                                         end)
-                                        if pos then table.insert(pumpkins, {obj=obj, pos=pos, source="Tag:"..tag}) end
+                                        if pos then table.insert(pumpkins, {obj=obj, pos=pos}) end
                                     end
                                 end
                             end
                         end)
-                        
-                        -- Procura por nome em todo workspace + pastas especificas
                         for _, v in ipairs(workspace:GetDescendants()) do
-                            local lname = string.lower(v.Name)
-                            local parentName = v.Parent and string.lower(v.Parent.Name) or ""
-                            -- Nome contem pumpkin, jack, lantern
-                            if (lname:find("pumpkin") or lname:find("jack") or (lname:find("lantern") and not lname:find("jack-o")) or parentName:find("pumpkin") or parentName:find("jack")) then
-                                if not lname:find("bits") and not lname:find("seed") and not lname:find("material") and not lname:find("tool") and not lname:find("candy") then
-                                    local pos = nil
-                                    pcall(function()
-                                        if v:IsA("BasePart") then pos = v.Position
-                                        elseif v:IsA("MeshPart") then pos = v.Position
-                                        elseif v:IsA("Model") then pos = v:GetPivot().Position
-                                        end
-                                    end)
-                                    if pos then table.insert(pumpkins, {obj=v, pos=pos, source="Name:"..v.Name}) end
-                                end
-                            end
-                            -- Verifica se tem ProximityPrompt de pumpkin (algumas aboboras tem prompt)
                             if v:IsA("ProximityPrompt") then
                                 local text = ((v.ObjectText or "").." "..(v.ActionText or "").." "..(v.Parent and v.Parent.Name or "")):lower()
-                                if text:find("pumpkin") or text:find("smash") or text:find("break") then
+                                if text:find("pumpkin") or text:find("smash") or text:find("break") or text:find("collect") then
                                     local parent = v.Parent
-                                    local pos = nil
-                                    pcall(function()
-                                        if parent:IsA("BasePart") then pos = parent.Position else pos = parent:GetPivot().Position end
-                                    end)
-                                    if pos then table.insert(pumpkins, {obj=parent, pos=pos, source="Prompt"}) end
+                                    if parent and not IsDecorationPumpkin(parent) then
+                                        local pos = nil
+                                        pcall(function()
+                                            if parent:IsA("BasePart") then pos = parent.Position else pos = parent:GetPivot().Position end
+                                        end)
+                                        if pos then table.insert(pumpkins, {obj=parent, pos=pos}) end
+                                    end
                                 end
                             end
                         end
-                        
-                        -- Remove duplicatas por posicao proxima
+                        for _, v in ipairs(workspace:GetDescendants()) do
+                            local lname = string.lower(v.Name)
+                            local parent = v.Parent
+                            local parentName = parent and string.lower(parent.Name) or ""
+                            local grandParentName = parent and parent.Parent and string.lower(parent.Parent.Name) or ""
+                            local isInEventFolder = parentName:find("pumpkin") or parentName:find("halloween") or parentName:find("event") or parentName:find("spawn") or parentName:find("active") or grandParentName:find("pumpkin") or grandParentName:find("halloween") or grandParentName:find("event")
+                            if isInEventFolder and (lname:find("pumpkin") or parentName:find("pumpkin")) then
+                                if not lname:find("bits") and not lname:find("seed") and not lname:find("material") and not lname:find("tool") and not lname:find("candy") and not lname:find("fragment") then
+                                    if not IsDecorationPumpkin(v) then
+                                        local pos = nil
+                                        pcall(function()
+                                            if v:IsA("BasePart") then pos = v.Position
+                                            elseif v:IsA("MeshPart") then pos = v.Position
+                                            elseif v:IsA("Model") then pos = v:GetPivot().Position end
+                                        end)
+                                        if pos then table.insert(pumpkins, {obj=v, pos=pos}) end
+                                    end
+                                end
+                            end
+                        end
                         local unique = {}
                         for _, p in ipairs(pumpkins) do
                             local isDup = false
-                            for _, u in ipairs(unique) do
-                                if (u.pos - p.pos).Magnitude < 5 then isDup = true break end
-                            end
+                            for _, u in ipairs(unique) do if (u.pos - p.pos).Magnitude < 4 then isDup = true break end end
                             if not isDup then table.insert(unique, p) end
                         end
                         pumpkins = unique
-                        
                         if #pumpkins > 0 then
                             local nearest = nil
                             local minDist = math.huge
@@ -11972,22 +11943,28 @@ SpokyHalloweenSection.CreateToggle(
                                 local dist = (hrp.Position - p.pos).Magnitude
                                 if dist < minDist then minDist = dist nearest = p end
                             end
-                            if nearest and minDist < 5000 then
-                                toTarget(CFrame.new(nearest.pos + Vector3.new(0,6,0)))
-                                task.wait(0.35)
+                            if nearest and minDist < 6000 then
+                                toTarget(CFrame.new(nearest.pos + Vector3.new(0,5,0)))
+                                task.wait(0.25)
+                                pcall(function()
+                                    local prompt = nearest.obj:FindFirstChildOfClass("ProximityPrompt")
+                                    if not prompt then
+                                        for _, d in ipairs(nearest.obj:GetDescendants()) do if d:IsA("ProximityPrompt") then prompt = d break end end
+                                    end
+                                    if prompt then fireproximityprompt(prompt) task.wait(0.2) end
+                                end)
                                 local melee = GetMeleeTool()
                                 if melee then
                                     char.Humanoid:EquipTool(melee)
-                                    task.wait(0.12)
-                                    -- SEMPRE MELEE - bate 3 vezes
+                                    task.wait(0.08)
                                     for i=1,4 do
                                         pcall(function() melee:Activate() end)
                                         pcall(function()
                                             game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,true,game,0)
-                                            task.wait(0.04)
+                                            task.wait(0.03)
                                             game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,false,game,0)
                                         end)
-                                        task.wait(0.1)
+                                        task.wait(0.08)
                                     end
                                 end
                             end
@@ -11998,6 +11975,7 @@ SpokyHalloweenSection.CreateToggle(
         end
     end
 )
+
 SpokyHalloweenSection.CreateToggle(
     { Title = "Auto Spooky Gacha + Bosses", Desc = "Gacha 2x/h + Hell Rider (porta chamas + portais) + Werewolf + Great Pumpkin King", Default = Settings["Auto Spooky Gacha + Bosses"] or false },
     function(V)
