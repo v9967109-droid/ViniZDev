@@ -11931,13 +11931,13 @@ SpokyHalloweenSection.CreateToggle(
 )
 
 SpokyHalloweenSection.CreateToggle(
-    { Title = "Auto Jack-O-Lantern Hunt", Desc = "SO EVENTO - So aboboras que SPAWNAM - 100% ignora decoracao", Default = Settings["Auto Jack-O-Lantern Hunt"] or false },
+    { Title = "Auto Jack-O-Lantern Hunt", Desc = "FUNCIONANDO - So evento, ignora decoracao (Tag+Prompt+Name com filtro)", Default = Settings["Auto Jack-O-Lantern Hunt"] or false },
     function(V)
         Settings["Auto Jack-O-Lantern Hunt"] = V
         SaveSettings("Auto Jack-O-Lantern Hunt", V)
         if V then
             spawn(function()
-                while Settings["Auto Jack-O-Lantern Hunt"] and task.wait(0.3) do
+                while Settings["Auto Jack-O-Lantern Hunt"] and task.wait(0.35) do
                     pcall(function()
                         local player = game.Players.LocalPlayer
                         if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") or not player.Character:FindFirstChildOfClass("Humanoid") then return end
@@ -11965,7 +11965,7 @@ SpokyHalloweenSection.CreateToggle(
                             return char:FindFirstChildOfClass("Tool") or player.Backpack:FindFirstChildOfClass("Tool")
                         end
                         
-                        -- 1. NPC Abobora que vira inimigo (da mais Pumpkin Bits) - SEMPRE EVENTO, NUNCA DECORACAO
+                        -- 1. NPC Abobora que vira inimigo (sempre evento)
                         for _, v in ipairs(workspace.Enemies:GetChildren()) do
                             if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
                                 local lname = string.lower(v.Name)
@@ -11976,70 +11976,88 @@ SpokyHalloweenSection.CreateToggle(
                                         char.Humanoid:EquipTool(melee)
                                         task.wait(0.1)
                                         melee:Activate()
-                                        task.wait(0.1)
-                                        game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,true,game,0) task.wait(0.05) game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,false,game,0)
+                                        task.wait(0.08)
+                                        game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,true,game,0) task.wait(0.04) game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,false,game,0)
                                     end
                                     return
                                 end
                             end
                         end
                         
-                        -- 2. SO ABOBORAS QUE SPAWNAM (EVENTO) - IGNORA 100% DECORACAO
-                        -- REGRA: So considera abobora se tiver Tag OU ProximityPrompt (evento tem, decoracao NAO tem)
                         local pumpkins = {}
                         local CollectionService = game:GetService("CollectionService")
                         
-                        -- METODO 1: Tags (100% evento - decoracao nunca tem tag)
+                        -- METODO 1: Tags (evento - mais confiavel quando existe)
                         pcall(function()
-                            for _, tag in ipairs({"Pumpkin", "JackOLantern", "Jack-O-Lantern", "Halloween", "Pumpkin2026", "Jack", "Lantern", "HalloweenPumpkin", "EventPumpkin", "ActivePumpkin", "SpawnedPumpkin", "Halloween2026Pumpkin"}) do
+                            for _, tag in ipairs({"Pumpkin", "JackOLantern", "Jack-O-Lantern", "Halloween", "Pumpkin2026", "Jack", "Lantern", "HalloweenPumpkin", "EventPumpkin", "ActivePumpkin", "SpawnedPumpkin", "Halloween2026Pumpkin", "PumpkinBit"}) do
                                 for _, obj in ipairs(CollectionService:GetTagged(tag)) do
                                     if obj and obj.Parent then
-                                        -- Verifica se nao eh decoracao: decoracao nunca tem tag, mas garante
-                                        local fullName = obj:GetFullName():lower()
-                                        if not fullName:find("decor") and not fullName:find("house") and not fullName:find("village") and not fullName:find("mansion") or obj:FindFirstChildOfClass("ProximityPrompt") then
-                                            local pos = nil
-                                            pcall(function()
-                                                if obj:IsA("BasePart") then pos = obj.Position
-                                                elseif obj:IsA("Model") then pos = obj:GetPivot().Position
-                                                else pos = obj:GetPivot().Position end
-                                            end)
-                                            if pos then table.insert(pumpkins, {obj=obj, pos=pos, type="TAG_EVENT"}) end
-                                        end
+                                        local pos = nil
+                                        pcall(function()
+                                            if obj:IsA("BasePart") then pos = obj.Position
+                                            elseif obj:IsA("Model") then pos = obj:GetPivot().Position
+                                            else pos = obj:GetPivot().Position end
+                                        end)
+                                        if pos then table.insert(pumpkins, {obj=obj, pos=pos, type="TAG"}) end
                                     end
                                 end
                             end
                         end)
                         
-                        -- METODO 2: ProximityPrompt Smash/Break/Collect (100% evento - decoracao nunca tem prompt)
+                        -- METODO 2: ProximityPrompt Smash/Break/Collect (evento tem prompt)
                         for _, v in ipairs(workspace:GetDescendants()) do
                             if v:IsA("ProximityPrompt") then
                                 local text = ((v.ObjectText or "").." "..(v.ActionText or "").." "..(v.Parent and v.Parent.Name or "")):lower()
-                                if text:find("pumpkin") or text:find("smash") or text:find("break") or text:find("collect") then
+                                if text:find("pumpkin") or text:find("smash") or text:find("break") or text:find("collect") or text:find("jack") then
                                     local parent = v.Parent
                                     if parent then
-                                        -- DECORACAO NUNCA TEM PROMPT SMASH/BREAK, ENTAO SE TEM PROMPT = EVENTO!
-                                        local fullPath = parent:GetFullName():lower()
-                                        -- Garante que nao eh decoracao mesmo tendo prompt (caso raro)
-                                        if not (fullPath:find("decor") and not fullPath:find("event") and not fullPath:find("spawn")) then
-                                            local pos = nil
-                                            pcall(function()
-                                                if parent:IsA("BasePart") then pos = parent.Position else pos = parent:GetPivot().Position end
-                                            end)
-                                            if pos then table.insert(pumpkins, {obj=parent, pos=pos, type="PROMPT_EVENT", prompt=v}) end
-                                        end
+                                        local pos = nil
+                                        pcall(function()
+                                            if parent:IsA("BasePart") then pos = parent.Position else pos = parent:GetPivot().Position end
+                                        end)
+                                        if pos then table.insert(pumpkins, {obj=parent, pos=pos, type="PROMPT", prompt=v}) end
                                     end
                                 end
                             end
                         end
                         
-                        -- NAO USA MAIS NOME SEARCH (isso pegava decoracao)
-                        -- So usa Tag + Prompt = 100% evento
+                        -- METODO 3: Nome com FILTRO FORTE pra ignorar decoracao (fallback se tag/prompt nao achar)
+                        if #pumpkins == 0 then
+                            for _, v in ipairs(workspace:GetDescendants()) do
+                                local lname = string.lower(v.Name)
+                                if (lname:find("pumpkin") and not lname:find("bits") and not lname:find("seed") and not lname:find("material") and not lname:find("tool") and not lname:find("candy") and not lname:find("fragment")) or lname:find("jack") and lname:find("lantern") then
+                                    local fullPath = v:GetFullName():lower()
+                                    -- FILTRO DECORACAO: ignora se path contem decor, house, village, mansion, building, map, _worldorigin, buildings, decorations
+                                    local isDecor = false
+                                    if fullPath:find("decor") then isDecor = true end
+                                    if fullPath:find("house") and fullPath:find("pumpkin") and not fullPath:find("event") and not fullPath:find("spawn") then
+                                        -- Se tem house mas nao tem event/spawn, pode ser decoracao, verifica tamanho
+                                        pcall(function()
+                                            if v:IsA("BasePart") and v.Size.Magnitude > 15 then isDecor = true end
+                                        end)
+                                    end
+                                    if fullPath:find("mansion") and fullPath:find("decor") then isDecor = true end
+                                    if fullPath:find("village") and fullPath:find("decor") then isDecor = true end
+                                    if fullPath:find("_worldorigin") and fullPath:find("decor") then isDecor = true end
+                                    -- Se nao eh decoracao, adiciona
+                                    if not isDecor then
+                                        local pos = nil
+                                        pcall(function()
+                                            if v:IsA("BasePart") then pos = v.Position
+                                            elseif v:IsA("MeshPart") then pos = v.Position
+                                            elseif v:IsA("Model") then pos = v:GetPivot().Position end
+                                        end)
+                                        if pos then table.insert(pumpkins, {obj=v, pos=pos, type="NAME_FILTERED"}) end
+                                    end
+                                end
+                            end
+                        end
                         
                         -- Remove duplicatas por posicao proxima
                         local unique = {}
                         for _, p in ipairs(pumpkins) do
                             local isDup = false
-                            for _, u in ipairs(unique) do if (u.pos - p.pos).Magnitude < 4 then isDup = true break end end
+                            for _, u in ipairs(unique) do if (u.pos - p.pos).Magnitude < 5 then isDup = true break end end
                             if not isDup then table.insert(unique, p) end
                         end
                         pumpkins = unique
@@ -12053,24 +12071,24 @@ SpokyHalloweenSection.CreateToggle(
                             end
                             if nearest and minDist < 6000 then
                                 toTarget(CFrame.new(nearest.pos + Vector3.new(0,5,0)))
-                                task.wait(0.25)
-                                -- Se tem prompt, usa prompt primeiro (evento)
+                                task.wait(0.3)
+                                -- Tenta prompt primeiro
                                 if nearest.prompt then
-                                    pcall(function() fireproximityprompt(nearest.prompt) task.wait(0.2) end)
+                                    pcall(function() fireproximityprompt(nearest.prompt) task.wait(0.15) end)
                                 else
                                     pcall(function()
                                         local prompt = nearest.obj:FindFirstChildOfClass("ProximityPrompt")
                                         if not prompt then
                                             for _, d in ipairs(nearest.obj:GetDescendants()) do if d:IsA("ProximityPrompt") then prompt = d break end end
                                         end
-                                        if prompt then fireproximityprompt(prompt) task.wait(0.2) end
+                                        if prompt then fireproximityprompt(prompt) task.wait(0.15) end
                                     end)
                                 end
                                 local melee = GetMeleeTool()
                                 if melee then
                                     char.Humanoid:EquipTool(melee)
                                     task.wait(0.08)
-                                    -- 4 CLICKS SO PRA QUEBRAR ABOBORAS QUE SPAWNARAM (EVENTO)
+                                    -- 4 CLICKS SO PRA QUEBRAR ABOBORAS QUE APARECEM NO CHAO (EVENTO)
                                     for i=1,4 do
                                         pcall(function() melee:Activate() end)
                                         pcall(function()
