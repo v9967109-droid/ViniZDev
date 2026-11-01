@@ -11749,6 +11749,220 @@ task.spawn(function()
 	end
 end)
 FarmotherMain = Main.CreatePage({ Page_Name = "Farming Other", Page_Title = "Farming Other" })
+
+-- HELLFIRE HALLOWEEN 2026 - FINAL COMPLETO - BASEADO EM QUANTUM ONYX + SPIRITUAL GAMING HUB
+-- Lancou hoje 31/10/2026 - Estudado dos scripts que ja fazem o evento
+SpokyHalloweenSection = FarmotherMain.CreateSection("Hellfire Halloween 2026 [FINAL]")
+SpokyHalloweenSection.CreateToggle(
+    { Title = "Auto Halloween Trick Or Treat", Desc = "Harvest Moon XX:00 10min + Portas 3 Seas + Mata Werewolf + Hell Rider Gas Mutation", Default = Settings["Auto Halloween Trick Or Treat"] or false },
+    function(V)
+        Settings["Auto Halloween Trick Or Treat"] = V
+        SaveSettings("Auto Halloween Trick Or Treat", V)
+        if V then
+            spawn(function()
+                while Settings["Auto Halloween Trick Or Treat"] and task.wait(0.5) do
+                    pcall(function()
+                        local player = game.Players.LocalPlayer
+                        if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
+                        local hrp = player.Character.HumanoidRootPart
+                        
+                        -- 1. PRIORIDADE 1: MATAR BOSSES (Werewolf + Hell Rider Gas Mutation)
+                        for _, v in ipairs(workspace.Enemies:GetChildren()) do
+                            if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
+                                local lname = string.lower(v.Name)
+                                if lname:find("werewolf") or lname:find("unbound") or lname:find("hell rider") or lname:find("hellrider") or lname:find("gas") or lname:find("hellfire") or lname:find("great pumpkin") or lname:find("pumpkin king") then
+                                    toTarget(v.HumanoidRootPart.CFrame * CFrame.new(0,10,5))
+                                    local tool = player.Character:FindFirstChildOfClass("Tool") or player.Backpack:FindFirstChildOfClass("Tool")
+                                    if tool then player.Character.Humanoid:EquipTool(tool) end
+                                    for _, k in ipairs({"Z","X","C","V","F"}) do
+                                        game:GetService("VirtualInputManager"):SendKeyEvent(true, k, false, game)
+                                        task.wait(0.1)
+                                        game:GetService("VirtualInputManager"):SendKeyEvent(false, k, false, game)
+                                    end
+                                    return
+                                end
+                            end
+                        end
+                        
+                        -- 2. Portais de Hell Rider (porta em chamas + portais)
+                        for _, v in ipairs(workspace:GetDescendants()) do
+                            if v:IsA("BasePart") and v.Name:lower():find("portal") then
+                                local pname = v.Parent and v.Parent.Name:lower() or ""
+                                if pname:find("hell") or pname:find("rider") or pname:find("werewolf") or pname:find("gas") then
+                                    toTarget(CFrame.new(v.Position + Vector3.new(0,5,0)))
+                                    return
+                                end
+                            end
+                        end
+                        
+                        -- 3. PRIORIDADE 2: TRICK OR TREAT (portas)
+                        local doors = {}
+                        for _, v in ipairs(workspace:GetDescendants()) do
+                            if v:IsA("ProximityPrompt") then
+                                local parent = v.Parent
+                                if parent and parent:IsA("BasePart") then
+                                    local text = ((v.ObjectText or "").." "..(v.ActionText or "").." "..parent.Name):lower()
+                                    if text:find("trick") or text:find("treat") or text:find("knock") or text:find("door") or text:find("candy") then
+                                        table.insert(doors, {prompt=v, pos=parent.Position})
+                                    end
+                                end
+                            end
+                        end
+                        if #doors > 0 then
+                            table.sort(doors, function(a,b) return (a.prompt:GetAttribute("LastHalloween") or 0) < (b.prompt:GetAttribute("LastHalloween") or 0) end)
+                            local door = doors[1]
+                            local last = door.prompt:GetAttribute("LastHalloween")
+                            if not last or tick() - last > 10 then
+                                toTarget(CFrame.new(door.pos + Vector3.new(0,5,0)))
+                                task.wait(0.5)
+                                fireproximityprompt(door.prompt, 0)
+                                task.wait(0.2)
+                                fireproximityprompt(door.prompt, 1)
+                                door.prompt:SetAttribute("LastHalloween", tick())
+                                task.wait(0.5)
+                                for _, gui in ipairs(player.PlayerGui:GetDescendants()) do
+                                    if gui:IsA("TextButton") and gui.Visible then
+                                        local txt = (gui.Text or ""):lower()
+                                        if txt:find("trick") or txt:find("treat") or txt:find("candy") or txt:find("yes") or txt:find("ok") or txt:find("continue") or txt:find("accept") or txt:find("battle") or txt:find("challenge") then
+                                            pcall(function() gui:Activate() end)
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end)
+                end
+            end)
+        end
+    end
+)
+SpokyHalloweenSection.CreateToggle(
+    { Title = "Auto Jack-O-Lantern Hunt", Desc = "Aboboras sempre ativas + Pumpkin Bits + Candy Corn - Spiritual Hub Pattern", Default = Settings["Auto Jack-O-Lantern Hunt"] or false },
+    function(V)
+        Settings["Auto Jack-O-Lantern Hunt"] = V
+        SaveSettings("Auto Jack-O-Lantern Hunt", V)
+        if V then
+            spawn(function()
+                while Settings["Auto Jack-O-Lantern Hunt"] and task.wait(0.4) do
+                    pcall(function()
+                        local player = game.Players.LocalPlayer
+                        if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
+                        local hrp = player.Character.HumanoidRootPart
+                        -- Verifica NPC abobora primeiro (da mais Pumpkin Bits e Candy Corn)
+                        for _, v in ipairs(workspace.Enemies:GetChildren()) do
+                            if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
+                                local lname = string.lower(v.Name)
+                                if lname:find("pumpkin") or lname:find("jack") then
+                                    toTarget(v.HumanoidRootPart.CFrame * CFrame.new(0,8,5))
+                                    local tool = player.Character:FindFirstChildOfClass("Tool") or player.Backpack:FindFirstChildOfClass("Tool")
+                                    if tool then player.Character.Humanoid:EquipTool(tool) end
+                                    for _, k in ipairs({"Z","X","C","V","F"}) do
+                                        game:GetService("VirtualInputManager"):SendKeyEvent(true, k, false, game)
+                                        task.wait(0.08)
+                                        game:GetService("VirtualInputManager"):SendKeyEvent(false, k, false, game)
+                                    end
+                                    return
+                                end
+                            end
+                        end
+                        -- Procura aboboras por nome (sempre ativas no mapa)
+                        local pumpkins = {}
+                        for _, v in ipairs(workspace:GetDescendants()) do
+                            if v:IsA("BasePart") or v:IsA("MeshPart") or v:IsA("Model") then
+                                local lname = string.lower(v.Name)
+                                if lname:find("pumpkin") and not lname:find("bits") and not lname:find("seed") then
+                                    local pos = nil
+                                    if v:IsA("BasePart") then pos = v.Position else pcall(function() pos = v:GetPivot().Position end) end
+                                    if pos then table.insert(pumpkins, {obj=v, pos=pos}) end
+                                end
+                            end
+                        end
+                        if #pumpkins > 0 then
+                            local nearest = nil
+                            local minDist = math.huge
+                            for _, p in ipairs(pumpkins) do
+                                local dist = (hrp.Position - p.pos).Magnitude
+                                if dist < minDist then minDist = dist nearest = p end
+                            end
+                            if nearest and minDist < 4000 then
+                                toTarget(CFrame.new(nearest.pos + Vector3.new(0,8,0)))
+                                task.wait(0.4)
+                                local tool = player.Character:FindFirstChildOfClass("Tool") or player.Backpack:FindFirstChildOfClass("Tool")
+                                if tool then
+                                    player.Character.Humanoid:EquipTool(tool)
+                                    task.wait(0.1)
+                                    tool:Activate()
+                                end
+                            end
+                        end
+                    end)
+                end
+            end)
+        end
+    end
+)
+SpokyHalloweenSection.CreateToggle(
+    { Title = "Auto Spooky Gacha + Bosses", Desc = "Gacha 2x/h + Hell Rider (porta chamas + portais) + Werewolf + Great Pumpkin King", Default = Settings["Auto Spooky Gacha + Bosses"] or false },
+    function(V)
+        Settings["Auto Spooky Gacha + Bosses"] = V
+        SaveSettings("Auto Spooky Gacha + Bosses", V)
+        if V then
+            spawn(function()
+                while Settings["Auto Spooky Gacha + Bosses"] and task.wait(1) do
+                    pcall(function()
+                        local player = game.Players.LocalPlayer
+                        if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
+                        local hrp = player.Character.HumanoidRootPart
+                        -- 1. Bosses: Hell Rider, Werewolf, Great Pumpkin King
+                        for _, v in ipairs(workspace.Enemies:GetChildren()) do
+                            if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
+                                local lname = string.lower(v.Name)
+                                if lname:find("werewolf") or lname:find("hell rider") or lname:find("hellrider") or lname:find("pumpkin king") or lname:find("great pumpkin") then
+                                    toTarget(v.HumanoidRootPart.CFrame * CFrame.new(0,10,5))
+                                    local tool = player.Character:FindFirstChildOfClass("Tool") or player.Backpack:FindFirstChildOfClass("Tool")
+                                    if tool then player.Character.Humanoid:EquipTool(tool) end
+                                    for _, k in ipairs({"Z","X","C","V","F"}) do
+                                        game:GetService("VirtualInputManager"):SendKeyEvent(true, k, false, game)
+                                        task.wait(0.1)
+                                        game:GetService("VirtualInputManager"):SendKeyEvent(false, k, false, game)
+                                    end
+                                    return
+                                end
+                            end
+                        end
+                        -- 2. Portais de Hell Rider (quando acha porta em chamas, portas perto viram portais)
+                        for _, v in ipairs(workspace:GetDescendants()) do
+                            if v:IsA("BasePart") and v.Name:lower():find("portal") then
+                                local pname = v.Parent and v.Parent.Name:lower() or ""
+                                if pname:find("hell") or pname:find("rider") or pname:find("werewolf") or pname:find("pumpkin") then
+                                    toTarget(CFrame.new(v.Position + Vector3.new(0,5,0)))
+                                    return
+                                end
+                            end
+                        end
+                        -- 3. Spooky Gacha 2x por hora - Locais oficiais: Middle Town Sea1, Cafe Sea2, Mansion Sea3
+                        for _, v in ipairs(workspace:GetDescendants()) do
+                            if v:IsA("ProximityPrompt") then
+                                local text = ((v.ObjectText or "").." "..(v.ActionText or "")):lower()
+                                if text:find("gacha") or text:find("spooky") or text:find("haunted") or text:find("zioles") then
+                                    local parent = v.Parent
+                                    local pos = parent:IsA("BasePart") and parent.Position or parent:GetPivot().Position
+                                    toTarget(CFrame.new(pos + Vector3.new(0,5,0)))
+                                    task.wait(0.4)
+                                    fireproximityprompt(v, 0)
+                                    task.wait(0.2)
+                                    fireproximityprompt(v, 1)
+                                    return
+                                end
+                            end
+                        end
+                    end)
+                end
+            end)
+        end
+    end
+)
+
 EventEasterSection = FarmotherMain.CreateSection("Event Easter")
 EventEasterSection.CreateButton({ Title = "Open Easter Shop" }, function()
 	require(game.ReplicatedStorage.Controllers.UI.EventShop):Open("Easter2026")
