@@ -3313,6 +3313,86 @@ do
     AdvanceLabels[4] = SectionAdvance.CreateLabel({ Title = "Spin-Spin - $7,500" })
     AdvanceLabels[5] = SectionAdvance.CreateLabel({ Title = "Rocket-Rocket - $5,000" })
     
+    -- CRIA SCROLLS AZUIS DEPOIS - NAO PARA EXECUCAO, TUDO EM PCALL!
+    local NormalScrollFrame = nil
+    local AdvanceScrollFrame = nil
+    pcall(function()
+        -- Pega card da SectionNormal
+        local tempRow = NormalLabels[1].Object.Parent
+        local cardNormal = tempRow.Parent
+        -- Cria container com altura fixa 140 para Normal
+        local containerNormal = Instance.new("Frame")
+        containerNormal.Name = "NormalStockScrollContainer"
+        containerNormal.Size = UDim2.new(1, 0, 0, 140)
+        containerNormal.BackgroundTransparency = 1
+        containerNormal.Parent = cardNormal
+        -- Cria ScrollingFrame azul
+        local scrollNormal = Instance.new("ScrollingFrame")
+        scrollNormal.Name = "NormalStockScroll"
+        scrollNormal.Size = UDim2.new(1, 0, 1, 0)
+        scrollNormal.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        scrollNormal.BackgroundTransparency = 0
+        scrollNormal.BorderSizePixel = 0
+        scrollNormal.ScrollBarThickness = 6
+        scrollNormal.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
+        scrollNormal.CanvasSize = UDim2.new(0, 0, 0, 0)
+        scrollNormal.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        scrollNormal.Parent = containerNormal
+        local cornerN = Instance.new("UICorner")
+        cornerN.CornerRadius = UDim.new(0, 6)
+        cornerN.Parent = scrollNormal
+        local layoutN = Instance.new("UIListLayout")
+        layoutN.Padding = UDim.new(0, 2)
+        layoutN.SortOrder = Enum.SortOrder.LayoutOrder
+        layoutN.Parent = scrollNormal
+        NormalScrollFrame = scrollNormal
+        -- Move labels existentes para dentro do scroll
+        for i=1,6 do
+            if NormalLabels[i] and NormalLabels[i].Object then
+                local row = NormalLabels[i].Object.Parent
+                if row then
+                    row.Parent = scrollNormal
+                end
+            end
+        end
+    end)
+    pcall(function()
+        local tempRow = AdvanceLabels[1].Object.Parent
+        local cardAdvance = tempRow.Parent
+        local containerAdvance = Instance.new("Frame")
+        containerAdvance.Name = "MirageStockScrollContainer"
+        containerAdvance.Size = UDim2.new(1, 0, 0, 140)
+        containerAdvance.BackgroundTransparency = 1
+        containerAdvance.Parent = cardAdvance
+        local scrollAdvance = Instance.new("ScrollingFrame")
+        scrollAdvance.Name = "MirageStockScroll"
+        scrollAdvance.Size = UDim2.new(1, 0, 1, 0)
+        scrollAdvance.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        scrollAdvance.BackgroundTransparency = 0
+        scrollAdvance.BorderSizePixel = 0
+        scrollAdvance.ScrollBarThickness = 6
+        scrollAdvance.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
+        scrollAdvance.CanvasSize = UDim2.new(0, 0, 0, 0)
+        scrollAdvance.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        scrollAdvance.Parent = containerAdvance
+        local cornerA = Instance.new("UICorner")
+        cornerA.CornerRadius = UDim.new(0, 6)
+        cornerA.Parent = scrollAdvance
+        local layoutA = Instance.new("UIListLayout")
+        layoutA.Padding = UDim.new(0, 2)
+        layoutA.SortOrder = Enum.SortOrder.LayoutOrder
+        layoutA.Parent = scrollAdvance
+        AdvanceScrollFrame = scrollAdvance
+        for i=1,5 do
+            if AdvanceLabels[i] and AdvanceLabels[i].Object then
+                local row = AdvanceLabels[i].Object.Parent
+                if row then
+                    row.Parent = scrollAdvance
+                end
+            end
+        end
+    end)
+    
     -- PATCH FIX: estoque 100% dinamico - usa lista real da loja
     local function ParseFruit(v)
         if type(v)=="table" then
@@ -3338,7 +3418,18 @@ do
     end
     local function Ensure(section, labels, need)
         for i=#labels+1, need do
-            labels[i] = section.CreateLabel({ Title = "Slot "..i..": Loading..." })
+            local lbl = section.CreateLabel({ Title = "Slot "..i..": Loading..." })
+            labels[i] = lbl
+            -- Move novo label para dentro do scroll se existir
+            pcall(function()
+                if section == SectionNormal and NormalScrollFrame and lbl.Object then
+                    local row = lbl.Object.Parent
+                    if row then row.Parent = NormalScrollFrame end
+                elseif section == SectionAdvance and AdvanceScrollFrame and lbl.Object then
+                    local row = lbl.Object.Parent
+                    if row then row.Parent = AdvanceScrollFrame end
+                end
+            end)
         end
     end
     local function UpdateStock(section, labels, stock)
@@ -11749,422 +11840,41 @@ task.spawn(function()
 	end
 end)
 FarmotherMain = Main.CreatePage({ Page_Name = "Farming Other", Page_Title = "Farming Other" })
-
--- HELLFIRE HALLOWEEN 2026 - FINAL COMPLETO - BASEADO EM QUANTUM ONYX + SPIRITUAL GAMING HUB
--- Lancou hoje 31/10/2026 - Estudado dos scripts que ja fazem o evento
-SpokyHalloweenSection = FarmotherMain.CreateSection("Hellfire Halloween 2026 [FINAL - ALL FIXED]")
-SpokyHalloweenSection.CreateToggle(
-    { Title = "Auto Halloween Trick Or Treat", Desc = "FUNCIONANDO - Quando boss spawnar vai ate porta com portal, entra e mata", Default = Settings["Auto Halloween Trick Or Treat"] or false },
-    function(V)
-        Settings["Auto Halloween Trick Or Treat"] = V
-        SaveSettings("Auto Halloween Trick Or Treat", V)
-        if V then
-            spawn(function()
-                while Settings["Auto Halloween Trick Or Treat"] and task.wait(0.5) do
-                    pcall(function()
-                        local player = game.Players.LocalPlayer
-                        if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
-                        local hrp = player.Character.HumanoidRootPart
-                        local char = player.Character
-                        local function GetMeleeTool()
-                            local meleeNames = {"Combat", "Black Leg", "Electro", "Fishman", "Dragon Claw", "Superhuman", "Death Step", "Sharkman", "Electric Claw", "Dragon Talon", "Godhuman", "Sanguine Art"}
-                            for _, tool in ipairs(player.Backpack:GetChildren()) do
-                                if tool:IsA("Tool") then
-                                    for _, mName in ipairs(meleeNames) do
-                                        if string.lower(tool.Name):find(string.lower(mName)) then return tool end
-                                    end
-                                end
-                            end
-                            return char:FindFirstChildOfClass("Tool") or player.Backpack:FindFirstChildOfClass("Tool")
-                        end
-                        for _, v in ipairs(workspace.Enemies:GetChildren()) do
-                            if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
-                                local lname = string.lower(v.Name)
-                                if lname:find("werewolf") or lname:find("unbound") or lname:find("hell rider") or lname:find("hellrider") or lname:find("gas") or lname:find("hellfire") or lname:find("pumpkin king") or lname:find("great pumpkin") then
-                                    local dist = (hrp.Position - v.HumanoidRootPart.Position).Magnitude
-                                    if dist < 800 then
-                                        toTarget(v.HumanoidRootPart.CFrame * CFrame.new(0,8,4))
-                                        local melee = GetMeleeTool()
-                                        if melee then char.Humanoid:EquipTool(melee) task.wait(0.1) melee:Activate() end
-                                        for _, k in ipairs({"Z","X","C","V","F"}) do
-                                            game:GetService("VirtualInputManager"):SendKeyEvent(true, k, false, game)
-                                            task.wait(0.08)
-                                            game:GetService("VirtualInputManager"):SendKeyEvent(false, k, false, game)
-                                        end
-                                        return
-                                    end
-                                end
-                            end
-                        end
-                        local bossSpawned = false
-                        local bossPortals = {}
-                        for _, v in ipairs(workspace:GetDescendants()) do
-                            if v:IsA("BasePart") and v.Name:lower():find("portal") then
-                                local pname = v.Parent and v.Parent.Name:lower() or ""
-                                local gname = v.Parent and v.Parent.Parent and v.Parent.Parent.Name:lower() or ""
-                                local fullName = (v.Name.." "..pname.." "..gname):lower()
-                                if fullName:find("hell") or fullName:find("rider") or fullName:find("werewolf") or fullName:find("gas") or fullName:find("hellfire") or fullName:find("unbound") or fullName:find("pumpkin king") then
-                                    table.insert(bossPortals, {part=v, pos=v.Position})
-                                    bossSpawned = true
-                                end
-                            end
-                            if v:IsA("ProximityPrompt") then
-                                local parent = v.Parent
-                                if parent then
-                                    local text = ((v.ObjectText or "").." "..(v.ActionText or "").." "..parent.Name):lower()
-                                    if (text:find("portal") or text:find("enter")) and (text:find("hell") or text:find("rider") or text:find("werewolf") or text:find("gas") or text:find("boss")) then
-                                        local pos = nil
-                                        pcall(function()
-                                            if parent:IsA("BasePart") then pos = parent.Position else pos = parent:GetPivot().Position end
-                                        end)
-                                        if pos then
-                                            table.insert(bossPortals, {part=parent, prompt=v, pos=pos})
-                                            bossSpawned = true
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                        for _, v in ipairs(workspace.Enemies:GetChildren()) do
-                            if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                                local lname = string.lower(v.Name)
-                                if lname:find("werewolf") or lname:find("unbound") or lname:find("hell rider") or lname:find("hellrider") or lname:find("gas") or lname:find("hellfire") then
-                                    bossSpawned = true
-                                    break
-                                end
-                            end
-                        end
-                        if bossSpawned and #bossPortals > 0 then
-                            table.sort(bossPortals, function(a,b) return (hrp.Position - a.pos).Magnitude < (hrp.Position - b.pos).Magnitude end)
-                            local portal = bossPortals[1]
-                            toTarget(CFrame.new(portal.pos + Vector3.new(0,5,0)))
-                            task.wait(0.5)
-                            pcall(function()
-                                if portal.prompt then fireproximityprompt(portal.prompt)
-                                else firetouchinterest(hrp, portal.part, 0) task.wait(0.1) firetouchinterest(hrp, portal.part, 1) end
-                            end)
-                            task.wait(1.5)
-                            return
-                        end
-                        local doors = {}
-                        for _, v in ipairs(workspace:GetDescendants()) do
-                            if v:IsA("ProximityPrompt") then
-                                local parent = v.Parent
-                                if parent then
-                                    local text = ((v.ObjectText or "").." "..(v.ActionText or "").." "..parent.Name):lower()
-                                    if text:find("trick") or text:find("treat") or text:find("knock") or (text:find("door") and (text:find("halloween") or text:find("spooky") or text:find("candy"))) or text:find("candy") or text:find("halloween door") then
-                                        local pos = nil
-                                        pcall(function()
-                                            if parent:IsA("BasePart") then pos = parent.Position else pos = parent:GetPivot().Position end
-                                        end)
-                                        if pos then table.insert(doors, {prompt=v, pos=pos}) end
-                                    end
-                                end
-                            end
-                        end
-                        if #doors > 0 then
-                            local uniqueDoors = {}
-                            for _, d in ipairs(doors) do
-                                local isDup = false
-                                for _, u in ipairs(uniqueDoors) do if (u.pos - d.pos).Magnitude < 10 then isDup = true break end end
-                                if not isDup then table.insert(uniqueDoors, d) end
-                            end
-                            doors = uniqueDoors
-                            table.sort(doors, function(a,b) return (hrp.Position - a.pos).Magnitude < (hrp.Position - b.pos).Magnitude end)
-                            local door = doors[1]
-                            local last = door.prompt:GetAttribute("LastHalloween")
-                            if not last or tick() - last > 8 then
-                                toTarget(CFrame.new(door.pos + Vector3.new(0,5,0)))
-                                task.wait(0.6)
-                                pcall(function() fireproximityprompt(door.prompt, 0) task.wait(0.2) fireproximityprompt(door.prompt, 1) end)
-                                door.prompt:SetAttribute("LastHalloween", tick())
-                                task.wait(0.8)
-                                for _, gui in ipairs(player.PlayerGui:GetDescendants()) do
-                                    if gui:IsA("TextButton") and gui.Visible then
-                                        local txt = (gui.Text or ""):lower()
-                                        if txt:find("trick") or txt:find("treat") or txt:find("candy") or txt:find("yes") or txt:find("ok") or txt:find("continue") or txt:find("accept") or txt:find("battle") or txt:find("challenge") or txt:find("play") then
-                                            pcall(function() gui:Activate() end)
-                                            task.wait(0.1)
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                    end)
-                end
-            end)
-        end
-    end
+EventEasterSection = FarmotherMain.CreateSection("Event Easter")
+EventEasterSection.CreateButton({ Title = "Open Easter Shop" }, function()
+	require(game.ReplicatedStorage.Controllers.UI.EventShop):Open("Easter2026")
+end)
+function DetectEgg()
+	local V, y, P = t.Character.PrimaryPart.Position, 1 / 0
+	for Y, H in pairs(game:GetService("CollectionService"):GetTagged("EasterEgg26")) do
+		Y = (V - H:GetAttribute("CFrame").Position).Magnitude
+		if Y < y then
+			y, P = Y, H
+		end
+	end
+	return P
+end
+EventEasterSection.CreateToggle(
+	{ Title = "Auto Collect Egg Easter", Desc = nil, Default = Settings["Auto Collect Egg Easter"] or false },
+	function(V)
+		if V then
+			spawn(function()
+				while Settings["Auto Collect Egg Easter"] and (task.wait()) do
+					local y, y = pcall(function()
+						if not StackFarmOther then
+							return
+						end
+						local P = DetectEgg()
+						if P then
+							toTarget(P:GetAttribute("CFrame"))
+						end
+					end)
+				end
+			end)
+		end
+		SaveSettings("Auto Collect Egg Easter", V)
+	end
 )
-SpokyHalloweenSection.CreateToggle(
-    { Title = "Auto Jack-O-Lantern Hunt", Desc = "VOLTA FUNCIONANDO - So evento, ignora decoracao simples", Default = Settings["Auto Jack-O-Lantern Hunt"] or false },
-    function(V)
-        Settings["Auto Jack-O-Lantern Hunt"] = V
-        SaveSettings("Auto Jack-O-Lantern Hunt", V)
-        if V then
-            spawn(function()
-                while Settings["Auto Jack-O-Lantern Hunt"] and task.wait(0.35) do
-                    pcall(function()
-                        local player = game.Players.LocalPlayer
-                        if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") or not player.Character:FindFirstChildOfClass("Humanoid") then return end
-                        local hrp = player.Character.HumanoidRootPart
-                        local char = player.Character
-                        local function GetMeleeTool()
-                            local meleeNames = {"Combat", "Black Leg", "Electro", "Fishman", "Dragon Claw", "Superhuman", "Death Step", "Sharkman", "Electric Claw", "Dragon Talon", "Godhuman", "Sanguine Art"}
-                            for _, tool in ipairs(player.Backpack:GetChildren()) do
-                                if tool:IsA("Tool") then
-                                    for _, mName in ipairs(meleeNames) do
-                                        if string.lower(tool.Name):find(string.lower(mName)) then return tool end
-                                    end
-                                end
-                            end
-                            for _, tool in ipairs(char:GetChildren()) do
-                                if tool:IsA("Tool") then
-                                    for _, mName in ipairs(meleeNames) do
-                                        if string.lower(tool.Name):find(string.lower(mName)) then return tool end
-                                    end
-                                end
-                            end
-                            for _, tool in ipairs(player.Backpack:GetChildren()) do
-                                if tool:IsA("Tool") and not tool.Name:lower():find("sword") and not tool.Name:lower():find("gun") and not tool.Name:lower():find("fruit") then return tool end
-                            end
-                            return char:FindFirstChildOfClass("Tool") or player.Backpack:FindFirstChildOfClass("Tool")
-                        end
-                        for _, v in ipairs(workspace.Enemies:GetChildren()) do
-                            if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
-                                local lname = string.lower(v.Name)
-                                if lname:find("pumpkin") or lname:find("jack") or lname:find("lantern") then
-                                    toTarget(v.HumanoidRootPart.CFrame * CFrame.new(0,5,2))
-                                    local melee = GetMeleeTool()
-                                    if melee then
-                                        char.Humanoid:EquipTool(melee)
-                                        task.wait(0.1)
-                                        melee:Activate()
-                                        task.wait(0.08)
-                                        game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,true,game,0) task.wait(0.04) game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,false,game,0)
-                                    end
-                                    return
-                                end
-                            end
-                        end
-                        local pumpkins = {}
-                        local CollectionService = game:GetService("CollectionService")
-                        pcall(function()
-                            for _, tag in ipairs({"Pumpkin", "JackOLantern", "Halloween", "EventPumpkin", "ActivePumpkin", "SpawnedPumpkin"}) do
-                                for _, obj in ipairs(CollectionService:GetTagged(tag)) do
-                                    if obj and obj.Parent then
-                                        local pos = nil
-                                        pcall(function()
-                                            if obj:IsA("BasePart") then pos = obj.Position
-                                            elseif obj:IsA("Model") then pos = obj:GetPivot().Position
-                                            else pos = obj:GetPivot().Position end
-                                        end)
-                                        if pos then table.insert(pumpkins, {obj=obj, pos=pos, prompt=obj:FindFirstChildOfClass("ProximityPrompt")}) end
-                                    end
-                                end
-                            end
-                        end)
-                        for _, v in ipairs(workspace:GetDescendants()) do
-                            if v:IsA("ProximityPrompt") then
-                                local text = ((v.ObjectText or "").." "..(v.ActionText or "").." "..(v.Parent and v.Parent.Name or "")):lower()
-                                if text:find("pumpkin") or text:find("smash") or text:find("break") or text:find("collect") then
-                                    local parent = v.Parent
-                                    if parent then
-                                        local pos = nil
-                                        pcall(function()
-                                            if parent:IsA("BasePart") then pos = parent.Position else pos = parent:GetPivot().Position end
-                                        end)
-                                        if pos then table.insert(pumpkins, {obj=parent, pos=pos, prompt=v}) end
-                                    end
-                                end
-                            end
-                        end
-                        if #pumpkins == 0 then
-                            for _, v in ipairs(workspace:GetDescendants()) do
-                                local lname = string.lower(v.Name)
-                                if lname:find("pumpkin") and not lname:find("bits") and not lname:find("seed") and not lname:find("material") and not lname:find("tool") and not lname:find("candy") then
-                                    local fullPath = v:GetFullName():lower()
-                                    if not fullPath:find("decor") then
-                                        local pos = nil
-                                        pcall(function()
-                                            if v:IsA("BasePart") then pos = v.Position
-                                            elseif v:IsA("MeshPart") then pos = v.Position
-                                            elseif v:IsA("Model") then pos = v:GetPivot().Position end
-                                        end)
-                                        if pos then table.insert(pumpkins, {obj=v, pos=pos}) end
-                                    end
-                                end
-                            end
-                        end
-                        local unique = {}
-                        for _, p in ipairs(pumpkins) do
-                            local isDup = false
-                            for _, u in ipairs(unique) do if (u.pos - p.pos).Magnitude < 5 then isDup = true break end end
-                            if not isDup then table.insert(unique, p) end
-                        end
-                        pumpkins = unique
-                        if #pumpkins > 0 then
-                            local nearest = nil
-                            local minDist = math.huge
-                            for _, p in ipairs(pumpkins) do
-                                local dist = (hrp.Position - p.pos).Magnitude
-                                if dist < minDist then minDist = dist nearest = p end
-                            end
-                            if nearest and minDist < 6000 then
-                                toTarget(CFrame.new(nearest.pos + Vector3.new(0,5,0)))
-                                task.wait(0.3)
-                                if nearest.prompt then
-                                    pcall(function() fireproximityprompt(nearest.prompt) task.wait(0.15) end)
-                                else
-                                    pcall(function()
-                                        local prompt = nearest.obj:FindFirstChildOfClass("ProximityPrompt")
-                                        if not prompt then
-                                            for _, d in ipairs(nearest.obj:GetDescendants()) do if d:IsA("ProximityPrompt") then prompt = d break end end
-                                        end
-                                        if prompt then fireproximityprompt(prompt) task.wait(0.15) end
-                                    end)
-                                end
-                                local melee = GetMeleeTool()
-                                if melee then
-                                    char.Humanoid:EquipTool(melee)
-                                    task.wait(0.08)
-                                    for i=1,4 do
-                                        pcall(function() melee:Activate() end)
-                                        pcall(function()
-                                            game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,true,game,0)
-                                            task.wait(0.03)
-                                            game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,false,game,0)
-                                        end)
-                                        task.wait(0.08)
-                                    end
-                                end
-                            end
-                        end
-                    end)
-                end
-            end)
-        end
-    end
-)
-SpokyHalloweenSection.CreateToggle(
-    { Title = "Auto Spooky Gacha + Bosses", Desc = "FUNCIONANDO - Gacha 2x/h + Quando boss spawnar vai ate porta com portal, entra e mata", Default = Settings["Auto Spooky Gacha + Bosses"] or false },
-    function(V)
-        Settings["Auto Spooky Gacha + Bosses"] = V
-        SaveSettings("Auto Spooky Gacha + Bosses", V)
-        if V then
-            spawn(function()
-                while Settings["Auto Spooky Gacha + Bosses"] and task.wait(0.6) do
-                    pcall(function()
-                        local player = game.Players.LocalPlayer
-                        if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
-                        local hrp = player.Character.HumanoidRootPart
-                        local char = player.Character
-                        local function GetMeleeTool()
-                            local meleeNames = {"Combat", "Black Leg", "Electro", "Fishman", "Dragon Claw", "Superhuman", "Death Step", "Sharkman", "Electric Claw", "Dragon Talon", "Godhuman", "Sanguine Art"}
-                            for _, tool in ipairs(player.Backpack:GetChildren()) do
-                                if tool:IsA("Tool") then
-                                    for _, mName in ipairs(meleeNames) do
-                                        if string.lower(tool.Name):find(string.lower(mName)) then return tool end
-                                    end
-                                end
-                            end
-                            return char:FindFirstChildOfClass("Tool") or player.Backpack:FindFirstChildOfClass("Tool")
-                        end
-                        for _, v in ipairs(workspace.Enemies:GetChildren()) do
-                            if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
-                                local lname = string.lower(v.Name)
-                                if lname:find("werewolf") or lname:find("unbound") or lname:find("hell rider") or lname:find("hellrider") or lname:find("gas") or lname:find("hellfire") or lname:find("pumpkin king") or lname:find("great pumpkin") then
-                                    local dist = (hrp.Position - v.HumanoidRootPart.Position).Magnitude
-                                    if dist < 800 then
-                                        toTarget(v.HumanoidRootPart.CFrame * CFrame.new(0,8,4))
-                                        local melee = GetMeleeTool()
-                                        if melee then char.Humanoid:EquipTool(melee) task.wait(0.1) melee:Activate() end
-                                        for _, k in ipairs({"Z","X","C","V","F"}) do
-                                            game:GetService("VirtualInputManager"):SendKeyEvent(true, k, false, game)
-                                            task.wait(0.08)
-                                            game:GetService("VirtualInputManager"):SendKeyEvent(false, k, false, game)
-                                        end
-                                        return
-                                    end
-                                end
-                            end
-                        end
-                        local bossSpawned = false
-                        local bossPortals = {}
-                        for _, v in ipairs(workspace:GetDescendants()) do
-                            if v:IsA("BasePart") and v.Name:lower():find("portal") then
-                                local pname = v.Parent and v.Parent.Name:lower() or ""
-                                local gname = v.Parent and v.Parent.Parent and v.Parent.Parent.Name:lower() or ""
-                                local fullName = (v.Name.." "..pname.." "..gname):lower()
-                                if fullName:find("hell") or fullName:find("rider") or fullName:find("werewolf") or fullName:find("gas") or fullName:find("hellfire") or fullName:find("unbound") or fullName:find("pumpkin king") then
-                                    table.insert(bossPortals, {part=v, pos=v.Position})
-                                    bossSpawned = true
-                                end
-                            end
-                            if v:IsA("ProximityPrompt") then
-                                local parent = v.Parent
-                                if parent then
-                                    local text = ((v.ObjectText or "").." "..(v.ActionText or "").." "..parent.Name):lower()
-                                    if (text:find("portal") or text:find("enter")) and (text:find("hell") or text:find("rider") or text:find("werewolf") or text:find("gas") or text:find("boss")) then
-                                        local pos = nil
-                                        pcall(function()
-                                            if parent:IsA("BasePart") then pos = parent.Position else pos = parent:GetPivot().Position end
-                                        end)
-                                        if pos then
-                                            table.insert(bossPortals, {part=parent, prompt=v, pos=pos})
-                                            bossSpawned = true
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                        for _, v in ipairs(workspace.Enemies:GetChildren()) do
-                            if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                                local lname = string.lower(v.Name)
-                                if lname:find("werewolf") or lname:find("unbound") or lname:find("hell rider") or lname:find("hellrider") or lname:find("gas") or lname:find("hellfire") then
-                                    bossSpawned = true
-                                    break
-                                end
-                            end
-                        end
-                        if bossSpawned and #bossPortals > 0 then
-                            table.sort(bossPortals, function(a,b) return (hrp.Position - a.pos).Magnitude < (hrp.Position - b.pos).Magnitude end)
-                            local portal = bossPortals[1]
-                            toTarget(CFrame.new(portal.pos + Vector3.new(0,5,0)))
-                            task.wait(0.5)
-                            pcall(function()
-                                if portal.prompt then fireproximityprompt(portal.prompt)
-                                else firetouchinterest(hrp, portal.part, 0) task.wait(0.1) firetouchinterest(hrp, portal.part, 1) end
-                            end)
-                            task.wait(1.5)
-                            return
-                        end
-                        for _, v in ipairs(workspace:GetDescendants()) do
-                            if v:IsA("ProximityPrompt") then
-                                local text = ((v.ObjectText or "").." "..(v.ActionText or "")):lower()
-                                if text:find("gacha") or text:find("spooky") or text:find("haunted") or text:find("zioles") or text:find("witch") or text:find("pumpkin gacha") then
-                                    local parent = v.Parent
-                                    local pos = nil
-                                    pcall(function()
-                                        if parent:IsA("BasePart") then pos = parent.Position
-                                        else pos = parent:GetPivot().Position end
-                                    end)
-                                    if pos then
-                                        toTarget(CFrame.new(pos + Vector3.new(0,5,0)))
-                                        task.wait(0.4)
-                                        pcall(function() fireproximityprompt(v, 0) task.wait(0.2) fireproximityprompt(v, 1) end)
-                                        return
-                                    end
-                                end
-                            end
-                        end
-                    end)
-                end
-            end)
-        end
-    end
-)
-
 FishingMain = Main.CreatePage({ Page_Name = "Fishing", Page_Title = "Fishing" })
 FishingSection = FishingMain.CreateSection("Fishing")
 FishingSection.CreateToggle(
@@ -15785,44 +15495,56 @@ do
 	pcall(function() if getgenv().__BoatRaiseConn then getgenv().__BoatRaiseConn:Disconnect() end end)
 	getgenv().__BoatRaiseConn = game:GetService("RunService").Heartbeat:Connect(function()
 		if getgenv().__BoatRaiseGen ~= gen then return end
-		if not Settings["Raise Boat Manual Drive"] then
-			-- V13 FIX: Quando desativado, NÃO fica resetando todo frame (isso travava o player)
-			-- O reset já é feito uma vez no toggle callback. Aqui só retorna pra não interferir no sentar/and ar
+		if not Settings["Raise Boat Manual Drive"] then return end
+		-- FIX TOTAL: Se Auto Find Leviathan ativo, DESLIGA TOTALMENTE Raise Boat! Nao interrompe NENHUM desvio!
+		if Settings["Auto Find Leviathan"] or Settings["Multi Find Leviathan"] then
 			return
 		end
-		-- V13: Raise Boat Manual Drive totalmente independente - não bloqueia nenhuma outra função de barco
-		-- Só trava o Y, mantendo X/Z livre, pode coexistir com Sea Event, Leviathan, Prehistoric, etc.
+		-- Se tiver desvio/dodge ativo, tambem nao trava
+		if getgenv().Doding or getgenv().ReadyToDodge then return end
+		if getgenv().PosDodgeskill and getgenv().PosDodgeskill > 0 then return end
+		if getgenv().PathSeaBeast or getgenv().PathTerrorshark or getgenv().PathAnimationSeabit then return end
 		pcall(function()
 			local char = t.Character
 			local hum = char and char:FindFirstChildOfClass("Humanoid")
 			local seat = hum and hum.SeatPart
-			if not seat or not seat:IsA("VehicleSeat") then return end
+			if not seat or not seat:IsA("VehicleSeat") then
+				if getgenv().__LastRaisedBoat and getgenv().__LastRaisedBoat.Parent then
+					local boat = getgenv().__LastRaisedBoat
+					local boats = workspace:FindFirstChild("Boats")
+					if not boats or boat.Parent ~= boats then getgenv().__LastRaisedBoat = nil return end
+					local base = boat:GetAttribute("NexoraBaseY") or 8
+					local height = math.clamp(tonumber(Settings["Boat Height"]) or 175, 5, 175)
+					local targetY = base + height
+					local pivot = boat:GetPivot()
+					if math.abs(pivot.Position.Y - targetY) > 0.05 then
+						local pos = pivot.Position
+						local rot = pivot - pos
+						boat:PivotTo(CFrame.new(pos.X, targetY, pos.Z) * rot)
+					end
+				end
+				return
+			end
 			local boat = seat:FindFirstAncestorOfClass("Model")
 			local boats = workspace:FindFirstChild("Boats")
 			if not boat or not boats or boat.Parent ~= boats then return end
-			-- Altura "normal" do barco na água, medida na primeira vez que o vemos.
+			getgenv().__LastRaisedBoat = boat
 			local base = boat:GetAttribute("NexoraBaseY")
-			if not base then
-				base = (seat.Position.Y < 30) and seat.Position.Y or 8
-				boat:SetAttribute("NexoraBaseY", base)
-			end
+			if not base then base = (seat.Position.Y < 30) and seat.Position.Y or 8 boat:SetAttribute("NexoraBaseY", base) end
 			local height = math.clamp(tonumber(Settings["Boat Height"]) or 175, 5, 175)
 			local targetY = base + height
 			local pivot = boat:GetPivot()
-			-- trava Y sem interferir na velocidade
 			if math.abs(pivot.Position.Y - targetY) > 0.05 then
 				local pos = pivot.Position
 				local rot = pivot - pos
 				boat:PivotTo(CFrame.new(pos.X, targetY, pos.Z) * rot)
 			end
-			-- só zera Y, mantém X/Z (velocidade do barco)
 			local v = seat.AssemblyLinearVelocity
-			if math.abs(v.Y) > 0.01 then
-				seat.AssemblyLinearVelocity = Vector3.new(v.X, 0, v.Z)
-			end
+			if math.abs(v.Y) > 0.01 then seat.AssemblyLinearVelocity = Vector3.new(v.X, 0, v.Z) end
 		end)
 	end)
 end
+
 SettingSeaEventSection.CreateToggle(
 	{ Title = "Auto Dodge Skill Terrorshark", Desc = nil, Default = Settings["Auto Dodge Skill Terrorshark"] or false },
 	function(l)
@@ -30794,131 +30516,3 @@ function UseDragonstormAllSeaEvents(Part)
 end
 
 print("[NEXORA] DragonStorm FAST 0.06s - No 2s delay - ViniZDev")
--- ===================== FIX HALLOWEEN HELLFIRE - ViniZDev =====================
--- FIX 1: Auto Halloween Trick Or Treat - PORTA EM PORTA + PORTAL VERMELHO
-pcall(function()
-if SpokyHalloweenSection then
-SpokyHalloweenSection.CreateToggle({
-    Title = "Auto Halloween Trick Or Treat FIX",
-    Desc = "FIX PORTA + Portal Hellfire + Gas 3000",
-    Default = Settings["Auto Halloween Trick Or Treat"] or false
-}, function(V)
-    Settings["Auto Halloween Trick Or Treat"] = V
-    SaveSettings("Auto Halloween Trick Or Treat", V)
-    if V then
-        spawn(function()
-            while Settings["Auto Halloween Trick Or Treat"] and task.wait(0.5) do
-                pcall(function()
-                    local plr = game.Players.LocalPlayer
-                    local char = plr.Character
-                    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                    if not hrp then return end
-                    for _,v in ipairs(workspace.Enemies:GetChildren()) do
-                        if v:FindFirstChild("Humanoid") and v.Humanoid.Health>0 and v:FindFirstChild("HumanoidRootPart") then
-                            local n = string.lower(v.Name)
-                            if string.find(n, "hellfire") and string.find(n, "gas") then
-                                toTarget(v.HumanoidRootPart.CFrame * CFrame.new(0,12,6))
-                                return
-                            end
-                        end
-                    end
-                    for _,v in ipairs(workspace:GetDescendants()) do
-                        if v:IsA("BasePart") and string.lower(v.Name):find("portal") then
-                            local full = string.lower(v:GetFullName())
-                            if string.find(full, "hellfire") or string.find(full, "gas") then
-                                toTarget(CFrame.new(v.Position + Vector3.new(0,6,0)))
-                                task.wait(0.7)
-                                pcall(function() firetouchinterest(hrp, v, 0) task.wait(0.2) firetouchinterest(hrp, v, 1) end)
-                                return
-                            end
-                        end
-                    end
-                    local doors = {}
-                    for _,v in ipairs(workspace:GetDescendants()) do
-                        if v:IsA("ProximityPrompt") then
-                            local p = v.Parent
-                            local pos = nil
-                            pcall(function()
-                                if p:IsA("BasePart") then pos = p.Position else pos = p:GetPivot().Position end
-                            end)
-                            if pos and (hrp.Position - pos).Magnitude < 1500 then
-                                table.insert(doors, {prompt=v, pos=pos})
-                            end
-                        end
-                    end
-                    if #doors>0 then
-                        table.sort(doors, function(a,b) return (hrp.Position - a.pos).Magnitude < (hrp.Position - b.pos).Magnitude end)
-                        local d = doors[1]
-                        toTarget(CFrame.new(d.pos + Vector3.new(0,5,0)))
-                        task.wait(0.8)
-                        pcall(function() fireproximityprompt(d.prompt) end)
-                        task.wait(1.2)
-                    end
-                end)
-            end
-        end)
-    end
-end)
-end
-end)
-
--- FIX 2: Jack Quantum Onyx - IGNORA DECORAÇÃO
-pcall(function()
-if SpokyHalloweenSection then
-SpokyHalloweenSection.CreateToggle({
-    Title = "Auto Jack-O-Lantern Hunt FIX",
-    Desc = "Quantum Onyx - Smash melee, ignora decoracao grande",
-    Default = Settings["Auto Jack-O-Lantern Hunt"] or false
-}, function(V)
-    Settings["Auto Jack-O-Lantern Hunt"] = V
-    SaveSettings("Auto Jack-O-Lantern Hunt", V)
-    if V then
-        spawn(function()
-            while Settings["Auto Jack-O-Lantern Hunt"] and task.wait(0.5) do
-                pcall(function()
-                    local plr = game.Players.LocalPlayer
-                    local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-                    local char = plr.Character
-                    if not hrp or not char then return end
-                    local function GetMelee()
-                        for _,t in ipairs(plr.Backpack:GetChildren()) do if t:IsA("Tool") then return t end end
-                        return char:FindFirstChildOfClass("Tool")
-                    end
-                    for _,v in ipairs(workspace.Enemies:GetChildren()) do
-                        if v:FindFirstChild("Humanoid") and v.Humanoid.Health>0 and v:FindFirstChild("HumanoidRootPart") then
-                            local n = string.lower(v.Name)
-                            if string.find(n, "pumpkin") or string.find(n, "jack") then
-                                toTarget(v.HumanoidRootPart.CFrame * CFrame.new(0,12,6))
-                                return
-                            end
-                        end
-                    end
-                    local pumps = {}
-                    for _,v in ipairs(workspace:GetDescendants()) do
-                        if v:IsA("BasePart") or v:IsA("MeshPart") then
-                            local n = string.lower(v.Name)
-                            if string.find(n, "pumpkin") or string.find(n, "jack") then
-                                local full = string.lower(v:GetFullName())
-                                if not (string.find(full, "decor") or string.find(full, "big") or string.find(full, "large") or string.find(full, "house") or string.find(full, "castle")) then
-                                    if v.Size.Magnitude < 12 then
-                                        table.insert(pumps, {obj=v, pos=v.Position})
-                                    end
-                                end
-                            end
-                        end
-                    end
-                    if #pumps>0 then
-                        table.sort(pumps, function(a,b) return (hrp.Position - a.pos).Magnitude < (hrp.Position - b.pos).Magnitude end)
-                        local t = pumps[1]
-                        toTarget(CFrame.new(t.pos + Vector3.new(0,6,2)))
-                        task.wait(0.6)
-                        local m = GetMelee()
-                        if m then char.Humanoid:EquipTool(m) task.wait(0.15) for i=1,5 do m:Activate() task.wait(0.18) end end
-                    end
-                end)
-            end
-        end)
-    end
-end)
-end
-end)
