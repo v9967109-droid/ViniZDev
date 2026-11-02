@@ -14329,69 +14329,63 @@ AutoKillBossSection.CreateToggle(
 
 
 
--- ===== SECRET QUEST SIMPLES - ABAIXO DE FARMING OTHER - COMPATIVEL NEXORA =====
-do
-    local ok, err = pcall(function()
-        local SecretQuestSection = FarmotherMain.CreateSection("Secret Quest [Port Zyrox]")
-        SecretQuestSection.CreateLabel({ Title = "Secret Quest : 0/39 Quests" })
-        SecretQuestSection.CreateLabel({ Title = "Title Quest : None" })
-        SecretQuestSection.CreateLabel({ Title = "Doing Quest : None" })
-        SecretQuestSection.CreateLabel({ Title = "Title Awakened Boss : None" })
+-- ===== SECRET QUEST TAB NOVA - ABAIXO DE FARMING OTHER (PORT ZYROX) =====
+SecretQuestMain = Main.CreatePage({ Page_Name = "Secret Quest", Page_Title = "Secret Quest" })
+SecretQuestSection = SecretQuestMain.CreateSection("Secret Quest [39 Quests - Port Zyrox]")
 
-        SecretQuestSection.CreateToggle({
-            Title = "Hop Server For Secret Quest",
-            Desc = "Switch server when next awakened boss already done",
-            Default = Settings["Hidden Hop Dead Hour"] ~= false,
-        }, function(v)
-            SaveSettings("Hidden Hop Dead Hour", v)
-        end)
+SecretQuestSection.CreateLabel({ Title = "Secret Quest : 0/39 Quests" })
+SecretQuestSection.CreateLabel({ Title = "Title Quest : None" })
+SecretQuestSection.CreateLabel({ Title = "Doing Quest : None" })
+SecretQuestSection.CreateLabel({ Title = "Title Awakened Boss : None" })
 
-        SecretQuestSection.CreateToggle({
-            Title = "Auto Secret Quest",
-            Desc = "Auto complete Sea 1 secret quests (39 quests) - Port do Zyrox",
-            Default = Settings["Auto Secret Quest"] or false,
-        }, function(v)
-            SaveSettings("Auto Secret Quest", v)
-            _G.AutoSecretQuest = v
-            if v then
-                spawn(function()
-                    -- Usa a logica do Zyrox se existir
-                    pcall(function()
-                        if getgenv().ToggleSecretQuest then
-                            -- tenta ativar logica original
-                        end
-                    end)
-                    A.CreateNoti({ Title = "Secret Quest", Desc = "Auto Secret Quest ON - Sea 1 only", ShowTime = 4 })
+SecretQuestSection.CreateToggle({
+    Title = "Hop Server For Secret Quest",
+    Desc = "Switch server when next awakened boss is already done, or nothing triggers for 20 min",
+    Default = Settings["Hidden Hop Dead Hour"] ~= false,
+}, function(v)
+    SaveSettings("Hidden Hop Dead Hour", v)
+    if v then
+        A.CreateNoti({ Title = "Secret Quest", Desc = "Hop Server ON", ShowTime = 3 })
+    end
+end)
+
+SecretQuestSection.CreateToggle({
+    Title = "Auto Secret Quest",
+    Desc = "Auto complete Sea 1 secret quests - Port completo do Zyrox (39 quests)",
+    Default = Settings["Auto Secret Quest"] or false,
+}, function(v)
+    SaveSettings("Auto Secret Quest", v)
+    _G.AutoSecretQuest = v
+    getgenv().AutoSecretQuest = v
+    if v then
+        A.CreateNoti({ Title = "Secret Quest", Desc = "Auto Secret Quest ON - Sea 1 only", ShowTime = 4 })
+        spawn(function()
+            while Settings["Auto Secret Quest"] and task.wait(0.5) do
+                pcall(function()
+                    -- Logica basica para manter vivo, a logica completa do Zyrox esta abaixo no pcall grande
+                    if not game.Players.LocalPlayer.Character then return end
                 end)
-            else
-                A.CreateNoti({ Title = "Secret Quest", Desc = "Auto Secret Quest OFF", ShowTime = 3 })
             end
         end)
-
-        -- Adiciona todas as opcoes de Secret Quest do Zyrox como toggles extras
-        local secretOptions = {
-            "Auto Collect Berry",
-            "Auto Quest Sea 1",
-            "Auto Secret Quest Debug",
-        }
-        for _, opt in ipairs(secretOptions) do
-            pcall(function()
-                SecretQuestSection.CreateToggle({
-                    Title = opt,
-                    Default = Settings[opt] or false,
-                }, function(v) SaveSettings(opt, v) end)
-            end)
-        end
-    end)
-    if not ok then
-        warn("[SecretQuest Simple] failed: "..tostring(err))
+    else
+        A.CreateNoti({ Title = "Secret Quest", Desc = "Auto Secret Quest OFF", ShowTime = 3 })
     end
+end)
+
+-- Adiciona seção extra dentro do Farming Other também para compatibilidade
+do
+    pcall(function()
+        local ExtraSection = FarmotherMain.CreateSection("Secret Quest Link")
+        ExtraSection.CreateButton({ Title = "Go to Secret Quest Tab" }, function()
+            A.CreateNoti({ Title = "Secret Quest", Desc = "Clique na aba Secret Quest no menu esquerdo!", ShowTime = 4 })
+        end)
+    end)
 end
--- ===== FIM SECRET QUEST SIMPLES =====
+-- ===== FIM ABA SECRET QUEST =====
 
 
 
--- FULL LOGIC PORT
+-- LOGICA COMPLETA DO ZYROX (178k) DENTRO DA NOVA ABA
 -- ===================== SECRET QUEST (aba nova, port do Vxeze) =====================
 do
 	local sqOk, sqErr = pcall(function()
@@ -20797,6 +20791,7 @@ end)]])
 	end
 end
 -- ===================== FIM SECRET QUEST =====================
+
 
 DFRaidMain = Main.CreatePage({ Page_Name = "Fruits and Raid,Dunge", Page_Title = "Fruits and Raid,Dunge" })
 DevilFruitSection = DFRaidMain.CreateSection("Devil Fruit")
