@@ -13,9 +13,55 @@ _G.ZyroxUI = "redz"
 	Fallback de load: escolha -> alternativas -> Classic.
 ]]
 
+-- Nx Hub - Picker removido, forcado Redz
+local liblocal lib
+do
+	local choice = ZYROX_UI_CHOICE
+	local order = {}
+	if choice == "classic" or choice == "old" or choice == "banana" then
+		order = { "classic" }
+	elseif choice == "redz" then
+		order = { "redz", "fluent", "classic" }
+	elseif choice == "modded" or choice == "fluentmod" or choice == "fluent-modded" or choice == "fluentmodded" then
+		order = { "modded", "fluent", "classic" }
+	else
+		-- Fluent (padrao) ou qualquer outro valor
+		order = { "fluent", "modded", "classic" }
+	end
 
--- Nx Hub - Forcado Redz (sem tela de escolha)
-getgenv().ZyroxUI = "redz"
+	for _, kind in ipairs(order) do
+		if lib then
+			break
+		end
+		if kind == "classic" then
+			local ok, result = pcall(ZyroxLoadOldUI)
+			if ok and result then
+				lib = result
+				ZYROX_UI_NAME = "Classic"
+			else
+				warn("[ZyroxUI] Classic failed: " .. tostring(result))
+			end
+		elseif kind == "redz" then
+			local ok, result = pcall(ZyroxBuildRedzAdapter)
+			if ok and result then
+				lib = result
+				ZYROX_FLUENT_ACTIVE = true -- pula os ajustes da UI Classic
+				ZYROX_UI_NAME = "Redz"
+			else
+				warn("[ZyroxUI] redz failed: " .. tostring(result))
+			end
+		else
+			local ok, result = pcall(ZyroxBuildFluentAdapter, kind)
+			if ok and result then
+				lib = result
+				ZYROX_FLUENT_ACTIVE = true
+				ZYROX_UI_NAME = (kind == "modded") and "Fluent-modded" or "Fluent"
+			else
+				warn("[ZyroxUI] " .. kind .. " failed: " .. tostring(result))
+			end
+		end
+	end
+end
 if not lib then
 	error("[ZyroxUI] nenhuma interface carregou")
 end
@@ -26,6 +72,39 @@ local v243 = lib:CreateWindow({
 	Subtitle = "Blox Fruit Script",
 	Image = "rbxassetid://108697676964602"
 })
+-- Nx Hub - Botao Nx azul
+task.spawn(function()
+	task.wait(3)
+	pcall(function()
+		local host = (gethui and gethui()) or game:GetService("CoreGui")
+		while true do
+			task.wait(1)
+			for _, gui in ipairs(host:GetChildren()) do
+				for _, v in ipairs(gui:GetDescendants()) do
+					if v:IsA("TextButton") and v.Parent and v.Parent.Name:find("Btn") then
+						if v.Size.X.Offset >= 40 and v.Size.Y.Offset >= 40 then
+							v.BackgroundColor3 = Color3.fromRGB(0, 140, 255)
+							local hasNx = v:FindFirstChild("NxIcon")
+							if not hasNx then
+								for _, c in ipairs(v:GetChildren()) do if c:IsA("ImageLabel") then c:Destroy() end end
+								local l = Instance.new("TextLabel")
+								l.Name = "NxIcon"
+								l.BackgroundTransparency = 1
+								l.Size = UDim2.new(1,0,1,0)
+								l.Text = "Nx"
+								l.TextColor3 = Color3.fromRGB(255,255,255)
+								l.Font = Enum.Font.GothamBlack
+								l.TextSize = 18
+								l.Parent = v
+							end
+						end
+					end
+				end
+			end
+		end
+	end)
+end)
+
 if not ZYROX_FLUENT_ACTIVE then
 for _, v in ipairs(game:GetService("CoreGui"):GetDescendants()) do
 	if v:IsA("ImageLabel") and v.Name == "Ruafimg" and v.Image == "rbxassetid://108697676964602" then
@@ -11489,6 +11568,57 @@ spawn(function()
 		end)
 	end
 end)
+
+-- Nx Hub - Raise Boat Manual Drive (abaixo do No Clip Ship)
+GRP_SeaEvent_Sea_Event_Setting_Sail:AddToggle("Raise_Boat_Manual_Drive", {
+	Text = "Raise Boat Manual Drive",
+	Default = false,
+	Callback = function(v)
+		getgenv().RaiseBoatManual = v
+		_G.RaiseBoatManual = v
+	end
+})
+
+GRP_SeaEvent_Sea_Event_Setting_Sail:AddSlider("Boat_Height", {
+	Text = "Boat Height",
+	Min = 5,
+	Max = 175,
+	Default = 175,
+	Rounding = 0,
+	Callback = function(v) getgenv().BoatHeight = v end
+})
+
+do
+	getgenv().__BoatRaiseGen = (getgenv().__BoatRaiseGen or 0) + 1
+	local gen = getgenv().__BoatRaiseGen
+	pcall(function() if getgenv().__BoatRaiseConn then getgenv().__BoatRaiseConn:Disconnect() end end)
+	getgenv().__BoatRaiseConn = game:GetService("RunService").Heartbeat:Connect(function()
+		if getgenv().__BoatRaiseGen ~= gen then return end
+		if not getgenv().RaiseBoatManual then return end
+		pcall(function()
+			local char = game.Players.LocalPlayer.Character
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+			local seat = hum and hum.SeatPart
+			if not seat or not seat:IsA("VehicleSeat") then return end
+			local boat = seat:FindFirstAncestorOfClass("Model")
+			local boats = workspace:FindFirstChild("Boats")
+			if not boat or not boats or boat.Parent ~= boats then return end
+			local base = boat:GetAttribute("NexoraBaseY")
+			if not base then base = (seat.Position.Y < 30) and seat.Position.Y or 8 boat:SetAttribute("NexoraBaseY", base) end
+			local height = math.clamp(tonumber(getgenv().BoatHeight) or 175, 5, 175)
+			local targetY = base + height
+			local pivot = boat:GetPivot()
+			if math.abs(pivot.Position.Y - targetY) > 0.05 then
+				local pos = pivot.Position
+				local rot = pivot - pos
+				boat:PivotTo(CFrame.new(pos.X, targetY, pos.Z) * rot)
+			end
+			local v = seat.AssemblyLinearVelocity
+			if math.abs(v.Y) > 0.01 then seat.AssemblyLinearVelocity = Vector3.new(v.X, 0, v.Z) end
+		end)
+	end)
+end
+
 GRP_SeaEvent_Crafting_Items = t15.SeaEvent:AddLeftGroupbox("Crafting Items")
 
 do
@@ -22239,7 +22369,7 @@ do
 	do
 		local boss = { on = false, noclip = nil, hover = nil, target = nil, prevFarm = nil, warned = false, height = 25 }
 		local GRP_Boss = t15.Halloween:AddRightGroupbox("Halloween Boss")
-		GRP_Boss:AddLabel("Auto Farm Halloween Boss\nProcura o Unbound Werewolf e Boss do Gas, fica acima da cabeca dele e ataca com cliques ate matar.")
+		GRP_Boss:AddLabel("Auto Farm Halloween Boss\nProcura o Unbound Werewolf, fica acima da cabeca dele e ataca com cliques ate matar.")
 
 		local VirtualUser = game:GetService("VirtualUser")
 		local TweenService = game:GetService("TweenService")
@@ -22249,12 +22379,8 @@ do
 			return string.find(name, "unbound werewolf", 1, true) or string.find(name, "unbound werewol", 1, true)
 				or string.find(name, "werewolf", 1, true)
 				or string.find(name, "hellfire gas", 1, true)
-				or string.find(name, "helfife gas", 1, true)
 				or string.find(name, "hellfire", 1, true)
 				or string.find(name, "gas", 1, true)
-				or string.find(name, "smog", 1, true)
-				or string.find(name, "miasma", 1, true)
-				or string.find(name, "toxic", 1, true)
 		end
 
 		local bossAlive = function(model)
@@ -22326,7 +22452,7 @@ do
 			boss.target = nil
 			boss.prevFarm = _G.HalloweenFarm
 			_G.HalloweenFarm = true -- libera o ataque rapido do hub enquanto farma
-			notify("Auto Farm Halloween Boss ligado. Procurando Boss Halloween (Werewolf/Gas)...")
+			notify("Auto Farm Halloween Boss ligado. Procurando o Unbound Werewolf...")
 
 			-- noclip enquanto farma
 			boss.noclip = RunService.Stepped:Connect(function()
@@ -22376,7 +22502,7 @@ do
 						if not target then
 							if not boss.warned then
 								boss.warned = true
-								notify("Boss Halloween (Werewolf/Gas) nao encontrado. Fico procurando...")
+								notify("Unbound Werewolf nao encontrado. Fico procurando...")
 							end
 							task.wait(2)
 							return
@@ -22429,7 +22555,7 @@ do
 
 		GRP_Boss:AddToggle("Auto_Farm_Halloween_Boss", {
 			Text = "Auto Farm Halloween Boss",
-			Tooltip = "Procura o Unbound Werewolf e Boss do Gas, fica acima dele e ataca com cliques ate matar",
+			Tooltip = "Procura o Unbound Werewolf, fica acima dele e ataca com cliques ate matar",
 			Default = false,
 			Callback = function(value)
 				if value then
@@ -23704,6 +23830,45 @@ do
 		end
 	end)
 end
+
+
+
+-- Nx Hub - Speed e Jump (embaixo no Local Player)
+GRP_Combat_LocalPlayer_Settings:AddSlider("WalkSpeed_Nx", {
+	Text = "Speed",
+	Min = 16,
+	Max = 350,
+	Default = 16,
+	Rounding = 0,
+	Callback = function(v)
+		getgenv().WalkSpeedValue = v
+		pcall(function() local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") if hum then hum.WalkSpeed = v end end)
+	end
+})
+
+GRP_Combat_LocalPlayer_Settings:AddSlider("JumpPower_Nx", {
+	Text = "Jump",
+	Min = 50,
+	Max = 350,
+	Default = 50,
+	Rounding = 0,
+	Callback = function(v)
+		getgenv().JumpPowerValue = v
+		pcall(function() local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") if hum then hum.JumpPower = v end end)
+	end
+})
+
+spawn(function()
+	while task.wait(0.5) do
+		pcall(function()
+			local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+			if hum then
+				if getgenv().WalkSpeedValue and getgenv().WalkSpeedValue ~= 16 then hum.WalkSpeed = getgenv().WalkSpeedValue end
+				if getgenv().JumpPowerValue and getgenv().JumpPowerValue ~= 50 then hum.JumpPower = getgenv().JumpPowerValue end
+			end
+		end)
+	end
+end)
 
 GRP_Travel_Travel_Worlds = t15.Travel:AddLeftGroupbox("Travel - Worlds")
 GRP_Travel_Travel_Worlds:AddButton({
@@ -25697,7 +25862,7 @@ local function ZyroxKaitunBuildUI()
 	title.TextSize = 15
 	title.TextColor3 = Color3.fromRGB(255, 255, 255)
 	title.TextXAlignment = Enum.TextXAlignment.Left
-	title.Text = "Nx Hub Kaitun"
+	title.Text = "Zyrox Hub Kaitun"
 	title.Parent = card
 
 	local status = Instance.new("TextLabel")
@@ -26126,7 +26291,7 @@ task.spawn(function()
 		avatar_url = "https://www.roblox.com/headshot-thumbnail/image?userId=1&width=150&height=150&format=png",
 		embeds = {
 			{
-				title = "Nx Hub executado",
+				title = "Zyrox Hub executado",
 				color = 0xFF6A00,
 				thumbnail = { url = avatar },
 				fields = {
