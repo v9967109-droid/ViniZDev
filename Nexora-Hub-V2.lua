@@ -11895,53 +11895,110 @@ HalloweenSection.CreateToggle(
             while _G.AutoJackHunt do
                 pcall(function()
                     local hrp,hum,char=GetHRP() if not hrp or not hum then task.wait(0.5) return end
+                    
+                    -- 1. Mata Jack/Cursed se ja estiver vivo
                     local jack=FindJack()
                     if jack then
                         local erp=jack:FindFirstChild("HumanoidRootPart")
                         if erp then
-                            if (hrp.Position-erp.Position).Magnitude>10 then if toTarget then toTarget(erp.CFrame*CFrame.new(0,12,0)) else hrp.CFrame=erp.CFrame*CFrame.new(0,12,0) end task.wait(0.3)
+                            if (hrp.Position-erp.Position).Magnitude>8 then
+                                if toTarget then toTarget(erp.CFrame*CFrame.new(0,8,0)) else hrp.CFrame=erp.CFrame*CFrame.new(0,8,0) end
+                                task.wait(0.25)
                             else
                                 if BringMob then BringMob(jack) end if sizepart then sizepart(jack) end
+                                hrp.CFrame=CFrame.new(erp.Position+Vector3.new(0,8,0),erp.Position)
+                                hrp.Velocity=Vector3.new(0,0,0)
                                 local tool=EquipMelee()
-                                if tool then for i=1,8 do if not jack.Parent or jack:FindFirstChildOfClass("Humanoid").Health<=0 then break end if ClickM1 then ClickM1(jack,true) end tool:Activate() task.wait(0.15) end end
+                                if tool then
+                                    for i=1,8 do
+                                        if not jack.Parent or jack:FindFirstChildOfClass("Humanoid").Health<=0 then break end
+                                        if ClickM1 then ClickM1(jack,true) end
+                                        tool:Activate()
+                                        game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,true,game,0)
+                                        task.wait(0.04)
+                                        game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,false,game,0)
+                                        task.wait(0.12)
+                                    end
+                                end
                             end
                         end
                         return
                     end
-                    local pumpkin=FindPumpkin() if not pumpkin then task.wait(1) return end
-                    if pumpkin.dist>10 then
-                        local goal=CFrame.new(pumpkin.pos.X,pumpkin.pos.Y+8,pumpkin.pos.Z)
-                        if toTarget then toTarget(CFrame.new(goal.Position,pumpkin.pos)) else hrp.CFrame=CFrame.new(goal.Position,pumpkin.pos) end
-                        task.wait(0.3)
+                    
+                    -- 2. Procura abobora
+                    local pumpkin=FindPumpkin()
+                    if not pumpkin then task.wait(1) return end
+                    
+                    if pumpkin.dist>8 then
+                        -- Vai ate abobora - FICA BEM EM CIMA
+                        local goal=CFrame.new(pumpkin.pos.X, pumpkin.pos.Y+6, pumpkin.pos.Z)
+                        if toTarget then toTarget(CFrame.new(goal.Position, pumpkin.pos)) else hrp.CFrame=CFrame.new(goal.Position, pumpkin.pos) end
+                        task.wait(0.28)
                     else
+                        -- CHEGOU: BATE NA ABOBORA (NAO E MOB, E OBJETO - USA SO Activate)
                         local posBefore=pumpkin.pos
+                        local objBefore=pumpkin.obj
                         pcall(function()
-                            hrp.CFrame=CFrame.new(posBefore.X,posBefore.Y+10,posBefore.Z)
-                            hrp.CFrame=CFrame.new(hrp.CFrame.Position,posBefore)
+                            -- Trava bem em cima da abobora, olhando pra baixo
+                            hrp.CFrame=CFrame.new(posBefore.X, posBefore.Y+5, posBefore.Z)
                             hrp.Velocity=Vector3.new(0,0,0)
+                            hum.PlatformStand=false
                             local tool=EquipMelee()
                             if tool then
+                                -- 3 CLIQUES REAIS NA ABOBORA (OBJETO NAO USA ClickM1, USA Activate)
                                 for i=1,3 do
-                                    if not pumpkin.obj or not pumpkin.obj.Parent then break end
-                                    if ClickM1 then ClickM1(pumpkin.obj,true) end
+                                    if not objBefore or not objBefore.Parent then break end
+                                    -- Garante que ainda ta em cima
+                                    hrp.CFrame=CFrame.new(posBefore.X, posBefore.Y+5, posBefore.Z, 1,0,0, 0,0,1, 0,-1,0) -- olha pra baixo
                                     tool:Activate()
-                                    task.wait(0.18)
+                                    -- Click virtual pra garantir
+                                    game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,true,game,0)
+                                    task.wait(0.06)
+                                    game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,false,game,0)
+                                    -- Tenta hit com BladeHits tambem
+                                    pcall(function()
+                                        local bladeHits=getgenv().getBladeHits
+                                        if bladeHits then
+                                            local hits=bladeHits(hrp, {objBefore}, 60)
+                                            if hits then
+                                                for _,h in ipairs(hits) do
+                                                    if h then
+                                                        -- simula hit
+                                                    end
+                                                end
+                                            end
+                                        end
+                                    end)
+                                    task.wait(0.22)
                                 end
                             end
                         end)
-                        task.wait(0.5)
-                        for i=1,25 do
+                        task.wait(0.6)
+                        -- Depois de quebrar, espera Jack/Cursed spawnar
+                        for i=1,30 do
                             if not _G.AutoJackHunt then break end
                             local j=FindJack(posBefore)
                             if j then
+                                print("[Jack] Spawnou "..j.Name.." - Matando Cursed Pumpkin")
                                 local erp=j:FindFirstChild("HumanoidRootPart") local eh=j:FindFirstChildOfClass("Humanoid")
                                 if erp and eh then
                                     while _G.AutoJackHunt and j.Parent and eh.Health>0 do
-                                        if (hrp.Position-erp.Position).Magnitude>10 then if toTarget then toTarget(erp.CFrame*CFrame.new(0,12,0)) else hrp.CFrame=erp.CFrame*CFrame.new(0,12,0) end task.wait(0.3)
+                                        if (hrp.Position-erp.Position).Magnitude>8 then
+                                            if toTarget then toTarget(erp.CFrame*CFrame.new(0,8,0)) else hrp.CFrame=erp.CFrame*CFrame.new(0,8,0) end
+                                            task.wait(0.28)
                                         else
                                             if BringMob then BringMob(j) end if sizepart then sizepart(j) end
+                                            hrp.CFrame=CFrame.new(erp.Position+Vector3.new(0,8,0),erp.Position)
+                                            hrp.Velocity=Vector3.new(0,0,0)
                                             local tool=EquipMelee()
-                                            if tool then for k=1,8 do if not j.Parent or eh.Health<=0 then break end if ClickM1 then ClickM1(j,true) end tool:Activate() task.wait(0.15) end end
+                                            if tool then
+                                                for k=1,8 do
+                                                    if not j.Parent or eh.Health<=0 then break end
+                                                    if ClickM1 then ClickM1(j,true) end
+                                                    tool:Activate()
+                                                    task.wait(0.14)
+                                                end
+                                            end
                                         end
                                         task.wait(0.1)
                                     end
@@ -11953,7 +12010,7 @@ HalloweenSection.CreateToggle(
                         task.wait(0.3)
                     end
                 end)
-                task.wait(0.2)
+                task.wait(0.18)
             end
             if noclip then noclip:Disconnect() end
         end) end
