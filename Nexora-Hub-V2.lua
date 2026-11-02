@@ -12051,9 +12051,10 @@ HalloweenSection.CreateToggle(
 
 
 
--- 2 - JACK O LANTERN HUNT - FIXADO TOTARGET + SMASH
+
+-- 2 - JACK O LANTERN HUNT - SIMPLES: toTarget -> Melee -> NPC -> Proxima
 HalloweenSection.CreateToggle(
-    { Title = "Auto Jack O Lantern Hunt", Desc = "FIX Smash | Sempre ativo | Melee nas aboboras", Default = false },
+    { Title = "Auto Jack O Lantern Hunt", Desc = "Simples: toTarget abobora | Melee | Se vier NPC ataca | Proxima", Default = false },
     function(V)
         Settings["Auto Jack O Lantern Hunt"] = V
         pcall(function() SaveSettings("Auto Jack O Lantern Hunt", V) end)
@@ -12061,11 +12062,7 @@ HalloweenSection.CreateToggle(
         if V then
             task.spawn(function()
                 local lp = game.Players.LocalPlayer
-                local lastPumpkin = nil
-                local stuckTime = 0
                 local noclipConn = nil
-
-                -- noclip enquanto farm
                 noclipConn = game:GetService("RunService").Stepped:Connect(function()
                     if _G.AutoJackHunt and lp.Character then
                         for _, p in ipairs(lp.Character:GetDescendants()) do
@@ -12074,200 +12071,143 @@ HalloweenSection.CreateToggle(
                     end
                 end)
 
+                local function GetHRP()
+                    local c = lp.Character
+                    return c and c:FindFirstChild("HumanoidRootPart"), c and c:FindFirstChildOfClass("Humanoid"), c
+                end
+
+                local function EquipMelee()
+                    local hrp, hum, char = GetHRP()
+                    if not char then return nil end
+                    local tool = char:FindFirstChildOfClass("Tool")
+                    if tool then return tool end
+                    for _, v in ipairs(lp.Backpack:GetChildren()) do
+                        if v:IsA("Tool") then
+                            equiptool(v.Name)
+                            task.wait(0.25)
+                            break
+                        end
+                    end
+                    return char:FindFirstChildOfClass("Tool")
+                end
+
+                local function AttackWithMelee(obj, times)
+                    local hrp, hum, char = GetHRP()
+                    if not hrp then return end
+                    local tool = EquipMelee()
+                    if not tool then return end
+                    for i=1,times or 5 do
+                        if not obj or not obj.Parent then break end
+                        pcall(function()
+                            if ClickM1 then ClickM1(obj) end
+                            tool:Activate()
+                        end)
+                        task.wait(0.18)
+                    end
+                end
+
+                local function FindNearestPumpkin()
+                    local hrp = GetHRP()
+                    if not hrp then return nil end
+                    local best, bestDist = nil, math.huge
+                    -- Pasta oficial
+                    local folder = workspace:FindFirstChild("PumpkinHunt") or workspace:FindFirstChild("Pumpkins") or workspace
+                    local list = folder == workspace and workspace:GetDescendants() or folder:GetDescendants()
+                    -- se for pasta oficial, so filhos diretos sao mais rapido
+                    if folder ~= workspace then list = folder:GetChildren() end
+
+                    for _, obj in ipairs(list) do
+                        if obj:IsA("BasePart") or obj:IsA("Model") then
+                            local name = string.lower(obj.Name)
+                            if (name:find("pumpkin") or name:find("jack")) and not name:find("hat") and not name:find("decor") and not name:find("accessory") then
+                                local pos, ok = nil, false
+                                pcall(function()
+                                    if obj:IsA("BasePart") then
+                                        if obj.Transparency < 1 and obj.Size.Magnitude < 35 then pos = obj.Position ok=true end
+                                    else
+                                        pos = obj:GetPivot().Position ok=true
+                                    end
+                                end)
+                                if ok and pos then
+                                    local d = (hrp.Position - pos).Magnitude
+                                    if d < bestDist and d < 4000 then
+                                        bestDist = d
+                                        best = {obj=obj, pos=pos, dist=d}
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    return best
+                end
+
+                local function FindJackNPC()
+                    local hrp = GetHRP()
+                    if not hrp then return nil end
+                    for _, en in ipairs(workspace.Enemies:GetChildren()) do
+                        if string.lower(en.Name):find("jack") then
+                            local erp = en:FindFirstChild("HumanoidRootPart")
+                            local eh = en:FindFirstChildOfClass("Humanoid")
+                            if erp and eh and eh.Health>0 then
+                                if (hrp.Position - erp.Position).Magnitude < 300 then
+                                    return en
+                                end
+                            end
+                        end
+                    end
+                    return nil
+                end
+
                 while _G.AutoJackHunt and Settings["Auto Jack O Lantern Hunt"] do
-                    local ok, err = pcall(function()
-                        local char = lp.Character
-                        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                        local hum = char and char:FindFirstChildOfClass("Humanoid")
-                        if not hrp or not hum then task.wait(0.5) return end
+                    pcall(function()
+                        local hrp, hum, char = GetHRP()
+                        if not hrp then task.wait(0.5) return end
 
-                        -- 1 - Mata Jack NPC primeiro (se perto)
-                        local jackFound = false
-                        for _, en in ipairs(workspace.Enemies:GetChildren()) do
-                            local n = string.lower(en.Name)
-                            if n:find("jack") then
-                                local erp = en:FindFirstChild("HumanoidRootPart")
-                                local eh = en:FindFirstChildOfClass("Humanoid")
-                                if erp and eh and eh.Health > 0 then
-                                    local dist = (hrp.Position - erp.Position).Magnitude
-                                    if dist < 200 then
-                                        jackFound = true
-                                        -- vai ate ele
-                                        if dist > 12 then
-                                            if toTarget then toTarget(erp.CFrame * CFrame.new(0,12,0)) else hrp.CFrame = erp.CFrame * CFrame.new(0,12,0) end
-                                            task.wait(0.3)
-                                        else
-                                            -- ataca
-                                            if BringMob then BringMob(en) end
-                                            if sizepart then sizepart(en) end
-                                            pcall(function()
-                                                local tool = char:FindFirstChildOfClass("Tool")
-                                                if not tool then
-                                                    for _, v in ipairs(lp.Backpack:GetChildren()) do if v:IsA("Tool") then equiptool(v.Name) break end end
-                                                    task.wait(0.2)
-                                                end
-                                                tool = char:FindFirstChildOfClass("Tool")
-                                                if tool then
-                                                    for i=1,5 do
-                                                        if not en.Parent or eh.Health<=0 then break end
-                                                        if ClickM1 then ClickM1(en) end
-                                                        tool:Activate()
-                                                        task.wait(0.15)
-                                                    end
-                                                end
-                                            end)
-                                        end
-                                        return -- foca no jack
-                                    end
+                        -- 1. Se veio NPC Jack, ataca NPC primeiro
+                        local jackNPC = FindJackNPC()
+                        if jackNPC then
+                            local erp = jackNPC:FindFirstChild("HumanoidRootPart")
+                            local eh = jackNPC:FindFirstChildOfClass("Humanoid")
+                            if erp and eh and eh.Health>0 then
+                                local dist = (hrp.Position - erp.Position).Magnitude
+                                if dist > 10 then
+                                    if toTarget then toTarget(erp.CFrame * CFrame.new(0,10,0)) else hrp.CFrame = erp.CFrame * CFrame.new(0,10,0) end
+                                    task.wait(0.35)
+                                else
+                                    if BringMob then BringMob(jackNPC) end
+                                    if sizepart then sizepart(jackNPC) end
+                                    AttackWithMelee(jackNPC, 8)
                                 end
+                                return -- foca no npc ate morrer
                             end
                         end
 
-                        if jackFound then return end
-
-                        -- 2 - Procura pumpkins - OFICIAL tem pasta PumpkinHunt
-                        local pumpkins = {}
-                        local function addPumpkin(obj, pos)
-                            if pos and (hrp.Position - pos).Magnitude < 5000 then
-                                table.insert(pumpkins, {obj=obj, pos=pos})
-                            end
-                        end
-
-                        -- tenta achar pasta oficial primeiro
-                        local foldersToCheck = {workspace:FindFirstChild("PumpkinHunt"), workspace:FindFirstChild("Pumpkins"), workspace:FindFirstChild("Halloween"), workspace}
-                        for _, folder in ipairs(foldersToCheck) do
-                            if folder then
-                                for _, obj in ipairs(folder:GetChildren()) do
-                                    local lname = string.lower(obj.Name)
-                                    if lname:find("pumpkin") or lname:find("jack") then
-                                        local pos = nil
-                                        pcall(function()
-                                            if obj:IsA("BasePart") then
-                                                if obj.Size.Magnitude < 40 then pos = obj.Position end
-                                            elseif obj:IsA("Model") then
-                                                pos = obj:GetPivot().Position
-                                            end
-                                        end)
-                                        if pos then addPumpkin(obj, pos) end
-                                    end
-                                    -- se for pasta, checa filhos
-                                    if #pumpkins < 5 and folder == workspace then break end
-                                end
-                                if #pumpkins > 0 then break end
-                            end
-                        end
-
-                        -- fallback: varredura geral (mais pesado, so se nao achou)
-                        if #pumpkins == 0 then
-                            for _, obj in ipairs(workspace:GetDescendants()) do
-                                if obj:IsA("BasePart") and obj.Size.Magnitude < 40 then
-                                    local n = string.lower(obj.Name)
-                                    if (n:find("pumpkin") or n:find("jack")) and not n:find("decor") and not n:find("hat") and not n:find("accessory") then
-                                        -- ignora pumpkins muito grandes (decor)
-                                        if obj.Transparency < 1 and obj.CanCollide ~= nil then
-                                            addPumpkin(obj, obj.Position)
-                                            if #pumpkins >= 10 then break end
-                                        end
-                                    end
-                                end
-                            end
-                        end
-
-                        if #pumpkins == 0 then
-                            task.wait(1)
+                        -- 2. Pega abobora mais proxima
+                        local pumpkin = FindNearestPumpkin()
+                        if not pumpkin then
+                            task.wait(0.8)
                             return
                         end
 
-                        table.sort(pumpkins, function(a,b) return (hrp.Position - a.pos).Magnitude < (hrp.Position - b.pos).Magnitude end)
-                        local target = pumpkins[1]
-
-                        -- Anti-stuck: se mesma abobora por mais de 8s, pula
-                        if lastPumpkin and lastPumpkin.obj == target.obj then
-                            if tick() - stuckTime > 8 then
-                                lastPumpkin = nil
-                                stuckTime = tick()
-                                task.wait(0.5)
-                                return
-                            end
+                        -- 3. toTarget ate abobora
+                        if pumpkin.dist > 8 then
+                            if toTarget then toTarget(CFrame.new(pumpkin.pos + Vector3.new(0,7,0))) else hrp.CFrame = CFrame.new(pumpkin.pos + Vector3.new(0,7,0)) end
+                            task.wait(0.35)
                         else
-                            lastPumpkin = target
-                            stuckTime = tick()
-                        end
-
-                        local dist = (hrp.Position - target.pos).Magnitude
-
-                        if dist > 12 then
-                            -- VOA ate ela - NAO fica spammando toTarget, espera chegar
-                            pcall(function()
-                                local goal = CFrame.new(target.pos + Vector3.new(0,8,0))
-                                if toTarget then
-                                    toTarget(goal)
-                                else
-                                    hrp.CFrame = goal
-                                end
-                            end)
-                            task.wait(0.4)
-                        else
-                            -- CHEGOU: para de mover e SMASH
-                            pcall(function()
-                                -- trava no local
-                                if hrp:FindFirstChild("BodyVelocity") then hrp:FindFirstChild("BodyVelocity"):Destroy() end
-                                hum.PlatformStand = false
-                                hrp.Velocity = Vector3.new(0,0,0)
-                                
-                                -- equipa melee
-                                local tool = char:FindFirstChildOfClass("Tool")
-                                if not tool or not string.find(string.lower(tool.Name), "combat") and not string.find(string.lower(tool.Name), "black leg") and not string.find(string.lower(tool.Name), "electro") and not string.find(string.lower(tool.Name), "fishman") and not string.find(string.lower(tool.Name), "dragon") and not string.find(string.lower(tool.Name), "superhuman") and not string.find(string.lower(tool.Name), "death") and not string.find(string.lower(tool.Name), "sharkman") and not string.find(string.lower(tool.Name), "godhuman") and not string.find(string.lower(tool.Name), "sanguine") then
-                                    for _, v in ipairs(lp.Backpack:GetChildren()) do
-                                        if v:IsA("Tool") then
-                                            local ln = string.lower(v.Name)
-                                            if ln:find("combat") or ln:find("black leg") or ln:find("electro") or ln:find("fishman") or ln:find("dragon claw") or ln:find("superhuman") or ln:find("death") or ln:find("sharkman") or ln:find("electric") or ln:find("dragon talon") or ln:find("godhuman") or ln:find("sanguine") then
-                                                equiptool(v.Name)
-                                                break
-                                            end
-                                        end
-                                    end
-                                    task.wait(0.3)
-                                    -- se ainda nao tem melee, pega qualquer tool
-                                    tool = char:FindFirstChildOfClass("Tool")
-                                    if not tool then
-                                        for _, v in ipairs(lp.Backpack:GetChildren()) do if v:IsA("Tool") then equiptool(v.Name) break end end
-                                        task.wait(0.2)
-                                    end
-                                end
-
-                                tool = char:FindFirstChildOfClass("Tool")
-                                if tool then
-                                    -- 5 smashes
-                                    for i=1,5 do
-                                        if not target.obj.Parent then break end
-                                        tool:Activate()
-                                        pcall(function()
-                                            game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,true,game,0)
-                                            task.wait(0.05)
-                                            game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,false,game,0)
-                                        end)
-                                        if ClickM1 and target.obj then ClickM1(target.obj) end
-                                        task.wait(0.18)
-                                    end
-                                    lastPumpkin = nil -- ja bateu, vai pra proxima
-                                end
-                            end)
-                            task.wait(0.5)
+                            -- 4. Chegou -> usa melee para atacar abobora
+                            hrp.Velocity = Vector3.new(0,0,0)
+                            AttackWithMelee(pumpkin.obj, 5)
+                            task.wait(0.3)
+                            -- 5. Se nao veio NPC, loop ja vai pra proxima abobora automaticamente
                         end
                     end)
-                    if not ok then
-                        warn("[Jack Hunt] erro: "..tostring(err))
-                        task.wait(1)
-                    end
-                    task.wait(0.35)
+                    task.wait(0.2)
                 end
 
                 if noclipConn then noclipConn:Disconnect() end
                 pcall(function()
-                    local char = lp.Character
-                    local hum = char and char:FindFirstChildOfClass("Humanoid")
-                    if hum then hum.PlatformStand = false end
+                    local _, hum = GetHRP()
+                    if hum then hum.PlatformStand=false end
                 end)
             end)
         end
