@@ -3034,6 +3034,167 @@ do
 				s10 = Quest.Container.QuestTitle.Title.Text
 			end)
 
+
+-- ==================== TYRANT OF THE SKIES - AUTO FARM (COPIADO DO NEXORA) ====================
+-- Helpers copiados do Nexora
+function IsMobAlive(v)
+    if not v then return false end
+    local hum = v:FindFirstChildOfClass("Humanoid")
+    return hum and hum.Health > 0 and v:FindFirstChild("HumanoidRootPart") ~= nil
+end
+
+function CheckNameBoss(name)
+    local bosses = {}
+    for _,obj in ipairs(game.ReplicatedStorage:GetChildren()) do
+        if obj.Name == name and IsMobAlive(obj) then return obj end
+    end
+    for _,obj in ipairs(workspace.Enemies:GetChildren()) do
+        if obj.Name == name and IsMobAlive(obj) then return obj end
+    end
+    return nil
+end
+
+function DetectModelDestroyTyrant()
+    local ok, result = pcall(function()
+        local tiki = workspace.Map:FindFirstChild("TikiOutpost", true)
+        if not tiki then return nil end
+        local island = tiki:FindFirstChild("IslandModel", true)
+        if not island then return nil end
+        local arena = island:FindFirstChild("EagleBossArena", true)
+        if not arena then return nil end
+        for _,child in ipairs(arena:GetChildren()) do
+            if child.Name == "Tree" and not child:GetAttribute("AlreadyDestroyedClient") then
+                return child
+            end
+        end
+    end)
+    if ok then return result end
+    return nil
+end
+
+function CheckItemInventory(name)
+    local inv = {}
+    pcall(function()
+        for _,tool in ipairs(game.Players.LocalPlayer.Backpack:GetChildren()) do inv[tool.Name]=true end
+        for _,tool in ipairs(game.Players.LocalPlayer.Character:GetChildren()) do inv[tool.Name]=true end
+    end)
+    return inv[name] == true
+end
+
+-- Funcoes do Zyrox que ja existem: _tp, t9.Kill etc, mas garantimos toTarget e sizepart
+if not toTarget then
+    toTarget = function(cf) return _tp(cf) end
+end
+if not sizepart then
+    sizepart = function(mob)
+        if not mob then return end
+        pcall(function()
+            for _,part in ipairs(mob:GetDescendants()) do
+                if part:IsA("BasePart") and part.CanCollide then part.CanCollide=false end
+            end
+        end)
+    end
+end
+if not NameWeapon then
+    NameWeapon = function(tip)
+        for _,tool in ipairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
+            if tool.ToolTip == tip then return tool.Name end
+        end
+        for _,tool in ipairs(game.Players.LocalPlayer.Character:GetChildren()) do
+            if tool:IsA("Tool") and tool.ToolTip == tip then return tool.Name end
+        end
+        return nil
+    end
+end
+if not equiptool then
+    equiptool = function(name) pcall(function() game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChild(name)) end) end
+end
+if not ClickM1 then
+    ClickM1 = function(mob) end
+end
+if not UsedualFlock then
+    UsedualFlock = function() end
+end
+
+-- Toggle Tyrant na mesma secao Farming
+do
+    TyrantFarm = GRP_Main_Farming:AddToggle("Auto_Farm_Tyrant_Skies", {
+        Text = "Auto Farm Tyrant of the Skies",
+        Default = false,
+        Callback = function(v)
+            _G.AutoFarmTyrant = v
+            getgenv().AutoFarmTyrant = v
+        end
+    })
+end
+
+spawn(function()
+    while wait(0.5) do
+        pcall(function()
+            if not _G.AutoFarmTyrant then return end
+            -- Logica original Nexora: Boss -> Vase/Trees
+            local boss = CheckNameBoss("Tyrant of the Skies")
+            if boss then
+                repeat
+                    task.wait()
+                    sizepart(boss)
+                    if game.Players.LocalPlayer.PlayerGui:FindFirstChild("TransformationHUD") and game.Players.LocalPlayer.PlayerGui.TransformationHUD:FindFirstChild("ImageLabel") and game.Players.LocalPlayer.PlayerGui.TransformationHUD.ImageLabel.Visible then
+                        toTarget(boss.HumanoidRootPart.CFrame * CFrame.new(7,20,0))
+                    else
+                        toTarget(boss.HumanoidRootPart.CFrame * CFrame.new(7,20,0))
+                    end
+                    UsedualFlock()
+                    if t9 and t9.Kill then t9.Kill(boss, true) else ClickM1(boss) end
+                until not IsMobAlive(boss) or not _G.AutoFarmTyrant
+            else
+                -- Procura TikiOutpost Eyes
+                local tiki = workspace:FindFirstChild("Map", true) and workspace.Map:FindFirstChild("TikiOutpost", true) and workspace.Map.TikiOutpost:FindFirstChild("IslandModel", true)
+                if tiki then
+                    local eye1 = tiki:FindFirstChild("Eye1", true)
+                    local eye2 = tiki:FindFirstChild("Eye2", true)
+                    local eye3 = tiki:FindFirstChild("Eye3", true)
+                    local eye4 = tiki:FindFirstChild("Eye4", true)
+                    if eye1 and eye2 and eye3 and eye4 and eye1.Transparency==0 and eye2.Transparency==0 and eye3.Transparency==0 and eye4.Transparency==0 then
+                        local tree = DetectModelDestroyTyrant()
+                        if tree then
+                            local plr = game.Players.LocalPlayer
+                            if plr:DistanceFromCharacter(tree:GetPivot().Position) > 10 then
+                                toTarget(tree:GetPivot())
+                            else
+                                if CheckItemInventory("Skull Guitar") then
+                                    if not NameWeapon("Gun") or NameWeapon("Gun") ~= "Skull Guitar" then
+                                        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("LoadItem", "Skull Guitar")
+                                    else
+                                        equiptool(NameWeapon("Gun") or "Skull Guitar")
+                                        local hitPart = tree:IsA("BasePart") and tree or tree:FindFirstChildWhichIsA("BasePart", true)
+                                        if hitPart then
+                                            getgenv().AimPos = CFrame.new(hitPart.Position)
+                                            pcall(function() 
+                                                if getgenv().UseSkullGuitarSkillAttack then getgenv().UseSkullGuitarSkillAttack(hitPart) end
+                                                if getgenv().SpamGunSkullGuitar then getgenv().SpamGunSkullGuitar(hitPart) end
+                                            end)
+                                            if t9 and t9.Kill then t9.Kill(tree, true) end
+                                        end
+                                    end
+                                else
+                                    getgenv().AimPos = tree:GetPivot()
+                                    -- usa skill generica
+                                    if AutoAllSkill then AutoAllSkill() end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end)
+-- ==================== FIM TYRANT ====================
+
+
+
+
+
 			return true, s10
 		end
 
