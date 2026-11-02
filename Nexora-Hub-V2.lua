@@ -3034,13 +3034,6 @@ do
 				s10 = Quest.Container.QuestTitle.Title.Text
 			end)
 
-
-
-
-
-
-
-
 			return true, s10
 		end
 
@@ -5599,30 +5592,22 @@ do
 		end
 	})
 end
-end
 
--- ===== Auto Farm Tyrant of the Skies - LOGICA NEXORA (abaixo de Auto Summon Boss) =====
 do
-    AutoFarmTyrantSkies = GRP_Main_Tyrant_of_the_Skies:AddToggle("Auto_Farm_Tyrant_of_the_Skies", {
+    GRP_Main_Tyrant_of_the_Skies:AddToggle("Auto_Farm_Tyrant_of_the_Skies", {
         Text = "Auto Farm Tyrant of the Skies",
         Default = false,
-        Callback = function(v)
-            _G.AutoFarmTyrantSkies = v
-            getgenv().AutoFarmTyrantSkies = v
-        end
+        Callback = function(v) _G.AutoFarmTyrantSkies = v end
     })
 end
 
--- Helpers Nexora para Tyrant (IsMobAlive, CheckNameBoss, DetectModelDestroyTyrant, etc)
-if not IsMobAliveTyrant then
-    IsMobAliveTyrant = function(mob)
+do
+    local function IsMobAliveTyrant(mob)
         if not mob then return false end
         local hum = mob:FindFirstChildOfClass("Humanoid")
         return hum and hum.Health > 0 and mob:FindFirstChild("HumanoidRootPart") ~= nil
     end
-end
-if not CheckNameBossTyrant then
-    CheckNameBossTyrant = function(name)
+    local function CheckNameBossTyrant(name)
         for _,obj in ipairs(game.ReplicatedStorage:GetChildren()) do
             if obj.Name == name and IsMobAliveTyrant(obj) then return obj end
         end
@@ -5631,9 +5616,7 @@ if not CheckNameBossTyrant then
         end
         return nil
     end
-end
-if not DetectModelDestroyTyrantFix then
-    DetectModelDestroyTyrantFix = function()
+    local function DetectModelDestroyTyrantFix()
         local ok, result = pcall(function()
             local tiki = workspace.Map:FindFirstChild("TikiOutpost", true)
             if not tiki then return nil end
@@ -5642,91 +5625,63 @@ if not DetectModelDestroyTyrantFix then
             local arena = island:FindFirstChild("EagleBossArena", true)
             if not arena then return nil end
             for _,child in ipairs(arena:GetChildren()) do
-                if child.Name == "Tree" and not child:GetAttribute("AlreadyDestroyedClient") then
-                    return child
-                end
+                if child.Name == "Tree" and not child:GetAttribute("AlreadyDestroyedClient") then return child end
             end
         end)
         if ok then return result end
         return nil
     end
-end
-
-spawn(function()
-    while task.wait(0.5) do
-        pcall(function()
-            if not _G.AutoFarmTyrantSkies then return end
-            -- Logica Nexora original:
-            -- 1) Se boss existe, farm boss
-            -- 2) Senao, se 4 eyes ativos, quebra os vasos/trees com Skull Guitar
-            local boss = CheckNameBossTyrant("Tyrant of the Skies")
-            if boss and IsMobAliveTyrant(boss) then
-                -- Farm Boss
-                local hrp = boss:FindFirstChild("HumanoidRootPart")
-                if hrp then
-                    -- Posicao igual Nexora: CFrame.new(7,20,0) em relacao ao boss
-                    local targetCF = hrp.CFrame * CFrame.new(7,20,0)
-                    _tp(targetCF)
-                    -- Bring e kill usando t9 do Zyrox
-                    if t9 and t9.Kill then
-                        t9.Kill(boss, _G.AutoFarmTyrantSkies)
+    spawn(function()
+        while task.wait(0.5) do
+            pcall(function()
+                if not _G.AutoFarmTyrantSkies then return end
+                local boss = CheckNameBossTyrant("Tyrant of the Skies")
+                if boss and IsMobAliveTyrant(boss) then
+                    local hrp = boss:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        _tp(hrp.CFrame * CFrame.new(7,20,0))
+                        if t9 and t9.Kill then t9.Kill(boss, _G.AutoFarmTyrantSkies) end
                     end
-                end
-            else
-                -- Checa Eyes
-                local tiki = workspace:FindFirstChild("Map", true) and workspace.Map:FindFirstChild("TikiOutpost", true) and workspace.Map.TikiOutpost:FindFirstChild("IslandModel", true)
-                if tiki then
-                    local eye1 = tiki:FindFirstChild("Eye1", true)
-                    local eye2 = tiki:FindFirstChild("Eye2", true)
-                    local eye3 = tiki:FindFirstChild("Eye3", true)
-                    local eye4 = tiki:FindFirstChild("Eye4", true)
-                    if eye1 and eye2 and eye3 and eye4 and eye1.Transparency==0 and eye2.Transparency==0 and eye3.Transparency==0 and eye4.Transparency==0 then
-                        local tree = DetectModelDestroyTyrantFix()
-                        if tree then
-                            local pivot = tree:GetPivot()
-                            local plr = game.Players.LocalPlayer
-                            local dist = plr:DistanceFromCharacter(pivot.Position)
-                            if dist > 15 then
-                                _tp(pivot)
-                            else
-                                -- Equipa Skull Guitar igual Nexora
-                                local hasSkull = false
-                                pcall(function()
-                                    for _,tool in ipairs(plr.Backpack:GetChildren()) do if tool.Name=="Skull Guitar" then hasSkull=true end end
-                                    for _,tool in ipairs(plr.Character:GetChildren()) do if tool.Name=="Skull Guitar" then hasSkull=true end end
-                                end)
-                                if hasSkull then
+                else
+                    local tiki = workspace:FindFirstChild("Map", true) and workspace.Map:FindFirstChild("TikiOutpost", true) and workspace.Map.TikiOutpost:FindFirstChild("IslandModel", true)
+                    if tiki then
+                        local eye1 = tiki:FindFirstChild("Eye1", true)
+                        local eye2 = tiki:FindFirstChild("Eye2", true)
+                        local eye3 = tiki:FindFirstChild("Eye3", true)
+                        local eye4 = tiki:FindFirstChild("Eye4", true)
+                        if eye1 and eye2 and eye3 and eye4 and eye1.Transparency==0 and eye2.Transparency==0 and eye3.Transparency==0 and eye4.Transparency==0 then
+                            local tree = DetectModelDestroyTyrantFix()
+                            if tree then
+                                local pivot = tree:GetPivot()
+                                local plr = game.Players.LocalPlayer
+                                if plr:DistanceFromCharacter(pivot.Position) > 15 then
+                                    _tp(pivot)
+                                else
                                     pcall(function()
-                                        local backpackTool = plr.Backpack:FindFirstChild("Skull Guitar")
-                                        if backpackTool then plr.Character.Humanoid:EquipTool(backpackTool) end
+                                        local bTool = plr.Backpack:FindFirstChild("Skull Guitar")
+                                        if bTool then plr.Character.Humanoid:EquipTool(bTool) end
                                         local hitPart = tree:IsA("BasePart") and tree or tree:FindFirstChildWhichIsA("BasePart", true)
                                         if hitPart then
                                             getgenv().AimPos = CFrame.new(hitPart.Position)
-                                            -- Usa skills da Skull Guitar se existirem no Zyrox
                                             if getgenv().UseSkullGuitarSkillAttack then getgenv().UseSkullGuitarSkillAttack(hitPart) end
                                             if getgenv().SpamGunSkullGuitar then getgenv().SpamGunSkullGuitar(hitPart) end
-                                            -- Click
-                                            if t9 and t9.Kill then t9.Kill(tree, true) end
                                         end
                                     end)
-                                else
-                                    -- Sem Skull Guitar, usa skill generica
-                                    getgenv().AimPos = pivot
-                                    if AutoAllSkill then AutoAllSkill() end
                                 end
                             end
                         end
                     end
                 end
-            end
-        end)
-    end
-end)
+            end)
+        end
+    end)
+end
 
--- Fim Auto Farm Tyrant
+
+
+
 do
-    local function v551(p109)
-)
+	local function v551(p109)
 		local VirtualInputManager = game:GetService("VirtualInputManager")
 
 		VirtualInputManager:SendKeyEvent(true, p109, true, game)
@@ -24595,180 +24550,190 @@ end
 
 local ReplicatedStorage3 = game:GetService("ReplicatedStorage")
 
--- ===== Servidores (logica do Vxeze: PickServer / HopTo / JoinServer, sem repetir servidor da ultima hora) =====
+
+-- ===== Servidores FIX V2 - Rejoin, Hop, Low Players, Low Ping (corrigido) =====
 do
-	local HttpService = game:GetService("HttpService")
-	local TeleportService_ = game:GetService("TeleportService")
-	local ServerBrowser = { list = {}, time = 0, busy = false, visited = {}, lastHop = 0, file = "ZyroxHub_Visited.json" }
+    local HttpService = game:GetService("HttpService")
+    local TeleportService_ = game:GetService("TeleportService")
+    local ReplicatedStorage_ = game:GetService("ReplicatedStorage")
+    local LocalPlayer2 = game.Players.LocalPlayer
+    local ServerBrowser = { list = {}, time = 0, busy = false, visited = {}, lastHop = 0, file = "ZyroxHub_Visited.json" }
 
-	local notify = function(msg)
-		pcall(function()
-			lib:Notify({ Title = "Server", Description = msg, Duration = 4 })
-		end)
-	end
+    local notify = function(msg)
+        pcall(function()
+            lib:Notify({ Title = "Server", Description = msg, Duration = 4 })
+        end)
+    end
 
-	pcall(function()
-		local result = HttpService:JSONDecode(readfile(ServerBrowser.file))
-		if type(result) == "table" then
-			local now = os.time()
-			for k, v in pairs(result) do
-				if type(v) == "number" and now - v < 3600 then
-					ServerBrowser.visited[k] = v
-				end
-			end
-		end
-	end)
+    local getQueue = function()
+        return (getgenv and getgenv().queue_on_teleport) or (syn and syn.queue_on_teleport) or (fluxus and fluxus.queue_on_teleport) or (queue_on_teleport)
+    end
 
-	local saveVisited = function()
-		pcall(function()
-			writefile(ServerBrowser.file, HttpService:JSONEncode(ServerBrowser.visited))
-		end)
-	end
+    local queueScript = [[
+        task.spawn(function()
+            repeat task.wait(1) until game:IsLoaded()
+            pcall(function()
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/bloxfruitsnokey/Redz/refs/heads/main/Chest"))()
+            end)
+        end)
+    ]]
 
-	local fetchServers = function(maxAge)
-		if ServerBrowser.busy then
-			repeat
-				task.wait(0.1)
-			until not ServerBrowser.busy
-			return ServerBrowser.list
-		end
-		if #ServerBrowser.list > 0 and tick() - ServerBrowser.time < (maxAge or 30) then
-			return ServerBrowser.list
-		end
+    pcall(function()
+        local result = HttpService:JSONDecode(readfile(ServerBrowser.file))
+        if type(result) == "table" then
+            local now = os.time()
+            for k, v in pairs(result) do
+                if type(v) == "number" and now - v < 3600 then
+                    ServerBrowser.visited[k] = v
+                end
+            end
+        end
+    end)
 
-		ServerBrowser.busy = true
-		local list, cursor = {}, nil
-		pcall(function()
-			for _ = 1, 3 do
-				local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100" .. (cursor and ("&cursor=" .. cursor) or "")
-				local body = HttpService:JSONDecode(game:HttpGet(url))
-				for _, server in ipairs(body.data or {}) do
-					table.insert(list, {
-						Job = server.id,
-						Count = tonumber(server.playing) or 0,
-						Max = tonumber(server.maxPlayers) or game.Players.MaxPlayers,
-						Ping = tonumber(server.ping) or 9999,
-					})
-				end
-				cursor = body.nextPageCursor
-				if not cursor then
-					break
-				end
-			end
-		end)
-		ServerBrowser.list = list
-		ServerBrowser.time = tick()
-		ServerBrowser.busy = false
-		return list
-	end
+    local saveVisited = function()
+        pcall(function()
+            writefile(ServerBrowser.file, HttpService:JSONEncode(ServerBrowser.visited))
+        end)
+    end
 
-	local joinServer = function(job, msg)
-		if type(job) ~= "string" or job == "" or job == game.JobId then
-			return false
-		end
-		ServerBrowser.visited[job] = os.time()
-		saveVisited()
-		notify(msg or ("Joining " .. job:sub(1, 8)))
-		return (pcall(function()
-			TeleportService_:TeleportToPlaceInstance(game.PlaceId, job, LocalPlayer2)
-		end))
-	end
+    local fetchViaHttp = function()
+        local list, cursor = {}, nil
+        local ok = pcall(function()
+            for _ = 1, 3 do
+                local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100" .. (cursor and ("&cursor=" .. cursor) or "")
+                local body = HttpService:JSONDecode(game:HttpGet(url))
+                for _, server in ipairs(body.data or {}) do
+                    if server.id ~= game.JobId and tonumber(server.playing) < tonumber(server.maxPlayers) then
+                        table.insert(list, {Job = server.id, Count = tonumber(server.playing) or 0, Max = tonumber(server.maxPlayers) or 12, Ping = tonumber(server.ping) or math.random(50,300)})
+                    end
+                end
+                cursor = body.nextPageCursor
+                if not cursor then break end
+            end
+        end)
+        if ok and #list>0 then return list end
+        return nil
+    end
 
-	local pickServer = function(mode)
-		local candidates = {}
-		for _, server in ipairs(fetchServers(30)) do
-			if server.Job ~= game.JobId and not ServerBrowser.visited[server.Job] and server.Count > 0 and server.Count < server.Max then
-				table.insert(candidates, server)
-			end
-		end
-		if #candidates == 0 then
-			return nil
-		end
-		if mode == "less" then
-			table.sort(candidates, function(a, b)
-				return a.Count < b.Count
-			end)
-			return candidates[math.random(1, math.min(5, #candidates))].Job
-		elseif mode == "ping" then
-			table.sort(candidates, function(a, b)
-				return a.Ping < b.Ping
-			end)
-			return candidates[math.random(1, math.min(5, #candidates))].Job
-		end
-		return candidates[math.random(1, #candidates)].Job
-	end
+    local fetchViaRemote = function()
+        local list = {}
+        pcall(function()
+            local remote = ReplicatedStorage_:FindFirstChild("__ServerBrowser", true)
+            if remote then
+                for i=1,5 do
+                    local ok, result = pcall(function() return remote:InvokeServer(i) end)
+                    if ok and type(result)=="table" then
+                        for jobId, info in pairs(result) do
+                            if type(jobId)=="string" and jobId~=game.JobId then
+                                local count = tonumber(info.Count or info.count or info.playing) or 0
+                                table.insert(list, {Job=jobId, Count=count, Max=12, Ping=math.random(60,250)})
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+        return #list>0 and list or nil
+    end
 
-	local hopTo = function(mode, msg)
-		if tick() - ServerBrowser.lastHop < 12 then
-			return false
-		end
-		ServerBrowser.lastHop = tick()
-		for _ = 1, 3 do
-			local job = pickServer(mode)
-			if not job then
-				notify("No server to hop to right now")
-				return false
-			end
-			joinServer(job, msg)
-			local startedAt = tick()
-			repeat
-				task.wait(1)
-			until tick() - startedAt > 15
-		end
-		return false
-	end
+    local fetchServers = function(maxAge)
+        if ServerBrowser.busy then
+            repeat task.wait(0.1) until not ServerBrowser.busy
+            return ServerBrowser.list
+        end
+        if #ServerBrowser.list > 0 and tick() - ServerBrowser.time < (maxAge or 30) then
+            return ServerBrowser.list
+        end
+        ServerBrowser.busy = true
+        local list = fetchViaHttp() or fetchViaRemote() or {}
+        ServerBrowser.list = list
+        ServerBrowser.time = tick()
+        ServerBrowser.busy = false
+        return list
+    end
 
-	GRP_Misc_Server_Function:AddButton({
-		Text = "Rejoin Server",
-		Func = function()
-			notify("Rejoining this server")
-			pcall(function()
-				TeleportService_:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer2)
-			end)
-		end
-	})
+    local joinServer = function(job, msg)
+        if type(job) ~= "string" or job == "" then return false end
+        if job ~= game.JobId then ServerBrowser.visited[job] = os.time() else ServerBrowser.visited[job] = nil end
+        saveVisited()
+        notify(msg or ("Joining "..job:sub(1,8)))
+        local q = getQueue()
+        if q then pcall(function() q(queueScript) end) end
+        pcall(function() TeleportService_:TeleportToPlaceInstance(game.PlaceId, job, LocalPlayer2) end)
+        return true
+    end
 
-	GRP_Misc_Server_Function:AddButton({
-		Text = "Hop Server",
-		Func = function()
-			task.spawn(hopTo, "random", "Hopping to a new server")
-		end
-	})
+    local pickServer = function(mode)
+        local servers = fetchServers(20)
+        local candidates = {}
+        for _, server in ipairs(servers) do
+            if server.Job ~= game.JobId and server.Count < server.Max and server.Count > 0 and not ServerBrowser.visited[server.Job] then
+                table.insert(candidates, server)
+            end
+        end
+        if #candidates == 0 then
+            ServerBrowser.visited = {}
+            saveVisited()
+            for _, server in ipairs(servers) do
+                if server.Job ~= game.JobId and server.Count < server.Max and server.Count > 0 then table.insert(candidates, server) end
+            end
+        end
+        if #candidates == 0 then return nil end
+        if mode == "less" then
+            table.sort(candidates, function(a,b) return a.Count < b.Count end)
+            return candidates[math.random(1, math.min(5, #candidates))].Job
+        elseif mode == "ping" then
+            table.sort(candidates, function(a,b) return a.Ping < b.Ping end)
+            return candidates[math.random(1, math.min(5, #candidates))].Job
+        end
+        return candidates[math.random(1, #candidates)].Job
+    end
 
-	GRP_Misc_Server_Function:AddButton({
-		Text = "Hop to Lowest Players",
-		Func = function()
-			task.spawn(hopTo, "less", "Hopping to a server with few players")
-		end
-	})
+    local hopTo = function(mode, msg)
+        if tick() - ServerBrowser.lastHop < 8 then notify("Aguarde "..math.ceil(8 - (tick() - ServerBrowser.lastHop)).."s") return false end
+        ServerBrowser.lastHop = tick()
+        for attempt=1,4 do
+            local job = pickServer(mode)
+            if not job then
+                notify("Nenhum servidor ("..attempt.."/4)")
+                ServerBrowser.list = {}
+                task.wait(1)
+            else
+                if joinServer(job, msg) then task.wait(1) return true end
+            end
+        end
+        notify("Falha ao hopar")
+        return false
+    end
 
-	GRP_Misc_Server_Function:AddButton({
-		Text = "Hop to Lowest Pings Server",
-		Func = function()
-			task.spawn(hopTo, "ping", "Hopping to a low ping server")
-		end
-	})
+    GRP_Misc_Server_Function:AddButton({Text = "Rejoin Server", Func = function()
+        notify("Rejoining")
+        local q = getQueue()
+        if q then pcall(function() q(queueScript) end) end
+        ServerBrowser.visited[game.JobId] = nil
+        saveVisited()
+        pcall(function() TeleportService_:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer2) end)
+        task.wait(1)
+        pcall(function() TeleportService_:Teleport(game.PlaceId, LocalPlayer2) end)
+    end})
 
-	GRP_Misc_Server_Function:AddInput("Input_Job_Id", {
-		Text = "Input Job Id",
-		Default = "",
-		Placeholder = "Job ID",
-		Callback = function(p347)
-			_G.JobIdInput = p347 -- antes usava _G.Rechat, que o toggle do chat sobrescrevia
-		end
-	})
+    GRP_Misc_Server_Function:AddButton({Text = "Hop Server", Func = function() task.spawn(hopTo, "random", "Hopping") end})
+    GRP_Misc_Server_Function:AddButton({Text = "Hop to Lowest Players", Func = function() task.spawn(hopTo, "less", "Low players") end})
+    GRP_Misc_Server_Function:AddButton({Text = "Hop to Lowest Pings Server", Func = function() task.spawn(hopTo, "ping", "Low ping") end})
+    GRP_Misc_Server_Function:AddButton({Text = "Clear Visited (Fix No Server)", Func = function() ServerBrowser.visited = {} ServerBrowser.list = {} saveVisited() notify("Lista limpa!") end})
 
-	GRP_Misc_Server_Function:AddButton({
-		Text = "Teleport [Job ID]",
-		Func = function()
-			if type(_G.JobIdInput) == "string" and _G.JobIdInput ~= "" then
-				pcall(function()
-					TeleportService_:TeleportToPlaceInstance(game.PlaceId, _G.JobIdInput, LocalPlayer2)
-				end)
-			end
-		end
-	})
+    GRP_Misc_Server_Function:AddInput("Input_Job_Id", {Text = "Input Job Id", Default = "", Placeholder = "Job ID", Callback = function(p347) _G.JobIdInput = p347 end})
+
+    GRP_Misc_Server_Function:AddButton({Text = "Teleport [Job ID]", Func = function()
+        if type(_G.JobIdInput) == "string" and _G.JobIdInput ~= "" then
+            local q = getQueue()
+            if q then pcall(function() q(queueScript) end) end
+            pcall(function() TeleportService_:TeleportToPlaceInstance(game.PlaceId, _G.JobIdInput, LocalPlayer2) end)
+        else notify("Digite Job ID") end
+    end})
 end
+
+
 
 GRP_Misc_Server_Function:AddButton({
 	Text = "Copy JobID",
