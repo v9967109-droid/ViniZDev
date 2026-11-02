@@ -11768,7 +11768,7 @@ local World2 = game.PlaceId == 4442272183 or game.PlaceId == 79091703265657
 local World3 = game.PlaceId == 7449423635 or game.PlaceId == 100117331123089
 local BringEnemy = function(m) return BringMob(m) end
 local AttackNoCoolDown = function() if FastAttackOnce then return FastAttackOnce() end end
-local NXSQPage = Main.CreatePage({ Page_Name = "Secret Quest [ZYROX]", Page_Title = "Secret Quest [ZYROX]" })
+local NXSQPage = Main.CreatePage({ Page_Name = "Secret Quest", Page_Title = "Secret Quest" })
 do
 	local sqOk, sqErr = pcall(function()
 local localPlayer = plr
@@ -17022,7 +17022,7 @@ local NXlib = {
 		pcall(function() Main.CreateNoti(tostring(o.Title or "") .. ": " .. tostring(o.Description or ""), o.Duration or 4) end)
 	end,
 }
-local NXHPage = Main.CreatePage({ Page_Name = "Halloween [ZYROX]", Page_Title = "Halloween [ZYROX]" })
+local NXHPage = Main.CreatePage({ Page_Name = "Halloween", Page_Title = "Halloween" })
 local function NXGroup(sec)
 	local g = {}
 	function g:AddLabel(text)
