@@ -21230,7 +21230,7 @@ MultiRaidsSection.CreateToggle(
 		SaveSettings("Auto Multi Raid", b)
 	end
 )
--- ===== Random Devil Fruit + Auto Store Fruit (lógica do Zyrox) =====
+-- ===== Random Devil Fruit + Auto Store Fruit (lógica do Zyrox, com diagnóstico na tela) =====
 do
 	local plr = game:GetService("Players").LocalPlayer
 	local replicated = game:GetService("ReplicatedStorage")
@@ -21243,10 +21243,19 @@ do
 	getgenv().__GachaTimers = getgenv().__GachaTimers or {}
 	local GachaTimers = getgenv().__GachaTimers
 
-	local gachaNotify = function(title, msg)
+	local lastMsg = {}
+	local say = function(title, msg)
+		msg = tostring(msg)
+		warn("[Nexora][" .. tostring(title) .. "] " .. msg)
+		if lastMsg[title] == msg then return end
+		lastMsg[title] = msg
 		pcall(function()
-			Main.CreateNoti(tostring(title) .. ": " .. tostring(msg), 4)
+			Main.CreateNoti(tostring(title) .. ": " .. msg, 5)
 		end)
+	end
+	print("[Nexora][Fruit] GachaClient ok =", okGC, "| GachaWindow ok =", okGW)
+	if not okGC then
+		say("Random Fruit", "GachaClient indisponível: " .. tostring(GachaClient))
 	end
 
 	local GetGachaMissing = function(arg)
@@ -21269,7 +21278,7 @@ do
 
 		local ok, result = pcall(GachaClient.CheckGachaAsync, arg, "Blox Fruit Gacha")
 		if not ok or type(result) ~= "table" then
-			gachaNotify("Gacha", "Gacha is not available right now")
+			say("Random Fruit", "Gacha indisponível agora: " .. tostring(result))
 			return
 		end
 
@@ -21278,23 +21287,35 @@ do
 			if missing.TimeEnds then
 				GachaTimers[arg] = missing.TimeEnds + 1
 			end
-			gachaNotify(arg2, missing.ErrorMessage)
+			say(arg2, missing.ErrorMessage)
 			return
 		end
 
-		if pcall(GachaClient.PurchaseGachaAsync, arg) then
+		local okP, errP = pcall(GachaClient.PurchaseGachaAsync, arg)
+		if okP then
 			GachaTimers[arg] = serverTimeNow + 5
-			gachaNotify("Gacha", "Rolled successfully")
+			lastMsg["Random Fruit"] = nil
+			say("Random Fruit", "Girou com sucesso")
+		else
+			say("Random Fruit", "Falha ao comprar: " .. tostring(errP))
 		end
 	end
 
 	UpdStFruit = function()
+		local found, answer = 0, nil
 		local children, v102 = plr.Backpack:GetChildren()
 		for _, v1 in next, children, v102 do
 			local StoreFruitRemote = v1:FindFirstChild("EatRemote", true)
 			if StoreFruitRemote then
-				replicated.Remotes.CommF_:InvokeServer("StoreFruit", StoreFruitRemote.Parent:GetAttribute("OriginalName"), plr.Backpack:FindFirstChild(v1.Name))
+				found = found + 1
+				local okS, res = pcall(function()
+					return replicated.Remotes.CommF_:InvokeServer("StoreFruit", StoreFruitRemote.Parent:GetAttribute("OriginalName"), plr.Backpack:FindFirstChild(v1.Name))
+				end)
+				answer = okS and tostring(res) or ("erro: " .. tostring(res))
 			end
+		end
+		if found > 0 then
+			say("Store Fruit", found .. " fruta(s) na mochila, resposta do servidor: " .. tostring(answer))
 		end
 	end
 
@@ -21304,12 +21325,13 @@ do
 	task.spawn(function()
 		while task.wait(0.5) and getgenv().__FruitGen == FruitGen do
 			if Settings["Random Devil Fruit"] and okGC then
-				pcall(function()
+				local okL, errL = pcall(function()
 					if okGW and GachaWindow.IsOpen() then
 						GachaWindow.Close()
 					end
 					RollGacha("ZiolesGacha", "Random Devil Fruit")
 				end)
+				if not okL then say("Random Fruit", "Erro: " .. tostring(errL)) end
 			end
 		end
 	end)
@@ -21317,9 +21339,8 @@ do
 	task.spawn(function()
 		while task.wait(0.75) and getgenv().__FruitGen == FruitGen do
 			if Settings["Auto Store Fruit"] then
-				pcall(function()
-					UpdStFruit()
-				end)
+				local okL, errL = pcall(UpdStFruit)
+				if not okL then say("Store Fruit", "Erro: " .. tostring(errL)) end
 			end
 		end
 	end)
