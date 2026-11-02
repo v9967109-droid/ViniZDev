@@ -11753,74 +11753,67 @@ FarmotherMain = Main.CreatePage({ Page_Name = "Farming Other", Page_Title = "Far
 
 
 
--- ===================== HALLOWEEN FIX =====================
+-- ===================== HALLOWEEN SAFE - TESTA EXECUCAO =====================
 pcall(function()
-HalloweenMain = Main.CreatePage({ Page_Name = "Halloween", Page_Title = "Halloween 2026 [FIX]" })
-HalloweenSection = HalloweenMain.CreateSection("Hellfire")
-
--- ========== 1 - TRICK OR TREAT BRUTE FORCE ==========
-HalloweenSection.CreateToggle(
-    { Title = "Auto Trick Or Treat", Desc = "Brute: porta > NPC > minigame > proxima rapido", Default = false },
-    function(V)
-        Settings["Auto Trick Or Treat"]=V _G.AutoTrick=V
-        if V then task.spawn(function()
-            local lp=game.Players.LocalPlayer
-            local noclip=nil noclip=game:GetService("RunService").Stepped:Connect(function() if _G.AutoTrick and lp.Character then for _,p in ipairs(lp.Character:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide=false end end end end)
-            local function GetHRP() local c=lp.Character return c and c:FindFirstChild("HumanoidRootPart"), c and c:FindFirstChildOfClass("Humanoid"), c end
-            local last={} local function IsVisited(pos) for i=#last,1,-1 do if tick()-last[i].t>20 then table.remove(last,i) else if (last[i].pos-pos).Magnitude<10 then return true end end end return false end
-            local function Brute(pos)
-                for _,obj in ipairs(workspace:GetDescendants()) do
-                    if obj:IsA("ProximityPrompt") then local par=obj.Parent if par then local pp=nil pcall(function() if par:IsA("BasePart") then pp=par.Position else local bp=par:FindFirstChildWhichIsA("BasePart") if bp then pp=bp.Position else pp=par:GetPivot().Position end end end) if pp and (pp-pos).Magnitude<20 then pcall(function() fireproximityprompt(obj) task.wait(0.03) fireproximityprompt(obj,0) fireproximityprompt(obj,1) end) end end end
-                    if obj:IsA("ClickDetector") then local par=obj.Parent if par then local pp=nil pcall(function() if par:IsA("BasePart") then pp=par.Position else pp=par:GetPivot().Position end end) if pp and (pp-pos).Magnitude<20 then pcall(function() fireclickdetector(obj) end) end end end
-                end
-                for _,npc in ipairs(workspace:GetDescendants()) do if npc:IsA("Model") and npc:FindFirstChild("HumanoidRootPart") and npc~=lp.Character then if (npc.HumanoidRootPart.Position-pos).Magnitude<20 then pcall(function() local hrp=GetHRP() if hrp then hrp.CFrame=CFrame.new(npc.HumanoidRootPart.Position+Vector3.new(0,0,3), npc.HumanoidRootPart.Position) task.wait(0.1) local bp=npc:FindFirstChildWhichIsA("BasePart") if bp then firetouchinterest(hrp,bp,0) task.wait(0.08) firetouchinterest(hrp,bp,1) end end end) end end end
+    local ok, err = pcall(function()
+        HalloweenMain = Main.CreatePage({ Page_Name = "Halloween", Page_Title = "Halloween 2026 [SAFE]" })
+        HalloweenSection = HalloweenMain.CreateSection("Fix Test")
+        
+        HalloweenSection.CreateToggle(
+            { Title = "Auto Trick Or Treat", Desc = "Portas rapido", Default = false },
+            function(V)
+                Settings["Auto Trick Or Treat"]=V _G.AutoTrick=V
+                if V then task.spawn(function()
+                    local lp=game.Players.LocalPlayer
+                    local noclip=nil noclip=game:GetService("RunService").Stepped:Connect(function() if _G.AutoTrick and lp.Character then for _,p in ipairs(lp.Character:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide=false end end end end)
+                    local function GetHRP() local c=lp.Character return c and c:FindFirstChild("HumanoidRootPart") end
+                    local last={} local function IsVisited(pos) for i=#last,1,-1 do if tick()-last[i].t>15 then table.remove(last,i) else if (last[i].pos-pos).Magnitude<12 then return true end end end return false end
+                    while _G.AutoTrick do pcall(function()
+                        local hrp=GetHRP() if not hrp then task.wait(0.5) return end
+                        for _,en in ipairs(workspace.Enemies:GetChildren()) do local n=string.lower(en.Name) if n:find("werewolf") or n:find("hell") or n:find("rider") then local erp=en:FindFirstChild("HumanoidRootPart") if erp and (hrp.Position-erp.Position).Magnitude<600 then if toTarget then toTarget(erp.CFrame*CFrame.new(0,10,0)) else hrp.CFrame=erp.CFrame*CFrame.new(0,10,0) end task.wait(0.3) if BringMob then BringMob(en) end local melee=NameWeapon and NameWeapon("Melee") if melee then equiptool(melee) task.wait(0.2) end for i=1,8 do if ClickM1 then ClickM1(en,true) end task.wait(0.12) end return end end end
+                        local doors={} for _,obj in ipairs(workspace:GetDescendants()) do if obj:IsA("ProximityPrompt") then local par=obj.Parent if par then local pos=nil pcall(function() if par:IsA("BasePart") then pos=par.Position else local bp=par:FindFirstChildWhichIsA("BasePart") if bp then pos=bp.Position else pos=par:GetPivot().Position end end end) if pos and (hrp.Position-pos).Magnitude<5000 and not IsVisited(pos) then local full=string.lower(par.Name.." "..obj.ObjectText) if full:find("trick") or full:find("treat") or full:find("door") or full:find("candy") then table.insert(doors,{pos=pos,prompt=obj}) end end end end end
+                        if #doors>0 then table.sort(doors,function(a,b) return (hrp.Position-a.pos).Magnitude < (hrp.Position-b.pos).Magnitude end) local t=doors[1] if (hrp.Position-t.pos).Magnitude>14 then if toTarget then toTarget(CFrame.new(t.pos+Vector3.new(0,5,0))) else hrp.CFrame=CFrame.new(t.pos+Vector3.new(0,5,0)) end task.wait(0.3) else pcall(function() fireproximityprompt(t.prompt) end) task.wait(0.3) for _,gui in ipairs(lp.PlayerGui:GetDescendants()) do if gui:IsA("TextButton") and gui.Visible then local tt=string.lower(gui.Text) if tt:find("grab") or tt:find("treat") or tt:find("trick") or tt:find("yes") then gui:Activate() task.wait(0.1) end end end for _,npc in ipairs(workspace:GetDescendants()) do if npc:IsA("Model") and npc:FindFirstChild("HumanoidRootPart") and (npc.HumanoidRootPart.Position-t.pos).Magnitude<25 and npc~=lp.Character then local np=npc:FindFirstChildWhichIsA("ProximityPrompt",true) if np then pcall(function() fireproximityprompt(np) end) end local cd=npc:FindFirstChildWhichIsA("ClickDetector",true) if cd then pcall(function() fireclickdetector(cd) end) end end end table.insert(last,{pos=t.pos,t=tick()}) task.wait(0.6) end else task.wait(1) end
+                    end) task.wait(0.2) end if noclip then noclip:Disconnect() end
+                end) end
             end
-            local function Mini() for _=1,5 do pcall(function() for _,gui in ipairs(lp.PlayerGui:GetDescendants()) do if (gui:IsA("TextButton") or gui:IsA("ImageButton")) and gui.Visible then local t=string.lower(gui.Text or gui.Name or "") if t:find("grab") or t:find("handful") or t:find("treat") or t:find("trick") or t:find("yes") or t:find("continue") or t:find("play") or t:find("celestial") or t:find("oni") or t:find("collect") or t:find("open") then gui:Activate() task.wait(0.08) end end end end) task.wait(0.18) end end
-            local function FindBoss() local hrp=GetHRP() if not hrp then return nil end for _,en in ipairs(workspace.Enemies:GetChildren()) do local n=string.lower(en.Name) if n:find("werewolf") or n:find("hell") or n:find("rider") or n:find("unbound") then local erp=en:FindFirstChild("HumanoidRootPart") local eh=en:FindFirstChildOfClass("Humanoid") if erp and eh and eh.Health>0 and (hrp.Position-erp.Position).Magnitude<700 then return en end end end return nil end
-            while _G.AutoTrick do pcall(function()
-                local hrp,hum,char=GetHRP() if not hrp then task.wait(0.5) return end
-                local boss=FindBoss() if boss then local erp=boss:FindFirstChild("HumanoidRootPart") if erp then if (hrp.Position-erp.Position).Magnitude>10 then if toTarget then toTarget(erp.CFrame*CFrame.new(0,10,0)) else hrp.CFrame=erp.CFrame*CFrame.new(0,10,0) end task.wait(0.25) else if BringMob then BringMob(boss) end if sizepart then sizepart(boss) end local melee=NameWeapon and NameWeapon("Melee") if melee then equiptool(melee) task.wait(0.2) end for i=1,8 do if not boss.Parent then break end if ClickM1 then ClickM1(boss,true) end local tool=char and char:FindFirstChildOfClass("Tool") if tool then tool:Activate() end task.wait(0.12) end end return end
-                local doors={} for _,obj in ipairs(workspace:GetDescendants()) do if obj:IsA("ProximityPrompt") then local par=obj.Parent if par then local pos=nil pcall(function() if par:IsA("BasePart") then pos=par.Position else local bp=par:FindFirstChildWhichIsA("BasePart") if bp then pos=bp.Position else pos=par:GetPivot().Position end end end) if pos and (hrp.Position-pos).Magnitude<5000 and not IsVisited(pos) then local full=string.lower(par:GetFullName().." "..obj.ObjectText.." "..obj.ActionText.." "..par.Name) if full:find("trick") or full:find("treat") or full:find("door") or full:find("candy") or full:find("hell") or full:find("burn") then table.insert(doors,{pos=pos}) end end end end end
-                if #doors==0 then for _,obj in ipairs(workspace:GetDescendants()) do if obj:IsA("Model") and string.lower(obj.Name):find("door") then local pr=obj:FindFirstChildWhichIsA("ProximityPrompt",true) if pr then local pos=nil pcall(function() pos=obj:GetPivot().Position end) if pos and (hrp.Position-pos).Magnitude<4000 and not IsVisited(pos) then table.insert(doors,{pos=pos}) end end end end end
-                if #doors>0 then table.sort(doors,function(a,b) return (hrp.Position-a.pos).Magnitude < (hrp.Position-b.pos).Magnitude end) local tgt=doors[1] if (hrp.Position-tgt.pos).Magnitude>12 then if toTarget then toTarget(CFrame.new(tgt.pos+Vector3.new(0,5,0))) else hrp.CFrame=CFrame.new(tgt.pos+Vector3.new(0,5,0)) end task.wait(0.25) else Brute(tgt.pos) task.wait(0.3) Mini() Brute(tgt.pos) task.wait(0.2) Mini() table.insert(last,{pos=tgt.pos,t=tick()}) if #last>40 then table.remove(last,1) end task.wait(0.4) end else pcall(function() local dest=nil if game.PlaceId==2753915549 then dest=CFrame.new(1089,16,1588) elseif game.PlaceId==4442272183 then dest=CFrame.new(-379,73,342) else dest=CFrame.new(-12480,332,-7676) end if dest and (hrp.Position-dest.Position).Magnitude>300 then if toTarget then toTarget(dest) else hrp.CFrame=dest end end end) task.wait(1) end
-            end) task.wait(0.18) end if noclip then noclip:Disconnect() end
-        end) end
-    end
-)
-
--- ========== 2 - JACK O LANTERN HUNT (7 CLIQUES 2.5S) ==========
-HalloweenSection.CreateToggle(
-    { Title = "Auto Jack O Lantern Hunt", Desc = "7 cliques rapido 2.5s por abobora", Default = false },
-    function(V)
-        Settings["Auto Jack O Lantern Hunt"]=V _G.AutoJackHunt=V
-        if V then task.spawn(function()
-            local lp=game.Players.LocalPlayer
-            local noclip=nil noclip=game:GetService("RunService").Stepped:Connect(function() if _G.AutoJackHunt and lp.Character then for _,p in ipairs(lp.Character:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide=false end end end end)
-            local function GetHRP() local c=lp.Character return c and c:FindFirstChild("HumanoidRootPart"), c and c:FindFirstChildOfClass("Humanoid"), c end
-            local function EquipMelee() local hrp,hum,char=GetHRP() if not char then return nil end local name=nil pcall(function() name=NameWeapon("Melee") end) if name then pcall(function() equiptool(name) end) task.wait(0.3) return char:FindFirstChildOfClass("Tool") end for _,v in ipairs(lp.Backpack:GetChildren()) do if v:IsA("Tool") and v.ToolTip=="Melee" then pcall(function() equiptool(v.Name) end) task.wait(0.3) return char:FindFirstChildOfClass("Tool") end end for _,v in ipairs(lp.Backpack:GetChildren()) do if v:IsA("Tool") then pcall(function() equiptool(v.Name) end) task.wait(0.2) break end end return char:FindFirstChildOfClass("Tool") end
-            local function FindPumpkin() local hrp=GetHRP() if not hrp then return nil end local best=nil local bestDist=99999 local folder=workspace:FindFirstChild("PumpkinHunt") or workspace:FindFirstChild("Pumpkins") if folder then for _,obj in ipairs(folder:GetChildren()) do local pos=nil pcall(function() if obj:IsA("BasePart") then pos=obj.Position else pos=obj:GetPivot().Position end end) if pos then local d=(hrp.Position-pos).Magnitude if d<bestDist and d<4000 then bestDist=d best={obj=obj,pos=pos,dist=d} end end end if best then return best end end for _,obj in ipairs(workspace:GetDescendants()) do if obj:IsA("BasePart") then local n=string.lower(obj.Name) if n:find("pumpkin") and not n:find("hat") then if obj.Transparency<1 and obj.Position.Y>-100 then local d=(hrp.Position-obj.Position).Magnitude if d<bestDist and d<4000 then bestDist=d best={obj=obj,pos=obj.Position,dist=d} end end end end end return best end
-            local function FindJack(posRef) for _,en in ipairs(workspace.Enemies:GetChildren()) do local n=string.lower(en.Name) if n:find("jack") or n:find("pumpkin") or n:find("cursed") then local erp=en:FindFirstChild("HumanoidRootPart") local eh=en:FindFirstChildOfClass("Humanoid") if erp and eh and eh.Health>0 then local d=posRef and (erp.Position-posRef).Magnitude or (GetHRP().Position-erp.Position).Magnitude if d<200 then return en end end end end return nil end
-            while _G.AutoJackHunt do pcall(function()
-                local hrp,hum,char=GetHRP() if not hrp or not hum then task.wait(0.5) return end
-                local jack=FindJack() if jack then local erp=jack:FindFirstChild("HumanoidRootPart") if erp then if (hrp.Position-erp.Position).Magnitude>8 then if toTarget then toTarget(erp.CFrame*CFrame.new(0,8,0)) else hrp.CFrame=erp.CFrame*CFrame.new(0,8,0) end task.wait(0.2) else if BringMob then BringMob(jack) end if sizepart then sizepart(jack) end hrp.CFrame=CFrame.new(erp.Position+Vector3.new(0,8,0),erp.Position) local tool=EquipMelee() if tool then for i=1,8 do if not jack.Parent then break end if ClickM1 then ClickM1(jack,true) end tool:Activate() task.wait(0.12) end end end return end
-                local pumpkin=FindPumpkin() if not pumpkin then task.wait(1) return end
-                if pumpkin.dist>8 then local goal=CFrame.new(pumpkin.pos.X,pumpkin.pos.Y+5,pumpkin.pos.Z) if toTarget then toTarget(CFrame.new(goal.Position,pumpkin.pos)) else hrp.CFrame=CFrame.new(goal.Position,pumpkin.pos) end task.wait(0.18)
-                else
-                    local posBefore=pumpkin.pos local objBefore=pumpkin.obj
-                    pcall(function() hrp.CFrame=CFrame.new(posBefore.X,posBefore.Y+4,posBefore.Z) hrp.CFrame=CFrame.new(hrp.CFrame.Position,posBefore) hrp.Velocity=Vector3.new(0,0,0) local tool=EquipMelee() if tool then for i=1,7 do if not objBefore or not objBefore.Parent then break end tool:Activate() game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,true,game,0) task.wait(0.04) game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,false,game,0) task.wait(0.1) if not objBefore.Parent then break end end end end)
-                    task.wait(0.2)
-                    for i=1,10 do if not _G.AutoJackHunt then break end local j=FindJack(posBefore) if j then local erp=j:FindFirstChild("HumanoidRootPart") local eh=j:FindFirstChildOfClass("Humanoid") if erp and eh then while _G.AutoJackHunt and j.Parent and eh.Health>0 do if (hrp.Position-erp.Position).Magnitude>8 then if toTarget then toTarget(erp.CFrame*CFrame.new(0,8,0)) else hrp.CFrame=erp.CFrame*CFrame.new(0,8,0) end task.wait(0.2) else if BringMob then BringMob(j) end if sizepart then sizepart(j) end hrp.CFrame=CFrame.new(erp.Position+Vector3.new(0,8,0),erp.Position) local tool=EquipMelee() if tool then for k=1,8 do if not j.Parent or eh.Health<=0 then break end if ClickM1 then ClickM1(j,true) end tool:Activate() task.wait(0.12) end end end task.wait(0.1) end end break end task.wait(0.25) end
-                    task.wait(0.2)
-                end
-            end) task.wait(0.15) end if noclip then noclip:Disconnect() end
-        end) end
-    end
-)
-
-
-HalloweenSection.CreateLabel({ Title = "FIX: Trick brute + Jack 7 cliques" })
+        )
+        
+        HalloweenSection.CreateToggle(
+            { Title = "Auto Jack O Lantern Hunt", Desc = "7 cliques rapido 2.5s", Default = false },
+            function(V)
+                Settings["Auto Jack O Lantern Hunt"]=V _G.AutoJackHunt=V
+                if V then task.spawn(function()
+                    local lp=game.Players.LocalPlayer
+                    local noclip=nil noclip=game:GetService("RunService").Stepped:Connect(function() if _G.AutoJackHunt and lp.Character then for _,p in ipairs(lp.Character:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide=false end end end end)
+                    local function GetHRP() local c=lp.Character return c and c:FindFirstChild("HumanoidRootPart"), c and c:FindFirstChildOfClass("Humanoid"), c end
+                    local function EquipMelee() local hrp,hum,char=GetHRP() if not char then return nil end local name=nil pcall(function() name=NameWeapon("Melee") end) if name then pcall(function() equiptool(name) end) task.wait(0.3) return char:FindFirstChildOfClass("Tool") end for _,v in ipairs(lp.Backpack:GetChildren()) do if v:IsA("Tool") and v.ToolTip=="Melee" then pcall(function() equiptool(v.Name) end) task.wait(0.3) return char:FindFirstChildOfClass("Tool") end end for _,v in ipairs(lp.Backpack:GetChildren()) do if v:IsA("Tool") then pcall(function() equiptool(v.Name) end) task.wait(0.2) break end end return char:FindFirstChildOfClass("Tool") end
+                    local function FindPumpkin() local hrp=GetHRP() if not hrp then return nil end local best=nil local bestDist=99999 local folder=workspace:FindFirstChild("PumpkinHunt") or workspace:FindFirstChild("Pumpkins") if folder then for _,obj in ipairs(folder:GetChildren()) do local pos=nil pcall(function() if obj:IsA("BasePart") then pos=obj.Position else pos=obj:GetPivot().Position end end) if pos then local d=(hrp.Position-pos).Magnitude if d<bestDist and d<4000 then bestDist=d best={obj=obj,pos=pos,dist=d} end end end if best then return best end end for _,obj in ipairs(workspace:GetDescendants()) do if obj:IsA("BasePart") then local n=string.lower(obj.Name) if n:find("pumpkin") and not n:find("hat") then if obj.Transparency<1 and obj.Position.Y>-100 then local d=(hrp.Position-obj.Position).Magnitude if d<bestDist and d<4000 then bestDist=d best={obj=obj,pos=obj.Position,dist=d} end end end end end return best end
+                    local function FindJack(posRef) for _,en in ipairs(workspace.Enemies:GetChildren()) do local n=string.lower(en.Name) if n:find("jack") or n:find("pumpkin") or n:find("cursed") then local erp=en:FindFirstChild("HumanoidRootPart") local eh=en:FindFirstChildOfClass("Humanoid") if erp and eh and eh.Health>0 then local d=posRef and (erp.Position-posRef).Magnitude or (GetHRP().Position-erp.Position).Magnitude if d<200 then return en end end end end return nil end
+                    while _G.AutoJackHunt do pcall(function()
+                        local hrp,hum,char=GetHRP() if not hrp or not hum then task.wait(0.5) return end
+                        local jack=FindJack() if jack then local erp=jack:FindFirstChild("HumanoidRootPart") if erp then if (hrp.Position-erp.Position).Magnitude>8 then if toTarget then toTarget(erp.CFrame*CFrame.new(0,8,0)) else hrp.CFrame=erp.CFrame*CFrame.new(0,8,0) end task.wait(0.2) else if BringMob then BringMob(jack) end if sizepart then sizepart(jack) end hrp.CFrame=CFrame.new(erp.Position+Vector3.new(0,8,0),erp.Position) local tool=EquipMelee() if tool then for i=1,8 do if not jack.Parent then break end if ClickM1 then ClickM1(jack,true) end tool:Activate() task.wait(0.12) end end end return end
+                        local pumpkin=FindPumpkin() if not pumpkin then task.wait(1) return end
+                        if pumpkin.dist>8 then local goal=CFrame.new(pumpkin.pos.X,pumpkin.pos.Y+5,pumpkin.pos.Z) if toTarget then toTarget(CFrame.new(goal.Position,pumpkin.pos)) else hrp.CFrame=CFrame.new(goal.Position,pumpkin.pos) end task.wait(0.18)
+                        else
+                            local posBefore=pumpkin.pos local objBefore=pumpkin.obj
+                            pcall(function() hrp.CFrame=CFrame.new(posBefore.X,posBefore.Y+4,posBefore.Z) hrp.CFrame=CFrame.new(hrp.CFrame.Position,posBefore) hrp.Velocity=Vector3.new(0,0,0) local tool=EquipMelee() if tool then for i=1,7 do if not objBefore or not objBefore.Parent then break end tool:Activate() game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,true,game,0) task.wait(0.04) game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,false,game,0) task.wait(0.1) if not objBefore.Parent then break end end end end)
+                            task.wait(0.2)
+                            for i=1,10 do if not _G.AutoJackHunt then break end local j=FindJack(posBefore) if j then local erp=j:FindFirstChild("HumanoidRootPart") local eh=j:FindFirstChildOfClass("Humanoid") if erp and eh then while _G.AutoJackHunt and j.Parent and eh.Health>0 do if (hrp.Position-erp.Position).Magnitude>8 then if toTarget then toTarget(erp.CFrame*CFrame.new(0,8,0)) else hrp.CFrame=erp.CFrame*CFrame.new(0,8,0) end task.wait(0.2) else if BringMob then BringMob(j) end if sizepart then sizepart(j) end hrp.CFrame=CFrame.new(erp.Position+Vector3.new(0,8,0),erp.Position) local tool=EquipMelee() if tool then for k=1,8 do if not j.Parent or eh.Health<=0 then break end if ClickM1 then ClickM1(j,true) end tool:Activate() task.wait(0.12) end end end task.wait(0.1) end end break end task.wait(0.25) end
+                            task.wait(0.2)
+                        end
+                    end) task.wait(0.15) end if noclip then noclip:Disconnect() end
+                end) end
+            end
+        )
+        
+        HalloweenSection.CreateLabel({ Title = "SAFE FIX - Nao para de executar" })
+    end)
+    local ok, err = pcall(function() end)
+    if not ok then warn("Halloween error: "..tostring(err)) end
 end)
--- ===================== FIM =====================
+-- ===================== FIM SAFE =====================
+
+
 
 FishingMain = Main.CreatePage({ Page_Name = "Fishing", Page_Title = "Fishing" })
 FishingSection = FishingMain.CreateSection("Fishing")
