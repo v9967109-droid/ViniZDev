@@ -21392,20 +21392,13 @@ end
 --  4) se ainda não guardou, não tenta de novo por 30s e não manda webhook falso.
 -- Método do Zyrox (UpdStFruit): StoreFruit(OriginalName do pai do EatRemote, tool). Só roda para frutas que o
 -- método principal não conseguiu guardar e que não estão no tempo de espera de 30s.
-function UpdStFruitZyrox()
-	local lp = game:GetService("Players").LocalPlayer
-	local CommFr = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
-	CommFr = CommFr and CommFr:FindFirstChild("CommF_")
-	if not lp or not CommFr then return end
-	for _, v in ipairs(lp.Backpack:GetChildren()) do
-		local failedAt = v:GetAttribute("__StoreFail")
-		if not (typeof(failedAt) == "number" and tick() - failedAt < 30) then
-			local eat = v:FindFirstChild("EatRemote", true)
-			local oname = eat and eat.Parent and eat.Parent:GetAttribute("OriginalName")
-			if oname then
-				pcall(function() CommFr:InvokeServer("StoreFruit", oname, v) end)
-				task.wait(0.2)
-			end
+function UpdStFruit()
+	local plr = game:GetService("Players").LocalPlayer
+	local replicated = game:GetService("ReplicatedStorage")
+	for _, v1 in next, plr.Backpack:GetChildren() do
+		local StoreFruitRemote = v1:FindFirstChild("EatRemote", true)
+		if StoreFruitRemote then
+			replicated.Remotes.CommF_:InvokeServer("StoreFruit", StoreFruitRemote.Parent:GetAttribute("OriginalName"), plr.Backpack:FindFirstChild(v1.Name))
 		end
 	end
 end
@@ -33725,14 +33718,7 @@ do
 	task.spawn(function()
 		while task.wait(0.75) and getgenv().__FruitGen == FruitGen do
 			if Settings["Auto Store Fruit"] then
-				local player = game:GetService("Players").LocalPlayer
-				if player then
-					local backpack = player:FindFirstChildOfClass("Backpack")
-					local character = player.Character
-					if backpack then pcall(StoreFruit, backpack) end
-					if character then pcall(StoreFruit, character) end
-					pcall(UpdStFruitZyrox)
-				end
+				pcall(UpdStFruit)
 			end
 		end
 	end)
