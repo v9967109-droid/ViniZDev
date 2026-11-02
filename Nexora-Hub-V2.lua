@@ -10,6 +10,11 @@
 	Fallback de load: escolha -> alternativas -> Classic.
 ]]
 
+
+-- FORCADO Nx Hub - So Redz e Kaitun
+getgenv().ZyroxUI = "redz"
+getgenv().NxHub = true
+
 -- Tela de escolha (so se ainda nao definiu ZyroxUI)
 if not getgenv().ZyroxUI then
 	local chosen = nil
@@ -80,7 +85,7 @@ if not getgenv().ZyroxUI then
 	title.TextSize = 17
 	title.TextColor3 = Color3.fromRGB(255, 255, 255)
 	title.TextXAlignment = Enum.TextXAlignment.Left
-	title.Text = "Zyrox Hub Interfaces"
+	title.Text = "Nx Hub Interfaces"
 	title.Parent = header
 
 	local sub = Instance.new("TextLabel")
@@ -106,34 +111,16 @@ if not getgenv().ZyroxUI then
 
 	local options = {
 		{
-			id = "Fluent",
-			label = "Fluent",
-			desc = "Original (dawid) — estavel",
-			color = Color3.fromRGB(0, 140, 255),
-		},
-		{
-			id = "Modded",
-			label = "Fluent Modded",
-			desc = "Temas, Personalizar, acrylic",
-			color = Color3.fromRGB(160, 80, 255),
-		},
-		{
-			id = "Classic",
-			label = "Classic",
-			desc = "Interface antiga (banana)",
-			color = Color3.fromRGB(90, 200, 120),
-		},
-		{
 			id = "Redz",
 			label = "Redz",
-			desc = "Redz Library V5",
-			color = Color3.fromRGB(210, 50, 50),
+			desc = "Redz Library V5 - Nx Hub",
+			color = Color3.fromRGB(0, 140, 255),
 		},
 		{
 			id = "Kaitun",
 			label = "Kaitun",
-			desc = "Full auto: level + seas + itens",
-			color = Color3.fromRGB(255, 170, 40),
+			desc = "Full auto: level + seas + itens - Nx Hub",
+			color = Color3.fromRGB(0, 140, 255),
 		},
 	}
 
@@ -3253,7 +3240,7 @@ local function ZyroxBuildFluentAdapter(source)
 		end
 
 		window = Fluent:CreateWindow({
-			Title = cfg.Title or "Zyrox Hub",
+			Title = cfg.Title or "Nx Hub",
 			SubTitle = cfg.Subtitle or cfg.SubTitle or "",
 			TabWidth = mobile and 120 or 160,
 			Size = mobile and UDim2.fromOffset(500, 320) or UDim2.fromOffset(580, 460),
@@ -3708,7 +3695,7 @@ local function ZyroxBuildRedzAdapter()
 	function adapter:CreateWindow(cfg)
 		cfg = cfg or {}
 		window = Redz:MakeWindow({
-			Title = cfg.Title or "Zyrox Hub",
+			Title = cfg.Title or "Nx Hub",
 			SubTitle = cfg.Subtitle or cfg.SubTitle or "",
 			SaveFolder = false,
 		})
@@ -3903,10 +3890,109 @@ end
 print("[Zyrox] UI: " .. ZYROX_UI_NAME)
 print("[Zyrox] CreateWindow next...")
 local v243 = lib:CreateWindow({
-	Title = "Zyrox Hub",
-	Subtitle = "Blox Fruit Script",
+	Title = "Nx Hub",
+	Subtitle = "Nx Hub - Blox Fruits",
 	Image = "rbxassetid://108697676964602"
 })
+
+-- Nx Hub - Custom Float Button Nx azul
+task.spawn(function()
+    task.wait(2)
+    pcall(function()
+        local host = (gethui and gethui()) or game:GetService("CoreGui")
+        while true do
+            task.wait(0.5)
+            for _, gui in ipairs(host:GetChildren()) do
+                if gui.Name:find("Nousigi Hub Btn") or gui.Name:find("Zyrox") or gui.Name:find("Redz") or gui.Name:find("Float") then
+                    for _, v in ipairs(gui:GetDescendants()) do
+                        if v:IsA("TextButton") or v:IsA("ImageButton") then
+                            -- Fundo azul Nx
+                            if v.BackgroundColor3 ~= Color3.fromRGB(0, 140, 255) then
+                                v.BackgroundColor3 = Color3.fromRGB(0, 140, 255)
+                                v.BackgroundTransparency = 0
+                            end
+                            -- Procura TextLabel para por Nx
+                            local hasNx = false
+                            for _, child in ipairs(v:GetChildren()) do
+                                if child:IsA("TextLabel") and child.Text == "Nx" then hasNx = true end
+                            end
+                            if not hasNx then
+                                -- Remove imagem antiga
+                                for _, child in ipairs(v:GetChildren()) do
+                                    if child:IsA("ImageLabel") then child:Destroy() end
+                                end
+                                -- Cria Nx
+                                local nxLabel = Instance.new("TextLabel")
+                                nxLabel.Name = "NxIcon"
+                                nxLabel.BackgroundTransparency = 1
+                                nxLabel.Size = UDim2.new(1,0,1,0)
+                                nxLabel.Text = "Nx"
+                                nxLabel.TextColor3 = Color3.fromRGB(255,255,255)
+                                nxLabel.Font = Enum.Font.GothamBold
+                                nxLabel.TextSize = 18
+                                nxLabel.TextScaled = true
+                                nxLabel.Parent = v
+                                local corner = v:FindFirstChildOfClass("UICorner")
+                                if not corner then
+                                    local c = Instance.new("UICorner")
+                                    c.CornerRadius = UDim.new(1,0)
+                                    c.Parent = v
+                                end
+                            end
+                        end
+                        if v:IsA("ImageLabel") and v.Name == "Ruafimg" then
+                            v:Destroy()
+                            -- Substitui por Nx
+                            if v.Parent and v.Parent:IsA("TextButton") then
+                                local parent = v.Parent
+                                parent.BackgroundColor3 = Color3.fromRGB(0, 140, 255)
+                                local nxLabel = parent:FindFirstChild("NxIcon")
+                                if not nxLabel then
+                                    local label = Instance.new("TextLabel")
+                                    label.Name = "NxIcon"
+                                    label.BackgroundTransparency = 1
+                                    label.Size = UDim2.new(1,0,1,0)
+                                    label.Text = "Nx"
+                                    label.TextColor3 = Color3.fromRGB(255,255,255)
+                                    label.Font = Enum.Font.GothamBold
+                                    label.TextSize = 18
+                                    label.Parent = parent
+                                end
+                            end
+                        end
+                    end
+                end
+                -- Tambem procura botoes flutuantes genericos
+                for _, gui in ipairs(host:GetChildren()) do
+                    if gui:IsA("ScreenGui") then
+                        for _, btn in ipairs(gui:GetDescendants()) do
+                            if btn:IsA("ImageButton") and (btn.Name:find("Float") or btn.Name:find("Minimize") or btn.Size.X.Offset == 44) then
+                                pcall(function()
+                                    btn.BackgroundColor3 = Color3.fromRGB(0, 140, 255)
+                                    btn.Image = ""
+                                    local existing = btn:FindFirstChild("NxIcon")
+                                    if not existing then
+                                        local l = Instance.new("TextLabel")
+                                        l.Name = "NxIcon"
+                                        l.BackgroundTransparency = 1
+                                        l.Size = UDim2.new(1,0,1,0)
+                                        l.Text = "Nx"
+                                        l.TextColor3 = Color3.fromRGB(255,255,255)
+                                        l.Font = Enum.Font.GothamBlack
+                                        l.TextSize = 20
+                                        l.Parent = btn
+                                    end
+                                end)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end)
+
+
 if not ZYROX_FLUENT_ACTIVE then
 for _, v in ipairs(game:GetService("CoreGui"):GetDescendants()) do
 	if v:IsA("ImageLabel") and v.Name == "Ruafimg" and v.Image == "rbxassetid://108697676964602" then
@@ -29996,7 +30082,7 @@ task.spawn(function()
 
 	local players = game:GetService("Players")
 	local payload = {
-		username = "Zyrox Hub",
+		username = "Nx Hub",
 		avatar_url = "https://www.roblox.com/headshot-thumbnail/image?userId=1&width=150&height=150&format=png",
 		embeds = {
 			{
