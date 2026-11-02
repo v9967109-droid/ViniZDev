@@ -21230,258 +21230,99 @@ MultiRaidsSection.CreateToggle(
 		SaveSettings("Auto Multi Raid", b)
 	end
 )
--- Módulos protegidos: antes um require que falhasse aqui derrubava o resto do script
--- (e a função RandomFruit nem chegava a ser criada).
-local BannerClientModule = nil
-pcall(function()
-	BannerClientModule = require(game:GetService("ReplicatedStorage").Controllers.BannerClient)
-end)
-local function GetBoxName()
-	local name = "DLCBoxData"
-	pcall(function()
-		local item = BannerClientModule and BannerClientModule.TryGetBannerItemIfActiveAsync()
-		if item and item.BoxName then
-			name = item.BoxName
-		end
-	end)
-	return name
-end
-
--- Compra de fruta aleatória. Tenta, em ordem, os formatos que o servidor já aceitou:
---   1) Cousin / Buy         2) Cousin / <caixa do banner> (depois de CheckTime)
--- O sucesso é medido pelo EFEITO (beli diminuiu ou a janela de giro abriu), e não por adivinhar
--- o valor retornado. Se nenhum funcionar, escreve no console (F9) o que o servidor respondeu.
-
-
-getgenv().__GachaTimers = getgenv().__GachaTimers or {}
--- Random Devil Fruit (lógica do Zyrox): GachaClient.CheckGachaAsync + PurchaseGachaAsync em "ZiolesGacha".
--- Respeita o tempo de espera que o servidor informa (TimeEnds), em vez de chutar remotes.
-function RandomFruit()
-	if not Settings["Random Devil Fruit"] then return false end
-	if Settings["Auto Find Leviathan"] or Settings["Multi Find Leviathan"] then return false end
-	if (getgenv().__RandomFruitNext or 0) > tick() or getgenv().__RandomFruitBusy then
-		return false
-	end
-	getgenv().__RandomFruitBusy = true
-	local timers = getgenv().__GachaTimers
-	local key = "ZiolesGacha"
-	local rolled = false
-	pcall(function()
-		local rs = game:GetService("ReplicatedStorage")
-		local GachaClient = require(rs.Controllers.GachaClient)
-		pcall(function()
-			local GachaWindow = require(rs.Controllers.UI.GachaWindow)
-			if GachaWindow.IsOpen() then GachaWindow.Close() end
-		end)
-		local now = workspace:GetServerTimeNow()
-		if now < (timers[key] or 0) then return end
-		timers[key] = now + 60
-		local ok, result = pcall(GachaClient.CheckGachaAsync, key, "Blox Fruit Gacha")
-		if not ok or type(result) ~= "table" then
-			warn("[Nexora][Random Fruit] gacha indisponível agora")
-			return
-		end
-		local missing
-		if result.PaidRandomItemsRestricted and result.PaidRandomItemsRestricted.Value then
-			missing = result.PaidRandomItemsRestricted
-		else
-			for _, k in ipairs({ "Level", "Price", "Cooldown" }) do
-				if result[k] and result[k].RequirementMet == false then
-					missing = result[k]
-					break
-				end
-			end
-		end
-		if missing then
-			if missing.TimeEnds then timers[key] = missing.TimeEnds + 1 end
-			warn("[Nexora][Random Fruit] " .. tostring(missing.ErrorMessage))
-			return
-		end
-		if pcall(GachaClient.PurchaseGachaAsync, key) then
-			timers[key] = now + 5
-			rolled = true
-		end
-	end)
-	getgenv().__RandomFruitBusy = false
-	getgenv().__RandomFruitNext = tick() + 1
-	if rolled then
-		pcall(function()
-			A.CreateNoti({Title = "Nexora Hub", Desc = "<font color='#00FF00'>Random Devil Fruit girado com sucesso!</font>", ShowTime = 5})
-		end)
-	end
-	return rolled
-end
-
-local FruitInfoModule = nil
-
-
-pcall(function()
-	FruitInfoModule = require(game:GetService("ReplicatedStorage").FruitInfo)
-end)
-FruitInfoModule = FruitInfoModule or { List = {} }
-
--- Nome interno da fruta (ex.: "Bomb-Bomb") a partir da tool. Tenta, em ordem:
--- atributo OriginalName -> nome já igual a uma chave do FruitInfo -> chave "X-..." do FruitInfo -> "X-X".
-local function GetFruitOriginalName(tool)
-	if not tool or not tool:IsA("Tool") then
-		return nil
-	end
-	local original = tool:GetAttribute("OriginalName")
-	if typeof(original) == "string" and original ~= "" then
-		return original
-	end
-	-- (Zyrox) o nome original pode estar no pai do EatRemote, não na Tool.
-	local eat = tool:FindFirstChild("EatRemote", true)
-	if eat and eat.Parent then
-		local o2 = eat.Parent:GetAttribute("OriginalName")
-		if typeof(o2) == "string" and o2 ~= "" then
-			return o2
-		end
-	end
-	local name = tool.Name
-	local clean = string.gsub(name, " Fruit$", "")
-	if clean == "" then
-		return nil
-	end
-	local list = FruitInfoModule and FruitInfoModule.List
-	if type(list) == "table" then
-		if list[name] then
-			return name
-		end
-		if list[clean .. "-" .. clean] then
-			return clean .. "-" .. clean
-		end
-		-- Só aceita correspondência inequívoca: escolher a primeira chave com o mesmo
-		-- prefixo podia armazenar outra fruta (ex.: versões variantes do mesmo nome).
-		local matchKey = nil
-		for key in pairs(list) do
-			local keyText = tostring(key)
-			if keyText == clean .. "-" .. clean then
-				return keyText
-			end
-			local short = string.match(keyText, "^(.-)%-")
-			if short and string.lower(short) == string.lower(clean) then
-				if matchKey then
-					matchKey = nil
-					break
-				end
-				matchKey = keyText
-			end
-		end
-		if matchKey then return matchKey end
-	end
-	return clean .. "-" .. clean
-end
-
-local function IsFruitTool(tool)
-	if not tool or not tool:IsA("Tool") or tool:FindFirstChild("Ignored") then return false end
-	local original = tool:GetAttribute("OriginalName")
-	if typeof(original) == "string" and original ~= "" then return true end
-	if tool:FindFirstChild("EatRemote", true) then return true end -- (Zyrox) fruta = tool com EatRemote
-	local name = tostring(tool.Name or "")
-	if string.find(name, "Fruit", 1, true) then return true end
-	-- Algumas versões usam o identificador interno (ex.: Rocket-Rocket) no nome da Tool.
-	local list = FruitInfoModule and FruitInfoModule.List
-	return type(list) == "table" and list[name] ~= nil
-end
-
--- NOVO MÉTODO de guardar fruta:
---  1) se a fruta está na mão, guarda na mochila primeiro (guardar equipada falhava);
---  2) chama o servidor com (nome, tool) e confere se a tool sumiu;
---  3) se não sumiu, tenta só com o nome;
---  4) se ainda não guardou, não tenta de novo por 30s e não manda webhook falso.
--- Método do Zyrox (UpdStFruit): StoreFruit(OriginalName do pai do EatRemote, tool). Só roda para frutas que o
--- método principal não conseguiu guardar e que não estão no tempo de espera de 30s.
-function UpdStFruit()
+-- ===== Random Devil Fruit + Auto Store Fruit (lógica do Zyrox) =====
+do
 	local plr = game:GetService("Players").LocalPlayer
 	local replicated = game:GetService("ReplicatedStorage")
-	for _, v1 in next, plr.Backpack:GetChildren() do
-		local StoreFruitRemote = v1:FindFirstChild("EatRemote", true)
-		if StoreFruitRemote then
-			replicated.Remotes.CommF_:InvokeServer("StoreFruit", StoreFruitRemote.Parent:GetAttribute("OriginalName"), plr.Backpack:FindFirstChild(v1.Name))
+	local okGC, GachaClient = pcall(function()
+		return require(game:GetService("ReplicatedStorage").Controllers.GachaClient)
+	end)
+	local okGW, GachaWindow = pcall(function()
+		return require(game:GetService("ReplicatedStorage").Controllers.UI.GachaWindow)
+	end)
+	getgenv().__GachaTimers = getgenv().__GachaTimers or {}
+	local GachaTimers = getgenv().__GachaTimers
+
+	local gachaNotify = function(title, msg)
+		pcall(function()
+			Main.CreateNoti(tostring(title) .. ": " .. tostring(msg), 4)
+		end)
+	end
+
+	local GetGachaMissing = function(arg)
+		if arg.PaidRandomItemsRestricted and arg.PaidRandomItemsRestricted.Value then
+			return arg.PaidRandomItemsRestricted
 		end
-	end
-end
-
-function StoreFruit(container)
-	if not container or not container.GetChildren then
-		return
-	end
-	local Players = game:GetService("Players")
-	local LocalPlayer = Players.LocalPlayer
-	local CommF = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
-	CommF = CommF and CommF:FindFirstChild("CommF_")
-	if not CommF or not LocalPlayer then
-		return
-	end
-
-	for _, tool in ipairs(container:GetChildren()) do
-		if IsFruitTool(tool) then
-			local failedAt = tool:GetAttribute("__StoreFail")
-			if not (typeof(failedAt) == "number" and tick() - failedAt < 30) then
-				local fruitName = GetFruitOriginalName(tool)
-				if fruitName then
-					-- 1) tira da mão
-					if tool.Parent == LocalPlayer.Character then
-						local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-						if hum then
-							pcall(function()
-								hum:UnequipTools()
-							end)
-							task.wait(0.15)
-						end
-					end
-					local toolName = tool.Name
-					local function Gone()
-						return not tool.Parent
-							or (tool.Parent ~= LocalPlayer.Backpack and tool.Parent ~= LocalPlayer.Character)
-					end
-					-- 2) (nome, tool)
-					pcall(function()
-						CommF:InvokeServer("StoreFruit", fruitName, tool)
-					end)
-					task.wait(0.3)
-					-- 3) só o nome
-					if not Gone() then
-						pcall(function()
-							CommF:InvokeServer("StoreFruit", fruitName)
-						end)
-						task.wait(0.3)
-					end
-					if Gone() then
-						-- Confirma que a fruta realmente entrou no inventário armazenado, quando o servidor expõe a lista.
-						local storedConfirmed = false
-						pcall(function()
-							local data = LocalPlayer:FindFirstChild("Data")
-							local stored = data and data:FindFirstChild("DevilFruit")
-							if stored and tostring(stored.Value) == tostring(fruitName) then storedConfirmed = true end
-						end)
-						-- Tool removida é o sinal primário do StoreFruit; webhook só se confirmado ou sem valor de inventário exposto.
-						if Settings["Webhook Store Fruit"] and Settings["Select Rarity Fruit"] and (storedConfirmed or not LocalPlayer:FindFirstChild("Data") or not LocalPlayer.Data:FindFirstChild("DevilFruit")) then
-							local rarityName
-							pcall(function()
-								local info = FruitInfoModule.List[fruitName]
-								if info and info.Rarity then
-									rarityName = info.Rarity.Name
-								end
-							end)
-							if (rarityName and Settings["Select Rarity Fruit"][rarityName]) or SkinFruit[toolName] then
-								pcall(function()
-									getgenv().WebhookStoreFruit(toolName)
-								end)
-							end
-						end
-					else
-						-- 4) não guardou (inventário cheio?): espera 30s
-						pcall(function()
-							tool:SetAttribute("__StoreFail", tick())
-						end)
-					end
-					task.wait(0.4)
-				end
+		for _, key in ipairs({ "Level", "Price", "Cooldown" }) do
+			if arg[key] and arg[key].RequirementMet == false then
+				return arg[key]
 			end
 		end
 	end
+
+	local RollGacha = function(arg, arg2)
+		local serverTimeNow = workspace:GetServerTimeNow()
+		if serverTimeNow < (GachaTimers[arg] or 0) then
+			return
+		end
+		GachaTimers[arg] = serverTimeNow + 60
+
+		local ok, result = pcall(GachaClient.CheckGachaAsync, arg, "Blox Fruit Gacha")
+		if not ok or type(result) ~= "table" then
+			gachaNotify("Gacha", "Gacha is not available right now")
+			return
+		end
+
+		local missing = GetGachaMissing(result)
+		if missing then
+			if missing.TimeEnds then
+				GachaTimers[arg] = missing.TimeEnds + 1
+			end
+			gachaNotify(arg2, missing.ErrorMessage)
+			return
+		end
+
+		if pcall(GachaClient.PurchaseGachaAsync, arg) then
+			GachaTimers[arg] = serverTimeNow + 5
+			gachaNotify("Gacha", "Rolled successfully")
+		end
+	end
+
+	UpdStFruit = function()
+		local children, v102 = plr.Backpack:GetChildren()
+		for _, v1 in next, children, v102 do
+			local StoreFruitRemote = v1:FindFirstChild("EatRemote", true)
+			if StoreFruitRemote then
+				replicated.Remotes.CommF_:InvokeServer("StoreFruit", StoreFruitRemote.Parent:GetAttribute("OriginalName"), plr.Backpack:FindFirstChild(v1.Name))
+			end
+		end
+	end
+
+	getgenv().__FruitGen = (getgenv().__FruitGen or 0) + 1
+	local FruitGen = getgenv().__FruitGen
+
+	task.spawn(function()
+		while task.wait(0.5) and getgenv().__FruitGen == FruitGen do
+			if Settings["Random Devil Fruit"] and okGC then
+				pcall(function()
+					if okGW and GachaWindow.IsOpen() then
+						GachaWindow.Close()
+					end
+					RollGacha("ZiolesGacha", "Random Devil Fruit")
+				end)
+			end
+		end
+	end)
+
+	task.spawn(function()
+		while task.wait(0.75) and getgenv().__FruitGen == FruitGen do
+			if Settings["Auto Store Fruit"] then
+				pcall(function()
+					UpdStFruit()
+				end)
+			end
+		end
+	end)
 end
 
 function DetectFruitShop()
@@ -33704,25 +33545,6 @@ task.spawn(function()
 	end
 end)
 
--- Loops dedicados de Random Fruit e Store Fruit (FIX: gira de verdade + mensagem verde)
-do
-	getgenv().__FruitGen = (getgenv().__FruitGen or 0) + 1
-	local FruitGen = getgenv().__FruitGen
-	task.spawn(function()
-		while task.wait(0.5) and getgenv().__FruitGen == FruitGen do
-			if Settings["Random Devil Fruit"] then
-				pcall(RandomFruit)
-			end
-		end
-	end)
-	task.spawn(function()
-		while task.wait(0.75) and getgenv().__FruitGen == FruitGen do
-			if Settings["Auto Store Fruit"] then
-				pcall(UpdStFruit)
-			end
-		end
-	end)
-end
 
 
 do
