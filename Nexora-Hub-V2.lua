@@ -1,235 +1,13 @@
 --[[
 	ZYROX HUB - ESCOLHA DA INTERFACE
-	Ao executar, abre uma tela temporaria para escolher:
-		Fluent  = dawid (original)
-		Modded  = Fluent-modded (StyearX) — temas / Personalizar
-		Classic = interface antiga (banana)
+	Defina ANTES de executar o script (ou mude o valor padrao logo abaixo):
 
-	Se ja existir getgenv().ZyroxUI, a tela e pulada.
-	Fallback de load: escolha -> alternativas -> Classic.
+		getgenv().ZyroxUI = "Fluent"   -- interface nova (padrao)
+		getgenv().ZyroxUI = "Classic"  -- interface antiga
+
+	Se a Fluent nao carregar, a Classic abre sozinha.
 ]]
-
--- Tela de escolha (so se ainda nao definiu ZyroxUI)
-if not getgenv().ZyroxUI then
-	local chosen = nil
-	local UIS = game:GetService("UserInputService")
-	local TS = game:GetService("TweenService")
-	local host = (gethui and gethui()) or game:GetService("CoreGui")
-
-	pcall(function()
-		local old = host:FindFirstChild("ZyroxUIPicker")
-		if old then
-			old:Destroy()
-		end
-	end)
-
-	local gui = Instance.new("ScreenGui")
-	gui.Name = "ZyroxUIPicker"
-	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
-	gui.DisplayOrder = 9999
-	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	pcall(function()
-		if syn and syn.protect_gui then
-			syn.protect_gui(gui)
-		end
-	end)
-	gui.Parent = host
-
-	local dim = Instance.new("Frame")
-	dim.Size = UDim2.fromScale(1, 1)
-	dim.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-	dim.BackgroundTransparency = 0.35
-	dim.BorderSizePixel = 0
-	dim.Parent = gui
-
-	local card = Instance.new("Frame")
-	card.AnchorPoint = Vector2.new(0.5, 0.5)
-	card.Position = UDim2.fromScale(0.5, 0.5)
-	card.Size = UDim2.fromOffset(360, 360)
-	card.BackgroundColor3 = Color3.fromRGB(12, 12, 14)
-	card.BorderSizePixel = 0
-	card.Parent = gui
-	Instance.new("UICorner", card).CornerRadius = UDim.new(0, 16)
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = Color3.fromRGB(255, 255, 255)
-	stroke.Thickness = 1.5
-	stroke.Transparency = 0.15
-	stroke.Parent = card
-
-	-- header bar
-	local header = Instance.new("Frame")
-	header.Size = UDim2.new(1, 0, 0, 52)
-	header.BackgroundColor3 = Color3.fromRGB(18, 18, 20)
-	header.BorderSizePixel = 0
-	header.Parent = card
-	Instance.new("UICorner", header).CornerRadius = UDim.new(0, 16)
-	local headerFix = Instance.new("Frame")
-	headerFix.Size = UDim2.new(1, 0, 0, 18)
-	headerFix.Position = UDim2.new(0, 0, 1, -18)
-	headerFix.BackgroundColor3 = Color3.fromRGB(18, 18, 20)
-	headerFix.BorderSizePixel = 0
-	headerFix.Parent = header
-
-	local title = Instance.new("TextLabel")
-	title.BackgroundTransparency = 1
-	title.Size = UDim2.new(1, -24, 0, 24)
-	title.Position = UDim2.fromOffset(16, 14)
-	title.Font = Enum.Font.GothamBold
-	title.TextSize = 17
-	title.TextColor3 = Color3.fromRGB(255, 255, 255)
-	title.TextXAlignment = Enum.TextXAlignment.Left
-	title.Text = "Zyrox Hub Interfaces"
-	title.Parent = header
-
-	local sub = Instance.new("TextLabel")
-	sub.BackgroundTransparency = 1
-	sub.Size = UDim2.new(1, -24, 0, 16)
-	sub.Position = UDim2.fromOffset(16, 56)
-	sub.Font = Enum.Font.Gotham
-	sub.TextSize = 12
-	sub.TextColor3 = Color3.fromRGB(150, 150, 160)
-	sub.TextXAlignment = Enum.TextXAlignment.Left
-	sub.Text = "selecione como quer abrir o hub"
-	sub.Parent = card
-
-	local list = Instance.new("Frame")
-	list.BackgroundTransparency = 1
-	list.Position = UDim2.fromOffset(16, 80)
-	list.Size = UDim2.new(1, -32, 1, -100)
-	list.Parent = card
-	local layout = Instance.new("UIListLayout")
-	layout.Padding = UDim.new(0, 8)
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Parent = list
-
-	local options = {
-		{
-			id = "Fluent",
-			label = "Fluent",
-			desc = "Original (dawid) — estavel",
-			color = Color3.fromRGB(0, 140, 255),
-		},
-		{
-			id = "Modded",
-			label = "Fluent Modded",
-			desc = "Temas, Personalizar, acrylic",
-			color = Color3.fromRGB(160, 80, 255),
-		},
-		{
-			id = "Classic",
-			label = "Classic",
-			desc = "Interface antiga (banana)",
-			color = Color3.fromRGB(90, 200, 120),
-		},
-		{
-			id = "Kaitun",
-			label = "Kaitun",
-			desc = "Full auto: level + seas + itens",
-			color = Color3.fromRGB(255, 170, 40),
-		},
-	}
-
-	local function makeBtn(opt, order)
-		local btn = Instance.new("TextButton")
-		btn.LayoutOrder = order
-		btn.Size = UDim2.new(1, 0, 0, 52)
-		btn.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
-		btn.BorderSizePixel = 0
-		btn.AutoButtonColor = false
-		btn.Text = ""
-		btn.Parent = list
-		Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 10)
-		local btnStroke = Instance.new("UIStroke")
-		btnStroke.Color = Color3.fromRGB(255, 255, 255)
-		btnStroke.Thickness = 1
-		btnStroke.Transparency = 0.88
-		btnStroke.Parent = btn
-
-		local bar = Instance.new("Frame")
-		bar.Size = UDim2.new(0, 3, 1, -14)
-		bar.Position = UDim2.fromOffset(8, 7)
-		bar.BackgroundColor3 = opt.color
-		bar.BorderSizePixel = 0
-		bar.Parent = btn
-		Instance.new("UICorner", bar).CornerRadius = UDim.new(1, 0)
-
-		local name = Instance.new("TextLabel")
-		name.BackgroundTransparency = 1
-		name.Position = UDim2.fromOffset(20, 7)
-		name.Size = UDim2.new(1, -30, 0, 20)
-		name.Font = Enum.Font.GothamBold
-		name.TextSize = 14
-		name.TextColor3 = Color3.fromRGB(255, 255, 255)
-		name.TextXAlignment = Enum.TextXAlignment.Left
-		name.Text = opt.label
-		name.Parent = btn
-
-		local desc = Instance.new("TextLabel")
-		desc.BackgroundTransparency = 1
-		desc.Position = UDim2.fromOffset(20, 28)
-		desc.Size = UDim2.new(1, -30, 0, 16)
-		desc.Font = Enum.Font.Gotham
-		desc.TextSize = 11
-		desc.TextColor3 = Color3.fromRGB(140, 140, 150)
-		desc.TextXAlignment = Enum.TextXAlignment.Left
-		desc.Text = opt.desc
-		desc.Parent = btn
-
-		btn.MouseEnter:Connect(function()
-			TS:Create(btn, TweenInfo.new(0.12), { BackgroundColor3 = Color3.fromRGB(32, 32, 38) }):Play()
-			TS:Create(btnStroke, TweenInfo.new(0.12), { Transparency = 0.55 }):Play()
-		end)
-		btn.MouseLeave:Connect(function()
-			TS:Create(btn, TweenInfo.new(0.12), { BackgroundColor3 = Color3.fromRGB(22, 22, 26) }):Play()
-			TS:Create(btnStroke, TweenInfo.new(0.12), { Transparency = 0.88 }):Play()
-		end)
-		btn.MouseButton1Click:Connect(function()
-			chosen = opt.id
-		end)
-	end
-
-	for i, opt in ipairs(options) do
-		makeBtn(opt, i)
-	end
-
-	local hint = Instance.new("TextLabel")
-	hint.BackgroundTransparency = 1
-	hint.AnchorPoint = Vector2.new(0.5, 1)
-	hint.Position = UDim2.new(0.5, 0, 1, -10)
-	hint.Size = UDim2.new(1, -24, 0, 16)
-	hint.Font = Enum.Font.Gotham
-	hint.TextSize = 11
-	hint.TextColor3 = Color3.fromRGB(110, 115, 130)
-	hint.Text = "vale so para esta execucao"
-	hint.Parent = card
-
-	-- espera escolha (max 30s -> Fluent). se a GUI sumir, segue.
-	local deadline = tick() + 30
-	while not chosen and tick() < deadline do
-		if not gui.Parent then
-			break
-		end
-		task.wait(0.05)
-	end
-	if not chosen then
-		chosen = "Fluent"
-	end
-	if chosen == "Kaitun" then
-		getgenv().ZyroxKaitun = true
-		-- Kaitun usa Fluent por baixo (estavel); UI ainda abre
-		getgenv().ZyroxUI = "Fluent"
-	else
-		getgenv().ZyroxUI = chosen
-	end
-	pcall(function()
-		gui:Destroy()
-	end)
-	print("[Zyrox] picker done -> " .. tostring(getgenv().ZyroxUI or chosen))
-end
-
 getgenv().ZyroxUI = getgenv().ZyroxUI or "Fluent"
-print("[Zyrox] boot UI=" .. tostring(getgenv().ZyroxUI) .. " kaitun=" .. tostring(getgenv().ZyroxKaitun))
 
 local function geniter(f, s, c)
 	if type(f) ~= "function" then
@@ -257,70 +35,9 @@ end
 
 ply = game.Players
 plr = ply.LocalPlayer
-
--- Root seguro (nao trava o script; atualiza quando o character spawna)
-Root = nil
-pcall(function()
-	Root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-end)
-plr.CharacterAdded:Connect(function(char)
-	task.spawn(function()
-		local hrp = char:WaitForChild("HumanoidRootPart", 15)
-		if hrp then
-			Root = hrp
-		end
-	end)
-end)
--- se character ja existe mas Root ainda nil, tenta de novo em background
-task.spawn(function()
-	for _ = 1, 100 do
-		if Root and Root.Parent then
-			break
-		end
-		pcall(function()
-			local ch = plr.Character
-			if ch then
-				local hrp = ch:FindFirstChild("HumanoidRootPart")
-				if hrp then
-					Root = hrp
-				end
-			end
-		end)
-		task.wait(0.2)
-	end
-end)
-
+Root = plr.Character.HumanoidRootPart
 replicated = game:GetService("ReplicatedStorage")
-
-Lv = 1
-pcall(function()
-	local data = plr:FindFirstChild("Data") or plr:WaitForChild("Data", 10)
-	if data then
-		local level = data:FindFirstChild("Level") or data:WaitForChild("Level", 10)
-		if level then
-			Lv = level.Value
-			level:GetPropertyChangedSignal("Value"):Connect(function()
-				Lv = level.Value
-			end)
-		end
-	end
-end)
-
--- Prioridade de movimento (ideia do TSUO): so uma tarefa mexe o personagem por vez; a mais importante vence.
--- Quanto menor o numero, maior a prioridade. Quem nao esta na lista conta como "farm" (22).
-ZyroxPriority = { safemode = 0, protect = 1, fruit = 3, ripindra = 4, elite = 5, factory = 6, boss = 7, bartilo = 8, raid = 10, farm = 22 }
-ZyroxMov = { owner = nil, untilT = 0, name = "" }
-ZyroxClaim = function(name)
-	local co = coroutine.running()
-	local mine = ZyroxPriority[name] or 22
-	if ZyroxMov.owner and ZyroxMov.owner ~= co and tick() < ZyroxMov.untilT then
-		if (ZyroxPriority[ZyroxMov.name] or 22) <= mine then
-			return false
-		end
-	end
-	ZyroxMov.owner, ZyroxMov.untilT, ZyroxMov.name = co, tick() + 3, name
-	return true
-end
+Lv = game.Players.LocalPlayer.Data.Level.Value
 TeleportService = game:GetService("TeleportService")
 TW = game:GetService("TweenService")
 Lighting = game:GetService("Lighting")
@@ -330,10 +47,7 @@ vim2 = game:GetService("VirtualUser")
 TeamSelf = plr.Team
 RunSer = game:GetService("RunService")
 Stats = game:GetService("Stats")
-do
-	local e = plr.Character and plr.Character:FindFirstChild("Energy")
-	Energy = (e and e.Value) or 0
-end
+Energy = plr.Character.Energy.Value
 BringConnections = {}
 BossList = {}
 MaterialList = {}
@@ -355,31 +69,12 @@ ClickState = 0
 Num_self = 25
 
 do
-	-- load leve: nao bloqueia 45s se Loading ficar Visible
-	pcall(function()
-		if not game:IsLoaded() then
-			game.Loaded:Wait()
-		end
-	end)
-	task.spawn(function()
-		pcall(function()
-			local main = plr.PlayerGui:FindFirstChild("Main") or plr.PlayerGui:WaitForChild("Main", 15)
-			if not main then
-				return
-			end
-			local loading = main:FindFirstChild("Loading")
-			local t0 = tick()
-			while loading and loading.Parent and loading.Visible and tick() - t0 < 20 do
-				task.wait(0.2)
-				loading = main:FindFirstChild("Loading")
-			end
-		end)
-		pcall(function()
-			if (not Root or not Root.Parent) and plr.Character then
-				Root = plr.Character:FindFirstChild("HumanoidRootPart")
-			end
-		end)
-	end)
+	local Loading
+
+	repeat
+		Loading = plr.PlayerGui:WaitForChild("Main"):WaitForChild("Loading") and game:IsLoaded()
+		wait()
+	until Loading
 end
 
 World1 = game.PlaceId == 2753915549 or game.PlaceId == 85211729168715
@@ -560,12 +255,6 @@ t9.__index = t9
 t9.Alive = function(p3)
 	if not p3 then
 		return
-	end
-
-	-- mob que o anti-trava pulou (nao tomou dano por 12s) fica de fora por 20s
-	local skipped = p3:GetAttribute("ZyroxSkip")
-	if skipped and tick() - skipped < 20 then
-		return false
 	end
 
 	local Humanoid = p3:FindFirstChild("Humanoid")
@@ -1929,148 +1618,79 @@ do
 
 		if typeof(p52) == "CFrame" then
 			Position = p52.Position
-		elseif typeof(p52) == "Instance" then
-			Position = p52:IsA("BasePart") and p52.Position or p52:GetPivot().Position
-		elseif typeof(p52) == "Vector3" then
-			Position = p52
 		end
 
-		if typeof(Position) ~= "Vector3" then
-			return
-		end
-
-		local root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-
-		if not root then
-			return
-		end
-
-		-- portal so em viagens longas; cooldown curto pra nao spammar
-		local direct = (Position - root.Position).Magnitude
-
-		if direct < 2500 or tick() - (_G.ZyroxPortalLast or 0) < 4 then
-			return
-		end
-
-		-- posicoes dos pontos de entrada/saida lidas do mapa (como no arquivo novo)
-		local mapPart = function(...)
-			local node = workspace:FindFirstChild("Map")
-
-			for _, name in ipairs({ ... }) do
-				node = node and (node:FindFirstChild(name) or node:FindFirstChild(name, true))
-			end
-
-			if not node then
-				return nil
-			end
-
-			if node:IsA("BasePart") then
-				return node.Position
-			end
-
-			local ok, pivot = pcall(function()
-				return node:GetPivot().Position
-			end)
-
-			return ok and pivot or nil
-		end
-
-		local t12 = {}
-		local add = function(name, pos)
-			if typeof(pos) == "Vector3" then
-				t12[name] = pos
-			end
-		end
+		local t12
 
 		if sea1 then
-			add("FishmanSea1", mapPart("TeleportSpawn", "EntrancePoint"))
-			add("Sky2", mapPart("SkyArea2", "PathwayHouse", "EntrancePoint"))
-			add("Sky1", mapPart("SkyArea1", "PathwayTemple", "ExitPoint"))
-			add("Sky3", Vector3.new(-7894, 5547, -380))
-			add("Sky3Exit", Vector3.new(-4607, 874, -1667))
-			add("UnderWater", Vector3.new(61163, 11, 1819))
-			add("Underwater City", Vector3.new(61165.19140625, 0.18704631924629211, 1897.379150390625))
-			add("Pirate Village", Vector3.new(-1242.4625244140625, 4.7870597839355469, 3901.282958984375))
-			add("UnderwaterExit", Vector3.new(4050, -1, -1814))
+			t12 = {
+				Sky3 = Vector3.new(-7894, 5547, -380),
+				Sky3Exit = Vector3.new(-4607, 874, -1667),
+				UnderWater = Vector3.new(61163, 11, 1819),
+				["Underwater City"] = Vector3.new(61165.19140625, 0.18704631924629211, 1897.379150390625),
+				["Pirate Village"] = Vector3.new(-1242.4625244140625, 4.7870597839355469, 3901.282958984375),
+				UnderwaterExit = Vector3.new(4050, -1, -1814)
+			}
 		elseif sea2 then
-			add("CaFe", Vector3.new(-288, 305, 613))
-			add("SwanRoom", Vector3.new(2284, 15, 897))
-			add("GhostShip", mapPart("GhostShipInterior", "TeleportSpawn"))
-			add("Cursed Ship", Vector3.new(923, 126, 32852))
-			add("Zombie Island", Vector3.new(-6509, 83, -133))
-			add("Swan Mansion", Vector3.new(-390, 332, 673))
+			t12 = {
+				["Swan Mansion"] = Vector3.new(-390, 332, 673),
+				["Swan Room"] = Vector3.new(2285, 15, 905),
+				["Cursed Ship"] = Vector3.new(923, 126, 32852),
+				["Zombie Island"] = Vector3.new(-6509, 83, -133)
+			}
 		else
-			add("Castle", Vector3.new(-5058, 314, -3155))
-			add("Mansion", Vector3.new(-12463, 374, -7523))
-			add("Hydra Island", Vector3.new(5657.88623046875, 1013.0790405273438, -335.4996337890625))
+			t12 = {
+				["Hydra Island"] = Vector3.new(5657.88623046875, 1013.0790405273438, -335.4996337890625),
+				Mansion = Vector3.new(-12462, 375, -7552),
+				Castle = Vector3.new(-5036, 315, -3179),
+				["Temple of Time"] = Vector3.new(28286, 14897, 103),
+				["Greate Tree"] = Vector3.new(3024.1709, 2280.69434, -7325.12793)
+			}
 
-			-- o Valkyrie Helm so e exigido para Temple of Time / Great Tree (antes ele bloqueava TODOS os portais do Sea 3)
-			if checkinventory("Valkyrie Helm") then
-				add("Temple of Time", Vector3.new(28286, 14897, 103))
-				add("Greate Tree", Vector3.new(3024.1709, 2280.69434, -7325.12793))
-			end
-		end
-
-		-- portais que ja falharam ficam 15 min fora da escolha
-		local bad = _G.ZyroxPortalBad or {}
-		_G.ZyroxPortalBad = bad
-
-		local bestName, best
-		local bestDist = math.huge
-
-		for name, pos in pairs(t12) do
-			local dist = (pos - Position).Magnitude
-
-			if dist < bestDist and tick() - (bad[name] or -1e9) > 900 then
-				bestName, best, bestDist = name, pos, dist
-			end
-		end
-
-		-- so usa se o portal deixa o alvo mais perto (pelo menos ~10%)
-		if not best or not (bestDist < direct * 0.9) then
-			return
-		end
-
-		_G.ZyroxPortalLast = tick()
-
-		pcall(function()
-			if _G.TweenCache then
-				_G.TweenCache:Cancel()
-			end
-		end)
-
-		-- Great Tree: com a Race V4 no progresso 2+ o caminho e pelo topo da arvore
-		if bestName == "Greate Tree" then
-			local okc, progress = pcall(function()
-				return ReplicatedStorage.Remotes.CommF_:InvokeServer("RaceV4Progress", "Check")
-			end)
-
-			if okc and type(progress) == "number" and progress >= 2 then
-				totopofgreattree()
-				wait(1)
-
+			if not checkinventory("Valkyrie Helm") then
 				return
 			end
 		end
 
-		ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", best)
-		wait(1)
+		local v194
+		local huge = math.huge
 
-		-- se depois do portal o alvo nao ficou mais perto, descarta esse portal
-		local root2 = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+		for _, v1 in pairs(t12) do
+			local Magnitude = typeof(v1) == "Vector3" and (v1 - Position).Magnitude or (v1.Position - Position).Magnitude
 
-		if root2 and (Position - root2.Position).Magnitude >= direct then
-			bad[bestName] = tick()
+			if Magnitude < huge then
+				huge = Magnitude
+				v194 = v1
+			end
+		end
+
+		if v194 and huge then
+			if huge < getdis(p52) then
+				pcall(function()
+					if _G.TweenCache then
+						_G.TweenCache:Cancel()
+					end
+				end)
+
+				local ok = typeof(v194) ~= "Vector3" or v194.X ~= 3024.1709 or v194.Y ~= 2280.69434 or v194.Z ~= -7325.12793
+
+				if not ok then
+					ok = not (ReplicatedStorage.Remotes.CommF_:InvokeServer("RaceV4Progress", "Check") >= 2)
+				end
+
+				if ok then
+					if huge < getdis(p52) then
+						ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", typeof(v194) == "Vector3" and v194 or v194.Position)
+						wait(1)
+					end
+				else
+					totopofgreattree()
+					wait(1)
+				end
+			end
 		end
 	end
 	_tp = function(p53)
-		if ZyroxMov.owner then
-			if ZyroxMov.owner == coroutine.running() then
-				ZyroxMov.untilT = tick() + 3
-			elseif tick() < ZyroxMov.untilT and (ZyroxPriority[ZyroxMov.name] or 22) < 22 then
-				return
-			end
-		end
 		local cFrame3
 
 		if typeof(p53) == "Vector3" then
@@ -2102,78 +1722,26 @@ do
 			requestentrance(p53)
 		end)
 
-		-- Ilha submersa (Sea 3): VOA ate o NPC do submarino na superficie, depois pede o travel.
-		-- Nao usa old_tp (TP instantaneo) — isso era o bug que o dj reportou.
-		if sea3 and getdis(cFrame3.Position, cFrame.Position) < 2500 then
-			local HumanoidRootPart2 = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+		if sea3 and getdis(cFrame3.Position, cFrame.Position) < 2000 then
+			local HumanoidRootPart2 = plr.Character.HumanoidRootPart
 
-			if HumanoidRootPart2 and math.abs(cFrame.Position.Y - HumanoidRootPart2.Position.Y) > 800 then
-				local subDeadline = tick() + 90
-				local lastSubTry = 0
+			if math.abs(cFrame.Position.Y - HumanoidRootPart2.CFrame.Y) > 1000 then
+				repeat
+					task.wait()
+					old_tp(cFrame2)
 
-				-- voa ate o ponto do NPC (cFrame2 = superficie perto do Submarine Worker)
-				while tick() < subDeadline and getdis(cFrame3.Position) >= 2000 do
-					HumanoidRootPart2 = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-					if not HumanoidRootPart2 then
-						task.wait(0.2)
-					else
-						local nearSurface = getdis(cFrame2) < 15
-						if not nearSurface then
-							-- tween voando ate o NPC (sem CFrame instantaneo)
-							if ZyroxSubmarine.flyTo then
-								ZyroxSubmarine.flyTo(cFrame2, 320)
-							else
-								-- fallback: tween da peca-guia
-								local dist = (cFrame2.Position - HumanoidRootPart2.Position).Magnitude
-								Part.CFrame = HumanoidRootPart2.CFrame
-								local tw = game:GetService("TweenService"):Create(
-									Part,
-									TweenInfo.new(math.max(dist / 320, 0.2), Enum.EasingStyle.Linear),
-									{ CFrame = cFrame2 }
-								)
-								shouldTween = true
-								getgenv().OnFarm = true
-								tw:Play()
-								local t0 = tick()
-								while tick() - t0 < dist / 320 + 2 and getdis(cFrame2) > 15 do
-									task.wait(0.05)
-								end
-								pcall(function()
-									tw:Cancel()
-								end)
-							end
-						end
+					if getdis(cFrame2) < 10 then
+						local Net = ReplicatedStorage.Modules.Net
 
-						if getdis(cFrame2) < 15 and tick() - lastSubTry > 5 then
-							lastSubTry = tick()
-							-- tenta sistema novo; se falhar, WorkerSpeak (como Banana/Vxeze)
-							local used = false
-							if ZyroxSubmarine.travelNear then
-								used = ZyroxSubmarine.travelNear(cFrame3.Position)
-							end
-							if not used then
-								local Net = ReplicatedStorage.Modules.Net
-								pcall(function()
-									Net["RF/SubmarineWorkerSpeak"]:InvokeServer("AskKilledTikiBoss")
-								end)
-								task.wait(0.4)
-								pcall(function()
-									Net["RF/SubmarineWorkerSpeak"]:InvokeServer("TravelToSubmergedIsland")
-								end)
-								pcall(function()
-									ReplicatedStorage.Remotes.CommF_:InvokeServer("SetLastSpawnPoint", "SubmergedIsland")
-								end)
-							end
-							task.wait(1.2)
-						end
+						Net["RF/SubmarineWorkerSpeak"]:InvokeServer("AskKilledTikiBoss")
+						task.wait(0.5)
+						Net["RF/SubmarineWorkerSpeak"]:InvokeServer("TravelToSubmergedIsland")
 					end
-					task.wait(0.1)
-				end
+				until getdis(cFrame3.Position) < 2000
 
-				task.wait(0.5)
+				task.wait(0.6)
 				pcall(function()
-					HumanoidRootPart2 = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-					if HumanoidRootPart2 and HumanoidRootPart2:FindFirstChild("BodyClip") then
+					if HumanoidRootPart2:FindFirstChild("BodyClip") then
 						HumanoidRootPart2.BodyClip:Destroy()
 					end
 				end)
@@ -2209,133 +1777,6 @@ do
 	end
 end
 
--- Submarino (logica do arquivo novo): RF/SubmarineTransportation -> GetAvailableLocations / InitiateTeleport
-ZyroxSubmarine = { cache = nil, readAt = 0 }
-
-ZyroxSubmarine.remote = function()
-	for _, descendant in ipairs(replicated:GetDescendants()) do
-		if descendant.Name == "RF/SubmarineTransportation" then
-			return descendant
-		end
-	end
-end
-
-ZyroxSubmarine.npc = function()
-	local npcs = workspace:FindFirstChild("NPCs")
-	return npcs and npcs:FindFirstChild("Submarine Worker2")
-end
-
-ZyroxSubmarine.destinations = function()
-	if ZyroxSubmarine.cache and tick() - ZyroxSubmarine.readAt < 120 then
-		return ZyroxSubmarine.cache
-	end
-	local remote = ZyroxSubmarine.remote()
-	if remote then
-		local ok, result = pcall(function()
-			return remote:InvokeServer("GetAvailableLocations")
-		end)
-		if ok and type(result) == "table" then
-			ZyroxSubmarine.cache = result
-			ZyroxSubmarine.readAt = tick()
-		end
-	end
-	return ZyroxSubmarine.cache
-end
-
--- destino cujo ponto final fica mais perto de `position`
-ZyroxSubmarine.nearest = function(position)
-	local list = ZyroxSubmarine.destinations()
-	if not list then
-		return nil
-	end
-	local best, bestDist = nil, math.huge
-	for _, dest in pairs(list) do
-		if type(dest) == "table" and dest.Name and dest.EndLocation then
-			local point = typeof(dest.EndLocation) == "CFrame" and dest.EndLocation.Position or dest.EndLocation
-			local dist = (point - position).Magnitude
-			if dist < bestDist then
-				best, bestDist = dest, dist
-			end
-		end
-	end
-	return best, bestDist
-end
-
--- viaja para o destino mais perto de `position`; devolve true se o servidor aceitou
--- NAO da TP instantaneo no NPC: voa (tween da peca-guia) ate chegar perto
-ZyroxSubmarine.flyTo = function(goalCF, speed)
-	speed = speed or 300
-	local root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-	if not root or not Part then
-		return false
-	end
-	if typeof(goalCF) == "Vector3" then
-		goalCF = CFrame.new(goalCF)
-	end
-	local dist = (goalCF.Position - root.Position).Magnitude
-	if dist <= 12 then
-		return true
-	end
-	pcall(function()
-		if _G.TweenCache then
-			_G.TweenCache:Cancel()
-		end
-	end)
-	Part.CFrame = root.CFrame
-	local info = TweenInfo.new(math.max(dist / speed, 0.15), Enum.EasingStyle.Linear)
-	local tw = game:GetService("TweenService"):Create(Part, info, { CFrame = goalCF })
-	_G.TweenCache = tw
-	shouldTween = true
-	getgenv().OnFarm = true
-	tw:Play()
-	local deadline = tick() + math.max(dist / speed, 0.2) + 2
-	while tick() < deadline do
-		root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-		if not root then
-			break
-		end
-		if (root.Position - goalCF.Position).Magnitude <= 12 then
-			pcall(function()
-				tw:Cancel()
-			end)
-			return true
-		end
-		task.wait(0.05)
-	end
-	pcall(function()
-		tw:Cancel()
-	end)
-	root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-	return root and (root.Position - goalCF.Position).Magnitude <= 25
-end
-
-ZyroxSubmarine.travelNear = function(position)
-	local remote = ZyroxSubmarine.remote()
-	local root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-	if not remote or not root then
-		return false
-	end
-	local dest, dist = ZyroxSubmarine.nearest(position)
-	if not dest or (root.Position - position).Magnitude <= dist then
-		return false
-	end
-	local npc = ZyroxSubmarine.npc()
-	local npcRoot = npc and (npc:FindFirstChild("HumanoidRootPart") or npc.PrimaryPart)
-	if npcRoot and (root.Position - npcRoot.Position).Magnitude > 12 then
-		-- voa ate o NPC (sem CFrame instantaneo)
-		ZyroxSubmarine.flyTo(npcRoot.CFrame * CFrame.new(0, 3, 4), 320)
-		task.wait(0.4)
-	end
-	root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-	if not root then
-		return false
-	end
-	local ok, result = pcall(function()
-		return remote:InvokeServer("InitiateTeleport", dest.Name)
-	end)
-	return ok and type(result) == "table"
-end
-
 do
 	old_tp = function(p54)
 		if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
@@ -2358,13 +1799,6 @@ end
 
 notween = function(p56)
 	plr.Character.HumanoidRootPart.CFrame = p56
-
-	-- a peca-guia do _tp puxa o personagem de volta a cada frame; sem mover ela junto (e cancelar o tween em andamento)
-	-- o personagem ficava "voltando" para a posicao antiga (ex.: armas que nao sao fruta no t9.KillSea)
-	pcall(function()
-		Part.CFrame = p56
-		game:GetService("TweenService"):Create(Part, TweenInfo.new(0), { CFrame = p56 }):Play()
-	end)
 end
 
 do
@@ -2394,7 +1828,7 @@ do
 	spawn(function()
 		while task.wait() do
 			pcall(function()
-				if _G.HalloweenFarm or _G.FarmEliteH or _G.AutoRaid3nn or _G.AutoFindLeviathan3nn or _G.MultiFindLeviathan3nn or _G.AutoStartLeviathan3nn or _G.AutoDestroyIDK3nn or _G.AutoFireHeart3nn or _G.AutoSecretQuest or _G.AutoRaidX or _G.FightShopActive or _G.Auto_StartRaid or _G.SailBoat_Hydra or _G.WardenBoss or _G.AutoFactory or _G.HighestMirage or _G.HCM or _G.PGB or _G.Leviathan1 or _G.UPGDrago or _G.Complete_Trials or _G.TpDrago_Prehis or _G.BuyDrago or _G.AutoFireFlowers or _G.DT_Uzoth or _G.AutoBerry or _G.Prefully or _G.Prehis_Find or _G.Prehis_Skills or _G.Prehis_DB or _G.Prehis_DE or _G.FarmBlazeEM or _G.Dojoo or _G.CollectPresent or _G.AutoLawKak or _G.TpLab or _G.AutoPhoenixF or _G.AutoFarmChest or _G.AutoHytHallow or _G.LongsWord or _G.BlackSpikey or _G.AutoHolyTorch or _G.TrainDrago or _G.AutoSaber or _G.FarmMastery_Dev or _G.CitizenQuest or _G.AutoEctoplasm or _G.KeysRen or _G.Auto_Rainbow_Haki or _G.obsFarm or _G.AutoBigmom or _G.Doughv2 or _G.AuraBoss or _G.Raiding or _G.Auto_Cavender or _G.TpPly or _G.Bartilo_Quest or _G.Level or _G.FarmEliteHunt or _G.AutoZou or _G.AutoFarm_Bone or getgenv().AutoMaterial or _G.CraftVM or _G.FrozenTP or _G.TPDoor or _G.AcientOne or _G.AutoFarmNear or _G.AutoRaidCastle or _G.DarkBladev3 or _G.AutoFarmRaid or _G.Auto_Cake_Prince or _G.Addealer or _G.TPNpc or _G.TwinHook or _G.FindMirage or _G.FarmChestM or _G.Shark or _G.TerrorShark or _G.Piranha or _G.MobCrew or _G.SeaBeast1 or _G.FishBoat or _G.AutoPole or _G.AutoPoleV2 or _G.Auto_SuperHuman or _G.AutoDeathStep or _G.Auto_SharkMan_Karate or _G.Auto_Electric_Claw or _G.AutoDragonTalon or _G.Auto_Def_DarkCoat or _G.Auto_God_Human or _G.Auto_Tushita or _G.AutoMatSoul or _G.AutoKenVTWO or _G.AutoSerpentBow or _G.AutoFMon or _G.Auto_Soul_Guitar or _G.TPGEAR or _G.AutoSaw or _G.AutoTridentW2 or _G.AutoEvoRace or _G.AutoGetQuestBounty or _G.MarinesCoat or _G.TravelDres or _G.Defeating or _G.DummyMan or _G.Auto_Yama or _G.Auto_SwanGG or _G.SwanCoat or _G.AutoEcBoss or _G.Auto_Mink or _G.Auto_Human or _G.Auto_Skypiea or _G.Auto_Fish or _G.CDK_TS or _G.CDK_YM or _G.CDK or _G.AutoFarmGodChalice or _G.AutoFistDarkness or _G.AutoMiror or _G.Teleport or _G.AutoKilo or _G.AutoGetUsoap or _G.Praying or _G.TryLucky or _G.AutoColShad or _G.AutoUnHaki or _G.Auto_DonAcces or _G.AutoRipIngay or _G.DragoV3 or _G.DragoV1 or _G.SailBoats or NextIs or _G.FarmGodChalice or _G.IceBossRen or senth or senth2 or _G.Lvthan or _G.beasthunter or _G.DangerLV or _G.Relic123 or _G.tweenKitsune or _G.Collect_Ember or _G.AutofindKitIs or _G.snaguine or _G.TwFruits or _G.tweenKitShrine or _G.Tp_LgS or _G.Tp_MasterA or _G.tweenShrine or _G.FarmMastery_G or _G.FarmMastery_S or _G.FarmBoss or _G.AutoFarmAllBoss or _G.AutoFishSlap or _G.FarmTyrant or _G.FarmPhaBinh or _G.AutoSpawnCP or _G.AutoBerryH or _G.AutoChestBP or _G.FarmEliteHop or _G.AutoHop_Dough or _G.AutoDoughKing or _G.AutoAttackDoughKing or _G.StartEvent or _G.AutoMysticIsland or _G.AutoPlayerHunter or _G.SafeMode or _G.AutoKillMob or _G.AutoStartPrehistoric or _G.AutoUnHaki or _G.AutoAttackRipIndra or _G.AutoFarmIsland or _G.AutoFarmDungeon or _G.AutoFarmCandy or _G.AutoTP_Gift or _G.AutoTPGift or _G.AutoTPAndCollect or _G.MasterAutoLevel or _G.MasterAutoCandy or _G.TPFloor1 or _G.TPFloor2 or _G.TPFloor3 or _G.TPFloor4 then
+				if _G.FarmEliteH or _G.AutoRaid3nn or _G.AutoFindLeviathan3nn or _G.MultiFindLeviathan3nn or _G.AutoStartLeviathan3nn or _G.AutoDestroyIDK3nn or _G.AutoFireHeart3nn or _G.AutoSecretQuest or _G.AutoRaidX or _G.FightShopActive or _G.Auto_StartRaid or _G.SailBoat_Hydra or _G.WardenBoss or _G.AutoFactory or _G.HighestMirage or _G.HCM or _G.PGB or _G.Leviathan1 or _G.UPGDrago or _G.Complete_Trials or _G.TpDrago_Prehis or _G.BuyDrago or _G.AutoFireFlowers or _G.DT_Uzoth or _G.AutoBerry or _G.Prefully or _G.Prehis_Find or _G.Prehis_Skills or _G.Prehis_DB or _G.Prehis_DE or _G.FarmBlazeEM or _G.Dojoo or _G.CollectPresent or _G.AutoLawKak or _G.TpLab or _G.AutoPhoenixF or _G.AutoFarmChest or _G.AutoHytHallow or _G.LongsWord or _G.BlackSpikey or _G.AutoHolyTorch or _G.TrainDrago or _G.AutoSaber or _G.FarmMastery_Dev or _G.CitizenQuest or _G.AutoEctoplasm or _G.KeysRen or _G.Auto_Rainbow_Haki or _G.obsFarm or _G.AutoBigmom or _G.Doughv2 or _G.AuraBoss or _G.Raiding or _G.Auto_Cavender or _G.TpPly or _G.Bartilo_Quest or _G.Level or _G.FarmEliteHunt or _G.AutoZou or _G.AutoFarm_Bone or getgenv().AutoMaterial or _G.CraftVM or _G.FrozenTP or _G.TPDoor or _G.AcientOne or _G.AutoFarmNear or _G.AutoRaidCastle or _G.DarkBladev3 or _G.AutoFarmRaid or _G.Auto_Cake_Prince or _G.Addealer or _G.TPNpc or _G.TwinHook or _G.FindMirage or _G.FarmChestM or _G.Shark or _G.TerrorShark or _G.Piranha or _G.MobCrew or _G.SeaBeast1 or _G.FishBoat or _G.AutoPole or _G.AutoPoleV2 or _G.Auto_SuperHuman or _G.AutoDeathStep or _G.Auto_SharkMan_Karate or _G.Auto_Electric_Claw or _G.AutoDragonTalon or _G.Auto_Def_DarkCoat or _G.Auto_God_Human or _G.Auto_Tushita or _G.AutoMatSoul or _G.AutoKenVTWO or _G.AutoSerpentBow or _G.AutoFMon or _G.Auto_Soul_Guitar or _G.TPGEAR or _G.AutoSaw or _G.AutoTridentW2 or _G.AutoEvoRace or _G.AutoGetQuestBounty or _G.MarinesCoat or _G.TravelDres or _G.Defeating or _G.DummyMan or _G.Auto_Yama or _G.Auto_SwanGG or _G.SwanCoat or _G.AutoEcBoss or _G.Auto_Mink or _G.Auto_Human or _G.Auto_Skypiea or _G.Auto_Fish or _G.CDK_TS or _G.CDK_YM or _G.CDK or _G.AutoFarmGodChalice or _G.AutoFistDarkness or _G.AutoMiror or _G.Teleport or _G.AutoKilo or _G.AutoGetUsoap or _G.Praying or _G.TryLucky or _G.AutoColShad or _G.AutoUnHaki or _G.Auto_DonAcces or _G.AutoRipIngay or _G.DragoV3 or _G.DragoV1 or _G.SailBoats or NextIs or _G.FarmGodChalice or _G.IceBossRen or senth or senth2 or _G.Lvthan or _G.beasthunter or _G.DangerLV or _G.Relic123 or _G.tweenKitsune or _G.Collect_Ember or _G.AutofindKitIs or _G.snaguine or _G.TwFruits or _G.tweenKitShrine or _G.Tp_LgS or _G.Tp_MasterA or _G.tweenShrine or _G.FarmMastery_G or _G.FarmMastery_S or _G.FarmBoss or _G.AutoFarmAllBoss or _G.AutoFishSlap or _G.FarmTyrant or _G.FarmPhaBinh or _G.AutoSpawnCP or _G.AutoBerryH or _G.AutoChestBP or _G.FarmEliteHop or _G.AutoHop_Dough or _G.AutoDoughKing or _G.AutoAttackDoughKing or _G.StartEvent or _G.AutoMysticIsland or _G.AutoPlayerHunter or _G.SafeMode or _G.AutoKillMob or _G.AutoStartPrehistoric or _G.AutoUnHaki or _G.AutoAttackRipIndra or _G.AutoFarmIsland or _G.AutoFarmDungeon or _G.AutoFarmCandy or _G.AutoTP_Gift or _G.AutoTPGift or _G.AutoTPAndCollect or _G.MasterAutoLevel or _G.MasterAutoCandy or _G.TPFloor1 or _G.TPFloor2 or _G.TPFloor3 or _G.TPFloor4 then
 					shouldTween = true
 
 					if not plr.Character.HumanoidRootPart:FindFirstChild("BodyClip") then
@@ -2920,46 +2354,19 @@ do
 	end
 end
 
--- ===================== UI: Fluent / Fluent-modded / Classic =====================
--- Escolha: getgenv().ZyroxUI = "Fluent" | "Modded" | "Classic"  (veja o topo do arquivo)
--- Fallback: Modded -> Fluent -> Classic se o load falhar.
-local ZYROX_UI_CHOICE = tostring(getgenv().ZyroxUI or "Fluent"):lower()
+-- ===================== UI: Fluent (com adaptador) =====================
+-- A escolha vem de getgenv().ZyroxUI (veja o topo do arquivo): "Fluent" ou "Classic".
+-- Se a Fluent nao carregar, a UI Classic abre sozinha.
+local ZYROX_USE_FLUENT = tostring(getgenv().ZyroxUI or "Fluent"):lower() ~= "classic"
 local ZYROX_FLUENT_ACTIVE = false
-local ZYROX_UI_NAME = "Classic"
 
 local function ZyroxLoadOldUI()
 	return loadstring(game:HttpGet("https://raw.githubusercontent.com/HavocXRealDev/zyrox/refs/heads/main/UI%20banana%20zyrox"))()
 end
 
--- source: "fluent" (dawid) ou "modded" (StyearX Fluent-modded)
-local function ZyroxBuildFluentAdapter(source)
-	source = tostring(source or "fluent"):lower()
-	local urls = {}
-	if source == "modded" or source == "fluentmod" or source == "fluent-modded" then
-		-- Fluent-modded (StyearX) — temas extras, icones, minimizer mobile
-		urls = {
-			"https://github.com/StyearX/Fluent-Modded/releases/download/Fluent/FluentPro",
-			"https://github.com/StyearX/Fluent-modded/releases/download/Fluent/FluentPro",
-			"https://github.com/StyearX/Fluent-Modded/releases/latest/download/FluentPro",
-		}
-	else
-		urls = {
-			"https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua",
-		}
-	end
-
-	local Fluent, lastErr
-	for _, url in ipairs(urls) do
-		local ok, result = pcall(function()
-			return loadstring(game:HttpGet(url))()
-		end)
-		if ok and type(result) == "table" and result.CreateWindow then
-			Fluent = result
-			break
-		end
-		lastErr = result
-	end
-	assert(Fluent, "Fluent (" .. source .. ") did not load: " .. tostring(lastErr))
+local function ZyroxBuildFluentAdapter()
+	local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+	assert(type(Fluent) == "table" and Fluent.CreateWindow, "Fluent did not load")
 
 	local UserInputService = game:GetService("UserInputService")
 	local adapter = {}
@@ -2989,30 +2396,20 @@ local function ZyroxBuildFluentAdapter(source)
 		return dummy()
 	end
 
-	-- callbacks: dawid Fluent usa OnChanged; Fluent-modded usa Callback no config (e as vezes OnChanged)
+	-- callbacks rodam dentro de pcall para um erro nao derrubar a UI nem o carregamento
 	local bind = function(label, element, callback)
-		if not callback or not element then
+		if not callback then
 			return
 		end
-		local wrapped = function(value)
-			local ok, err = pcall(callback, value)
-			if not ok then
-				warn("[ZyroxUI] callback '" .. tostring(label) .. "': " .. tostring(err))
-			end
-		end
-		local ok = pcall(function()
-			element:OnChanged(wrapped)
-		end)
-		if not ok then
-			pcall(function()
-				if element.OnChanged then
-					element.OnChanged(element, wrapped)
+		pcall(function()
+			element:OnChanged(function(value)
+				local ok, err = pcall(callback, value)
+				if not ok then
+					warn("[ZyroxUI] callback '" .. tostring(label) .. "': " .. tostring(err))
 				end
 			end)
-		end
+		end)
 	end
-
-	local isModded = (source == "modded" or source == "fluentmod" or source == "fluent-modded")
 
 	local wrap = function(element)
 		return setmetatable({}, {
@@ -3029,56 +2426,18 @@ local function ZyroxBuildFluentAdapter(source)
 	end
 
 	local newGroup = function(tab, name)
-		-- Fluent-modded: AddSection(title, icon); dawid: AddSection(title)
-		local section
-		local okSec, secRes = pcall(function()
-			if isModded then
-				return tab:AddSection(tostring(name), "lucide/folder")
-			end
-			return tab:AddSection(tostring(name))
-		end)
-		if okSec and secRes then
-			section = secRes
-		else
-			-- fallback: elementos direto na tab
-			section = tab
-			pcall(function()
-				tab:AddParagraph({ Title = tostring(name), Content = "" })
-			end)
-		end
-
-		local host = section
-		local function addOn(method, ...)
-			local args = { ... }
-			-- tenta na section; se falhar, na tab
-			local ok, res = pcall(function()
-				return host[method](host, table.unpack(args))
-			end)
-			if ok and res ~= nil then
-				return res
-			end
-			ok, res = pcall(function()
-				return tab[method](tab, table.unpack(args))
-			end)
-			if ok then
-				return res
-			end
-			error(tostring(res))
-		end
-
+		local section = tab:AddSection(tostring(name))
 		local group = {}
 
 		function group:AddToggle(id, cfg)
 			cfg = cfg or {}
 			local title = cfg.Text or tostring(id)
 			return safe(title, function()
-				local opts = {
+				local element = section:AddToggle(nextId("T", id), {
 					Title = title,
 					Description = cfg.Tooltip or cfg.Desc,
 					Default = cfg.Default and true or false,
-					Callback = cfg.Callback, -- Fluent-modded
-				}
-				local element = addOn("AddToggle", nextId("T", id), opts)
+				})
 				bind(title, element, cfg.Callback)
 				return wrap(element)
 			end)
@@ -3089,7 +2448,7 @@ local function ZyroxBuildFluentAdapter(source)
 			local title = cfg.Text or "Button"
 			local fn = cfg.Func or cfg.Callback
 			return safe(title, function()
-				addOn("AddButton", {
+				section:AddButton({
 					Title = title,
 					Description = cfg.Tooltip or cfg.Desc,
 					Callback = function()
@@ -3107,6 +2466,8 @@ local function ZyroxBuildFluentAdapter(source)
 
 		function group:AddLabel(text)
 			return safe("label", function()
+				-- texto de varias linhas: a 1a linha vira titulo e o resto vai na descricao.
+				-- A descricao quebra linha e cresce sozinha; o titulo nao (era isso que sobrepunha o botao de baixo).
 				local split = function(value)
 					value = tostring(value or "")
 					local first, rest = value:match("^([^\n]*)\n(.*)$")
@@ -3116,21 +2477,13 @@ local function ZyroxBuildFluentAdapter(source)
 					return value, ""
 				end
 				local title, content = split(text)
-				local paragraph = addOn("AddParagraph", { Title = title, Content = content })
+				local paragraph = section:AddParagraph({ Title = title, Content = content })
 				local label = {}
+				-- aceita label:SetText(t) e label.SetText(t)
 				label.SetText = function(a, b)
 					local newTitle, newContent = split((b ~= nil) and b or a)
-					pcall(function()
-						paragraph:SetTitle(newTitle)
-					end)
-					pcall(function()
-						paragraph:SetDesc(newContent)
-					end)
-					pcall(function()
-						if paragraph.SetValue then
-							paragraph:SetValue(newTitle)
-						end
-					end)
+					pcall(function() paragraph:SetTitle(newTitle) end)
+					pcall(function() paragraph:SetDesc(newContent) end)
 				end
 				return label
 			end)
@@ -3143,31 +2496,20 @@ local function ZyroxBuildFluentAdapter(source)
 			local multi = cfg.Multi and true or false
 			return safe(title, function()
 				local default
-				if multi then
-					default = nil
-				elseif isModded then
-					-- modded prefere string
-					if type(cfg.Default) == "string" then
-						default = cfg.Default
-					elseif type(cfg.Default) == "number" and values[cfg.Default] then
-						default = values[cfg.Default]
-					end
-				else
+				if not multi then
 					if type(cfg.Default) == "number" then
 						default = cfg.Default
 					elseif type(cfg.Default) == "string" then
 						default = table.find(values, cfg.Default)
 					end
 				end
-				local opts = {
+				local element = section:AddDropdown(nextId("D", id), {
 					Title = title,
 					Description = cfg.Tooltip or cfg.Desc,
 					Values = values,
 					Multi = multi,
 					Default = default,
-					Callback = cfg.Callback,
-				}
-				local element = addOn("AddDropdown", nextId("D", id), opts)
+				})
 				if multi and type(cfg.Default) == "table" then
 					local selected = {}
 					for key, val in pairs(cfg.Default) do
@@ -3177,9 +2519,7 @@ local function ZyroxBuildFluentAdapter(source)
 							selected[key] = true
 						end
 					end
-					pcall(function()
-						element:SetValue(selected)
-					end)
+					pcall(function() element:SetValue(selected) end)
 				end
 				bind(title, element, cfg.Callback)
 				return wrap(element)
@@ -3198,16 +2538,14 @@ local function ZyroxBuildFluentAdapter(source)
 			local title = cfg.Text or tostring(id or "Slider")
 			return safe(title, function()
 				local min = cfg.Min or 0
-				local opts = {
+				local element = section:AddSlider(nextId("S", id), {
 					Title = title,
 					Description = cfg.Tooltip or cfg.Desc,
 					Default = cfg.Default or min,
 					Min = min,
 					Max = cfg.Max or 100,
 					Rounding = cfg.Rounding or 0,
-					Callback = cfg.Callback,
-				}
-				local element = addOn("AddSlider", nextId("S", id), opts)
+				})
 				bind(title, element, cfg.Callback)
 				return wrap(element)
 			end)
@@ -3217,15 +2555,13 @@ local function ZyroxBuildFluentAdapter(source)
 			cfg = cfg or {}
 			local title = cfg.Text or tostring(id)
 			return safe(title, function()
-				local opts = {
+				local element = section:AddInput(nextId("I", id), {
 					Title = title,
 					Default = cfg.Default or "",
 					Placeholder = cfg.Placeholder or "",
 					Numeric = cfg.Numeric or false,
 					Finished = cfg.Finished or false,
-					Callback = cfg.Callback,
-				}
-				local element = addOn("AddInput", nextId("I", id), opts)
+				})
 				bind(title, element, cfg.Callback)
 				return wrap(element)
 			end)
@@ -3237,23 +2573,14 @@ local function ZyroxBuildFluentAdapter(source)
 	function adapter:CreateWindow(cfg)
 		cfg = cfg or {}
 		local mobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
-		local themeName = "Dark"
-		-- Fluent-modded traz temas extras (AMOLED, etc.)
-		if source == "modded" or source == "fluentmod" or source == "fluent-modded" then
-			themeName = cfg.Theme or "AMOLED"
-		elseif cfg.Theme then
-			themeName = cfg.Theme
-		end
-
 		window = Fluent:CreateWindow({
 			Title = cfg.Title or "Zyrox Hub",
 			SubTitle = cfg.Subtitle or cfg.SubTitle or "",
 			TabWidth = mobile and 120 or 160,
 			Size = mobile and UDim2.fromOffset(500, 320) or UDim2.fromOffset(580, 460),
-			Acrylic = source == "modded" or source == "fluentmod" or source == "fluent-modded",
-			Theme = themeName,
+			Acrylic = false,
+			Theme = "Dark",
 			MinimizeKey = Enum.KeyCode.RightControl,
-			Search = (source == "modded" or source == "fluentmod" or source == "fluent-modded") and true or false,
 		})
 
 		-- botao flutuante (celular): abre/fecha a janela
@@ -3286,18 +2613,7 @@ local function ZyroxBuildFluentAdapter(source)
 
 		local win = {}
 		function win:AddTab(name)
-			local tab
-			local okTab, tabRes = pcall(function()
-				if isModded then
-					return window:AddTab({ Title = tostring(name), Icon = "lucide/layout-grid" })
-				end
-				return window:AddTab({ Title = tostring(name), Icon = "" })
-			end)
-			if okTab and tabRes then
-				tab = tabRes
-			else
-				tab = window:AddTab({ Title = tostring(name) })
-			end
+			local tab = window:AddTab({ Title = tostring(name), Icon = "" })
 			local t = {}
 			function t:AddLeftGroupbox(n)
 				return newGroup(tab, n)
@@ -3334,74 +2650,23 @@ local function ZyroxBuildFluentAdapter(source)
 		pcall(function() window:Minimize() end)
 	end
 
-	-- minimiza a janela (so se estiver aberta) para nao cobrir menus do jogo abertos pelos botoes
-	adapter.HideUI = function()
-		pcall(function()
-			if window and not window.Minimized then
-				window:Minimize()
-			end
-		end)
-	end
-
-	-- exposto para a aba Personalizar (Fluent-modded)
-	adapter._Fluent = Fluent
-	adapter._Window = function()
-		return window
-	end
-	adapter.SetTheme = function(name)
-		pcall(function()
-			if Fluent.SetTheme then
-				Fluent:SetTheme(name)
-			end
-		end)
-	end
-	getgenv().ZyroxFluent = Fluent
-
 	return adapter
 end
 
 local lib
-do
-	local choice = ZYROX_UI_CHOICE
-	local order = {}
-	if choice == "classic" or choice == "old" or choice == "banana" then
-		order = { "classic" }
-	elseif choice == "modded" or choice == "fluentmod" or choice == "fluent-modded" or choice == "fluentmodded" then
-		order = { "modded", "fluent", "classic" }
+if ZYROX_USE_FLUENT then
+	local ok, result = pcall(ZyroxBuildFluentAdapter)
+	if ok and result then
+		lib = result
+		ZYROX_FLUENT_ACTIVE = true
 	else
-		-- Fluent (padrao) ou qualquer outro valor
-		order = { "fluent", "modded", "classic" }
-	end
-
-	for _, kind in ipairs(order) do
-		if lib then
-			break
-		end
-		if kind == "classic" then
-			local ok, result = pcall(ZyroxLoadOldUI)
-			if ok and result then
-				lib = result
-				ZYROX_UI_NAME = "Classic"
-			else
-				warn("[ZyroxUI] Classic failed: " .. tostring(result))
-			end
-		else
-			local ok, result = pcall(ZyroxBuildFluentAdapter, kind)
-			if ok and result then
-				lib = result
-				ZYROX_FLUENT_ACTIVE = true
-				ZYROX_UI_NAME = (kind == "modded") and "Fluent-modded" or "Fluent"
-			else
-				warn("[ZyroxUI] " .. kind .. " failed: " .. tostring(result))
-			end
-		end
+		warn("[ZyroxUI] Fluent failed, using the old UI: " .. tostring(result))
 	end
 end
 if not lib then
-	error("[ZyroxUI] nenhuma interface carregou")
+	lib = ZyroxLoadOldUI()
 end
-print("[Zyrox] UI: " .. ZYROX_UI_NAME)
-print("[Zyrox] CreateWindow next...")
+print("[Zyrox] UI: " .. (ZYROX_FLUENT_ACTIVE and "Fluent" or "Classic"))
 local v243 = lib:CreateWindow({
 	Title = "Zyrox Hub",
 	Subtitle = "Blox Fruit Script",
@@ -3454,215 +2719,13 @@ local t15 = {
 	Travel = v243:AddTab("Teleport"),
 	Shop = v243:AddTab("Shopping"),
 	Misc = v243:AddTab("Miscellaneous"),
-	SecretQuest = v243:AddTab("Secret Quest"),
-	Halloween = v243:AddTab("Halloween")
+	SecretQuest = v243:AddTab("Secret Quest")
 }
-
--- Aba Personalizar: so na Fluent-modded (temas / cores)
-if ZYROX_UI_NAME == "Fluent-modded" then
-	t15.Personalizar = v243:AddTab("Personalizar")
-	do
-		local GRP = t15.Personalizar:AddLeftGroupbox("Tema")
-		GRP:AddLabel("Temas do Fluent-modded\nMuda as cores da interface em tempo real.")
-
-		local themes = {
-			"AMOLED",
-			"Ash Gray",
-			"Blood Red",
-			"Cyanic",
-			"Amber Glow",
-			"Deep Violet",
-			"Neon Cyber",
-			"Neon Purple",
-			"Royal Blue",
-			"Deep Ocean",
-			"RGB",
-			"Orange",
-			"Charcoal",
-			"Pearl White",
-			"Midnight Blue",
-			"Galaxy Purple",
-			"Cosmic Violet",
-			"Cotton Candy",
-		}
-
-		local savedTheme = (getgenv().ZyroxTheme or _G.ZyroxTheme or "AMOLED")
-		local defaultIdx = table.find(themes, savedTheme) or 1
-
-		GRP:AddDropdown("Zyrox_Theme", {
-			Text = "Tema",
-			Values = themes,
-			Default = defaultIdx,
-			Callback = function(value)
-				getgenv().ZyroxTheme = value
-				_G.ZyroxTheme = value
-				pcall(function()
-					if lib.SetTheme then
-						lib.SetTheme(value)
-					elseif getgenv().ZyroxFluent and getgenv().ZyroxFluent.SetTheme then
-						getgenv().ZyroxFluent:SetTheme(value)
-					end
-				end)
-				pcall(function()
-					lib:Notify({
-						Title = "Personalizar",
-						Description = "Tema: " .. tostring(value),
-						Duration = 3,
-					})
-				end)
-			end,
-		})
-
-		-- aplica tema salvo no load
-		task.defer(function()
-			pcall(function()
-				if lib.SetTheme then
-					lib.SetTheme(savedTheme)
-				elseif getgenv().ZyroxFluent and getgenv().ZyroxFluent.SetTheme then
-					getgenv().ZyroxFluent:SetTheme(savedTheme)
-				end
-			end)
-		end)
-
-		local GRP2 = t15.Personalizar:AddLeftGroupbox("Atalhos")
-		GRP2:AddLabel("Dica: RightControl minimiza a janela.\nNo mobile use o botao flutuante.")
-		GRP2:AddButton({
-			Text = "Aplicar tema salvo",
-			Func = function()
-				local t = getgenv().ZyroxTheme or "AMOLED"
-				pcall(function()
-					if lib.SetTheme then
-						lib.SetTheme(t)
-					elseif getgenv().ZyroxFluent then
-						getgenv().ZyroxFluent:SetTheme(t)
-					end
-				end)
-			end,
-		})
-		GRP2:AddButton({
-			Text = "Reset tema (AMOLED)",
-			Func = function()
-				getgenv().ZyroxTheme = "AMOLED"
-				_G.ZyroxTheme = "AMOLED"
-				pcall(function()
-					if lib.SetTheme then
-						lib.SetTheme("AMOLED")
-					elseif getgenv().ZyroxFluent then
-						getgenv().ZyroxFluent:SetTheme("AMOLED")
-					end
-				end)
-			end,
-		})
-	end
-end
 
 lib.ToggleUI()
 
 do
-	local v245 = -- ===================== UNLOAD / TIRAR SCRIPT =====================
-getgenv().ZyroxUnloaded = false
-getgenv().ZyroxUnload = function()
-	getgenv().ZyroxUnloaded = true
-	getgenv().ZyroxKaitun = false
-	getgenv().ZyroxKaitunRunning = false
-	pcall(function()
-		if getgenv().ZyroxKaitunStop then
-			getgenv().ZyroxKaitunStop()
-		end
-	end)
-
-	-- desliga farms principais
-	pcall(function()
-		_G.Level = false
-		_G.AutoFarmNear = false
-		_G.HalloweenFarm = false
-		_G.AutoSlapBattle = false
-	end)
-
-	local names = {
-		"ZyroxFluentBtn",
-		"Nousigi Hub Btn",
-		"ZyroxHalloweenCursor",
-		"ZyroxKaitunUI",
-		"ZyroxUIPicker",
-		"Fluent",
-		"FluentPro",
-		"Library",
-		"Linoria",
-	}
-
-	local function wipe(host)
-		if not host then
-			return
-		end
-		pcall(function()
-			for _, name in ipairs(names) do
-				local g = host:FindFirstChild(name)
-				if g then
-					g:Destroy()
-				end
-			end
-			for _, child in ipairs(host:GetChildren()) do
-				local n = string.lower(child.Name)
-				if string.find(n, "zyrox") or string.find(n, "fluent") or string.find(n, "nousigi") or string.find(n, "linoria") then
-					pcall(function()
-						child:Destroy()
-					end)
-				end
-			end
-		end)
-	end
-
-	local hosts = {
-		game:GetService("CoreGui"),
-		game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui"),
-	}
-	pcall(function()
-		if gethui then
-			table.insert(hosts, gethui())
-		end
-	end)
-	for _, h in ipairs(hosts) do
-		wipe(h)
-	end
-
-	-- tenta fechar janela Fluent
-	pcall(function()
-		if getgenv().ZyroxFluent and getgenv().ZyroxFluent.Unload then
-			getgenv().ZyroxFluent:Unload()
-		end
-	end)
-	pcall(function()
-		if lib and lib.Unload then
-			lib:Unload()
-		end
-	end)
-
-	print("[Zyrox] script removido da tela — execute de novo pra voltar")
-end
-
-do
-	local GRP_Unload = t15.Info:AddLeftGroupbox("Hub")
-	GRP_Unload:AddButton({
-		Text = "Tirar script (Unload)",
-		Func = function()
-			pcall(function()
-				lib:Notify({
-					Title = "Zyrox",
-					Description = "Removendo UI...",
-					Duration = 2,
-				})
-			end)
-			task.defer(function()
-				task.wait(0.15)
-				getgenv().ZyroxUnload()
-			end)
-		end,
-	})
-	GRP_Unload:AddLabel("Some a UI e o botao abrir/fechar.\nSo volta se executar o script de novo.")
-end
-
-t15.Info:AddLeftGroupbox("Time Zone"):AddLabel("")
+	local v245 = t15.Info:AddLeftGroupbox("Time Zone"):AddLabel("")
 
 	UpdateOS = function()
 		local v246 = os.date("*t")
@@ -4125,7 +3188,7 @@ do
 
 	task.spawn(function()
 		while task.wait(Sec) do
-			if _G.Level and ZyroxClaim("farm") then
+			if _G.Level then
 				pcall(function()
 					local Character = plr.Character or plr.CharacterAdded:Wait()
 					local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
@@ -4209,8 +3272,6 @@ do
 							if exitTo == 1 then
 								v332 = true
 
-								local watchHp, watchSince, watchFixed = nil, tick(), false
-
 								while true do
 									task.wait(Sec)
 									-- o t9.Kill ja posiciona o personagem: aqui so se aproxima se estiver longe
@@ -4219,25 +3280,6 @@ do
 										_tp(v338.HumanoidRootPart.CFrame * CFrame.new(0, 20, 0))
 									end
 									t9.Kill(v338, _G.Level)
-
-									-- anti-trava: se a vida do mob nao muda, reequipa a arma (5s) e depois pula esse mob (12s)
-									local mobHum = v338:FindFirstChildOfClass("Humanoid")
-									if mobHum then
-										if watchHp ~= mobHum.Health then
-											watchHp, watchSince, watchFixed = mobHum.Health, tick(), false
-										elseif tick() - watchSince > 12 then
-											v338:SetAttribute("ZyroxSkip", tick())
-											break
-										elseif tick() - watchSince > 5 and not watchFixed then
-											watchFixed = true
-											pcall(function()
-												if _G.ChooseWP then
-													weaponSc(_G.ChooseWP)
-												end
-												EquipWeapon(_G.SelectWeapon)
-											end)
-										end
-									end
 
 									if v307("Quest") then
 										if not _G.Level or not v338.Parent or v338.Humanoid.Health <= 0 then
@@ -4311,14 +3353,9 @@ do
 						end
 
 						task.wait(1)
-
-						if not ZyroxSubmarine.travelNear(Vector3.new(10641.0918, -1953.92981, 9825.07031)) then
-							pcall(function()
-								local net = game:GetService("ReplicatedStorage").Modules.Net
-								net:FindFirstChild("RF/SubmarineWorkerSpeak"):InvokeServer("AskKilledTikiBoss")
-								net:FindFirstChild("RF/SubmarineWorkerSpeak"):InvokeServer("TravelToSubmergedIsland")
-							end)
-						end
+						pcall(function()
+							game:GetService("ReplicatedStorage").Modules.Net:FindFirstChild("RF/SubmarineWorkerSpeak"):InvokeServer(unpack({ "TravelToSubmergedIsland" }))
+						end)
 
 						local now = tick()
 
@@ -4397,10 +3434,6 @@ do
 			pcall(function()
 				if _G.AutoFactory then
 					local Core = GetConnectionEnemies("Core")
-
-					if Core and not ZyroxClaim("factory") then
-						return
-					end
 
 					if Core then
 						while true do
@@ -5353,8 +4386,7 @@ ZyroxEliteAlive = function(mob)
 		and mob:FindFirstChildOfClass("Humanoid") ~= nil and mob.Humanoid.Health > 0
 end
 ZyroxDetectElite = function()
-	-- prefere o Elite ja nascido em Enemies; o modelo de ReplicatedStorage so serve para se aproximar e faze-lo nascer
-	for _, container in ipairs({ workspace.Enemies, replicated }) do
+	for _, container in ipairs({ replicated, workspace.Enemies }) do
 		for _, mob in ipairs(container:GetChildren()) do
 			if mob:IsA("Model") and table.find(ZyroxEliteNames, mob.Name) and ZyroxEliteAlive(mob) then
 				return mob
@@ -5367,24 +4399,11 @@ ZyroxEliteQuestMatches = function(name)
 	return quest.Visible and string.find(quest.Container.QuestTitle.Title.Text, name) ~= nil
 end
 ZyroxEliteFight = function(boss, isOn)
-	local quest = plr.PlayerGui.Main.Quest
 	_tp(boss.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
-
-	if not boss:IsDescendantOf(workspace) then
-		-- so o modelo de ReplicatedStorage: espera o boss nascer (ate 8s) em vez de ficar parado no ar atacando nada
-		local waited = 0
-		while isOn() and waited < 8 and ZyroxEliteAlive(boss) and not boss:IsDescendantOf(workspace)
-			and not workspace.Enemies:FindFirstChild(boss.Name) do
-			wait(0.5)
-			waited = waited + 0.5
-		end
-		return
-	end
-
 	while isOn() do
 		wait()
 		t9.Kill(boss, true)
-		if not ZyroxEliteAlive(boss) or not quest.Visible then
+		if not ZyroxEliteAlive(boss) then
 			break
 		end
 	end
@@ -5394,9 +4413,6 @@ ZyroxEliteStep = function(isOn)
 	local boss = ZyroxDetectElite()
 	if not boss then
 		return false
-	end
-	if not ZyroxClaim("elite") then
-		return true
 	end
 	if not ZyroxEliteQuestMatches(boss.Name) then
 		replicated.Remotes.CommF_:InvokeServer("AbandonQuest")
@@ -6788,95 +5804,68 @@ do
 				while wait(Sec) do
 					if _G.FarmBoss then
 						pcall(function()
-							local q = QuestBeta() -- [0]=boss, [1]=mob, [2]=nivel da quest, [3]=nome da quest, [4]=ponto do boss, [5]=NPC da quest
-							local questFrame = plr.PlayerGui.Main.Quest
-							local hasQuest = _G.AcceptQuestBoss and q[2] ~= nil and q[3] ~= nil
+							local v575 = QuestBeta()[2] ~= nil and QuestBeta()[3] ~= nil
+							local Text = plr.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text
 
-							-- quest opcional: tem limite de tempo (antes o script ficava preso na missao)
-							if hasQuest and tick() > (ZyroxBossQuestSkip or 0) then
-								if questFrame.Visible and not string.find(questFrame.Container.QuestTitle.Title.Text, q[0]) then
+							if _G.AcceptQuestBoss and v575 then
+								if not string.find(Text, QuestBeta()[0]) then
 									replicated.Remotes.CommF_:InvokeServer("AbandonQuest")
-									return
 								end
 
-								if not questFrame.Visible then
-									ZyroxBossQuestSince = ZyroxBossQuestSince or tick()
+								if plr.PlayerGui.Main.Quest.Visible == false then
+									_tp(QuestBeta()[5])
 
-									if tick() - ZyroxBossQuestSince > 20 then
-										ZyroxBossQuestSkip = tick() + 120
-										ZyroxBossQuestSince = nil
-									else
-										if not ZyroxClaim("boss") then
-											return
-										end
-
-										_tp(q[5])
-
-										if (plr.Character.HumanoidRootPart.Position - q[5].Position).Magnitude <= 5 then
-											replicated.Remotes.CommF_:InvokeServer("StartQuest", q[3], q[2])
-										end
-
-										return
+									if (Root.Position - QuestBeta()[5].Position).Magnitude <= 5 then
+										replicated.Remotes.CommF_:InvokeServer("StartQuest", QuestBeta()[3], QuestBeta()[2])
 									end
-								else
-									ZyroxBossQuestSince = nil
+								elseif plr.PlayerGui.Main.Quest.Visible == true then
+									if workspace.Enemies:FindFirstChild(QuestBeta()[1]) then
+										for _, child in pairs(workspace.Enemies:GetChildren()) do
+											if t9.Alive(child) and child.Name == QuestBeta()[1] then
+												if string.find(Text, QuestBeta()[0]) then
+													while true do
+														wait()
+														t9.Kill(child, _G.FarmBoss)
+
+														if not _G.FarmBoss then
+															break
+														elseif child.Humanoid.Health <= 0 or not child.Parent or plr.PlayerGui.Main.Quest.Visible == false then
+															break
+														end
+													end
+												else
+													replicated.Remotes.CommF_:InvokeServer("AbandonQuest")
+												end
+											end
+										end
+									else
+										_tp(QuestBeta()[4])
+
+										if replicated:FindFirstChild(QuestBeta()[1]) then
+											_tp(replicated:FindFirstChild(QuestBeta()[1]).HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
+										end
+									end
 								end
-							end
+							elseif workspace.Enemies:FindFirstChild(QuestBeta()[1]) then
+								for _, child in pairs(workspace.Enemies:GetChildren()) do
+									if t9.Alive(child) and child.Name == QuestBeta()[1] then
+										while true do
+											wait()
+											t9.Kill(child, _G.FarmBoss)
 
-							-- acha o boss (Enemies primeiro; o modelo de ReplicatedStorage so serve para se aproximar)
-							local boss
-
-							for _, container in ipairs({ workspace.Enemies, replicated }) do
-								local candidate = container:FindFirstChild(q[1])
-
-								if candidate and candidate:FindFirstChild("HumanoidRootPart") and candidate:FindFirstChildOfClass("Humanoid")
-									and candidate.Humanoid.Health > 0 and t9.Alive(candidate) then
-									boss = candidate
-									break
+											if not _G.FarmBoss then
+												break
+											elseif child.Humanoid.Health <= 0 or not child.Parent then
+												break
+											end
+										end
+									end
 								end
-							end
+							else
+								_tp(QuestBeta()[4])
 
-							if not ZyroxClaim("boss") then
-								return
-							end
-
-							if not boss then
-								if q[4] then
-									_tp(q[4]) -- espera perto do ponto do boss
-								end
-
-								return
-							end
-
-							if not boss:IsDescendantOf(workspace) then
-								_tp(boss.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
-
-								local waited = 0
-
-								while _G.FarmBoss and waited < 8 and not workspace.Enemies:FindFirstChild(q[1]) do
-									wait(0.5)
-									waited = waited + 0.5
-								end
-
-								return
-							end
-
-							-- luta (anti-trava: sem dano por 12s pula o boss)
-							local lastHp, since = nil, tick()
-
-							while _G.FarmBoss do
-								wait()
-								t9.Kill(boss, _G.FarmBoss)
-
-								if not boss.Parent or boss.Humanoid.Health <= 0 then
-									break
-								end
-
-								if lastHp ~= boss.Humanoid.Health then
-									lastHp, since = boss.Humanoid.Health, tick()
-								elseif tick() - since > 12 then
-									boss:SetAttribute("ZyroxSkip", tick())
-									break
+								if replicated:FindFirstChild(QuestBeta()[1]) then
+									_tp(replicated:FindFirstChild(QuestBeta()[1]).HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
 								end
 							end
 						end)
@@ -7397,7 +6386,7 @@ end
 do
 	GRP_Settings_Settings_Configure:AddDropdown("Tween_Speed", {
 		Text = "Tween Speed",
-		Values = { "170", "220", "250", "270", "300" },
+		Values = { "170", "220", "250", "270" },
 		Default = 4,
 		Callback = function(value)
 			local speed = tonumber(value)
@@ -8173,7 +7162,7 @@ do
 	})
 end
 
--- ===================== AUTO SLAP BATTLE (logica Banana/Nexora, janela ampliada) =====================
+-- ===================== 3NN FISHING: AUTO SLAP BATTLE =====================
 do
 	local Players = game:GetService("Players")
 	local RunService = game:GetService("RunService")
@@ -8181,156 +7170,68 @@ do
 	local eventConnection
 	local heartbeatConnection
 	local toggleGeneration = 0
-	local lastJump = 0
 
 	local function stopAutoSlap()
 		if eventConnection then
-			pcall(function()
-				eventConnection:Disconnect()
-			end)
+			eventConnection:Disconnect()
 			eventConnection = nil
 		end
 		if heartbeatConnection then
-			pcall(function()
-				heartbeatConnection:Disconnect()
-			end)
+			heartbeatConnection:Disconnect()
 			heartbeatConnection = nil
 		end
 	end
 
-	local function triangle(value, low, high)
-		-- espelha o valor entre low..high como a barra do slap
-		local span = high - low
-		if span <= 0 then
-			return low
-		end
-		local t = (value - low) % (span * 2)
-		if t > span then
-			return high - (t - span)
-		end
-		return low + t
-	end
-
 	GRP_Fish_Fishing:AddToggle("Auto_Slap_Battle", {
 		Text = "Auto Slap Battle",
-		Tooltip = "Banana/Nexora timing — janela ampliada",
+		Tooltip = "There is still a chance of a misclick",
 		Default = false,
 		Callback = function(enabled)
 			_G.AutoSlapBattle = enabled
 			toggleGeneration = toggleGeneration + 1
 			local generation = toggleGeneration
 			stopAutoSlap()
-			if not enabled then
-				return
-			end
+			if not enabled then return end
 
 			task.spawn(function()
-				-- espera o RemoteEvent do minigame (so existe durante a slap battle)
-				local remoteEvent
-				local waitUntil = tick() + 120
-				while _G.AutoSlapBattle and generation == toggleGeneration and tick() < waitUntil do
-					remoteEvent = player:FindFirstChild("RemoteEvent")
-					if remoteEvent then
-						break
-					end
-					task.wait(0.25)
-				end
+				local remoteEvent = player:WaitForChild("RemoteEvent", 15)
 				if not remoteEvent or not _G.AutoSlapBattle or generation ~= toggleGeneration then
 					return
 				end
 
-				-- assinatura Banana: action, startTime, cycle, targetPlayer, _, _, _, fixedTarget
-				eventConnection = remoteEvent.OnClientEvent:Connect(function(action, startTime, cycle, targetPlayer, _a, _b, _c, fixedTarget)
-					if not _G.AutoSlapBattle or generation ~= toggleGeneration then
-						return
-					end
-
-					-- fixedTarget pode vir no 7o arg em alguns builds
-					if fixedTarget == nil then
-						fixedTarget = _c
-					end
-
+				eventConnection = remoteEvent.OnClientEvent:Connect(function(action, startTime, cycle, targetPlayer, _, _, fixedTarget)
+					if not _G.AutoSlapBattle then return end
 					if action == "startBar" and targetPlayer == player then
 						local safeCycle = tonumber(cycle)
-						local t0 = tonumber(startTime)
-						if not safeCycle or safeCycle <= 0 or not t0 then
-							return
-						end
-
+						if not safeCycle or safeCycle <= 0 then return end
 						if heartbeatConnection then
-							pcall(function()
-								heartbeatConnection:Disconnect()
-							end)
+							heartbeatConnection:Disconnect()
 							heartbeatConnection = nil
 						end
-
-						-- mesma formula Banana/Nexora
 						local speed = 0.96 / (safeCycle * 0.5)
 						local targetSpeed = 0.2 / (safeCycle * 1.5)
-						local hitWindow = 0.055 -- ampliado (antes 0.03) — menos miss
-						local jumpedThisPass = false
-						local lastBar = 0
-
 						heartbeatConnection = RunService.Heartbeat:Connect(function()
-							if not _G.AutoSlapBattle or generation ~= toggleGeneration then
+							if not _G.AutoSlapBattle then
 								stopAutoSlap()
 								return
 							end
-							if not remoteEvent.Parent then
-								stopAutoSlap()
-								return
-							end
-
 							local now = workspace:GetServerTimeNow()
-							local bar = 0.02 + (now - t0) % safeCycle * speed
-							if bar >= 0.98 then
-								bar = 0.98 - (bar - 0.98)
-							end
-
+							local bar = 0.02 + (now - startTime) % safeCycle * speed
+							bar = if bar >= 0.98 then 0.98 - (bar - 0.98) else bar
 							local target
 							if fixedTarget then
 								target = 0.5
 							else
-								target = 0.4 + (now - t0) % (safeCycle * 3) * targetSpeed
-								if target >= 0.6 then
-									target = 0.6 - (target - 0.6)
-								end
+								target = 0.4 + (now - startTime) % (safeCycle * 3) * targetSpeed
+								target = if target >= 0.6 then 0.6 - (target - 0.6) else target
 							end
-
-							local dist = math.abs(bar - target)
-
-							-- reset flag quando a barra se afasta (nova passagem)
-							if dist > hitWindow * 2.2 then
-								jumpedThisPass = false
+							if math.abs(bar - target) < 0.03 then
+								remoteEvent:FireServer("Jump", workspace:GetServerTimeNow())
 							end
-
-							-- atira quando entra na janela; permite 2 jumps curtos se ainda perto
-							if dist <= hitWindow and not jumpedThisPass then
-								local tnow = tick()
-								if tnow - lastJump > 0.05 then
-									lastJump = tnow
-									jumpedThisPass = true
-									pcall(function()
-										remoteEvent:FireServer("Jump", workspace:GetServerTimeNow())
-									end)
-									-- segundo shot um frame depois (rede / delay)
-									task.delay(0.03, function()
-										if _G.AutoSlapBattle and remoteEvent and remoteEvent.Parent then
-											pcall(function()
-												remoteEvent:FireServer("Jump", workspace:GetServerTimeNow())
-											end)
-										end
-									end)
-								end
-							end
-
-							lastBar = bar
 						end)
 					elseif action == "killBar" then
 						if heartbeatConnection then
-							pcall(function()
-								heartbeatConnection:Disconnect()
-							end)
+							heartbeatConnection:Disconnect()
 							heartbeatConnection = nil
 						end
 					end
@@ -9184,119 +8085,6 @@ Q = GRP_Quests_Cursed_Dual_Katana:AddToggle("Auto_Get_CDK_[_Last_Quest_]", {
 		_G.CDK = p174
 	end
 })
-
--- Auto CDK completo (Yama/Tushita trials + pedestal) — usa os loops CDK_TS / CDK_YM ja existentes
-Q = GRP_Quests_Cursed_Dual_Katana:AddToggle("Auto_CDK", {
-	Text = "Auto CDK",
-	Default = false,
-	Callback = function(v)
-		_G.Auto_CDK = v
-		if not v then
-			_G.CDK_TS = false
-			_G.CDK_YM = false
-			_G.CDK = false
-		end
-	end
-})
-spawn(function()
-	local function hasItem(name)
-		if GetWP and GetWP(name) then
-			return true
-		end
-		local bp, ch = plr.Backpack, plr.Character
-		return (bp and bp:FindFirstChild(name)) or (ch and ch:FindFirstChild(name))
-	end
-
-	local function progress()
-		local ok, p = pcall(function()
-			return replicated.Remotes.CommF_:InvokeServer("CDKQuest", "Progress")
-		end)
-		if ok and type(p) == "table" then
-			return tonumber(p.Good) or 0, tonumber(p.Evil) or 0, p.Finished
-		end
-		return 0, 0, nil
-	end
-
-	local function openDoor()
-		pcall(function()
-			local s = replicated.Remotes.CommF_:InvokeServer("CDKQuest", "OpenDoor")
-			if tostring(s) ~= "opened" then
-				replicated.Remotes.CommF_:InvokeServer("CDKQuest", "OpenDoor", true)
-			end
-		end)
-	end
-
-	while task.wait(0.5) do
-		pcall(function()
-			if not _G.Auto_CDK then
-				return
-			end
-			if not hasItem("Yama") or not hasItem("Tushita") then
-				pcall(function()
-					lib:Notify({ Title = "CDK", Description = "Precisa de Yama e Tushita", Duration = 4 })
-				end)
-				task.wait(4)
-				return
-			end
-
-			openDoor()
-			local good, evil, finished = progress()
-
-			-- trials Good (Tushita)
-			if good ~= 4 and good ~= -2 then
-				pcall(function()
-					replicated.Remotes.CommF_:InvokeServer("CDKQuest", "StartTrial", "Good")
-				end)
-				_G.CDK_TS = true
-				_G.CDK_YM = false
-				_G.CDK = false
-				return
-			end
-
-			-- trials Evil (Yama)
-			if evil ~= 4 and evil ~= -2 then
-				pcall(function()
-					replicated.Remotes.CommF_:InvokeServer("CDKQuest", "StartTrial", "Evil")
-				end)
-				_G.CDK_YM = true
-				_G.CDK_TS = false
-				_G.CDK = false
-				return
-			end
-
-			-- ambos em 4: pedestal / boss final
-			_G.CDK_TS = false
-			_G.CDK_YM = false
-			_G.CDK = true
-
-			-- pedestais
-			local cursed = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("Turtle") and workspace.Map.Turtle:FindFirstChild("Cursed")
-			if cursed then
-				local which = nil
-				if good == 4 and evil == 3 then
-					which = "Pedestal2"
-				elseif good == 3 and evil == 4 then
-					which = "Pedestal1"
-				elseif good == 4 and evil == 4 then
-					which = "Pedestal3"
-				end
-				if which and cursed:FindFirstChild(which) then
-					local ped = cursed[which]
-					if (plr.Character.HumanoidRootPart.Position - ped.Position).Magnitude > 12 then
-						_tp(ped.CFrame)
-					else
-						pcall(function()
-							if ped:FindFirstChild("ProximityPrompt") then
-								fireproximityprompt(ped.ProximityPrompt)
-							end
-						end)
-					end
-				end
-			end
-		end)
-	end
-end)
-
 spawn(function()
 	while wait(Sec) do
 		pcall(function()
@@ -9923,119 +8711,6 @@ do
 		end
 	})
 end
-
--- Auto TTK (Banana/Vxeze): mastery 300 em Oroshi / Saishi / Shizu, depois compra TTK
-Q = GRP_Quests_True_Triple_Katana_Sword:AddToggle("Auto_TTK", {
-	Text = "Auto TTK",
-	Default = false,
-	Callback = function(v)
-		_G.Auto_TTK = v
-	end
-})
-spawn(function()
-	local swords = { "Oroshi", "Saishi", "Shizu" }
-	local farmMobs = {
-		"Pirate Raider",
-		"Vampire",
-		"Reborn Skeleton",
-		"Living Zombie",
-		"Demonic Soul",
-		"Posessed Mummy",
-		"Marine Commodore",
-		"Forest Pirate",
-	}
-
-	local function invMastery(name)
-		local ok, inv = pcall(function()
-			return replicated.Remotes.CommF_:InvokeServer("getInventory")
-		end)
-		if not ok or type(inv) ~= "table" then
-			return 0, false
-		end
-		for _, it in pairs(inv) do
-			if it and it.Name == name then
-				return tonumber(it.Mastery) or 0, true
-			end
-		end
-		return 0, false
-	end
-
-	local function hasTTK()
-		return GetWP and GetWP("True Triple Katana")
-			or (plr.Backpack:FindFirstChild("True Triple Katana") or plr.Character and plr.Character:FindFirstChild("True Triple Katana"))
-	end
-
-	local function loadSword(name)
-		pcall(function()
-			replicated.Remotes.CommF_:InvokeServer("LoadItem", name)
-		end)
-		task.wait(0.35)
-		pcall(function()
-			EquipWeapon(name)
-		end)
-	end
-
-	while task.wait(0.35) do
-		pcall(function()
-			if not _G.Auto_TTK then
-				return
-			end
-			if hasTTK() then
-				_G.Auto_TTK = false
-				pcall(function()
-					lib:Notify({ Title = "TTK", Description = "True Triple Katana pronta", Duration = 5 })
-				end)
-				return
-			end
-
-			local need = nil
-			for _, s in ipairs(swords) do
-				local m, owned = invMastery(s)
-				if not owned then
-					-- tenta puxar do inventario / dealer path
-					loadSword(s)
-					m, owned = invMastery(s)
-				end
-				if owned and m < 300 then
-					need = s
-					break
-				end
-			end
-
-			if not need then
-				-- as tres com 300+: compra
-				pcall(function()
-					replicated.Remotes.CommF_:InvokeServer("MysteriousMan", "2")
-				end)
-				task.wait(1)
-				pcall(function()
-					replicated.Remotes.CommF_:InvokeServer("LoadItem", "True Triple Katana")
-				end)
-				return
-			end
-
-			loadSword(need)
-			local mob = nil
-			for _, name in ipairs(farmMobs) do
-				mob = GetConnectionEnemies(name)
-				if mob then
-					break
-				end
-			end
-			if mob and mob:FindFirstChild("HumanoidRootPart") then
-				t9.Kill(mob, _G.Auto_TTK)
-			else
-				-- ponto generico sea2/3 farm
-				if sea2 then
-					_tp(CFrame.new(-950, 13, 3000))
-				elseif sea3 then
-					_tp(CFrame.new(-9500, 15, 5500))
-				end
-			end
-		end)
-	end
-end)
-
 
 Q = GRP_Quests_True_Triple_Katana_Sword:AddToggle("Tween_to_Legendary_Sword_Dealer", {
 	Text = "Tween to Legendary Sword Dealer",
@@ -11192,108 +9867,130 @@ Q = GRP_Quests_Buso_Aura_Colours:AddToggle("Auto_Rainbow_Colors", {
 		_G.Auto_Rainbow_Haki = p204
 	end
 })
--- Auto Rainbow Haki (logica Banana/Vxeze): HornedMan + boss da quest
 spawn(function()
-	local rainbowBosses = {
-		"Stone",
-		"Island Empress",
-		"Kilo Admiral",
-		"Captain Elephant",
-		"Beautiful Pirate",
-	}
+	pcall(function()
+		while wait(Sec) do
+			if _G.Auto_Rainbow_Haki then
+				if plr.PlayerGui.Main.Quest.Visible ~= false then
+					if plr.PlayerGui.Main.Quest.Visible == true and string.find(plr.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text, "Stone") then
+						local Stone = GetConnectionEnemies("Stone")
 
-	local function rainbowQuestBoss()
-		local ok, title = pcall(function()
-			return plr.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text
-		end)
-		if not ok or type(title) ~= "string" then
-			return nil
-		end
-		for _, name in ipairs(rainbowBosses) do
-			if string.find(title, name, 1, true) then
-				return name
-			end
-		end
-		return nil
-	end
+						if Stone then
+							while true do
+								wait()
+								t9.Kill(Stone, _G.Auto_Rainbow_Haki)
 
-	local function hornedDone()
-		local ok, res = pcall(function()
-			return replicated.Remotes.CommF_:InvokeServer("HornedMan")
-		end)
-		return ok and res == 1
-	end
+								if _G.Auto_Rainbow_Haki == false then
+									break
+								elseif Stone.Humanoid.Health <= 0 or not Stone.Parent or plr.PlayerGui.Main.Quest.Visible == false then
+									break
+								end
+							end
+						else
+							_tp(CFrame.new(-1086.11621, 38.8425903, 6768.71436, 0.0231462717, -0.592676699, 0.805107772, 2.03251839e-05, 0.805323839, 0.592835128, -0.999732077, -0.0137055516, 0.0186523199))
+						end
+					elseif plr.PlayerGui.Main.Quest.Visible == true and string.find(plr.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text, "Hydra Leader") then
+						local v878 = GetConnectionEnemies("Hydra Leader")
 
-	local function findHorned()
-		local n = workspace:FindFirstChild("NPCs")
-		if n and n:FindFirstChild("Horned Man") then
-			return n["Horned Man"]
-		end
-		n = replicated:FindFirstChild("NPCs")
-		if n and n:FindFirstChild("Horned Man") then
-			return n["Horned Man"]
-		end
-		return nil
-	end
+						if v878 then
+							while true do
+								task.wait()
+								t9.Kill(v878, _G.Auto_Rainbow_Haki)
 
-	while task.wait(0.25) do
-		pcall(function()
-			if not _G.Auto_Rainbow_Haki then
-				return
-			end
-			if not sea3 then
-				return
-			end
-			if hornedDone() then
-				_G.Auto_Rainbow_Haki = false
-				pcall(function()
-					lib:Notify({ Title = "Rainbow Haki", Description = "Done", Duration = 5 })
-				end)
-				return
-			end
+								if _G.Auto_Rainbow_Haki == false then
+									break
+								elseif v878.Humanoid.Health <= 0 or not v878.Parent or plr.PlayerGui.Main.Quest.Visible == false then
+									break
+								end
+							end
+						else
+							replicated.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(5643.45263671875, 1013.0858154296875, -340.51025390625))
 
-			local questOn = false
-			pcall(function()
-				questOn = plr.PlayerGui.Main.Quest.Visible == true
-			end)
-			local bossName = questOn and rainbowQuestBoss() or nil
+							local vector3 = Vector3.new(5643.45263671875, 1013.0858154296875, -340.51025390625)
+							local cFrame = CFrame.new(5821.89794921875, 1019.0950927734375, -73.719230651855469)
 
-			if bossName then
-				local mob = GetConnectionEnemies(bossName)
-				if mob and mob:FindFirstChild("HumanoidRootPart") then
-					t9.Kill(mob, _G.Auto_Rainbow_Haki)
-				else
-					-- espera spawn; alguns bosses ficam no ReplicatedStorage
-					local rs = replicated:FindFirstChild(bossName) or (replicated:FindFirstChild("Enemies") and replicated.Enemies:FindFirstChild(bossName))
-					if rs and rs:FindFirstChild("HumanoidRootPart") then
-						_tp(rs.HumanoidRootPart.CFrame * CFrame.new(0, 30, 0))
+							if plr.Character.HumanoidRootPart.CFrame.Position == vector3 then
+								_tp(cFrame)
+							end
+						end
+					elseif plr.PlayerGui.Main.Quest.Visible == true and string.find(plr.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text, "Kilo Admiral") then
+						local v881 = GetConnectionEnemies("Kilo Admiral")
+
+						if v881 then
+							while true do
+								task.wait()
+								t9.Kill(v881, _G.Auto_Rainbow_Haki)
+
+								if _G.Auto_Rainbow_Haki == false then
+									break
+								elseif v881.Humanoid.Health <= 0 or not v881.Parent or plr.PlayerGui.Main.Quest.Visible == false then
+									break
+								end
+							end
+						else
+							_tp(CFrame.new(2877.61743, 423.558685, -7207.31006, -0.989591599, -0, -0.143904909, -0, 1.00000012, -0, 0.143904924, 0, -0.989591479))
+						end
+					elseif plr.PlayerGui.Main.Quest.Visible == true and string.find(plr.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text, "Captain Elephant") then
+						local v882 = GetConnectionEnemies("Captain Elephant")
+
+						if v882 then
+							while true do
+								task.wait()
+								t9.Kill(v882, _G.Auto_Rainbow_Haki)
+
+								if _G.Auto_Rainbow_Haki == false then
+									break
+								elseif v882.Humanoid.Health <= 0 or not v882.Parent or plr.PlayerGui.Main.Quest.Visible == false then
+									break
+								end
+							end
+						else
+							local vector3 = Vector3.new(-12471.169921875, 374.94024658203, -7551.677734375)
+							local cFrame = CFrame.new(-13376.7578125, 433.28689575195, -8071.392578125)
+
+							if plr.Character.HumanoidRootPart.CFrame.Position == vector3 then
+								if plr.Character.HumanoidRootPart.CFrame.Position == vector3 then
+									_tp(cFrame)
+								end
+							else
+								replicated.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(-12471.169921875, 374.94024658203, -7551.677734375))
+							end
+						end
+					elseif plr.PlayerGui.Main.Quest.Visible == true and string.find(plr.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text, "Beautiful Pirate") then
+						local v885 = GetConnectionEnemies("Captain Elephant")
+
+						if v885 then
+							while true do
+								task.wait()
+								t9.Kill(v885, _G.Auto_Rainbow_Haki)
+
+								if _G.Auto_Rainbow_Haki == false then
+									break
+								elseif v885.Humanoid.Health <= 0 or not v885.Parent or plr.PlayerGui.Main.Quest.Visible == false then
+									break
+								end
+							end
+						else
+							replicated.Remotes.CommF_:InvokeServer("requestEntrance", Vector3.new(5314.54638671875, 22.562219619750977, -127.06755065917969))
+						end
 					end
-				end
-			else
-				-- pega / renova quest no Horned Man
-				local npc = findHorned()
-				local root = npc and (npc:FindFirstChild("HumanoidRootPart") or npc.PrimaryPart)
-				if root then
-					if (plr.Character.HumanoidRootPart.Position - root.Position).Magnitude > 10 then
-						_tp(root.CFrame * CFrame.new(0, 3, 4))
-					else
-						task.wait(0.6)
-						pcall(function()
+				elseif not _G.GetQFast then
+					Rainbow1 = CFrame.new(-11892.0703125, 930.57672119141, -8760.1591796875)
+
+					if plr.Character.HumanoidRootPart.CFrame == Rainbow1 then
+						if plr.Character.HumanoidRootPart.CFrame == Rainbow1 then
+							wait(1)
 							replicated.Remotes.CommF_:InvokeServer("HornedMan", "Bet")
-						end)
-						task.wait(0.8)
+						end
+					else
+						_tp(Rainbow1)
 					end
-				else
-					-- posicao padrao do Horned Man (Hydra / Floating Turtle area)
-					_tp(CFrame.new(-11892.0703125, 930.57672119141, -8760.1591796875))
-					task.wait(0.5)
-					pcall(function()
-						replicated.Remotes.CommF_:InvokeServer("HornedMan", "Bet")
-					end)
+				elseif plr.PlayerGui.Main.Quest.Visible == false then
+					replicated.Remotes.CommF_:InvokeServer("HornedMan", "Bet")
 				end
 			end
-		end)
-	end
+		end
+	end)
 end)
 
 do
@@ -11614,7 +10311,7 @@ end
 spawn(function()
 	while wait(0.1) do
 		pcall(function()
-			if _G.Bartilo_Quest and Lv >= 850 and ZyroxClaim("bartilo") then
+			if _G.Bartilo_Quest and Lv >= 850 then
 				local Quest = plr.PlayerGui.Main.Quest
 
 				if replicated.Remotes.CommF_:InvokeServer("BartiloQuestProgress", "Bartilo") == 0 then
@@ -12267,36 +10964,6 @@ spawn(function()
 		end
 	end
 end)
--- posicao da Mirage Island (arquivo novo): Locations["Mirage Island"] ou Map.MysticIsland / "Mystic Island"
-ZyroxMirageTarget = function()
-	local function cframeOf(obj)
-		if not obj then
-			return nil
-		end
-		if obj:IsA("BasePart") then
-			return obj.CFrame
-		end
-		local ok, pivot = pcall(function()
-			return obj:GetPivot()
-		end)
-		return ok and pivot or nil
-	end
-
-	local map = workspace:FindFirstChild("Map")
-	local island = map and (map:FindFirstChild("MysticIsland") or map:FindFirstChild("Mystic Island"))
-	if island then
-		local center = island:FindFirstChild("Center", true)
-		local cf = cframeOf(center) or cframeOf(island)
-		if cf then
-			return cf
-		end
-	end
-
-	local origin = workspace:FindFirstChild("_WorldOrigin") or workspace:FindFirstChild("WorldOrigin")
-	local locations = origin and origin:FindFirstChild("Locations")
-	return cframeOf(locations and locations:FindFirstChild("Mirage Island"))
-end
-
 GRP_Race_Mystic_Island_Full_Moon = t15.Race:AddLeftGroupbox("Mystic Island / Full Moon")
 
 do
@@ -12357,10 +11024,8 @@ spawn(function()
 	while wait() do
 		if _G.FindMirage then
 			pcall(function()
-				local mirageCFrame = ZyroxMirageTarget()
-
-				if mirageCFrame then
-					_tp(mirageCFrame * CFrame.new(0, 300, 0))
+				if workspace._WorldOrigin.Locations:FindFirstChild("Mirage Island", true) then
+					_tp(workspace.Map:FindFirstChild("MysticIsland").Center.CFrame * CFrame.new(0, 300, 0))
 				else
 					local v920 = CheckBoat()
 
@@ -12371,12 +11036,12 @@ spawn(function()
 							while true do
 								wait()
 
-								local cFrame = CFrame.new(-118834.515625, 31, 999920.0494155884)
+								local cFrame = CFrame.new(-10000000, 31, 37016.25)
 
 								if CheckEnemiesBoat() or CheckTerrorShark() or CheckPirateGrandBrigade() then
-									_tp(CFrame.new(-118834.515625, 150, 999920.0494155884))
+									_tp(CFrame.new(-10000000, 150, 37016.25))
 								else
-									_tp(CFrame.new(-118834.515625, 31, 999920.0494155884))
+									_tp(CFrame.new(-10000000, 31, 37016.25))
 								end
 
 								if _G.FindMirage and not ((cFrame.Position - plr.Character.HumanoidRootPart.Position).Magnitude <= 10) then
@@ -12462,7 +11127,7 @@ do
 			if _G.HighestMirage then
 				pcall(function()
 					if workspace._WorldOrigin.Locations:FindFirstChild("Mirage Island", true) then
-						_tp(ZyroxMirageTarget() * CFrame.new(0, 400, 0))
+						_tp(workspace.Map:FindFirstChild("MysticIsland").Center.CFrame * CFrame.new(0, 400, 0))
 					end
 				end)
 			end
@@ -14947,46 +13612,26 @@ _G.DangerSc = _G.DangerSc or "Lv 1"
 -- Quando o barco morre: reseta o personagem (renasce perto do vendedor) em vez de voar ate ele
 ZyroxBoatWasAlive = false
 ZyroxBoatResetAt = 0
--- Logica do "Reset Character Buy Boat" do 3nn / Vxeze: sem barco e longe do vendedor (> 1000 studs) no Sea 3,
--- se o seu ponto de spawn for Tiki, reseta para renascer perto do vendedor; caso contrario voa ate ele.
 ZyroxGoBuyBoat = function(cFrame)
 	local root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-
-	if root and _G.ResetWhenBoatDies ~= false and World3 and (cFrame.Position - root.Position).Magnitude > 1000 then
-		local location = plr:GetAttribute("CurrentLocation")
-
-		if not location or location ~= "Tiki Outpost" then
-			local data = plr:FindFirstChild("Data")
-			local spawnPoint = data and data:FindFirstChild("LastSpawnPoint")
-
-			if spawnPoint and (spawnPoint.Value == "Tiki" or spawnPoint.Value == "Tiki2") and tick() - ZyroxBoatResetAt > 15 then
-				ZyroxBoatResetAt = tick()
-				local oldChar = plr.Character
-				local hum = oldChar and oldChar:FindFirstChildOfClass("Humanoid")
-
-				if hum then
-					hum.Health = 0
-
-					-- espera renascer (com limite de tempo)
-					local startedAt = tick()
-					repeat
-						task.wait(0.5)
-					until (plr.Character and plr.Character ~= oldChar and plr.Character:FindFirstChild("HumanoidRootPart"))
-						or tick() - startedAt > 25
-
-					task.wait(3)
-					return
-				end
-			end
+	local far = root and (cFrame.Position - root.Position).Magnitude > 150
+	if _G.ResetWhenBoatDies ~= false and ZyroxBoatWasAlive and far and tick() - ZyroxBoatResetAt > 20 then
+		ZyroxBoatResetAt = tick()
+		ZyroxBoatWasAlive = false
+		local hum = plr.Character and plr.Character:FindFirstChildOfClass("Humanoid")
+		if hum then
+			hum.Health = 0
+			plr.CharacterAdded:Wait()
+			task.wait(4)
 		end
+		return
 	end
-
 	TeleportToTarget(cFrame)
 end
 
 GRP_SeaEvent_Choose_Sea_Event:AddToggle("Reset_When_Boat_Dies", {
 	Text = "Reset When Boat Dies",
-	Tooltip = "Sem barco e longe do vendedor: se o seu spawn for Tiki, reseta em vez de voar ate ele",
+	Tooltip = "Reseta o personagem em vez de voar ate o vendedor de barcos",
 	Default = true,
 	Callback = function(value)
 		_G.ResetWhenBoatDies = value
@@ -15451,8 +14096,8 @@ do
 	local L = replicated
 	local t = plr
 
-	-- Metodo antigo (3nn): mexia em upvalues do CombatController. O jogo mudou e ele parou de atirar; fica so como reserva.
-	local legacyDragonStorm = function(E)
+	-- SpamGunDragonStorm (3nn)
+	getgenv().SpamGunDragonStorm = function(E)
 		local m = L:WaitForChild("Modules")
 		local util, character = require(m.CombatUtil), t.Character
 		local dragon = character and character:FindFirstChild("Dragonstorm")
@@ -15482,225 +14127,6 @@ do
 		debug.setupvalue(attackFn, 18, P)
 		L.Remotes.Validator2:FireServer(math.floor(d / V * 16777215), P)
 		m.Net:FindFirstChild("RE/ShootGunEvent"):FireServer(E.Position, { E })
-	end
-
-	-- Tiro automatico (metodo atual do Vxeze): acha a funcao de disparo do jogo (getgc), mira com ela e respeita
-	-- recarga / superaquecimento da arma.
-	local modules = L:WaitForChild("Modules")
-	local UserInputService = game:GetService("UserInputService")
-	local FastGun = {
-		fn = nil,
-		assist = nil,
-		looked = 0,
-		heat = {},
-		last = {},
-		data = {},
-		ShootsPerTarget = { ["Dual Flintlock"] = 2 },
-		input = {
-			UserInputType = (UserInputService.TouchEnabled and not UserInputService.MouseEnabled) and Enum.UserInputType.Touch
-				or Enum.UserInputType.MouseButton1,
-			Position = Vector3.zero,
-		},
-	}
-
-	local ResolveShootGun = function()
-		if FastGun.fn then
-			return FastGun.fn
-		end
-		if tick() - FastGun.looked < 3 then
-			return nil
-		end
-		FastGun.looked = tick()
-		if not getgc or not debug.getconstants then
-			return nil
-		end
-		for _, fn in ipairs(getgc(false)) do
-			if type(fn) == "function" and (not islclosure or islclosure(fn)) then
-				local info = debug.getinfo(fn)
-				if info and info.numparams == 2 then
-					local ok, constants = pcall(debug.getconstants, fn)
-					if ok and table.find(constants, "LocalShotsLeft") and table.find(constants, "LocalTotalShots") then
-						FastGun.fn = fn
-						break
-					end
-				end
-			end
-		end
-		if FastGun.fn and getupvalues then
-			for _, up in ipairs(getupvalues(FastGun.fn)) do
-				if type(up) == "table" and type(rawget(up, "getTargetInfo")) == "function" then
-					FastGun.assist = up
-					break
-				end
-			end
-		end
-		return FastGun.fn
-	end
-
-	local GunData = function(name)
-		local cached = FastGun.data[name]
-		if cached then
-			return cached
-		end
-		local ok, result = pcall(function()
-			return require(modules.CombatUtil):GetWeaponData(name)
-		end)
-		cached = ok and type(result) == "table" and result or {}
-		FastGun.data[name] = cached
-		return cached
-	end
-
-	local AimPartOf = function(target)
-		if typeof(target) == "Vector3" then
-			return { CFrame = CFrame.new(target), Position = target }
-		end
-		if typeof(target) == "CFrame" then
-			return { CFrame = target, Position = target.Position }
-		end
-		if typeof(target) ~= "Instance" then
-			return nil
-		end
-		if target:IsA("BasePart") then
-			return target
-		end
-		local part = target:FindFirstChild("HumanoidRootPart") or target:FindFirstChild("Hitbox") or target.PrimaryPart
-		if part then
-			return part
-		end
-		local ok, pivot = pcall(function()
-			return target:GetPivot()
-		end)
-		return ok and { CFrame = pivot, Position = pivot.Position } or nil
-	end
-
-	local GunReady = function(tool, data)
-		local now, cooldown = tick(), tonumber(data.Cooldown) or 0.2
-		if data.ShootStyle == "Gatling" then
-			local limit = (tonumber(data.OverheatLimit) or 3) - 0.1
-			local state = FastGun.heat[tool.Name]
-			if not state then
-				state = { heat = 0, cooling = false, prev = now }
-				FastGun.heat[tool.Name] = state
-			end
-			local dt = now - state.prev
-			state.prev = now
-			if state.cooling or dt > 0.4 then
-				state.heat = math.max(state.heat - dt, 0)
-				if state.heat <= 0 then
-					state.cooling = false
-				end
-			else
-				state.heat = state.heat + dt
-				if state.heat >= limit then
-					state.cooling = true
-				end
-			end
-			if state.cooling then
-				return false
-			end
-		else
-			if not tool.Enabled or (tonumber(tool:GetAttribute("LocalShotsLeft")) or 1) < 1 then
-				return false
-			end
-			if require(modules.CombatUtil):IsGunReloading(tool) then
-				return false
-			end
-		end
-		return now - (FastGun.last[tool.Name] or 0) >= cooldown
-	end
-
-	local GunCooling = function(name)
-		local state = FastGun.heat[name]
-		if not state or not state.cooling then
-			return false
-		end
-		local dt = tick() - state.prev
-		if state.heat - dt <= 0 then
-			state.heat, state.cooling, state.prev = 0, false, tick()
-			return false
-		end
-		return true
-	end
-
-	local ShootGunAt = function(target)
-		local char = plr.Character
-		local tool = char and char:FindFirstChildOfClass("Tool")
-		if not tool or tool.ToolTip ~= "Gun" then
-			return false
-		end
-		local shootFn, aimPart = ResolveShootGun(), AimPartOf(target)
-		if not shootFn or not aimPart then
-			return false
-		end
-		local data = GunData(tool.Name)
-		if not GunReady(tool, data) then
-			return false
-		end
-		local now, cooldown = tick(), tonumber(data.Cooldown) or 0.2
-		local shots = FastGun.ShootsPerTarget[tool.Name] or 1
-		if data.ShootStyle == "Gatling" then
-			shots = math.clamp(math.floor((now - (FastGun.last[tool.Name] or 0)) / cooldown), 1, 3)
-		end
-		FastGun.last[tool.Name] = now
-		local assist = FastGun.assist
-		local original = assist and assist.getTargetInfo
-		if assist then
-			assist.getTargetInfo = function()
-				return { Part = aimPart }
-			end
-		end
-		local fired = 0
-		for _ = 1, shots do
-			if pcall(shootFn, tool, FastGun.input) then
-				fired = fired + 1
-			end
-		end
-		if assist then
-			assist.getTargetInfo = original
-		end
-		return fired > 0
-	end
-
-	local SpamGunNamed = function(name, target)
-		local char = plr.Character
-		if not char or not target then
-			return false
-		end
-		if GunCooling(name) then
-			return false
-		end
-		if not char:FindFirstChild(name) then
-			if plr.Backpack:FindFirstChild(name) then
-				EquipWeapon(name)
-			end
-			return false
-		end
-		return ShootGunAt(target)
-	end
-
-	getgenv().SpamGunDragonStorm = function(part)
-		if SpamGunNamed("Dragonstorm", part) then
-			return true
-		end
-		-- sem a funcao de disparo do jogo (executor sem getgc / jogo mudou): metodo antigo + clique da propria arma
-		if not FastGun.fn then
-			if FastGun.looked > 0 and not FastGun.warned then
-				FastGun.warned = true
-				pcall(function()
-					lib:Notify({ Title = "Dragonstorm", Description = "funcao de tiro do jogo nao encontrada (getgc/debug.getconstants); usando clique da arma", Duration = 6 })
-				end)
-			end
-			pcall(legacyDragonStorm, part)
-			local char = plr.Character
-			local tool = char and char:FindFirstChild("Dragonstorm")
-			if tool and tick() - (FastGun.lastActivate or 0) > 0.15 then
-				FastGun.lastActivate = tick()
-				pcall(function()
-					tool:Activate()
-				end)
-			end
-		end
-		return false
 	end
 
 	-- 3nn: "Only Farm Boat and Fish and TerrorShark" (SeaBeast fica de fora)
@@ -15745,14 +14171,12 @@ do
 	end
 
 	local lastLoad = 0
-	local currentTarget, currentTargetAt = nil, 0
 	-- embrulha t9.Kill / t9.KillSea: nos Sea Events usa a Gun (Dragonstorm) como arma e atira com o aura do 3nn
 	for _, name in ipairs({ "Kill", "KillSea" }) do
 		local original = t9[name]
 		if original then
 			t9[name] = function(target, flag, ...)
 				if flag and _G.UseDragonstormSea and target and seaNames[target.Name] then
-					currentTarget, currentTargetAt = target, tick()
 					local gun = gunTool()
 					if _G.AutoLoadDragonstorm and (not gun or gun.Name ~= "Dragonstorm") and tick() - lastLoad > 5 then
 						lastLoad = tick()
@@ -15764,7 +14188,6 @@ do
 					if gun then
 						_G.SelectWeapon = gun.Name
 					end
-					shoot(target) -- atira antes tambem: alguns Kill esperam ~1s e perderiam tiros
 					local ok, err = pcall(original, target, flag, ...)
 					_G.SelectWeapon = saved
 					shoot(target)
@@ -15777,32 +14200,6 @@ do
 			end
 		end
 	end
-
-	-- Tiro continuo (como o Vxeze/3nn, que chamam a cada frame): o t9.Kill / t9.KillSea so rodam a cada ~2s (esperas
-	-- internas), o que deixava a Dragonstorm quase sem atirar. Enquanto houver alvo de Sea Event, atira a cada frame.
-	local lastSkill = 0
-	task.spawn(function()
-		while task.wait() do
-			if _G.UseDragonstormSea and currentTarget and tick() - currentTargetAt < 4 then
-				local target = currentTarget
-				local part = target.Parent and (target:FindFirstChild("HumanoidRootPart") or target:FindFirstChild("Engine"))
-
-				if part then
-					pcall(function()
-						MousePos = part.Position
-						getgenv().AimPos = part.CFrame
-						getgenv().SpamGunDragonStorm(part)
-
-						if tick() - lastSkill > 0.4 and plr:DistanceFromCharacter(part.Position) < 400 and Useskills then
-							lastSkill = tick()
-							Useskills("Gun", "Z")
-							Useskills("Gun", "X")
-						end
-					end)
-				end
-			end
-		end
-	end)
 
 	GRP_SeaEvent_Entity_Sea_Event:AddToggle("Use_Dragonstorm_For_Sea_Event", {
 		Text = "Use Dragonstorm For Sea Event",
@@ -17905,9 +16302,6 @@ do
 				spawn(function()
 					while Settings["Auto Raid"] and task.wait() do
 						local ok, err = pcall(function()
-							if not ZyroxClaim("raid") then
-								return
-							end
 							local button = RaidButton()
 							local timerVisible = t.PlayerGui.Main.TopHUDList.RaidTimer.Visible
 
@@ -24435,1081 +22829,6 @@ end)]])
 end
 -- ===================== FIM SECRET QUEST =====================
 
--- ===================== HALLOWEEN (protegido com pcall) =====================
-do
-	local okHallow, errHallow = pcall(function()
-		-- Pumpkin Hunt: estilo antigo (cursor virtual) + clique mobile (SendTouchEvent)
-		local RunService = game:GetService("RunService")
-		local VirtualInputManager = game:GetService("VirtualInputManager")
-		local UserInputService = game:GetService("UserInputService")
-
-		local state = { on = false, noclip = nil, cursorGui = nil, cursor = nil, skip = {}, current = nil, currentAt = 0 }
-		local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
-
-		local GRP_Halloween = t15.Halloween:AddLeftGroupbox("Pumpkin Hunt")
-		GRP_Halloween:AddLabel("Auto Collect Pumpkin\nClique fixo no centro da tela. Alinhe a abobora/botao no meio. Mobile: toque sem forcar desktop.")
-
-		local notify = function(msg)
-			pcall(function()
-				lib:Notify({ Title = "Halloween", Description = msg, Duration = 4 })
-			end)
-		end
-
-		local showCursor = function()
-			if state.cursorGui then
-				state.cursorGui.Enabled = true
-				return
-			end
-			local gui = Instance.new("ScreenGui")
-			gui.Name = "ZyroxHalloweenCursor"
-			gui.ResetOnSpawn = false
-			gui.IgnoreGuiInset = true
-			gui.DisplayOrder = 999
-			pcall(function()
-				if syn and syn.protect_gui then
-					syn.protect_gui(gui)
-				end
-			end)
-			gui.Parent = (gethui and gethui()) or game:GetService("CoreGui")
-
-			-- marcador fixo no centro (nao arrasta)
-			local cursor = Instance.new("Frame")
-			cursor.Name = "VirtualCursor"
-			cursor.AnchorPoint = Vector2.new(0.5, 0.5)
-			cursor.Position = UDim2.fromScale(0.5, 0.5)
-			cursor.Size = UDim2.fromOffset(28, 28)
-			cursor.BackgroundColor3 = Color3.fromRGB(255, 160, 40)
-			cursor.BackgroundTransparency = 0.35
-			cursor.BorderSizePixel = 0
-			cursor.ZIndex = 10
-			cursor.Active = false
-			cursor.Parent = gui
-			Instance.new("UICorner", cursor).CornerRadius = UDim.new(1, 0)
-			local stroke = Instance.new("UIStroke")
-			stroke.Color = Color3.fromRGB(255, 255, 255)
-			stroke.Thickness = 1.5
-			stroke.Parent = cursor
-
-			state.cursorGui, state.cursor = gui, cursor
-		end
-
-		local hideCursor = function()
-			if state.cursorGui then
-				state.cursorGui.Enabled = false
-			end
-		end
-
-		local applyMovers = function(char)
-			local hrp = char and char:FindFirstChild("HumanoidRootPart")
-			local hum = char and char:FindFirstChildOfClass("Humanoid")
-			if not hrp or not hum then
-				return nil
-			end
-			pcall(function()
-				local bodyClip = hrp:FindFirstChild("BodyClip")
-				if bodyClip then
-					bodyClip:Destroy()
-				end
-			end)
-			if not hrp:FindFirstChild("FarmBodyVelocity") then
-				local velocity = Instance.new("BodyVelocity")
-				velocity.Name = "FarmBodyVelocity"
-				velocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-				velocity.Velocity = Vector3.zero
-				velocity.Parent = hrp
-			end
-			if not hrp:FindFirstChild("FarmBodyGyro") then
-				local gyro = Instance.new("BodyGyro")
-				gyro.Name = "FarmBodyGyro"
-				gyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-				gyro.P = 3000
-				gyro.Parent = hrp
-			end
-			hum.PlatformStand = true
-			return hrp
-		end
-
-		local clearMovers = function()
-			local char = plr.Character
-			local hrp = char and char:FindFirstChild("HumanoidRootPart")
-			local hum = char and char:FindFirstChildOfClass("Humanoid")
-			if hrp then
-				for _, name in ipairs({ "FarmBodyVelocity", "FarmBodyGyro", "BodyClip" }) do
-					local m = hrp:FindFirstChild(name)
-					if m then
-						m:Destroy()
-					end
-				end
-			end
-			if hum then
-				hum.PlatformStand = false
-			end
-		end
-
-		local nearestPumpkin = function(hrp)
-			local folder = workspace:FindFirstChild("PumpkinHunt")
-			if not folder then
-				return nil, nil
-			end
-			local best, bestObj, bestDist = nil, nil, math.huge
-			for _, obj in ipairs(folder:GetChildren()) do
-				if obj:GetAttribute("Collected") or obj:GetAttribute("Taken") or state.skip[obj] then
-					-- skip
-				else
-					local pos
-					if obj:IsA("Model") then
-						pos = obj.PrimaryPart and obj.PrimaryPart.Position
-						if not pos then
-							local ok, pivot = pcall(function()
-								return obj:GetPivot().Position
-							end)
-							pos = ok and pivot or nil
-						end
-					elseif obj:IsA("BasePart") then
-						pos = obj.Position
-					end
-					if pos then
-						local dist = (pos - hrp.Position).Magnitude
-						if dist < bestDist then
-							best, bestObj, bestDist = pos, obj, dist
-						end
-					end
-				end
-			end
-			return best, bestObj
-		end
-
-		-- tenta prompt/clickdetector da abobora (melhor que input fake)
-		local tryInteract = function(obj)
-			if not obj then
-				return false
-			end
-			local ok = false
-			pcall(function()
-				for _, d in ipairs(obj:GetDescendants()) do
-					if d:IsA("ProximityPrompt") then
-						fireproximityprompt(d)
-						ok = true
-					elseif d:IsA("ClickDetector") then
-						fireclickdetector(d)
-						ok = true
-					end
-				end
-			end)
-			return ok
-		end
-
-		-- clique na posicao do cursor virtual
-		-- mobile: NAO usa GetMouseLocation / mouse move (isso empurra desktop mode)
-		-- 1) ProximityPrompt/ClickDetector  2) toque se o executor expuser  3) mouse button sem move
-		local fireAtCursor = function()
-			-- sempre no meio da tela (cursor travado)
-			local cam = workspace.CurrentCamera
-			local vp = cam and cam.ViewportSize or Vector2.new(0, 0)
-			local x = vp.X / 2
-			local y = vp.Y / 2
-			-- se o marcador existir, usa o centro absoluto dele (deve ser o meio)
-			local cursor = state.cursor
-			if cursor then
-				local c = cursor.AbsolutePosition + (cursor.AbsoluteSize / 2)
-				x, y = c.X, c.Y
-			end
-
-			-- tentativa de touch nativo (alguns executors)
-			local touched = false
-			pcall(function()
-				if (isMobile or UserInputService.TouchEnabled) and type(VirtualInputManager.SendTouchEvent) == "function" then
-					VirtualInputManager:SendTouchEvent(1, 0, x, y) -- down
-					task.wait(0.03)
-					VirtualInputManager:SendTouchEvent(1, 1, x, y) -- up
-					touched = true
-				end
-			end)
-			if touched then
-				return
-			end
-
-			-- fallback: so button down/up, sem SendMouseMoveEvent (evita desktop mode)
-			pcall(function()
-				VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, game, 1)
-				task.wait(0.03)
-				VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, game, 1)
-			end)
-		end
-
-		local collectDist = 8
-
-		local flyTo = function(hrp, goal)
-			local speed = tonumber(getgenv().TweenSpeedFar) or 270
-			local dist = (hrp.Position - goal.Position).Magnitude
-			local time = math.max(dist / speed, 0.05)
-			local tween = game:GetService("TweenService"):Create(hrp, TweenInfo.new(time, Enum.EasingStyle.Linear), { CFrame = goal })
-			local done = false
-			tween.Completed:Connect(function()
-				done = true
-			end)
-			tween:Play()
-			local started = tick()
-			while not done and state.on and tick() - started < time + 2 do
-				task.wait(0.05)
-			end
-			pcall(function()
-				tween:Cancel()
-			end)
-		end
-
-		local start = function()
-			if state.on then
-				return
-			end
-			if not workspace:FindFirstChild("PumpkinHunt") then
-				notify("PumpkinHunt nao encontrado (evento ativo?). Tentando mesmo assim.")
-			end
-			state.on = true
-			state.skip = {}
-			showCursor()
-			notify("Clique no centro da tela — alinhe o alvo no meio")
-
-			pcall(function()
-				local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-				if hrp and hrp:FindFirstChild("BodyClip") then
-					hrp.BodyClip:Destroy()
-				end
-			end)
-
-			state.noclip = RunService.Stepped:Connect(function()
-				local char = plr.Character
-				if char then
-					for _, part in ipairs(char:GetDescendants()) do
-						if part:IsA("BasePart") then
-							part.CanCollide = false
-						end
-					end
-				end
-			end)
-
-			-- auto interact + toque no cursor (~8/s)
-			task.spawn(function()
-				while state.on do
-					pcall(function()
-						if state.current then
-							tryInteract(state.current)
-						end
-						fireAtCursor()
-					end)
-					task.wait(0.12)
-				end
-			end)
-
-			-- movimento ate abobora
-			task.spawn(function()
-				while state.on do
-					pcall(function()
-						local char = plr.Character
-						local hrp = char and char:FindFirstChild("HumanoidRootPart")
-						local hum = char and char:FindFirstChildOfClass("Humanoid")
-						if not hrp or not hum then
-							return
-						end
-
-						if state.current and not state.current:IsDescendantOf(workspace) then
-							state.skip[state.current] = true
-							state.current = nil
-						end
-
-						if state.current and tick() - (state.currentAt or 0) > 20 then
-							state.skip[state.current] = true
-							state.current = nil
-						end
-
-						local target, targetObj = nearestPumpkin(hrp)
-						if not state.current and targetObj then
-							state.current, state.currentAt = targetObj, tick()
-						end
-						if state.current then
-							pcall(function()
-								local obj = state.current
-								if obj:IsA("Model") then
-									target = (obj.PrimaryPart and obj.PrimaryPart.Position) or obj:GetPivot().Position
-								elseif obj:IsA("BasePart") then
-									target = obj.Position
-								end
-							end)
-						end
-
-						if not target then
-							clearMovers()
-							return
-						end
-
-						local dist = (hrp.Position - target).Magnitude
-						if dist > collectDist then
-							applyMovers(char)
-							local goal = CFrame.new(target + Vector3.new(0, 3, 0))
-							if _G.HalloweenTween then
-								flyTo(hrp, goal)
-							else
-								hrp.CFrame = goal
-							end
-						else
-							clearMovers()
-							tryInteract(state.current)
-						end
-					end)
-					task.wait(0.35)
-				end
-			end)
-		end
-
-		local stop = function()
-			state.on = false
-			if state.noclip then
-				state.noclip:Disconnect()
-				state.noclip = nil
-			end
-			hideCursor()
-			pcall(clearMovers)
-		end
-
-		GRP_Halloween:AddToggle("Halloween_Tween_Pumpkin", {
-			Text = "Tween Pumpkin",
-			Tooltip = "Voa ate as aboboras (Tween Speed) em vez de TP",
-			Default = false,
-			Callback = function(value)
-				_G.HalloweenTween = value
-			end
-		})
-
-		GRP_Halloween:AddToggle("Auto_Collect_Pumpkin", {
-			Text = "Auto Collect Pumpkin",
-			Default = false,
-			Callback = function(value)
-				if value then
-					start()
-				else
-					stop()
-				end
-			end
-		})
-	-- ===== [Akuma] Auto Trick or Treat =====
-	-- Evento: portas em varias ilhas (minuto :00 a :10 de cada hora). Bate na porta, escolhe "Treat" no dialogo
-	-- (Candy Corn) e segue para a proxima. Se a porta disparar uma luta, mata os inimigos novos e continua.
-	do
-		local trick = { on = false, noclip = nil, flying = false, visited = {}, doors = {}, scannedAt = 0, warned = false, useBig = true }
-		local GRP_Trick = t15.Halloween:AddLeftGroupbox("Trick or Treat")
-		GRP_Trick:AddLabel("Auto Trick or Treat\nBate nas portas, escolhe Treat no dialogo e vai para a proxima casa. O evento roda do minuto :00 ate :10 de cada hora.")
-
-		local keywords = { "knock", "trick", "treat" }
-		local matchText = function(text)
-			text = string.lower(tostring(text or ""))
-			for _, key in ipairs(keywords) do
-				if string.find(text, key, 1, true) then
-					return true
-				end
-			end
-			return false
-		end
-
-		-- o prompt/detector ou ate 4 ancestrais tem nome de porta do evento
-		local isDoorObject = function(inst)
-			local node, depth = inst, 0
-			while node and node ~= workspace and depth < 5 do
-				if matchText(node.Name) then
-					return true
-				end
-				local name = string.lower(node.Name)
-				if string.find(name, "halloween", 1, true) and string.find(name, "door", 1, true) then
-					return true
-				end
-				node = node.Parent
-				depth = depth + 1
-			end
-			return false
-		end
-
-		local objectPart = function(inst)
-			local node = inst.Parent
-			while node and node ~= workspace do
-				if node:IsA("BasePart") then
-					return node
-				end
-				if node:IsA("Attachment") and node.Parent and node.Parent:IsA("BasePart") then
-					return node.Parent
-				end
-				if node:IsA("Model") then
-					return node.PrimaryPart or node:FindFirstChildWhichIsA("BasePart", true)
-				end
-				node = node.Parent
-			end
-			return nil
-		end
-
-		-- porta grande (HalloweenDoor2) x normal (HalloweenDoor)
-		local isBigDoor = function(inst)
-			local node, depth = inst, 0
-			while node and node ~= workspace and depth < 6 do
-				if string.find(string.lower(node.Name), "halloweendoor2", 1, true) then
-					return true
-				end
-				node = node.Parent
-				depth = depth + 1
-			end
-			return false
-		end
-
-		-- posicao real do prompt (nao do PrimaryPart do modelo, que em porta grande fica longe)
-		local doorPos = function(door)
-			local p = door.inst.Parent
-			if p then
-				if p:IsA("Attachment") then
-					return p.WorldPosition
-				end
-				if p:IsA("BasePart") then
-					return p.Position
-				end
-			end
-			return door.part.Position
-		end
-
-		-- mensagem "It seems like nobody is home..." na tela
-		local nobodyHome = function()
-			local ok, res = pcall(function()
-				local pg = plr:FindFirstChildOfClass("PlayerGui")
-				if not pg then
-					return false
-				end
-				for _, g in ipairs(pg:GetDescendants()) do
-					if g:IsA("TextLabel") and g.Visible and g.Text ~= "" and g.TextTransparency < 0.9 then
-						local low = string.lower(g.Text)
-						if string.find(low, "nobody is home", 1, true) or string.find(low, "nobody's home", 1, true) then
-							return true
-						end
-					end
-				end
-				return false
-			end)
-			return ok and res
-		end
-
-		local scanDoors = function(maxAge)
-			if tick() - trick.scannedAt < (maxAge or 120) then
-				return trick.doors
-			end
-			trick.scannedAt = tick()
-			local list, count = {}, 0
-			for _, inst in ipairs(workspace:GetDescendants()) do
-				if inst:IsA("ProximityPrompt") or inst:IsA("ClickDetector") then
-					local text = ""
-					if inst:IsA("ProximityPrompt") then
-						text = inst.ActionText .. " " .. inst.ObjectText
-					end
-					if matchText(text) or isDoorObject(inst) then
-						local part = objectPart(inst)
-						if part then
-							table.insert(list, { inst = inst, part = part, big = isBigDoor(inst) })
-						end
-					end
-				end
-				count = count + 1
-				if count % 4000 == 0 then
-					task.wait()
-				end
-			end
-			trick.doors = list
-			return list
-		end
-
-		local goTo = function(goal)
-			local char = plr.Character
-			local hrp = char and char:FindFirstChild("HumanoidRootPart")
-			if not hrp then
-				return
-			end
-			local dist = (hrp.Position - goal.Position).Magnitude
-			if dist <= 8 then
-				return
-			end
-			trick.flying = true
-			if _G.HalloweenTween or dist > 400 then
-				-- distancias grandes sempre por tween (teleporte longo e arriscado)
-				applyMovers(char)
-				local speed = tonumber(getgenv().TweenSpeedFar) or 270
-				local time = math.max(dist / speed, 0.05)
-				local tween = game:GetService("TweenService"):Create(hrp, TweenInfo.new(time, Enum.EasingStyle.Linear), { CFrame = goal })
-				local done = false
-				tween.Completed:Connect(function()
-					done = true
-				end)
-				tween:Play()
-				local started = tick()
-				while not done and trick.on and tick() - started < time + 3 do
-					task.wait(0.05)
-				end
-				tween:Cancel()
-				clearMovers()
-			else
-				hrp.CFrame = goal
-			end
-			trick.flying = false
-		end
-
-		local triggerDoor = function(door)
-			local inst = door.inst
-			if inst:IsA("ProximityPrompt") then
-				local oldHold = inst.HoldDuration
-				pcall(function()
-					inst.RequiresLineOfSight = false
-					inst.MaxActivationDistance = math.max(inst.MaxActivationDistance, 30)
-				end)
-				pcall(function()
-					inst.HoldDuration = 0
-				end)
-				local fired = false
-				if fireproximityprompt then
-					fired = pcall(fireproximityprompt, inst)
-				end
-				if not fired then
-					-- reserva: aperta a tecla do prompt
-					pcall(function()
-						local key = inst.KeyboardKeyCode
-						if key == Enum.KeyCode.Unknown then
-							key = Enum.KeyCode.E
-						end
-						VirtualInputManager:SendKeyEvent(true, key, false, game)
-						task.wait(0.2)
-						VirtualInputManager:SendKeyEvent(false, key, false, game)
-					end)
-				end
-				pcall(function()
-					inst.HoldDuration = oldHold
-				end)
-			elseif fireclickdetector then
-				pcall(fireclickdetector, inst)
-			end
-		end
-
-		local optionText = function(option)
-			local text = option._text
-			if type(text) == "table" then
-				text = table.concat(text, " ")
-			end
-			return string.lower(tostring(text))
-		end
-
-		-- conversa com o NPC da porta: escolhe "Treat" e avanca ate o dialogo fechar
-		local handleDialogue = function()
-			local okReq, DC = pcall(function()
-				return require(game:GetService("ReplicatedStorage"):WaitForChild("DialogueController", 3))
-			end)
-			if not okReq or not DC then
-				return false
-			end
-			local prefer = { "treat", "yes", "ok", "thank", "knock" }
-			local decline = { "no thanks", "cancel", "bye", "leave", "nevermind", "never mind", "not now" }
-			local started, seen = tick(), false
-			while trick.on and tick() - started < 20 do
-				task.wait(0.35)
-				if not DC.Active and not seen and nobodyHome() then
-					pcall(DC.close)
-					return false, true
-				end
-				if DC.Active then
-					seen = true
-					local ok, active = pcall(DC.getActiveDialogue)
-					local page = ok and active and active._pageStack and active._pageStack[#active._pageStack]
-					if page then
-						local options = page._options or {}
-						if #options == 0 then
-							pcall(DC.advance)
-						else
-							local pick
-							for _, word in ipairs(prefer) do
-								for _, option in ipairs(options) do
-									if string.find(optionText(option), word, 1, true) then
-										pick = option
-										break
-									end
-								end
-								if pick then
-									break
-								end
-							end
-							if not pick then
-								for _, option in ipairs(options) do
-									local text, bad = optionText(option), false
-									for _, word in ipairs(decline) do
-										if string.find(text, word, 1, true) then
-											bad = true
-										end
-									end
-									if not bad then
-										pick = option
-										break
-									end
-								end
-							end
-							pcall(DC.select, pick or options[1])
-						end
-					end
-				elseif seen or tick() - started > 6 then
-					break
-				end
-			end
-			pcall(DC.close)
-			return seen, false
-		end
-
-		-- luta contra o que a porta invocar (so inimigos que nao estavam la antes)
-		local fightNew = function(before)
-			local previous = _G.HalloweenFarm
-			local started = tick()
-			_G.HalloweenFarm = true
-			pcall(function()
-				while trick.on and tick() - started < 30 do
-					local char = plr.Character
-					local hrp = char and char:FindFirstChild("HumanoidRootPart")
-					local enemies = workspace:FindFirstChild("Enemies")
-					if not hrp or not enemies then
-						break
-					end
-					local target, best = nil, 90
-					for _, mob in ipairs(enemies:GetChildren()) do
-						local root = mob:FindFirstChild("HumanoidRootPart")
-						if root and not before[mob] and t9.Alive(mob) then
-							local dist = (root.Position - hrp.Position).Magnitude
-							if dist < best then
-								target, best = mob, dist
-							end
-						end
-					end
-					if not target then
-						break
-					end
-					t9.Kill(target, true)
-					task.wait()
-				end
-			end)
-			_G.HalloweenFarm = previous
-		end
-
-		local doorPartOf = function(inst)
-			if not (inst:IsA("ProximityPrompt") or inst:IsA("ClickDetector")) then
-				return nil
-			end
-			local text = ""
-			if inst:IsA("ProximityPrompt") then
-				text = inst.ActionText .. " " .. inst.ObjectText
-			end
-			if matchText(text) or isDoorObject(inst) then
-				return objectPart(inst)
-			end
-			return nil
-		end
-
-		local startTrick = function()
-			if trick.on then
-				return
-			end
-			trick.on = true
-			trick.warned = false
-			trick.scannedAt = 0
-			trick.conn = workspace.DescendantAdded:Connect(function(inst)
-				task.defer(function()
-					pcall(function()
-						local part = doorPartOf(inst)
-						if part then
-							table.insert(trick.doors, { inst = inst, part = part, big = isBigDoor(inst) })
-						end
-					end)
-				end)
-			end)
-			trick.visited = {}
-			notify("Auto Trick or Treat ligado. Procurando portas do evento...")
-
-			trick.noclip = RunService.Stepped:Connect(function()
-				if not trick.flying then
-					return
-				end
-				local char = plr.Character
-				if char then
-					for _, part in ipairs(char:GetDescendants()) do
-						if part:IsA("BasePart") then
-							part.CanCollide = false
-						end
-					end
-				end
-			end)
-
-			task.spawn(function()
-				while trick.on do
-					pcall(function()
-						local char = plr.Character
-						local hrp = char and char:FindFirstChild("HumanoidRootPart")
-						local hum = char and char:FindFirstChildOfClass("Humanoid")
-						if not hrp or not hum or hum.Health <= 0 then
-							return
-						end
-
-						-- porta disponivel mais proxima (cada porta so de novo depois de 60s)
-						local best, bestDist
-						for _, door in ipairs(scanDoors(120)) do
-							local inst, part = door.inst, door.part
-							if inst.Parent and part.Parent then
-								local enabled = true
-								if inst:IsA("ProximityPrompt") then
-									enabled = inst.Enabled
-								end
-								local last = trick.visited[inst]
-								if enabled and (not door.big or trick.useBig) and (not last or tick() - last > 60) then
-									local dist = (doorPos(door) - hrp.Position).Magnitude + (door.big and 300 or 0)
-									if not bestDist or dist < bestDist then
-										best, bestDist = door, dist
-									end
-								end
-							end
-						end
-
-						if not best then
-							if not trick.warned then
-								trick.warned = true
-								notify("Nenhuma porta disponivel agora. O evento roda de :00 a :10 de cada hora; fico procurando.")
-							end
-							scanDoors(20)
-							task.wait(3)
-							return
-						end
-						trick.warned = false
-
-						local part = best.part
-						local dpos = doorPos(best)
-						local stand = dpos + Vector3.new(0, 1, 0)
-						local away = (hrp.Position - dpos) * Vector3.new(1, 0, 1)
-						if away.Magnitude > 1 then
-							stand = stand + away.Unit * 4
-						end
-						local stay = CFrame.lookAt(stand, dpos)
-						goTo(stay)
-						hrp.CFrame = stay
-
-						local before = {}
-						local enemies = workspace:FindFirstChild("Enemies")
-						if enemies then
-							for _, mob in ipairs(enemies:GetChildren()) do
-								before[mob] = true
-							end
-						end
-
-						trick.visited[best.inst] = tick()
-
-						-- fica parado em frente a porta ate o dialogo/evento terminar (sair cancela: "You walked away")
-						local held = true
-						task.spawn(function()
-							local lastSnap = 0
-							while held and trick.on do
-								local root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-								-- so corrige se foi empurrado longe (>20) e no maximo 1x a cada 2s; nao zera velocidade
-								if root and (root.Position - stay.Position).Magnitude > 20 and tick() - lastSnap > 2 then
-									lastSnap = tick()
-									root.CFrame = stay
-								end
-								task.wait(0.25)
-							end
-						end)
-
-						local talked, empty = false, false
-						local waitT = tick()
-						while nobodyHome() and tick() - waitT < 3 do
-							task.wait(0.2) -- espera sumir a mensagem da porta anterior
-						end
-						for _ = 1, 2 do
-							local okDC, DCm = pcall(function()
-								return require(game:GetService("ReplicatedStorage"):WaitForChild("DialogueController", 3))
-							end)
-							if not (okDC and DCm and DCm.Active) then
-								triggerDoor(best)
-							end
-							talked, empty = handleDialogue()
-							if empty then
-								break
-							end
-							if talked then
-								break
-							end
-							task.wait(0.8)
-						end
-						if talked then
-							task.wait(2.5) -- deixa o evento da porta terminar antes de ir para a proxima
-						end
-						held = false
-						if not talked then
-							trick.visited[best.inst] = tick() + (empty and 300 or 120)
-							pcall(function()
-								local i = best.inst
-								local info = (best.big and "[GRANDE] " or "[normal] ") .. i.Parent.Name .. "/" .. (i.Parent.Parent and i.Parent.Parent.Name or "?")
-								if i:IsA("ProximityPrompt") then
-									info = info .. " | " .. i.ActionText .. " | hold=" .. i.HoldDuration .. " | dist=" .. i.MaxActivationDistance .. " | on=" .. tostring(i.Enabled)
-								else
-									info = info .. " | ClickDetector"
-								end
-								notify((empty and "Sem ninguem em casa: " or "Sem dialogo: ") .. info)
-							end)
-						else
-							fightNew(before)
-						end
-						task.wait(talked and 1.5 or 0.3)
-					end)
-					task.wait(0.5)
-				end
-			end)
-		end
-
-		local stopTrick = function()
-			trick.on = false
-			trick.flying = false
-			if trick.conn then
-				trick.conn:Disconnect()
-				trick.conn = nil
-			end
-			if trick.noclip then
-				trick.noclip:Disconnect()
-				trick.noclip = nil
-			end
-			pcall(clearMovers)
-		end
-
-		GRP_Trick:AddToggle("Trick_Include_Big_Doors", {
-			Text = "Incluir portas grandes (HalloweenDoor2)",
-			Tooltip = "Normais sempre primeiro. Desligue se as grandes derem erro.",
-			Default = true,
-			Callback = function(value)
-				trick.useBig = value
-			end
-		})
-
-		GRP_Trick:AddToggle("Auto_Trick_Or_Treat", {
-			Text = "Auto Trick or Treat",
-			Tooltip = "Bate nas portas do evento, escolhe Treat e repete em todas as casas",
-			Default = false,
-			Callback = function(value)
-				if value then
-					startTrick()
-				else
-					stopTrick()
-				end
-			end
-		})
-
-	end
-
-	-- ===== Auto Farm Halloween Boss (Unbound Werewolf) =====
-	-- Procura o boss "Unbound Werewolf", voa ate ele, fica acima da cabeca e ataca com cliques ate matar.
-	do
-		local boss = { on = false, noclip = nil, hover = nil, target = nil, prevFarm = nil, warned = false, height = 25 }
-		local GRP_Boss = t15.Halloween:AddRightGroupbox("Halloween Boss")
-		GRP_Boss:AddLabel("Auto Farm Halloween Boss\nProcura o Unbound Werewolf, fica acima da cabeca dele e ataca com cliques ate matar.")
-
-		local VirtualUser = game:GetService("VirtualUser")
-		local TweenService = game:GetService("TweenService")
-
-		local isBossName = function(name)
-			name = string.lower(tostring(name or ""))
-			return string.find(name, "unbound werewolf", 1, true) or string.find(name, "unbound werewol", 1, true)
-				or string.find(name, "werewolf", 1, true)
-		end
-
-		local bossAlive = function(model)
-			if not model or not model.Parent then
-				return false
-			end
-			local hum = model:FindFirstChildOfClass("Humanoid")
-			local root = model:FindFirstChild("HumanoidRootPart")
-			return hum ~= nil and root ~= nil and hum.Health > 0
-		end
-
-		local findBoss = function()
-			local enemies = workspace:FindFirstChild("Enemies")
-			if enemies then
-				for _, mob in ipairs(enemies:GetChildren()) do
-					if isBossName(mob.Name) and bossAlive(mob) then
-						return mob
-					end
-				end
-			end
-			for _, mob in ipairs(workspace:GetChildren()) do
-				if mob:IsA("Model") and isBossName(mob.Name) and bossAlive(mob) then
-					return mob
-				end
-			end
-			return nil
-		end
-
-		local flyTo = function(goal)
-			local char = plr.Character
-			local hrp = char and char:FindFirstChild("HumanoidRootPart")
-			if not hrp then
-				return
-			end
-			local dist = (hrp.Position - goal.Position).Magnitude
-			if dist <= 60 then
-				return
-			end
-			applyMovers(char)
-			local time = math.max(dist / (tonumber(getgenv().TweenSpeedFar) or 270), 0.05)
-			local tween = TweenService:Create(hrp, TweenInfo.new(time, Enum.EasingStyle.Linear), { CFrame = goal })
-			local done = false
-			tween.Completed:Connect(function()
-				done = true
-			end)
-			tween:Play()
-			local started = tick()
-			while not done and boss.on and tick() - started < time + 3 do
-				task.wait(0.05)
-			end
-			tween:Cancel()
-		end
-
-		local click = function()
-			pcall(function()
-				VirtualUser:CaptureController()
-				VirtualUser:Button1Down(Vector2.new(1280, 672))
-				task.wait(0.05)
-				VirtualUser:Button1Up(Vector2.new(1280, 672))
-			end)
-		end
-
-		local startBoss = function()
-			if boss.on then
-				return
-			end
-			boss.on = true
-			boss.warned = false
-			boss.target = nil
-			boss.prevFarm = _G.HalloweenFarm
-			_G.HalloweenFarm = true -- libera o ataque rapido do hub enquanto farma
-			notify("Auto Farm Halloween Boss ligado. Procurando o Unbound Werewolf...")
-
-			-- noclip enquanto farma
-			boss.noclip = RunService.Stepped:Connect(function()
-				local char = plr.Character
-				if boss.target and char then
-					for _, part in ipairs(char:GetDescendants()) do
-						if part:IsA("BasePart") then
-							part.CanCollide = false
-						end
-					end
-				end
-			end)
-
-			-- mantem o personagem acima da cabeca do boss a cada frame
-			boss.hover = RunService.Heartbeat:Connect(function()
-				local target = boss.target
-				if not target or not bossAlive(target) then
-					return
-				end
-				local char = plr.Character
-				local hrp = char and char:FindFirstChild("HumanoidRootPart")
-				if not hrp then
-					return
-				end
-				local root = target.HumanoidRootPart
-				local pos = root.Position + Vector3.new(0, tonumber(boss.height) or 25, 0)
-				hrp.CFrame = CFrame.lookAt(pos, root.Position, Vector3.new(0, 0, 1))
-				hrp.AssemblyLinearVelocity = Vector3.zero
-			end)
-
-			task.spawn(function()
-				while boss.on do
-					pcall(function()
-						local char = plr.Character
-						local hrp = char and char:FindFirstChild("HumanoidRootPart")
-						local hum = char and char:FindFirstChildOfClass("Humanoid")
-						if not hrp or not hum or hum.Health <= 0 then
-							boss.target = nil
-							task.wait(1)
-							return
-						end
-
-						if not bossAlive(boss.target) then
-							boss.target = findBoss()
-						end
-						local target = boss.target
-						if not target then
-							if not boss.warned then
-								boss.warned = true
-								notify("Unbound Werewolf nao encontrado. Fico procurando...")
-							end
-							task.wait(2)
-							return
-						end
-						boss.warned = false
-
-						local root = target.HumanoidRootPart
-						local above = CFrame.new(root.Position + Vector3.new(0, tonumber(boss.height) or 25, 0))
-						local prev = boss.target
-						boss.target = nil -- pausa o hover durante o voo
-						flyTo(above)
-						boss.target = prev
-						applyMovers(char)
-
-						pcall(function()
-							EquipWeapon(_G.SelectWeapon)
-						end)
-						click()
-					end)
-					task.wait(0.1)
-				end
-			end)
-		end
-
-		local stopBoss = function()
-			boss.on = false
-			boss.target = nil
-			if boss.hover then
-				boss.hover:Disconnect()
-				boss.hover = nil
-			end
-			if boss.noclip then
-				boss.noclip:Disconnect()
-				boss.noclip = nil
-			end
-			_G.HalloweenFarm = boss.prevFarm
-			pcall(clearMovers)
-		end
-
-		GRP_Boss:AddSlider({
-			Text = "Altura acima do boss",
-			Min = 8,
-			Max = 50,
-			Default = 25,
-			Rounding = 0,
-			Callback = function(value)
-				boss.height = value
-			end
-		})
-
-		GRP_Boss:AddToggle("Auto_Farm_Halloween_Boss", {
-			Text = "Auto Farm Halloween Boss",
-			Tooltip = "Procura o Unbound Werewolf, fica acima dele e ataca com cliques ate matar",
-			Default = false,
-			Callback = function(value)
-				if value then
-					startBoss()
-				else
-					stopBoss()
-				end
-			end
-		})
-	end
-	end)
-	if not okHallow then
-		warn("[Zyrox] Halloween block failed: " .. tostring(errHallow))
-	end
-end
--- ===================== FIM HALLOWEEN =====================
-
-
-
-
 
 GRP_Raids_Dungeon_Event_Raiding:AddToggle("Auto_Awakening", {
 	Text = "Auto Awakening",
@@ -27326,55 +24645,10 @@ GRP_Misc_Server_Function:AddButton({
 	end
 })
 GRP_Misc_Player_Gui_Others = t15.Misc:AddLeftGroupbox("Player Gui / Others")
--- Abre uma janela do jogo dentro de PlayerGui.Main (busca segura, como no arquivo TSUO) e esconde o menu do hub,
--- que ficava por cima e cobria a janela aberta.
-ZyroxOpenMainGui = function(names, label, beforeOpen)
-	local main = LocalPlayer2:FindFirstChild("PlayerGui") and LocalPlayer2.PlayerGui:FindFirstChild("Main")
-	local gui
-
-	if main then
-		for _, name in ipairs(names) do
-			gui = main:FindFirstChild(name) or main:FindFirstChild(name, true)
-			if gui then
-				break
-			end
-		end
-	end
-
-	if not gui then
-		pcall(function()
-			lib:Notify({ Title = label, Description = "janela nao encontrada em PlayerGui.Main (" .. table.concat(names, " / ") .. ")", Duration = 5 })
-		end)
-		return
-	end
-
-	if beforeOpen then
-		local ok, err = pcall(beforeOpen)
-		if not ok then
-			warn("[" .. label .. "] " .. tostring(err))
-		end
-	end
-
-	-- garante que os pais tambem estao visiveis e abre a janela
-	local node = gui
-	while node and node ~= main.Parent do
-		if node:IsA("GuiObject") then
-			node.Visible = true
-		elseif node:IsA("ScreenGui") then
-			node.Enabled = true
-		end
-		node = node.Parent
-	end
-
-	if lib.HideUI then
-		lib.HideUI()
-	end
-end
-
 GRP_Misc_Player_Gui_Others:AddButton({
 	Text = "Open Awakenings Expert",
 	Func = function()
-		ZyroxOpenMainGui({ "AwakeningToggler", "Awakening", "AwakeningExpert" }, "Awakenings")
+		LocalPlayer2.PlayerGui.Main.AwakeningToggler.Visible = true
 	end
 })
 
@@ -27382,9 +24656,8 @@ do
 	GRP_Misc_Player_Gui_Others:AddButton({
 		Text = "Open Title Selection",
 		Func = function()
-			ZyroxOpenMainGui({ "Titles" }, "Titles", function()
-				ReplicatedStorage3.Remotes.CommF_:InvokeServer("getTitles", true)
-			end)
+			ReplicatedStorage3.Remotes.CommF_:InvokeServer("getTitles", true)
+			LocalPlayer2.PlayerGui.Main.Titles.Visible = true
 		end
 	})
 end
@@ -28147,7 +25420,7 @@ FarmAtivo = function()
 	end
 
 	for _, flag in ipairs({
-		"Level", "HalloweenFarm", "AutoFarmNear", "AutoFarmIsland", "FarmEliteHunt", "FarmEliteH", "AutoFarm_Bone",
+		"AutoFarmNear", "AutoFarmIsland", "FarmEliteHunt", "FarmEliteH", "AutoFarm_Bone",
 		"FarmTyrant", "FarmPhaBinh", "FarmBoss", "AutoFarmAllBoss", "FarmMastery_Dev",
 		"FarmMastery_G", "FarmMastery_S", "FarmBlazeEM"
 	}) do
@@ -28424,610 +25697,9 @@ do
 	v1572()
 end
 
--- ===================== KAITUN UI + motor =====================
-getgenv().ZyroxKaitun = getgenv().ZyroxKaitun == true
-
-local function ZyroxKaitunHas(name)
-	if type(GetWP) == "function" and GetWP(name) then
-		return true
-	end
-	local bp, ch = plr.Backpack, plr.Character
-	if bp and bp:FindFirstChild(name) then
-		return true
-	end
-	if ch and ch:FindFirstChild(name) then
-		return true
-	end
-	local ok, inv = pcall(function()
-		return replicated.Remotes.CommF_:InvokeServer("getInventory")
-	end)
-	if ok and type(inv) == "table" then
-		for _, it in pairs(inv) do
-			if it and it.Name == name then
-				return true
-			end
-		end
-	end
-	return false
-end
-
--- UI pequena do Kaitun
-local function ZyroxKaitunBuildUI()
-	local host = (gethui and gethui()) or game:GetService("CoreGui")
-	pcall(function()
-		local old = host:FindFirstChild("ZyroxKaitunUI")
-		if old then
-			old:Destroy()
-		end
-	end)
-
-	local gui = Instance.new("ScreenGui")
-	gui.Name = "ZyroxKaitunUI"
-	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
-	gui.DisplayOrder = 9990
-	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	pcall(function()
-		if syn and syn.protect_gui then
-			syn.protect_gui(gui)
-		end
-	end)
-	gui.Parent = host
-
-	local card = Instance.new("Frame")
-	card.Name = "Card"
-	card.AnchorPoint = Vector2.new(0, 0)
-	card.Position = UDim2.fromOffset(16, 80)
-	card.Size = UDim2.fromOffset(260, 118)
-	card.BackgroundColor3 = Color3.fromRGB(14, 14, 18)
-	card.BorderSizePixel = 0
-	card.Parent = gui
-	Instance.new("UICorner", card).CornerRadius = UDim.new(0, 12)
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = Color3.fromRGB(255, 170, 40)
-	stroke.Thickness = 1.2
-	stroke.Transparency = 0.25
-	stroke.Parent = card
-
-	local accent = Instance.new("Frame")
-	accent.Size = UDim2.new(0, 4, 1, -16)
-	accent.Position = UDim2.fromOffset(8, 8)
-	accent.BackgroundColor3 = Color3.fromRGB(255, 170, 40)
-	accent.BorderSizePixel = 0
-	accent.Parent = card
-	Instance.new("UICorner", accent).CornerRadius = UDim.new(1, 0)
-
-	local title = Instance.new("TextLabel")
-	title.BackgroundTransparency = 1
-	title.Position = UDim2.fromOffset(20, 10)
-	title.Size = UDim2.new(1, -56, 0, 22)
-	title.Font = Enum.Font.GothamBold
-	title.TextSize = 15
-	title.TextColor3 = Color3.fromRGB(255, 255, 255)
-	title.TextXAlignment = Enum.TextXAlignment.Left
-	title.Text = "Zyrox Hub Kaitun"
-	title.Parent = card
-
-	local status = Instance.new("TextLabel")
-	status.Name = "Status"
-	status.BackgroundTransparency = 1
-	status.Position = UDim2.fromOffset(20, 36)
-	status.Size = UDim2.new(1, -28, 0, 40)
-	status.Font = Enum.Font.Gotham
-	status.TextSize = 13
-	status.TextColor3 = Color3.fromRGB(200, 205, 220)
-	status.TextXAlignment = Enum.TextXAlignment.Left
-	status.TextYAlignment = Enum.TextYAlignment.Top
-	status.TextWrapped = true
-	status.Text = "iniciando..."
-	status.Parent = card
-
-	local meta = Instance.new("TextLabel")
-	meta.Name = "Meta"
-	meta.BackgroundTransparency = 1
-	meta.Position = UDim2.fromOffset(20, 80)
-	meta.Size = UDim2.new(1, -28, 0, 28)
-	meta.Font = Enum.Font.Gotham
-	meta.TextSize = 11
-	meta.TextColor3 = Color3.fromRGB(130, 135, 150)
-	meta.TextXAlignment = Enum.TextXAlignment.Left
-	meta.TextYAlignment = Enum.TextYAlignment.Top
-	meta.TextWrapped = true
-	meta.Text = "Lv — | Sea —"
-	meta.Parent = card
-
-	-- botao minimizar / fechar
-	local stopBtn = Instance.new("TextButton")
-	stopBtn.Size = UDim2.fromOffset(22, 22)
-	stopBtn.Position = UDim2.new(1, -28, 0, 8)
-	stopBtn.BackgroundColor3 = Color3.fromRGB(40, 30, 30)
-	stopBtn.BorderSizePixel = 0
-	stopBtn.Font = Enum.Font.GothamBold
-	stopBtn.TextSize = 12
-	stopBtn.TextColor3 = Color3.fromRGB(255, 120, 120)
-	stopBtn.Text = "X"
-	stopBtn.Parent = card
-	Instance.new("UICorner", stopBtn).CornerRadius = UDim.new(0, 6)
-
-	-- drag
-	local dragging, dragStart, startPos
-	card.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			dragging = true
-			dragStart = input.Position
-			startPos = card.Position
-			input.Changed:Connect(function()
-				if input.UserInputState == Enum.UserInputState.End then
-					dragging = false
-				end
-			end)
-		end
-	end)
-	game:GetService("UserInputService").InputChanged:Connect(function(input)
-		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-			local delta = input.Position - dragStart
-			card.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-		end
-	end)
-
-	stopBtn.MouseButton1Click:Connect(function()
-		if getgenv().ZyroxKaitunStop then
-			getgenv().ZyroxKaitunStop()
-		end
-	end)
-
-	getgenv().ZyroxKaitunSetStatus = function(main, sub)
-		pcall(function()
-			if status and status.Parent then
-				status.Text = tostring(main or "")
-			end
-			if sub and meta and meta.Parent then
-				meta.Text = tostring(sub)
-			end
-		end)
-	end
-
-	return gui
-end
-
-local function ZyroxKaitunSet(main, sub)
-	if getgenv().ZyroxKaitunSetStatus then
-		getgenv().ZyroxKaitunSetStatus(main, sub)
-	end
-end
-
-local function ZyroxKaitunClearSide()
-	local flags = {
-		"AutoSaber", "AutoFactory", "AutoEctoplasm", "AutoFarm_Bone", "FarmEliteH", "FarmEliteHunt",
-		"Auto_Cake_Prince", "AutoSpawnCP", "Auto_Yama", "Auto_Tushita", "Auto_CDK", "CDK_TS", "CDK_YM", "CDK",
-		"Auto_TTK", "Auto_Rainbow_Haki", "Auto_SuperHuman", "AutoDeathStep", "Auto_SharkMan_Karate",
-		"Auto_Electric_Claw", "AutoDragonTalon", "Auto_God_Human", "AutoSanguineArt", "AutoPole", "AutoPoleV2",
-		"Bartilo_Quest", "CitizenQuest", "AutoKenVTWO", "obsFarm", "StoreF", "InstanceF", "Random_Auto",
-		"Auto_Awakener", "AutoFarmChest", "AutoBerry",
-	}
-	for _, f in ipairs(flags) do
-		_G[f] = false
-	end
-end
-
-local function ZyroxKaitunStart()
-	if not getgenv().ZyroxKaitun then
-		return
-	end
-	if getgenv().ZyroxKaitunRunning then
-		return
-	end
-	getgenv().ZyroxKaitunRunning = true
-	_G.ZyroxKaitun = true
-
-	-- interface propria
-	pcall(ZyroxKaitunBuildUI)
-	ZyroxKaitunSet("preparando farms do Zyrox...", "Lv — | Sea —")
-
-	-- esconde hub principal se Fluent minimiza
-	pcall(function()
-		if lib and lib.HideUI then
-			lib.HideUI()
-		elseif lib and lib.ToggleUI then
-			-- deixa aberto mas status fica por cima
-		end
-	end)
-
-	_G.Level = true
-	_G.StoreF = true
-	_G.Auto_Melee = true
-	ZyroxKaitunSet("farmando level", nil)
-
-	task.spawn(function()
-		while getgenv().ZyroxKaitun and task.wait(6) do
-			pcall(function()
-				local pts = plr.Data and plr.Data.Points and plr.Data.Points.Value or 0
-				if pts > 0 then
-					replicated.Remotes.CommF_:InvokeServer("AddPoint", "Melee", math.min(pts, 100))
-				end
-			end)
-		end
-	end)
-
-	task.spawn(function()
-		while getgenv().ZyroxKaitun and task.wait(10) do
-			pcall(function()
-				_G.StoreF = true
-				for _, container in ipairs({ plr.Backpack, plr.Character }) do
-					if container then
-						for _, tool in ipairs(container:GetChildren()) do
-							if tool:IsA("Tool") and string.find(string.lower(tool.Name), "fruit") then
-								pcall(function()
-									replicated.Remotes.CommF_:InvokeServer("StoreFruit", tool.Name, tool)
-								end)
-								task.wait(0.35)
-							end
-						end
-					end
-				end
-			end)
-		end
-	end)
-
-	task.spawn(function()
-		local lastTravel = 0
-		local meleeOrder = {
-			{ flag = "Auto_SuperHuman", name = "Superhuman", min = 300 },
-			{ flag = "AutoDeathStep", name = "Death Step", min = 400 },
-			{ flag = "Auto_SharkMan_Karate", name = "Sharkman Karate", min = 450 },
-			{ flag = "Auto_Electric_Claw", name = "Electric Claw", min = 500 },
-			{ flag = "AutoDragonTalon", name = "Dragon Talon", min = 550 },
-			{ flag = "Auto_God_Human", name = "Godhuman", min = 600 },
-		}
-
-		while getgenv().ZyroxKaitun and task.wait(1.2) do
-			pcall(function()
-				local lv = (plr.Data and plr.Data.Level and plr.Data.Level.Value) or 0
-				local seaName = sea3 and "Sea 3" or sea2 and "Sea 2" or "Sea 1"
-				local meta = string.format("Lv %d | %s", lv, seaName)
-				_G.Level = true
-				_G.Auto_Melee = true
-
-				local action = "farmando level"
-
-				if tick() - lastTravel > 30 then
-					if lv >= 700 and sea1 then
-						lastTravel = tick()
-						action = "viajando para Sea 2..."
-						ZyroxKaitunSet(action, meta)
-						pcall(function()
-							replicated.Remotes.CommF_:InvokeServer("TravelDressrosa")
-						end)
-					elseif lv >= 1500 and sea2 then
-						lastTravel = tick()
-						action = "viajando para Sea 3..."
-						ZyroxKaitunSet(action, meta)
-						pcall(function()
-							replicated.Remotes.CommF_:InvokeServer("TravelZou")
-						end)
-						pcall(function()
-							replicated.Remotes.CommF_:InvokeServer("F_", "TravelZou")
-						end)
-					end
-				end
-
-				if sea1 then
-					if lv >= 200 and not ZyroxKaitunHas("Saber") then
-						_G.AutoSaber = true
-						action = "farmando Saber"
-					else
-						_G.AutoSaber = false
-					end
-					if lv >= 300 and not ZyroxKaitunHas("Pole") then
-						_G.AutoPole = true
-						if action == "farmando level" then
-							action = "farmando Pole"
-						end
-					end
-					if action == "farmando level" then
-						action = "farmando level (Sea 1)"
-					end
-				end
-
-				if sea2 then
-					_G.AutoSaber = false
-					_G.AutoFactory = lv >= 700
-					_G.AutoEctoplasm = lv >= 900
-					if lv >= 800 then
-						_G.Bartilo_Quest = true
-					end
-					if _G.AutoFactory then
-						action = "Factory Raid"
-					elseif _G.AutoEctoplasm then
-						action = "farmando Ectoplasm"
-					elseif _G.Bartilo_Quest then
-						action = "quest Bartilo"
-					else
-						action = "farmando level (Sea 2)"
-					end
-					for _, m in ipairs(meleeOrder) do
-						if ZyroxKaitunHas(m.name) then
-							_G[m.flag] = false
-						elseif lv >= m.min then
-							_G[m.flag] = true
-							action = "melee: " .. m.name
-							break
-						else
-							_G[m.flag] = false
-						end
-					end
-				end
-
-				if sea3 then
-					_G.AutoFactory = false
-					_G.AutoEctoplasm = false
-					if lv >= 1500 then
-						_G.FarmEliteHunt = true
-						_G.AutoFarm_Bone = true
-						action = "Elite + Bone"
-					end
-					if lv >= 2000 then
-						_G.Auto_Cake_Prince = true
-						_G.AutoSpawnCP = true
-						action = "Cake Prince"
-					end
-					if lv >= 1600 and not ZyroxKaitunHas("Yama") then
-						_G.Auto_Yama = true
-						action = "farmando Yama"
-					else
-						_G.Auto_Yama = false
-					end
-					if lv >= 1800 and ZyroxKaitunHas("Yama") and not ZyroxKaitunHas("Tushita") then
-						_G.Auto_Tushita = true
-						action = "farmando Tushita"
-					else
-						_G.Auto_Tushita = false
-					end
-					if lv >= 2000 and not ZyroxKaitunHas("True Triple Katana") then
-						_G.Auto_TTK = true
-						action = "farmando TTK"
-					else
-						_G.Auto_TTK = false
-					end
-					if lv >= 2200 and ZyroxKaitunHas("Yama") and ZyroxKaitunHas("Tushita") and not ZyroxKaitunHas("Cursed Dual Katana") then
-						_G.Auto_CDK = true
-						action = "farmando CDK"
-					else
-						_G.Auto_CDK = false
-					end
-					if lv >= 1500 then
-						_G.Auto_Rainbow_Haki = true
-					end
-					if lv >= 1700 then
-						_G.AutoKenVTWO = true
-						_G.obsFarm = true
-					end
-					if lv >= 2000 and not ZyroxKaitunHas("Godhuman") and not ZyroxKaitunHas("God Human") then
-						_G.Auto_God_Human = true
-						action = "melee: Godhuman"
-					end
-				end
-
-				pcall(function()
-					if lv >= 50 then
-						replicated.Remotes.CommF_:InvokeServer("BuyHaki", "Buso")
-					end
-					if lv >= 100 then
-						replicated.Remotes.CommF_:InvokeServer("BuyHaki", "Geppo")
-					end
-					if lv >= 150 then
-						replicated.Remotes.CommF_:InvokeServer("BuyHaki", "Soru")
-					end
-					if lv >= 450 then
-						replicated.Remotes.CommF_:InvokeServer("KenTalk", "Buy")
-					end
-				end)
-
-				ZyroxKaitunSet(action, meta)
-			end)
-		end
-	end)
-
-	pcall(function()
-		local vu = game:GetService("VirtualUser")
-		plr.Idled:Connect(function()
-			if getgenv().ZyroxKaitun then
-				vu:CaptureController()
-				vu:ClickButton2(Vector2.new())
-			end
-		end)
-	end)
-end
-
-getgenv().ZyroxKaitunStop = function()
-	getgenv().ZyroxKaitun = false
-	getgenv().ZyroxKaitunRunning = false
-	_G.ZyroxKaitun = false
-	_G.Level = false
-	pcall(ZyroxKaitunClearSide)
-	ZyroxKaitunSet("parado", "Lv — | Sea —")
-	task.delay(1.5, function()
-		pcall(function()
-			local host = (gethui and gethui()) or game:GetService("CoreGui")
-			local ui = host:FindFirstChild("ZyroxKaitunUI")
-			if ui then
-				ui:Destroy()
-			end
-		end)
-	end)
-end
-
-task.defer(function()
-	task.wait(2)
-	pcall(ZyroxKaitunStart)
-end)
-
--- ===================== ESTATISTICAS DE EXECUCAO (webhook do Discord) =====================
--- Envia ao SEU webhook: nome do jogador, quantas vezes ele executou o hub e o link do servidor.
--- Desativar: getgenv().ZyroxAnalytics = false  (antes de executar)
-task.spawn(function()
-	local WEBHOOK_URL = getgenv().ZyroxWebhook
-		or "https://discord.com/api/webhooks/1566289461027799110/r5Zl8-DgCp-einEGhcqTsyNJT_iS9EoOK8CDbIPvtQAFJQxk36We5k8GkYLDottJhlkC"
-
-	if getgenv().ZyroxAnalytics == false then
-		print("[Zyrox] webhook desativado (ZyroxAnalytics = false)")
-		return
-	end
-	if type(WEBHOOK_URL) ~= "string" or not WEBHOOK_URL:find("^https://") then
-		warn("[Zyrox] webhook URL invalida")
-		return
-	end
-
-	local HttpService = game:GetService("HttpService")
-	local request = (syn and syn.request)
-		or (http and http.request)
-		or http_request
-		or request
-		or (fluxus and fluxus.request)
-	if type(request) ~= "function" then
-		-- tenta game:HttpGet nao serve POST; sem request nao roda
-		warn("[Zyrox] executor sem request/http_request — webhook nao enviou")
-		return
-	end
-
-	local file = "ZyroxHub_Executions.json"
-	local count, first = 1, os.time()
-	pcall(function()
-		if type(isfile) == "function" and isfile(file) then
-			local saved = HttpService:JSONDecode(readfile(file))
-			if type(saved) == "table" then
-				count = (tonumber(saved.count) or 0) + 1
-				first = tonumber(saved.first) or first
-			end
-		end
-		if type(writefile) == "function" then
-			writefile(file, HttpService:JSONEncode({ count = count, first = first, last = os.time() }))
-		end
-	end)
-
-	local gameName = "Place " .. tostring(game.PlaceId)
-	pcall(function()
-		gameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
-	end)
-
-	local executor = "desconhecido"
-	pcall(function()
-		if identifyexecutor then
-			executor = tostring((identifyexecutor()))
-		end
-	end)
-
-	local avatar = string.format(
-		"https://www.roblox.com/headshot-thumbnail/image?userId=%d&width=420&height=420&format=png",
-		plr.UserId
-	)
-
-	local serverLink = string.format(
-		"https://www.roblox.com/games/start?placeId=%d&gameInstanceId=%s",
-		game.PlaceId,
-		tostring(game.JobId)
-	)
-
-	local players = game:GetService("Players")
-	local payload = {
-		username = "Zyrox Hub",
-		avatar_url = "https://www.roblox.com/headshot-thumbnail/image?userId=1&width=150&height=150&format=png",
-		embeds = {
-			{
-				title = "Zyrox Hub executado",
-				color = 0xFF6A00,
-				thumbnail = { url = avatar },
-				fields = {
-					{ name = "Jogador", value = string.format("%s (@%s)", plr.DisplayName, plr.Name), inline = true },
-					{ name = "UserId", value = tostring(plr.UserId), inline = true },
-					{ name = "Execucoes", value = tostring(count), inline = true },
-					{ name = "Jogo", value = gameName, inline = false },
-					{ name = "Servidor", value = "[Entrar no servidor](" .. serverLink .. ")", inline = false },
-					{ name = "Jogadores", value = #players:GetPlayers() .. "/" .. tostring(players.MaxPlayers), inline = true },
-					{ name = "Executor", value = executor, inline = true },
-				},
-				timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ"),
-			},
-		},
-	}
-
-	local ok, res = pcall(function()
-		return request({
-			Url = WEBHOOK_URL,
-			Method = "POST",
-			Headers = { ["Content-Type"] = "application/json" },
-			Body = HttpService:JSONEncode(payload),
-		})
-	end)
-
-	if not ok then
-		warn("[Zyrox] webhook falhou: " .. tostring(res))
-	else
-		local code = type(res) == "table" and (res.StatusCode or res.Status or res.statusCode) or nil
-		print("[Zyrox] webhook enviado", code and ("status " .. tostring(code)) or "ok")
-		if code and tonumber(code) and tonumber(code) >= 400 then
-			warn("[Zyrox] Discord rejeitou: " .. tostring(code) .. " " .. tostring(res.Body or res.body or ""))
-		end
-	end
-end)
-
-lib:Notify({
-			Title = "Zyrox hub",
-			Description = "Estatisticas: este hub registra seu nome, nº de execucoes e o link do servidor. Para desativar: getgenv().ZyroxAnalytics = false",
-			Duration = 8
-		})
-	end)
-
-	local gameName = "Place " .. tostring(game.PlaceId)
-	pcall(function()
-		gameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
-	end)
-
-	local executor = "desconhecido"
-	pcall(function()
-		if identifyexecutor then
-			executor = tostring((identifyexecutor()))
-		end
-	end)
-
-	-- link que abre o Roblox direto neste servidor
-	local serverLink = string.format(
-		"https://www.roblox.com/games/start?placeId=%d&gameInstanceId=%s",
-		game.PlaceId, game.JobId
-	)
-
-	local players = game:GetService("Players")
-	local payload = {
-		username = "Zyrox Hub",
-		embeds = { {
-			title = "Zyrox Hub executado",
-			color = 0xFF6A00,
-			fields = {
-				{ name = "Jogador", value = string.format("%s (@%s)", plr.DisplayName, plr.Name), inline = true },
-				{ name = "UserId", value = tostring(plr.UserId), inline = true },
-				{ name = "Execucoes", value = tostring(count), inline = true },
-				{ name = "Jogo", value = gameName, inline = false },
-				{ name = "Servidor", value = "[Entrar no servidor](" .. serverLink .. ")", inline = false },
-				{ name = "Jogadores no servidor", value = #players:GetPlayers() .. "/" .. players.MaxPlayers, inline = true },
-				{ name = "Executor", value = executor, inline = true },
-			},
-			timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ"),
-		} },
-	}
-
-	pcall(function()
-		request({
-			Url = WEBHOOK_URL,
-			Method = "POST",
-			Headers = { ["Content-Type"] = "application/json" },
-			Body = HttpService:JSONEncode(payload),
-		})
-	end)
-end)
-
 lib:Notify({
 	Title = "Zyrox hub",
-	Description = getgenv().ZyroxKaitun and "Kaitun ativo — full auto" or "feito por havoc",
+	Description = "feito por havoc",
 	Icon = "rbxassetid://108697676964602",
 	Duration = 5
 })
