@@ -20726,6 +20726,8 @@ DevilFruitSection.CreateToggle(
 			-- Reinicia o ciclo ao ativar o toggle, sem depender de um loop antigo.
 			getgenv().__RandomFruitNext = 0
 			getgenv().__RandomFruitWarn = 0
+			getgenv().__GachaTimers = getgenv().__GachaTimers or {}
+			getgenv().__GachaTimers.ZiolesGacha = nil
 			pcall(function()
 				A.CreateNoti({Title = "Nexora Hub", Desc = "Random Devil Fruit ativado", ShowTime = 4})
 			end)
@@ -21251,135 +21253,63 @@ end
 -- o valor retornado. Se nenhum funcionar, escreve no console (F9) o que o servidor respondeu.
 
 
+getgenv().__GachaTimers = getgenv().__GachaTimers or {}
+-- Random Devil Fruit (lógica do Zyrox): GachaClient.CheckGachaAsync + PurchaseGachaAsync em "ZiolesGacha".
+-- Respeita o tempo de espera que o servidor informa (TimeEnds), em vez de chutar remotes.
 function RandomFruit()
-	local Players = game:GetService("Players")
-	local LocalPlayer = Players.LocalPlayer
-	local ReplicatedStorage = game:GetService("ReplicatedStorage")
-	local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
-	local CommF = Remotes and Remotes:FindFirstChild("CommF_")
-	if not CommF or not LocalPlayer then return false end
 	if not Settings["Random Devil Fruit"] then return false end
 	if Settings["Auto Find Leviathan"] or Settings["Multi Find Leviathan"] then return false end
-
 	if (getgenv().__RandomFruitNext or 0) > tick() or getgenv().__RandomFruitBusy then
 		return false
 	end
 	getgenv().__RandomFruitBusy = true
-
-	local function GetBeli()
-		local ok, v = pcall(function() return LocalPlayer.Data.Beli.Value end)
-		return ok and v or nil
-	end
-	local before = GetBeli()
-	local success = false
-	local responses = {}
-
-	local function TryRemote(label, fn)
-		local ok, res = pcall(fn)
-		responses[#responses+1] = label..":"..tostring(res)
-		task.wait(0.3)
-		local now = GetBeli()
-		if before and now and now < before then
-			success = true
-		end
-		if ok and (res == true or res == 1) then
-			success = true
-		end
-		local gui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-		local win = gui and gui:FindFirstChild("SpinnerWindow")
-		if win and win.Enabled then
-			success = true
-		end
-	end
-
+	local timers = getgenv().__GachaTimers
+	local key = "ZiolesGacha"
+	local rolled = false
 	pcall(function()
-		TryRemote("Cousin-Buy", function() return CommF:InvokeServer("Cousin", "Buy") end)
-		TryRemote("Zioles-Buy", function() return CommF:InvokeServer("Zioles", "Buy") end)
-		TryRemote("BloxFruitsGacha-Buy", function() return CommF:InvokeServer("BloxFruitsGacha", "Buy") end)
-		TryRemote("BloxFruitsGacha", function() return CommF:InvokeServer("BloxFruitsGacha") end)
-		TryRemote("Gacha-Buy", function() return CommF:InvokeServer("Gacha", "Buy") end)
-		TryRemote("Gacha", function() return CommF:InvokeServer("Gacha") end)
-		TryRemote("Cousin-Buy2", function() return CommF:InvokeServer("Cousin", "Buy", true) end)
-		TryRemote("BloxFruitDealer-Buy", function() return CommF:InvokeServer("BloxFruitDealer", "Buy") end)
-		TryRemote("Shop-Buy", function() return CommF:InvokeServer("Shop", "BuyRandomFruit") end)
-		TryRemote("RandomFruit", function() return CommF:InvokeServer("RandomFruit") end)
-		TryRemote("Zioless-Buy", function() return CommF:InvokeServer("Zioless", "Buy") end)
+		local rs = game:GetService("ReplicatedStorage")
+		local GachaClient = require(rs.Controllers.GachaClient)
 		pcall(function()
-			local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
-			if Remotes then
-				for _, remote in ipairs(Remotes:GetChildren()) do
-					if remote.Name:find("Comm") then
-						pcall(function() remote:InvokeServer("Cousin", "Buy") end)
-						pcall(function() remote:InvokeServer("Zioles", "Buy") end)
-						pcall(function() remote:InvokeServer("BloxFruitsGacha", "Buy") end)
-					end
+			local GachaWindow = require(rs.Controllers.UI.GachaWindow)
+			if GachaWindow.IsOpen() then GachaWindow.Close() end
+		end)
+		local now = workspace:GetServerTimeNow()
+		if now < (timers[key] or 0) then return end
+		timers[key] = now + 60
+		local ok, result = pcall(GachaClient.CheckGachaAsync, key, "Blox Fruit Gacha")
+		if not ok or type(result) ~= "table" then
+			warn("[Nexora][Random Fruit] gacha indisponível agora")
+			return
+		end
+		local missing
+		if result.PaidRandomItemsRestricted and result.PaidRandomItemsRestricted.Value then
+			missing = result.PaidRandomItemsRestricted
+		else
+			for _, k in ipairs({ "Level", "Price", "Cooldown" }) do
+				if result[k] and result[k].RequirementMet == false then
+					missing = result[k]
+					break
 				end
 			end
-		end)
-		if not success then
-			local boxName = GetBoxName()
-			pcall(function()
-				local checkOk, avail = pcall(function() return CommF:InvokeServer("Cousin", "CheckTime", boxName) end)
-				if checkOk then
-					TryRemote("Cousin-Box", function() return CommF:InvokeServer("Cousin", boxName) end)
-				end
-			end)
-			pcall(function()
-				TryRemote("Zioles-Check", function() return CommF:InvokeServer("Zioles", "CheckTime", boxName) end)
-				TryRemote("Zioles-Box", function() return CommF:InvokeServer("Zioles", boxName) end)
-			end)
 		end
-		local gui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-		local win = gui and gui:FindFirstChild("SpinnerWindow")
-		if win and win.Enabled then
-			pcall(function()
-				local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-				if playerGui then
-					for _, gui in ipairs(playerGui:GetDescendants()) do
-						if gui:IsA("TextButton") or gui:IsA("ImageButton") then
-							local txt = tostring(gui.Text or "") .. tostring(gui.Name or "")
-							if string.find(txt, "444,850") or string.find(txt, "444850") or (gui.Parent and string.find(tostring(gui.Parent.Name), "Gacha")) then
-								pcall(function()
-									for _, conn in ipairs(getconnections(gui.MouseButton1Click)) do
-										conn:Fire()
-									end
-									gui:Activate()
-								end)
-							end
-						end
-					end
-				end
-			end)
-			pcall(function()
-				local ReplicatedStorage = game:GetService("ReplicatedStorage")
-				local Spinner = nil
-				pcall(function() Spinner = require(ReplicatedStorage.Controllers.UI.Spinner) end)
-				if Spinner then
-					if Spinner.Spin then pcall(function() Spinner:Spin() end) end
-					if Spinner.Roll then pcall(function() Spinner:Roll() end) end
-					if Spinner.Open then pcall(function() Spinner:Open() end) end
-				end
-			end)
-			pcall(function() CommF:InvokeServer("Cousin", "Spin") end)
-			pcall(function() CommF:InvokeServer("Zioles", "Spin") end)
-			pcall(function() CommF:InvokeServer("Zioles", "Buy") end)
-			pcall(function() CommF:InvokeServer("Cousin", "Roll") end)
-			pcall(function() CommF:InvokeServer("Cousin", "Gacha") end)
-			pcall(function() CommF:InvokeServer("Cousin", "Buy", true) end)
+		if missing then
+			if missing.TimeEnds then timers[key] = missing.TimeEnds + 1 end
+			warn("[Nexora][Random Fruit] " .. tostring(missing.ErrorMessage))
+			return
+		end
+		if pcall(GachaClient.PurchaseGachaAsync, key) then
+			timers[key] = now + 5
+			rolled = true
 		end
 	end)
-
 	getgenv().__RandomFruitBusy = false
-	if success then
-		getgenv().__RandomFruitNext = tick() + 1.5
-		-- Mensagem verde so quando girar!
+	getgenv().__RandomFruitNext = tick() + 1
+	if rolled then
 		pcall(function()
-			A.CreateNoti({Title = "Nexora Hub", Desc = "<font color='#00FF00'>Girando Random Devil Fruit... You got a random Blox Fruit!</font>", ShowTime = 5})
+			A.CreateNoti({Title = "Nexora Hub", Desc = "<font color='#00FF00'>Random Devil Fruit girado com sucesso!</font>", ShowTime = 5})
 		end)
-		return true
 	end
-	getgenv().__RandomFruitNext = tick() + 3
-	return false
+	return rolled
 end
 
 local FruitInfoModule = nil
@@ -21399,6 +21329,14 @@ local function GetFruitOriginalName(tool)
 	local original = tool:GetAttribute("OriginalName")
 	if typeof(original) == "string" and original ~= "" then
 		return original
+	end
+	-- (Zyrox) o nome original pode estar no pai do EatRemote, não na Tool.
+	local eat = tool:FindFirstChild("EatRemote", true)
+	if eat and eat.Parent then
+		local o2 = eat.Parent:GetAttribute("OriginalName")
+		if typeof(o2) == "string" and o2 ~= "" then
+			return o2
+		end
 	end
 	local name = tool.Name
 	local clean = string.gsub(name, " Fruit$", "")
@@ -21439,6 +21377,7 @@ local function IsFruitTool(tool)
 	if not tool or not tool:IsA("Tool") or tool:FindFirstChild("Ignored") then return false end
 	local original = tool:GetAttribute("OriginalName")
 	if typeof(original) == "string" and original ~= "" then return true end
+	if tool:FindFirstChild("EatRemote", true) then return true end -- (Zyrox) fruta = tool com EatRemote
 	local name = tostring(tool.Name or "")
 	if string.find(name, "Fruit", 1, true) then return true end
 	-- Algumas versões usam o identificador interno (ex.: Rocket-Rocket) no nome da Tool.
@@ -21451,6 +21390,26 @@ end
 --  2) chama o servidor com (nome, tool) e confere se a tool sumiu;
 --  3) se não sumiu, tenta só com o nome;
 --  4) se ainda não guardou, não tenta de novo por 30s e não manda webhook falso.
+-- Método do Zyrox (UpdStFruit): StoreFruit(OriginalName do pai do EatRemote, tool). Só roda para frutas que o
+-- método principal não conseguiu guardar e que não estão no tempo de espera de 30s.
+function UpdStFruitZyrox()
+	local lp = game:GetService("Players").LocalPlayer
+	local CommFr = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
+	CommFr = CommFr and CommFr:FindFirstChild("CommF_")
+	if not lp or not CommFr then return end
+	for _, v in ipairs(lp.Backpack:GetChildren()) do
+		local failedAt = v:GetAttribute("__StoreFail")
+		if not (typeof(failedAt) == "number" and tick() - failedAt < 30) then
+			local eat = v:FindFirstChild("EatRemote", true)
+			local oname = eat and eat.Parent and eat.Parent:GetAttribute("OriginalName")
+			if oname then
+				pcall(function() CommFr:InvokeServer("StoreFruit", oname, v) end)
+				task.wait(0.2)
+			end
+		end
+	end
+end
+
 function StoreFruit(container)
 	if not container or not container.GetChildren then
 		return
@@ -33758,90 +33717,9 @@ do
 	local FruitGen = getgenv().__FruitGen
 	task.spawn(function()
 		while task.wait(0.5) and getgenv().__FruitGen == FruitGen do
-			pcall(function()
-				if Settings["Random Devil Fruit"] then
-					local playerGui = game:GetService("Players").LocalPlayer:FindFirstChildOfClass("PlayerGui")
-					local spinnerWindow = playerGui and playerGui:FindFirstChild("SpinnerWindow")
-					if not spinnerWindow or not spinnerWindow.Enabled then
-						RandomFruit()
-					else
-						-- GIRO AUTOMATICO QUE FUNCIONA DE VERDADE!
-						getgenv().__SpinOpenedAt = getgenv().__SpinOpenedAt or tick()
-						-- Tenta girar de varios jeitos
-						pcall(function()
-							local ReplicatedStorage = game:GetService("ReplicatedStorage")
-							local CommF = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_")
-							if CommF then
-								CommF:InvokeServer("Cousin", "Spin")
-								CommF:InvokeServer("Zioles", "Spin")
-								CommF:InvokeServer("BloxFruitsGacha", "Spin")
-								CommF:InvokeServer("Cousin", "Roll")
-								CommF:InvokeServer("Gacha", "Spin")
-							end
-						end)
-						pcall(function()
-							local ReplicatedStorage = game:GetService("ReplicatedStorage")
-							local Spinner = nil
-							pcall(function() Spinner = require(ReplicatedStorage.Controllers.UI.Spinner) end)
-							if Spinner then
-								if Spinner.Spin then pcall(function() Spinner:Spin() end) end
-								if Spinner.Roll then pcall(function() Spinner:Roll() end) end
-								if Spinner.Open then pcall(function() Spinner:Open() end) end
-								if Spinner.Start then pcall(function() Spinner:Start() end) end
-							end
-						end)
-						-- Clica nos botoes da UI do SpinnerWindow
-						pcall(function()
-							local playerGui = game:GetService("Players").LocalPlayer:FindFirstChildOfClass("PlayerGui")
-							local win = playerGui and playerGui:FindFirstChild("SpinnerWindow")
-							if win then
-								for _, btn in ipairs(win:GetDescendants()) do
-									if btn:IsA("TextButton") or btn:IsA("ImageButton") then
-										local txt = string.lower(tostring(btn.Text or "") .. tostring(btn.Name or ""))
-										if string.find(txt, "spin") or string.find(txt, "roll") or string.find(txt, "buy") or string.find(txt, "gacha") then
-											pcall(function()
-												for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do
-													conn:Fire()
-												end
-												btn:Activate()
-											end)
-										end
-									end
-								end
-								-- Procura AboveSpinner
-								local above = win:FindFirstChild("AboveSpinner") or win:FindFirstChild("Frame") or win
-								if above then
-									for _, btn in ipairs(above:GetDescendants()) do
-										if btn:IsA("TextButton") then
-											pcall(function()
-												for _, conn in ipairs(getconnections(btn.MouseButton1Click)) do conn:Fire() end
-												btn:Activate()
-											end)
-										end
-									end
-								end
-							end
-						end)
-						-- Mensagem verde SO quando girar! (quando SpinnerWindow aberta)
-						if tick() - getgenv().__SpinOpenedAt > 0.5 and tick() - (getgenv().__LastGreenMsg or 0) > 3 then
-							getgenv().__LastGreenMsg = tick()
-							pcall(function()
-								A.CreateNoti({Title = "Nexora Hub", Desc = "<font color='#00FF00'>Girando... You got a random Blox Fruit!</font>", ShowTime = 4})
-							end)
-						end
-						-- Fecha sozinho apos girar
-						if tick() - getgenv().__SpinOpenedAt > 3 then
-							pcall(function() 
-								local ReplicatedStorage = game:GetService("ReplicatedStorage")
-								local Spinner = require(ReplicatedStorage.Controllers.UI.Spinner)
-								Spinner:Close() 
-							end)
-							pcall(function() spinnerWindow.Enabled = false end)
-							getgenv().__SpinOpenedAt = nil
-						end
-					end
-				end
-			end)
+			if Settings["Random Devil Fruit"] then
+				pcall(RandomFruit)
+			end
 		end
 	end)
 	task.spawn(function()
@@ -33853,6 +33731,7 @@ do
 					local character = player.Character
 					if backpack then pcall(StoreFruit, backpack) end
 					if character then pcall(StoreFruit, character) end
+					pcall(UpdStFruitZyrox)
 				end
 			end
 		end
