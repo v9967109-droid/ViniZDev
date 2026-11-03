@@ -18301,9 +18301,9 @@ do
 				end
 			end)
 		end
-		local goNear = function(part)
+		local goNear = function(part, maxTime)
 			local started = tick()
-			while boss.on and tick() - started < 25 do
+			while boss.on and tick() - started < (maxTime or 25) do
 				local char = plr.Character
 				local hrp = char and char:FindFirstChild("HumanoidRootPart")
 				if not hrp or (hrp.Position - part.Position).Magnitude < 8 then
@@ -18312,6 +18312,9 @@ do
 				pcall(toTarget, part.CFrame)
 				task.wait(0.1)
 			end
+			local char = plr.Character
+			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			return hrp ~= nil and (hrp.Position - part.Position).Magnitude < 12
 		end
 		-- vai ate a porta com toTarget, entra nela e confirma que foi teleportado (>150 studs)
 		local passDoor = function(door)
@@ -18472,27 +18475,43 @@ do
 				notify("NPC da Bruxa nao encontrado na lista de NPCs")
 				return false
 			end
+			-- vai ate a Bruxa com toTarget (procura em workspace.NPCs e, se nao achar, em todo o workspace)
+			local witchPart
 			pcall(function()
-				local folder = workspace:FindFirstChild("NPCs")
 				local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-				local best, bestD
-				if folder and hrp then
-					for _, m in ipairs(folder:GetChildren()) do
-						if string.find(lower(m.Name), "witch", 1, true) then
-							local part = m:FindFirstChild("HumanoidRootPart") or m.PrimaryPart or m:FindFirstChildWhichIsA("BasePart", true)
-							if part then
-								local d = (part.Position - hrp.Position).Magnitude
-								if not bestD or d < bestD then
-									best, bestD = part, d
-								end
+				local bestD
+				local consider = function(m)
+					if m:IsA("Model") and string.find(lower(m.Name), "witch", 1, true) and not m:FindFirstAncestor("Enemies") and not game:GetService("Players"):GetPlayerFromCharacter(m) then
+						local part = m:FindFirstChild("HumanoidRootPart") or m.PrimaryPart or m:FindFirstChildWhichIsA("BasePart", true)
+						if part then
+							local d = hrp and (part.Position - hrp.Position).Magnitude or 0
+							if not bestD or d < bestD then
+								witchPart, bestD = part, d
 							end
 						end
 					end
 				end
-				if best then
-					goNear(best)
+				local folder = workspace:FindFirstChild("NPCs")
+				if folder then
+					for _, m in ipairs(folder:GetChildren()) do
+						consider(m)
+					end
+				end
+				if not witchPart then
+					for _, m in ipairs(workspace:GetDescendants()) do
+						consider(m)
+					end
 				end
 			end)
+			if not witchPart then
+				notify("Bruxa nao encontrada no mapa. Tentando de novo em instantes...")
+				return false
+			end
+			notify("Indo ate a Bruxa...")
+			if not goNear(witchPart, 240) then
+				notify("Nao consegui chegar na Bruxa. Tentando de novo em instantes...")
+				return false
+			end
 			local okCb, result = pcall(npc.DialogueCallback)
 			if not okCb or not result then
 				notify("Dialogo da Bruxa nao abriu")
