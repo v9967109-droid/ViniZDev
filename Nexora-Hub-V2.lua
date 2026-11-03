@@ -18578,6 +18578,94 @@ do
 			return nil
 		end
 
+		-- ===== localizar a Bruxa mesmo estando longe (o mapa so carrega perto do jogador) =====
+		local WITCH_SPOTS = {
+			sea1 = { { "Start Island", Vector3.new(1071.2832, 16.3085976, 1426.86792) }, { "Marine Start", Vector3.new(-2573.3374, 6.88881969, 2046.99817) }, { "Middle Town", Vector3.new(-655.824158, 7.88708115, 1436.67908) }, { "Jungle", Vector3.new(-1249.77222, 11.8870859, 341.356476) }, { "Pirate Village", Vector3.new(-1122.34998, 4.78708982, 3855.91992) }, { "Desert", Vector3.new(1094.14587, 6.47350502, 4192.88721) }, { "Frozen Village", Vector3.new(1198.00928, 27.0074959, -1211.73376) }, { "MarineFord", Vector3.new(-4505.375, 20.687294, 4260.55908) }, { "Colosseum", Vector3.new(-1428.35474, 7.38933945, -3014.37305) }, { "Sky 1st Floor", Vector3.new(-4970.21875, 717.707275, -2622.35449) }, { "Sky 2st Floor", Vector3.new(-4813.0249, 903.708557, -1912.69055) }, { "Sky 3st Floor", Vector3.new(-7952.31006, 5545.52832, -320.704956) }, { "Prison", Vector3.new(4854.16455, 5.68742752, 740.194641) }, { "Magma Village", Vector3.new(-5231.75879, 8.61593437, 8467.87695) }, { "UndeyWater City", Vector3.new(61163.8516, 11.7796879, 1819.78418) }, { "Fountain City", Vector3.new(5132.7124, 4.53632832, 4037.8562) }, { "House Cyborg's", Vector3.new(6262.72559, 71.3003616, 3998.23047) }, { "Shank's Room", Vector3.new(-1442.16553, 29.8788261, -28.3547478) }, { "Mob Island", Vector3.new(-2850.20068, 7.39224768, 5354.99268) } },
+			sea2 = { { "First Spot", Vector3.new(82.9490662, 18.0710983, 2834.98779) }, { "Flamingo Mansion", Vector3.new(-390.096313, 331.886475, 673.464966) }, { "Flamingo Room", Vector3.new(2302.19019, 15.1778421, 663.811035) }, { "Green bit", Vector3.new(-2372.14697, 72.9919434, -3166.51416) }, { "Cafe", Vector3.new(-385.250916, 73.0458984, 297.388397) }, { "Factroy", Vector3.new(430.42569, 210.019623, -432.504791) }, { "Colosseum", Vector3.new(-1836.58191, 44.5890656, 1360.30652) }, { "Ghost Island", Vector3.new(-5571.84424, 195.182297, -795.432922) }, { "Ghost Island 2nd", Vector3.new(-5931.77979, 5.19706631, -1189.6908) }, { "Snow Mountain", Vector3.new(1384.68298, 453.569031, -4990.09766) }, { "Hot and Cold", Vector3.new(-6026.96484, 14.7461271, -5071.96338) }, { "Magma Side", Vector3.new(-5478.39209, 15.9775667, -5246.9126) }, { "Cursed Ship", Vector3.new(902.059143, 124.752518, 33071.8125) }, { "Frosted Island", Vector3.new(5400.40381, 28.21698, -6236.99219) }, { "Forgotten Island", Vector3.new(-3043.31543, 238.881271, -10191.5791) }, { "Usoapp Island", Vector3.new(4748.78857, 8.35370827, 2849.57959) }, { "Raids Low", Vector3.new(-5554.95313, 329.075623, -5930.31396) }, { "Minisky", Vector3.new(-260.358917, 49325.7031, -35259.3008) } },
+			sea3 = { { "Port Town", Vector3.new(-287, 30, 5388) }, { "Room Enma/Yama & Secret Temple", Vector3.new(5247, 7, 1097) }, { "House Hydar Island", Vector3.new(5245, 602, 251) }, { "Great Tree", Vector3.new(2443, 36, -6573) }, { "Castle on the sea", Vector3.new(-5500, 314, -2855) }, { "Mansion", Vector3.new(-12548, 337, -7481) }, { "Floating Turtle", Vector3.new(-10016, 332, -8326) }, { "Haunted Castle", Vector3.new(-9509.34961, 142.130661, 5535.16309) }, { "Peanut Island", Vector3.new(-2131, 38, -10106) }, { "Ice Cream Island", Vector3.new(-950, 59, -10907) }, { "CakeLoaf", Vector3.new(-1762, 38, -11878) }, { "Tiki", Vector3.new(-16204.0810546875, 9.0863618850708, 479.2259521484375) } },
+		}
+		local witchSpots = function()
+			if game.PlaceId == getgenv().CheckPlaceId3 then
+				return WITCH_SPOTS.sea1
+			elseif game.PlaceId == getgenv().CheckPlaceId2 then
+				return WITCH_SPOTS.sea2
+			end
+			return WITCH_SPOTS.sea3
+		end
+		local quickWitch = function()
+			local function pick(m)
+				if m and m:IsA("Model") and string.find(lower(m.Name), "witch", 1, true) and not m:FindFirstAncestor("Enemies") and not game:GetService("Players"):GetPlayerFromCharacter(m) then
+					return m:FindFirstChild("HumanoidRootPart") or m.PrimaryPart or m:FindFirstChildWhichIsA("BasePart", true)
+				end
+			end
+			local folder = workspace:FindFirstChild("NPCs")
+			if folder then
+				for _, m in ipairs(folder:GetChildren()) do
+					local part = pick(m)
+					if part then
+						return part
+					end
+				end
+			end
+			return pick(workspace:FindFirstChild("Witch", true))
+		end
+		getgenv().__WitchPos = getgenv().__WitchPos or {}
+		local rememberWitch = function(part)
+			getgenv().__WitchPos[game.PlaceId] = part.Position
+			return part
+		end
+		-- voa com toTarget ate o ponto; se a Bruxa carregar no caminho, para na hora
+		local travelUntilWitch = function(pos, maxTime)
+			local started = tick()
+			local cf = CFrame.new(pos + Vector3.new(0, 4, 0))
+			while boss.on and tick() - started < maxTime do
+				local found = quickWitch()
+				if found then
+					return found
+				end
+				local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+				if not hrp or (hrp.Position - pos).Magnitude < 60 then
+					break
+				end
+				pcall(toTarget, cf)
+				task.wait(0.1)
+			end
+			task.wait(1.2)
+			return quickWitch()
+		end
+		local findWitchPart = function()
+			local part = quickWitch()
+			if part then
+				return rememberWitch(part)
+			end
+			local mem = getgenv().__WitchPos[game.PlaceId]
+			if mem then
+				notify("Indo para onde a Bruxa estava...")
+				part = travelUntilWitch(mem, 90)
+				if part then
+					return rememberWitch(part)
+				end
+			end
+			local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+			local spots = {}
+			for _, sp in ipairs(witchSpots()) do
+				table.insert(spots, { name = sp[1], pos = sp[2], d = hrp and (sp[2] - hrp.Position).Magnitude or 0 })
+			end
+			table.sort(spots, function(a, b)
+				return a.d < b.d
+			end)
+			for i, sp in ipairs(spots) do
+				if not boss.on then
+					return nil
+				end
+				notify("Procurando a Bruxa: " .. sp.name .. " (" .. i .. "/" .. #spots .. ")")
+				part = travelUntilWitch(sp.pos, 60)
+				if part then
+					return rememberWitch(part)
+				end
+			end
+			return nil
+		end
 		local optLow = function(option)
 			local text = option._text
 			if type(text) == "table" then
@@ -18621,36 +18709,10 @@ do
 				notify("NPC da Bruxa nao encontrado na lista de NPCs")
 				return false
 			end
-			-- vai ate a Bruxa com toTarget (procura em workspace.NPCs e, se nao achar, em todo o workspace)
-			local witchPart
-			pcall(function()
-				local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-				local bestD
-				local consider = function(m)
-					if m:IsA("Model") and string.find(lower(m.Name), "witch", 1, true) and not m:FindFirstAncestor("Enemies") and not game:GetService("Players"):GetPlayerFromCharacter(m) then
-						local part = m:FindFirstChild("HumanoidRootPart") or m.PrimaryPart or m:FindFirstChildWhichIsA("BasePart", true)
-						if part then
-							local d = hrp and (part.Position - hrp.Position).Magnitude or 0
-							if not bestD or d < bestD then
-								witchPart, bestD = part, d
-							end
-						end
-					end
-				end
-				local folder = workspace:FindFirstChild("NPCs")
-				if folder then
-					for _, m in ipairs(folder:GetChildren()) do
-						consider(m)
-					end
-				end
-				if not witchPart then
-					for _, m in ipairs(workspace:GetDescendants()) do
-						consider(m)
-					end
-				end
-			end)
+			-- se estiver longe, voa com toTarget ate onde a Bruxa fica (carrega o mapa no caminho)
+			local witchPart = findWitchPart()
 			if not witchPart then
-				notify("Bruxa nao encontrada no mapa. Tentando de novo em instantes...")
+				notify("Bruxa nao encontrada nas ilhas deste mar. Tentando de novo em instantes...")
 				return false
 			end
 			notify("Indo ate a Bruxa...")
