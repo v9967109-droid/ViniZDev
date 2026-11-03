@@ -11925,7 +11925,7 @@ end
 local UsedualFlock = function()
 	EquipTool(NameWeapon(Settings["Select Weapon"] or "Melee"))
 end
-getgenv().ClickM1 = function()
+local ClickM1 = function()
 	pcall(AttackNoCoolDown)
 end
 	FormatMagnetTime = function(arg)
@@ -18145,64 +18145,80 @@ do
 		local VirtualUser = game:GetService("VirtualUser")
 		local TweenService = game:GetService("TweenService")
 		local isBossName = function(name)
-			name = string.lower(tostring(name or ""))
-			if boss.wantPump and string.find(name, "great pumpkin", 1, true) then
+			local flat = string.gsub(string.lower(tostring(name or "")), "%s+", "")
+			if boss.wantPump and string.find(flat, "greatpumpkin", 1, true) then
 				return true
 			end
 			if not boss.wantWere then
 				return false
 			end
-			return string.find(name, "unbound werewolf", 1, true) or string.find(name, "unbound werewol", 1, true)
-				or string.find(name, "werewolf", 1, true)
-				or string.find(name, "hellfire gas", 1, true)
+			return string.find(flat, "unboundwerewol", 1, true) or string.find(flat, "werewolf", 1, true)
+				or string.find(flat, "hellfiregas", 1, true)
+		end
+		local rootOf = function(model)
+			return model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart", true)
 		end
 		local bossAlive = function(model)
 			if not model or not model.Parent then
 				return false
 			end
 			local hum = model:FindFirstChildOfClass("Humanoid")
-			local root = model:FindFirstChild("HumanoidRootPart")
-			return hum ~= nil and root ~= nil and hum.Health > 0
+			return hum ~= nil and rootOf(model) ~= nil and hum.Health > 0
+		end
+		local matchesBoss = function(mob)
+			if isBossName(mob.Name) then
+				return true
+			end
+			local h = mob:FindFirstChildOfClass("Humanoid")
+			return h ~= nil and isBossName(h.DisplayName)
 		end
 		local findBoss = function()
 			local enemies = workspace:FindFirstChild("Enemies")
 			if enemies then
 				for _, mob in ipairs(enemies:GetChildren()) do
-					if isBossName(mob.Name) and bossAlive(mob) then
+					if matchesBoss(mob) and bossAlive(mob) then
 						return mob
 					end
 				end
 			end
 			for _, mob in ipairs(workspace:GetChildren()) do
-				if mob:IsA("Model") and isBossName(mob.Name) and bossAlive(mob) then
+				if mob:IsA("Model") and matchesBoss(mob) and bossAlive(mob) then
 					return mob
+				end
+			end
+			-- dentro da arena o boss pode estar em outra pasta: varre o mapa (a cada 3s)
+			if boss.inArena and tick() - (boss.deepAt or 0) >= 3 then
+				boss.deepAt = tick()
+				local n = 0
+				for _, d in ipairs(workspace:GetDescendants()) do
+					n = n + 1
+					if n % 5000 == 0 then
+						task.wait()
+					end
+					if d:IsA("Humanoid") and d.Parent and d.Parent:IsA("Model") and d.Health > 0 and matchesBoss(d.Parent) and bossAlive(d.Parent) then
+						return d.Parent
+					end
 				end
 			end
 			return nil
 		end
+		local isArenaBoss = function(model)
+			local h = model:FindFirstChildOfClass("Humanoid")
+			local txt = string.gsub(lower(model.Name .. " " .. (h and h.DisplayName or "")), "%s+", "")
+			return string.find(txt, "hellfire", 1, true) or string.find(txt, "greatpumpkin", 1, true)
+		end
+		-- voa ate o alvo direto com toTarget (sem esperar tween)
 		local flyTo = function(goal)
-			local char = plr.Character
-			local hrp = char and char:FindFirstChild("HumanoidRootPart")
-			if not hrp then
-				return
-			end
-			local dist = (hrp.Position - goal.Position).Magnitude
-			if dist <= 60 then
-				return
-			end
-			applyMovers(char)
-			local time = math.max(dist / (tonumber(getgenv().TweenSpeedFar) or 270), 0.05)
-			local tween = TweenService:Create(hrp, TweenInfo.new(time, Enum.EasingStyle.Linear), { CFrame = goal })
-			local done = false
-			tween.Completed:Connect(function()
-				done = true
-			end)
-			tween:Play()
 			local started = tick()
-			while not done and boss.on and tick() - started < time + 3 do
+			while boss.on and tick() - started < 60 do
+				local char = plr.Character
+				local hrp = char and char:FindFirstChild("HumanoidRootPart")
+				if not hrp or (hrp.Position - goal.Position).Magnitude <= 60 then
+					return
+				end
+				pcall(toTarget, goal)
 				task.wait(0.05)
 			end
-			tween:Cancel()
 		end
 		local click = function()
 			pcall(function()
@@ -18576,6 +18592,7 @@ do
 			_G.HalloweenFarm = true -- libera o ataque rapido do hub enquanto farma
 			notify("Auto Farm Boss ligado. Procurando so: " .. bossWhat() .. "...")
 			boss.inArena, boss.arenaSeen, boss.arenaAt = false, false, 0
+			boss.summonAt, boss.summonWait, boss.pumpAt = 0, 0, 0
 			task.spawn(function()
 				while boss.on do
 					local label = findBreakFree()
@@ -18615,10 +18632,21 @@ do
 				if not hrp then
 					return
 				end
-				local root = target.HumanoidRootPart
+				local root = rootOf(target)
 				local pos = root.Position + Vector3.new(0, tonumber(boss.height) or 25, 0)
 				hrp.CFrame = CFrame.lookAt(pos, root.Position, Vector3.new(0, 0, 1))
 				hrp.AssemblyLinearVelocity = Vector3.zero
+			end)
+			task.spawn(function()
+				while boss.on do
+					local tgt = boss.target
+					if tgt and bossAlive(tgt) then
+						pcall(t9.Equip)
+						pcall(ClickM1, tgt, true)
+						pcall(FastAttackOnce)
+					end
+					task.wait(0.05)
+				end
 			end)
 			task.spawn(function()
 				while boss.on do
@@ -18635,7 +18663,7 @@ do
 							boss.target = findBoss()
 						end
 						local target = boss.target
-						if target and (string.find(lower(target.Name), "hellfire", 1, true) or string.find(lower(target.Name), "great pumpkin", 1, true)) then
+						if target and isArenaBoss(target) then
 							boss.inArena, boss.arenaSeen = true, true
 						end
 						if not target then
@@ -18668,7 +18696,7 @@ do
 								end
 								return
 							end
-							if boss.wantPump and tick() - (boss.pumpAt or 0) >= 4 then
+							if boss.wantPump and tick() - (boss.pumpAt or 0) >= 2 then
 								boss.pumpAt = tick()
 								local crater = findInteractables({ "great pumpkin", "crater" }, nil, nil)
 								if crater[1] then
@@ -18681,9 +18709,10 @@ do
 									task.wait(5)
 									return
 								end
-								if tick() - (boss.summonAt or 0) >= 60 then
+								if tick() - (boss.summonAt or 0) >= (boss.summonWait or 0) then
 									boss.summonAt = tick()
-									summonPumpkin()
+									local talked = summonPumpkin()
+									boss.summonWait = talked and 40 or 5
 									return
 								end
 							end
@@ -18709,7 +18738,7 @@ do
 							return
 						end
 						boss.warned = false
-						local root = target.HumanoidRootPart
+						local root = rootOf(target)
 						local above = CFrame.new(root.Position + Vector3.new(0, tonumber(boss.height) or 25, 0))
 						local prev = boss.target
 						boss.target = nil -- pausa o hover durante o voo
