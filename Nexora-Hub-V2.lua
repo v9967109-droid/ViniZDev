@@ -18207,6 +18207,11 @@ do
 			local txt = string.gsub(lower(model.Name .. " " .. (h and h.DisplayName or "")), "%s+", "")
 			return string.find(txt, "hellfire", 1, true) or string.find(txt, "greatpumpkin", 1, true)
 		end
+		local isPumpkinBoss = function(model)
+			local h = model:FindFirstChildOfClass("Humanoid")
+			local txt = string.gsub(lower(model.Name .. " " .. (h and h.DisplayName or "")), "%s+", "")
+			return string.find(txt, "greatpumpkin", 1, true) ~= nil
+		end
 		-- voa ate o alvo direto com toTarget (sem esperar tween)
 		local flyTo = function(goal)
 			local started = tick()
@@ -18528,47 +18533,72 @@ do
 				notify("Nao consegui chegar na Bruxa. Tentando de novo em instantes...")
 				return false
 			end
-			local okCb, result = pcall(npc.DialogueCallback)
-			if not okCb or not result then
-				notify("Dialogo da Bruxa nao abriu")
+			-- fala com a Bruxa 2 vezes: (1) "Here, take them!" entrega 3 Cursed Pumpkin Seeds + 200 Pumpkin Bits; (2) confirma e o boss nasce
+			local skipWords = { "forget", "esquece", "nevermind", "never mind", "cancel", "bye" }
+			local isSkip = function(option)
+				local t = optLow(option)
+				for _, w in ipairs(skipWords) do
+					if string.find(t, w, 1, true) then
+						return true
+					end
+				end
 				return false
 			end
-			task.spawn(pcall, DC.start, result)
-			local started, picks, seen = tick(), 0, false
-			while boss.on and tick() - started < 25 and picks < 8 do
-				task.wait(0.4)
-				if DC.Active then
-					seen = true
-					local ok, active = pcall(DC.getActiveDialogue)
-					local page = ok and active and active._pageStack and active._pageStack[#active._pageStack]
-					if page then
-						local options = page._options or {}
-						if #options == 0 then
-							pcall(DC.advance)
-						else
-							local words = picks == 0 and { "great pumpkin", "pumpkin" } or { "yes", "confirm", "sure", "continue", "accept", "ok" }
-							local pick = firstOpt(options, words)
-							if not pick then
-								local names = {}
-								for _, o in ipairs(options) do
-									table.insert(names, optLow(o))
+			local talkOnce = function()
+				local okCb, result = pcall(npc.DialogueCallback)
+				if not okCb or not result then
+					return false
+				end
+				task.spawn(pcall, DC.start, result)
+				local started, picks, seen = tick(), 0, false
+				while boss.on and tick() - started < 20 and picks < 6 do
+					task.wait(0.35)
+					if DC.Active then
+						seen = true
+						local ok, active = pcall(DC.getActiveDialogue)
+						local page = ok and active and active._pageStack and active._pageStack[#active._pageStack]
+						if page then
+							local options = page._options or {}
+							if #options == 0 then
+								pcall(DC.advance)
+							else
+								local pick = firstOpt(options, { "here, take them", "take them", "take", "yes", "summon", "confirm", "continue", "accept" })
+								if not pick then
+									for _, o in ipairs(options) do
+										if not isSkip(o) then
+											pick = o
+											break
+										end
+									end
 								end
-								notify("Opcoes da Bruxa: " .. table.concat(names, " | "))
-								break
+								if not pick or isSkip(pick) then
+									break
+								end
+								pcall(DC.select, pick)
+								picks = picks + 1
 							end
-							pcall(DC.select, pick)
-							picks = picks + 1
 						end
+					elseif seen then
+						break
+					elseif tick() - started > 6 then
+						break
 					end
-				elseif seen then
-					break
-				elseif tick() - started > 6 then
+				end
+				pcall(DC.close)
+				return seen and picks > 0
+			end
+			local talks = 0
+			for _ = 1, 2 do
+				if not boss.on then
 					break
 				end
+				if talkOnce() then
+					talks = talks + 1
+				end
+				task.wait(1.2)
 			end
-			pcall(DC.close)
-			notify("Pedi a Great Pumpkin para a Bruxa. Precisa de 3 Cursed Pumpkin Seeds + 200 Pumpkin Bits.")
-			return seen
+			notify("Falei com a Bruxa " .. talks .. "x. Precisa de 3 Cursed Pumpkin Seeds + 200 Pumpkin Bits.")
+			return talks > 0
 		end
 
 		local bossWhat = function()
@@ -18592,6 +18622,7 @@ do
 			_G.HalloweenFarm = true -- libera o ataque rapido do hub enquanto farma
 			notify("Auto Farm Boss ligado. Procurando so: " .. bossWhat() .. "...")
 			boss.inArena, boss.arenaSeen, boss.arenaAt = false, false, 0
+			boss.arenaCenter = nil
 			boss.summonAt, boss.summonWait, boss.pumpAt = 0, 0, 0
 			task.spawn(function()
 				while boss.on do
@@ -18633,6 +18664,11 @@ do
 					return
 				end
 				local root = rootOf(target)
+				if boss.arenaCenter and isPumpkinBoss(target) then
+					hrp.CFrame = CFrame.new(boss.arenaCenter + Vector3.new(0, 3, 0))
+					hrp.AssemblyLinearVelocity = Vector3.zero
+					return
+				end
 				local pos = root.Position + Vector3.new(0, tonumber(boss.height) or 25, 0)
 				hrp.CFrame = CFrame.lookAt(pos, root.Position, Vector3.new(0, 0, 1))
 				hrp.AssemblyLinearVelocity = Vector3.zero
@@ -18641,9 +18677,17 @@ do
 				while boss.on do
 					local tgt = boss.target
 					if tgt and bossAlive(tgt) then
-						pcall(t9.Equip)
-						pcall(ClickM1, tgt, true)
-						pcall(FastAttackOnce)
+						local inRange = true
+						if boss.arenaCenter and isPumpkinBoss(tgt) then
+							local h = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+							local r = rootOf(tgt)
+							inRange = h ~= nil and r ~= nil and (h.Position - r.Position).Magnitude <= 70
+						end
+						if inRange then
+							pcall(t9.Equip)
+							pcall(ClickM1, tgt, true)
+							pcall(FastAttackOnce)
+						end
 					end
 					task.wait(0.05)
 				end
@@ -18666,18 +18710,22 @@ do
 						if target and isArenaBoss(target) then
 							boss.inArena, boss.arenaSeen = true, true
 						end
+						if target and isPumpkinBoss(target) and not boss.arenaCenter then
+							local h0 = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+							boss.arenaCenter = h0 and h0.Position or nil
+						end
 						if not target then
 							if boss.inArena then
 								if not boss.arenaSeen then
-									if tick() - boss.arenaAt > 45 then
+									if tick() - boss.arenaAt > (boss.wantPump and 120 or 45) then
 										boss.inArena = false
-										notify("Hellfire Gas nao apareceu na arena. Saindo...")
+										notify("Boss nao apareceu na arena. Saindo...")
 										exitArena()
 									end
 									task.wait(1)
 									return
 								end
-								notify("Hellfire Gas derrotado. Saindo da arena...")
+								notify("Boss derrotado. Saindo da arena...")
 								task.wait(2)
 								local left = false
 								for _ = 1, 4 do
@@ -18703,6 +18751,10 @@ do
 									notify("Cratera da Great Pumpkin encontrada. Entrando...")
 									if passDoor(crater[1]) then
 										boss.inArena, boss.arenaSeen, boss.arenaAt = true, false, tick()
+										task.wait(1)
+										local hc = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+										boss.arenaCenter = hc and hc.Position or nil
+										notify("Great Pumpkin: aguardando o boss no centro da pedra...")
 										return
 									end
 									notify("Nao consegui entrar na cratera. Tentando de novo...")
@@ -18739,7 +18791,7 @@ do
 						end
 						boss.warned = false
 						local root = rootOf(target)
-						local above = CFrame.new(root.Position + Vector3.new(0, tonumber(boss.height) or 25, 0))
+						local above = (boss.arenaCenter and isPumpkinBoss(target)) and CFrame.new(boss.arenaCenter + Vector3.new(0, 3, 0)) or CFrame.new(root.Position + Vector3.new(0, tonumber(boss.height) or 25, 0))
 						local prev = boss.target
 						boss.target = nil -- pausa o hover durante o voo
 						flyTo(above)
