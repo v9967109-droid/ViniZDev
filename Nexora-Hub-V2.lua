@@ -10537,13 +10537,28 @@ BossDarkbeardSection.CreateToggle(
 	end
 )
 
+getgenv().__FruitSkip = getgenv().__FruitSkip or {}
+getgenv().__FruitTry = getgenv().__FruitTry or {}
+getgenv().__FruitDeep = nil
+getgenv().__FruitDeepScan = 0
+
+-- Ignora uma fruta por alguns segundos (usado quando não dá pra pegar, ex.: mochila cheia)
+function FruitBlacklist(obj, secs)
+	if obj then
+		getgenv().__FruitSkip[obj] = tick() + (secs or 20)
+		getgenv().__FruitTry[obj] = nil
+	end
+end
+
+-- Retorna a fruta MAIS PRÓXIMA que esteja solta no mapa (spawnada ou dropada), em qualquer distância.
 function GetPathFruit()
-	-- OTIMIZADO: Não laga, pega frutas longe, e continua pegando várias
 	local workspaceService = game:GetService("Workspace")
-	local Players = game:GetService("Players")
-	local LocalPlayer = Players.LocalPlayer
+	local LocalPlayer = game:GetService("Players").LocalPlayer
 	local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
 	if not root then return nil end
+
+	local now = tick()
+	local skip = getgenv().__FruitSkip
 
 	local function IsFruitObject(H)
 		if not H then return false end
@@ -10557,42 +10572,63 @@ function GetPathFruit()
 		return false
 	end
 
-	local closest = nil
-	local closestDist = math.huge
-	local closestHandle = nil
+	-- fruta na mão/equipada de algum jogador (dentro de Character com Humanoid) não conta
+	local function IsHeld(obj)
+		local p = obj.Parent
+		while p and p ~= workspaceService do
+			if p:FindFirstChildOfClass("Humanoid") then return true end
+			p = p.Parent
+		end
+		return false
+	end
 
-	-- Só checa filhos diretos do workspace (onde frutas spawnam) - MUITO mais rápido que GetDescendants
+	local best, bestDist = nil, nil
+	local function consider(obj)
+		if not obj or not obj.Parent then return end
+		if skip[obj] then
+			if skip[obj] > now then return end
+			skip[obj] = nil
+		end
+		if IsFruitObject(obj) and not IsHeld(obj) then
+			local d = (obj.Handle.Position - root.Position).Magnitude
+			if not bestDist or d < bestDist then
+				best, bestDist = obj, d
+			end
+		end
+	end
+
+	-- 1) filhos diretos do workspace (onde spawnam e caem as frutas) + 1 nível dentro de pastas
 	for _, obj in ipairs(workspaceService:GetChildren()) do
-		if IsFruitObject(obj) then
-			local handle = obj:FindFirstChild("Handle")
-			if handle then
-				local dist = (handle.Position - root.Position).Magnitude
-				if dist < closestDist then
-					closestDist = dist
-					closest = obj
-					closestHandle = handle
-				end
+		consider(obj)
+		if obj:IsA("Folder") then
+			for _, sub in ipairs(obj:GetChildren()) do
+				consider(sub)
 			end
 		end
 	end
 
-	-- Também checa Tools soltas (frutas dropadas por player às vezes ficam soltas)
-	if not closest then
-		for _, obj in ipairs(workspaceService:GetChildren()) do
+	-- 2) fruta achada antes pela varredura profunda
+	local deep = getgenv().__FruitDeep
+	if deep then
+		if deep.Parent and deep:IsDescendantOf(workspaceService) then
+			consider(deep)
+		else
+			getgenv().__FruitDeep = nil
+		end
+	end
+
+	-- 3) nada achado: varredura profunda (limitada a 1x a cada 8s pra não dar lag)
+	if not best and now - (getgenv().__FruitDeepScan or 0) > 8 then
+		getgenv().__FruitDeepScan = now
+		for _, obj in ipairs(workspaceService:GetDescendants()) do
 			if obj:IsA("Tool") then
-				local handle = obj:FindFirstChild("Handle")
-				if handle and string.find(obj.Name, "-", 1, true) then
-					local dist = (handle.Position - root.Position).Magnitude
-					if dist < closestDist then
-						closestDist = dist
-						closest = obj
-					end
-				end
+				consider(obj)
 			end
 		end
+		getgenv().__FruitDeep = best
 	end
 
-	return closest
+	return best
 end
 
 -- Cache para não ficar escaneando todo frame
@@ -10600,7 +10636,9 @@ getgenv().__LastFruitScan = 0
 getgenv().__CachedFruit = nil
 function GetPathFruitCached()
 	local now = tick()
-	if now - (getgenv().__LastFruitScan or 0) > 0.5 then
+	local cached = getgenv().__CachedFruit
+	local stale = cached and (not cached.Parent or not cached:IsDescendantOf(workspace))
+	if stale or now - (getgenv().__LastFruitScan or 0) > 0.5 then
 		getgenv().__LastFruitScan = now
 		getgenv().__CachedFruit = GetPathFruit()
 	end
@@ -11684,20 +11722,27 @@ task.spawn(function()
 			end
 			
 			if Settings["Teleport To Fruit"] then
-				local y = GetPathFruitCached()
+				-- Pega TODAS as frutas soltas no mapa (spawnadas ou dropadas), uma por vez, da mais próxima pra mais longe.
+				local fruit = GetPathFruitCached()
 				local character = t.Character
 				local root = character and character:FindFirstChild("HumanoidRootPart")
-				local handle = y and y:FindFirstChild("Handle")
-				if not handle and y and y:IsA("BasePart") then handle = y end
-				if y and handle and root then
+				local handle = fruit and (fruit:FindFirstChild("Handle") or (fruit:IsA("BasePart") and fruit) or nil)
+				if fruit and handle and root then
 					StackFarm = false
 					StackFarmOther = false
 					local dist = (handle.Position - root.Position).Magnitude
 					if dist <= 15 then
 						getgenv().noclip = false
-						-- Só aproxima suavemente; não posiciona o personagem diretamente na fruta.
+						-- se ficar muitas tentativas na mesma fruta sem conseguir pegar, ignora ela por 20s e vai pra próxima
+						local tries = (getgenv().__FruitTry[fruit] or 0) + 1
+						getgenv().__FruitTry[fruit] = tries
+						if tries > 8 then
+							FruitBlacklist(fruit, 20)
+						end
 						if dist > 5 then
-							toTarget(handle.CFrame * CFrame.new(0, 2, 0))
+							pcall(function()
+								toTarget(handle.CFrame * CFrame.new(0, 2, 0))
+							end)
 							task.wait(0.15)
 						end
 						task.wait(0.15)
@@ -11707,7 +11752,7 @@ task.spawn(function()
 							firetouchinterest(root, handle, 1)
 						end)
 						pcall(function()
-							for _, pp in ipairs(y:GetDescendants()) do
+							for _, pp in ipairs(fruit:GetDescendants()) do
 								if pp:IsA("ProximityPrompt") then
 									fireproximityprompt(pp)
 								end
@@ -11718,20 +11763,18 @@ task.spawn(function()
 							task.wait(0.1)
 							game:GetService("VirtualInputManager"):SendKeyEvent(false, "Space", false, game)
 						end)
-						-- Limpa cache pra procurar próxima fruta
+						-- força nova busca pra já ir na próxima fruta
 						getgenv().__CachedFruit = nil
 						getgenv().__LastFruitScan = 0
-						-- NÃO dá return, continua procurando próxima fruta
 					else
-						-- Aproximação sempre via toTarget, inclusive acima de 1500 studs.
-						-- Não usa CFrame direto nem teleporte em etapas quando a fruta está longe.
+						-- longe: vai SEMPRE com toTarget, em qualquer distância (sem CFrame direto)
 						getgenv().noclip = true
 						pcall(function()
 							toTarget(handle.CFrame * CFrame.new(0, 3, 0))
 						end)
 					end
 				else
-					-- Nenhuma fruta encontrada, espera um pouco
+					-- nenhuma fruta no mapa agora
 					task.wait(0.5)
 				end
 				if Settings["Teleport To Fruit [ Hop Server ]"] and not GetPathFruitCached() then
