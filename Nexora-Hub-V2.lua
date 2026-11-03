@@ -19160,7 +19160,32 @@ do
 			end
 			return pick
 		end
-		local rollOnce = function()
+		local gachaHooked = false
+		local gachaCapture = { key = nil, on = false }
+		local installGachaHook = function()
+			if gachaHooked then
+				return
+			end
+			local okG, GC = pcall(function()
+				return require(RS.Controllers.GachaClient)
+			end)
+			if not okG or type(GC) ~= "table" then
+				return
+			end
+			gachaHooked = true
+			for _, fname in ipairs({ "CheckGachaAsync", "PurchaseGachaAsync" }) do
+				local orig = GC[fname]
+				if type(orig) == "function" then
+					GC[fname] = function(key, ...)
+						if gachaCapture.on and type(key) == "string" and (fr.strict == false or key ~= "ZiolesGacha") then
+							gachaCapture.key = key
+						end
+						return orig(key, ...)
+					end
+				end
+			end
+		end
+		local rollOnceInner = function()
 			local okDC, DC = pcall(function()
 				return require(RS:WaitForChild("DialogueController", 3))
 			end)
@@ -19176,8 +19201,11 @@ do
 				fruitNotify("NPC invalido: " .. tostring(fr.npc))
 				return false
 			end
+			installGachaHook()
+			gachaCapture.key, gachaCapture.on = nil, true
 			local okCb, result = pcall(npc.DialogueCallback)
 			if not okCb or not result then
+				gachaCapture.on = false
 				fruitNotify("Dialogo nao abriu (" .. tostring(fr.npc) .. ")")
 				return false
 			end
@@ -19210,6 +19238,116 @@ do
 					break
 				end
 			end
+			local rolled = false
+			local waitedKey = 0
+			while fr.on and not giveUp and not gachaCapture.key and waitedKey < 3 do
+				task.wait(0.3)
+				waitedKey = waitedKey + 0.3
+			end
+			gachaCapture.on = false
+			if not gachaCapture.key and seen and not giveUp then
+				pcall(function()
+					local GW = require(RS.Controllers.UI.GachaWindow)
+					local best, other
+					local function scan(t, depth)
+						if type(t) ~= "table" or depth > 2 then
+							return
+						end
+						for _, v in pairs(t) do
+							if type(v) == "string" and #v < 40 and not string.find(v, " ", 1, true) then
+								local low = string.lower(v)
+								if string.find(low, "halloween", 1, true) or string.find(low, "spooky", 1, true) then
+									best = best or v
+								elseif string.find(low, "gacha", 1, true) and (fr.strict == false or v ~= "ZiolesGacha") then
+									other = other or v
+								end
+							elseif type(v) == "table" and v ~= t then
+								scan(v, depth + 1)
+							end
+						end
+					end
+					scan(GW, 0)
+					gachaCapture.key = best or other
+				end)
+			end
+			if not gachaCapture.key and seen and not giveUp then
+				-- ultimo recurso: aperta o botao de girar da propria janela do gacha
+				local clicked = false
+				pcall(function()
+					local pg = plr:FindFirstChildOfClass("PlayerGui")
+					local words = { "spin", "roll", "girar", "rolar", "buy", "comprar" }
+					for _, g in ipairs(pg:GetDescendants()) do
+						if clicked then
+							break
+						end
+						if (g:IsA("TextButton") or g:IsA("ImageButton")) and g.Visible then
+							local inGacha, node = false, g.Parent
+							while node and node ~= pg do
+								if string.find(string.lower(node.Name), "gacha", 1, true) then
+									inGacha = true
+									break
+								end
+								node = node.Parent
+							end
+							if inGacha then
+								local txt = g:IsA("TextButton") and g.Text or ""
+								if txt == "" then
+									for _, c in ipairs(g:GetDescendants()) do
+										if c:IsA("TextLabel") and c.Text ~= "" then
+											txt = c.Text
+											break
+										end
+									end
+								end
+								local low = string.lower(txt)
+								for _, w in ipairs(words) do
+									if string.find(low, w, 1, true) then
+										clicked = true
+										if firesignal then
+											pcall(firesignal, g.MouseButton1Click)
+											pcall(firesignal, g.Activated)
+										end
+										local inset = game:GetService("GuiService"):GetGuiInset()
+										local x = g.AbsolutePosition.X + g.AbsoluteSize.X / 2
+										local y = g.AbsolutePosition.Y + g.AbsoluteSize.Y / 2 + inset.Y
+										vim1:SendMouseButtonEvent(x, y, 0, true, game, 0)
+										vim1:SendMouseButtonEvent(x, y, 0, false, game, 0)
+										fruitNotify("Cliquei no botao: " .. txt)
+										task.wait(2.5)
+										break
+									end
+								end
+							end
+						end
+					end
+				end)
+				if clicked then
+					rolled = true
+				end
+			end
+			if gachaCapture.key then
+				local okG, GC = pcall(function()
+					return require(RS.Controllers.GachaClient)
+				end)
+				if okG then
+					local okP, errP = pcall(GC.PurchaseGachaAsync, gachaCapture.key)
+					if okP and errP ~= false and type(errP) ~= "string" then
+						rolled = true
+						fruitNotify("Girou o gacha: " .. tostring(gachaCapture.key))
+					else
+						fruitNotify("Falha ao girar (" .. tostring(gachaCapture.key) .. "): " .. tostring(errP))
+					end
+				end
+			elseif seen and not giveUp then
+				local keys = {}
+				pcall(function()
+					for k in pairs(require(RS.Controllers.GachaClient)) do
+						table.insert(keys, tostring(k))
+					end
+				end)
+				warn("[Nexora][Halloween Fruit] GachaClient: " .. table.concat(keys, ", "))
+				fruitNotify("A janela do gacha abriu, mas nao descobri qual gacha girar (veja o console F9)")
+			end
 			pcall(DC.close)
 			pcall(function()
 				local GW = require(RS.Controllers.UI.GachaWindow)
@@ -19221,6 +19359,12 @@ do
 				task.wait(15) -- evita spam de notificacao enquanto voce ajusta a palavra
 			end
 			return seen
+		end
+		local rollOnce = function()
+			getgenv().__HalloweenFruitBusy = true
+			local ok, res = pcall(rollOnceInner)
+			getgenv().__HalloweenFruitBusy = false
+			return ok and res
 		end
 		GRP_Fruit:AddDropdown("Halloween_Fruit_NPC", {
 			Text = "NPC (Blox Fruit Gacha)",
@@ -22064,7 +22208,7 @@ do
 
 	task.spawn(function()
 		while task.wait(0.5) and getgenv().__FruitGen == FruitGen do
-			if Settings["Random Devil Fruit"] and okGC then
+			if Settings["Random Devil Fruit"] and okGC and not getgenv().__HalloweenFruitBusy then
 				local okL, errL = pcall(function()
 					if okGW and GachaWindow.IsOpen() then
 						GachaWindow.Close()
