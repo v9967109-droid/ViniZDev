@@ -18536,6 +18536,16 @@ do
 			return seen
 		end
 
+		local bossWhat = function()
+			local what = {}
+			if boss.wantWere then
+				table.insert(what, "Unbound Werewolf / porta do Hellfire Gas")
+			end
+			if boss.wantPump then
+				table.insert(what, "Great Pumpkin")
+			end
+			return table.concat(what, " + ")
+		end
 		local startBoss = function()
 			if boss.on then
 				return
@@ -18545,7 +18555,7 @@ do
 			boss.target = nil
 			boss.prevFarm = _G.HalloweenFarm
 			_G.HalloweenFarm = true -- libera o ataque rapido do hub enquanto farma
-			notify("Auto Farm Halloween Boss ligado. Procurando Unbound Werewolf / porta do Hellfire Gas...")
+			notify("Auto Farm Boss ligado. Procurando so: " .. bossWhat() .. "...")
 			boss.inArena, boss.arenaSeen, boss.arenaAt = false, false, 0
 			task.spawn(function()
 				while boss.on do
@@ -18674,7 +18684,7 @@ do
 							end
 							if not boss.warned then
 								boss.warned = true
-								notify("Procurando Unbound Werewolf / porta do Hellfire Gas...")
+								notify("Procurando so: " .. bossWhat() .. "...")
 							end
 							task.wait(1)
 							return
