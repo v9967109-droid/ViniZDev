@@ -17062,9 +17062,14 @@ local t9 = {
 	Equip = function()
 		local char = plr.Character
 		local hum = char and char:FindFirstChildOfClass("Humanoid")
-		if hum and not char:FindFirstChildOfClass("Tool") then
-			local tool = plr.Backpack:FindFirstChildOfClass("Tool")
-			if tool then hum:EquipTool(tool) end
+		if not hum then return end
+		local cur = char:FindFirstChildOfClass("Tool")
+		if cur and cur.ToolTip == "Melee" then return end
+		for _, tool in ipairs(plr.Backpack:GetChildren()) do
+			if tool:IsA("Tool") and tool.ToolTip == "Melee" then
+				hum:EquipTool(tool)
+				return
+			end
 		end
 	end,
 	Alive = function(mob)
@@ -17074,14 +17079,7 @@ local t9 = {
 	Kill = function(mob)
 		local root = mob and mob:FindFirstChild("HumanoidRootPart")
 		if not root then return end
-		pcall(function()
-			local char = plr.Character
-			local hum = char and char:FindFirstChildOfClass("Humanoid")
-			if hum and not char:FindFirstChildOfClass("Tool") then
-				local tool = plr.Backpack:FindFirstChildOfClass("Tool")
-				if tool then hum:EquipTool(tool) end
-			end
-		end)
+		pcall(function() t9.Equip() end)
 		pcall(BringMob, mob)
 		pcall(toTarget, root.CFrame * CFrame.new(0, 8, 0))
 		pcall(ClickM1, mob)
@@ -17294,23 +17292,24 @@ do
 	local VIM = game:GetService("VirtualInputManager")
 	local equipAttackTool = function()
 		local char = plr.Character
-		if not char or char:FindFirstChildOfClass("Tool") then
+		local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+		if not char or not humanoid then
 			return
 		end
-		pcall(EquipWeapon, _G.SelectWeapon)
-		if char:FindFirstChildOfClass("Tool") then
+		local current = char:FindFirstChildOfClass("Tool")
+		if current and current.ToolTip == "Melee" then
 			return
 		end
-		local humanoid = char:FindFirstChildOfClass("Humanoid")
 		for _, tool in ipairs(plr.Backpack:GetChildren()) do
-			if tool:IsA("Tool") and (tool.ToolTip == "Melee" or tool.ToolTip == "Sword") and humanoid then
+			if tool:IsA("Tool") and tool.ToolTip == "Melee" then
 				pcall(function()
 					humanoid:EquipTool(tool)
 				end)
-				break
+				return
 			end
 		end
 	end
+
 	local hitPumpkin = function(obj, part)
 		local modules = game:GetService("ReplicatedStorage"):FindFirstChild("Modules")
 		local net = modules and modules:FindFirstChild("Net")
@@ -18142,13 +18141,14 @@ do
 	do
 		local boss = { on = false, noclip = nil, hover = nil, target = nil, prevFarm = nil, warned = false, height = 25 }
 		local GRP_Boss = NXH:AddRightGroupbox("Halloween Boss")
-		GRP_Boss:AddLabel("Auto Farm Halloween Boss\nProcura o Unbound Werewolf, fica acima da cabeca dele e ataca com cliques ate matar.")
+		GRP_Boss:AddLabel("Auto Farm Halloween Boss\nUnbound Werewolf e Hellfire Gas: entra na porta, mata o boss, escapa das correntes e sai pelo portal.")
 		local VirtualUser = game:GetService("VirtualUser")
 		local TweenService = game:GetService("TweenService")
 		local isBossName = function(name)
 			name = string.lower(tostring(name or ""))
 			return string.find(name, "unbound werewolf", 1, true) or string.find(name, "unbound werewol", 1, true)
 				or string.find(name, "werewolf", 1, true)
+				or string.find(name, "hellfire gas", 1, true)
 		end
 		local bossAlive = function(model)
 			if not model or not model.Parent then
@@ -18206,6 +18206,185 @@ do
 				VirtualUser:Button1Up(Vector2.new(1280, 672))
 			end)
 		end
+		local lower = string.lower
+		local hasAny = function(text, words)
+			for _, w in ipairs(words) do
+				if string.find(text, w, 1, true) then
+					return true
+				end
+			end
+			return false
+		end
+		local objText = function(inst)
+			local text = ""
+			if inst:IsA("ProximityPrompt") then
+				text = inst.ActionText .. " " .. inst.ObjectText .. " "
+			end
+			local node, depth = inst, 0
+			while node and node ~= workspace and depth < 6 do
+				text = text .. " " .. node.Name
+				node = node.Parent
+				depth = depth + 1
+			end
+			return lower(text)
+		end
+		local partOf = function(inst)
+			if inst:IsA("TouchTransmitter") then
+				return inst.Parent
+			end
+			local node = inst.Parent
+			while node and node ~= workspace do
+				if node:IsA("BasePart") then
+					return node
+				end
+				if node:IsA("Attachment") and node.Parent and node.Parent:IsA("BasePart") then
+					return node.Parent
+				end
+				if node:IsA("Model") then
+					return node.PrimaryPart or node:FindFirstChildWhichIsA("BasePart", true)
+				end
+				node = node.Parent
+			end
+			return nil
+		end
+		local findInteractables = function(words, maxDist, skipWords)
+			local char = plr.Character
+			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			if not hrp then
+				return {}
+			end
+			local list, count = {}, 0
+			for _, inst in ipairs(workspace:GetDescendants()) do
+				count = count + 1
+				if count % 4000 == 0 then
+					task.wait()
+				end
+				if inst:IsA("ProximityPrompt") or inst:IsA("ClickDetector") or inst:IsA("TouchTransmitter") then
+					local text = objText(inst)
+					if hasAny(text, words) and not (skipWords and hasAny(text, skipWords)) and not inst:IsDescendantOf(char) then
+						local part = partOf(inst)
+						if part and part:IsA("BasePart") then
+							local d = (part.Position - hrp.Position).Magnitude
+							if d <= (maxDist or math.huge) then
+								table.insert(list, { inst = inst, part = part, dist = d })
+							end
+						end
+					end
+				end
+			end
+			table.sort(list, function(a, b)
+				return a.dist < b.dist
+			end)
+			return list
+		end
+		local triggerObj = function(door)
+			local inst = door.inst
+			local char = plr.Character
+			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			pcall(function()
+				if inst:IsA("ProximityPrompt") and fireproximityprompt then
+					local old = inst.HoldDuration
+					inst.HoldDuration = 0
+					fireproximityprompt(inst)
+					inst.HoldDuration = old
+				elseif inst:IsA("ClickDetector") and fireclickdetector then
+					fireclickdetector(inst)
+				elseif inst:IsA("TouchTransmitter") and firetouchinterest and hrp then
+					firetouchinterest(hrp, door.part, 0)
+					firetouchinterest(hrp, door.part, 1)
+				end
+			end)
+		end
+		local goNear = function(part)
+			local started = tick()
+			while boss.on and tick() - started < 25 do
+				local char = plr.Character
+				local hrp = char and char:FindFirstChild("HumanoidRootPart")
+				if not hrp or (hrp.Position - part.Position).Magnitude < 8 then
+					break
+				end
+				pcall(toTarget, part.CFrame)
+				task.wait(0.1)
+			end
+		end
+		-- vai ate a porta com toTarget, entra nela e confirma que foi teleportado (>150 studs)
+		local passDoor = function(door)
+			local char = plr.Character
+			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			if not hrp then
+				return false
+			end
+			local from = hrp.Position
+			goNear(door.part)
+			for _ = 1, 6 do
+				if not boss.on then
+					return false
+				end
+				triggerObj(door)
+				local waited = 0
+				while waited < 1.5 do
+					task.wait(0.25)
+					waited = waited + 0.25
+					local h = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+					if h and (h.Position - from).Magnitude > 150 then
+						return true
+					end
+				end
+				pcall(toTarget, door.part.CFrame)
+			end
+			return false
+		end
+		local entryWords = { "hellfire", "helldoor", "hell door", "hell portal" }
+		local entrySkip = { "knock", "trick", "treat", "nobody" }
+		local exitWords = { "portal", "exit", "leave", "return", "door", "gate", "hellfire" }
+		local exitArena = function()
+			local list = findInteractables(exitWords, 600, entrySkip)
+			for i = 1, math.min(#list, 3) do
+				if not boss.on then
+					return false
+				end
+				if passDoor(list[i]) then
+					return true
+				end
+			end
+			return false
+		end
+		-- correntes do Hellfire Gas: aparece "BREAK FREE!" e precisa clicar/Space ate soltar
+		local isShown = function(obj)
+			local node = obj
+			while node and node ~= game do
+				if node:IsA("GuiObject") and not node.Visible then
+					return false
+				end
+				if node:IsA("ScreenGui") and not node.Enabled then
+					return false
+				end
+				node = node.Parent
+			end
+			return true
+		end
+		local findBreakFree = function()
+			local c = boss.bfLabel
+			if c and c.Parent and c.Text ~= "" and isShown(c) then
+				return c
+			end
+			if tick() - (boss.bfScan or 0) < 0.4 then
+				return nil
+			end
+			boss.bfScan, boss.bfLabel = tick(), nil
+			local pg = plr:FindFirstChildOfClass("PlayerGui")
+			if not pg then
+				return nil
+			end
+			for _, g in ipairs(pg:GetDescendants()) do
+				if (g:IsA("TextLabel") or g:IsA("TextButton")) and g.Text ~= "" and string.find(lower(g.Text), "break free", 1, true) and isShown(g) then
+					boss.bfLabel = g
+					return g
+				end
+			end
+			return nil
+		end
+
 		local startBoss = function()
 			if boss.on then
 				return
@@ -18215,7 +18394,27 @@ do
 			boss.target = nil
 			boss.prevFarm = _G.HalloweenFarm
 			_G.HalloweenFarm = true -- libera o ataque rapido do hub enquanto farma
-			notify("Auto Farm Halloween Boss ligado. Procurando o Unbound Werewolf...")
+			notify("Auto Farm Halloween Boss ligado. Procurando Unbound Werewolf / porta do Hellfire Gas...")
+			boss.inArena, boss.arenaSeen, boss.arenaAt = false, false, 0
+			task.spawn(function()
+				while boss.on do
+					local label = findBreakFree()
+					if label then
+						pcall(function()
+							vim1:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+							vim1:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+							local inset = game:GetService("GuiService"):GetGuiInset()
+							local ap, as = label.AbsolutePosition, label.AbsoluteSize
+							local x, y = ap.X + as.X / 2, ap.Y + as.Y / 2 + inset.Y
+							vim1:SendMouseButtonEvent(x, y, 0, true, game, 0)
+							vim1:SendMouseButtonEvent(x, y, 0, false, game, 0)
+						end)
+						task.wait(0.04)
+					else
+						task.wait(0.2)
+					end
+				end
+			end)
 			boss.noclip = RunService.Stepped:Connect(function()
 				local char = plr.Character
 				if boss.target and char then
@@ -18256,12 +18455,58 @@ do
 							boss.target = findBoss()
 						end
 						local target = boss.target
+						if target and string.find(lower(target.Name), "hellfire", 1, true) then
+							boss.inArena, boss.arenaSeen = true, true
+						end
 						if not target then
+							if boss.inArena then
+								if not boss.arenaSeen then
+									if tick() - boss.arenaAt > 45 then
+										boss.inArena = false
+										notify("Hellfire Gas nao apareceu na arena. Saindo...")
+										exitArena()
+									end
+									task.wait(1)
+									return
+								end
+								notify("Hellfire Gas derrotado. Saindo da arena...")
+								task.wait(2)
+								local left = false
+								for _ = 1, 4 do
+									if not boss.on then
+										break
+									end
+									if exitArena() then
+										left = true
+										break
+									end
+									task.wait(2)
+								end
+								boss.inArena, boss.arenaSeen = false, false
+								if not left then
+									notify("Nao achei o portal de saida. Saia manualmente.")
+								end
+								return
+							end
+							if tick() - (boss.scanAt or 0) >= 4 then
+								boss.scanAt = tick()
+								local list = findInteractables(entryWords, nil, entrySkip)
+								if list[1] then
+									notify("Porta do Hellfire Gas encontrada. Entrando...")
+									if passDoor(list[1]) then
+										boss.inArena, boss.arenaSeen, boss.arenaAt = true, false, tick()
+										return
+									end
+									notify("Nao consegui entrar na porta. Tentando de novo...")
+									task.wait(5)
+									return
+								end
+							end
 							if not boss.warned then
 								boss.warned = true
-								notify("Unbound Werewolf nao encontrado. Fico procurando...")
+								notify("Procurando Unbound Werewolf / porta do Hellfire Gas...")
 							end
-							task.wait(2)
+							task.wait(1)
 							return
 						end
 						boss.warned = false
@@ -18283,6 +18528,7 @@ do
 		end
 		local stopBoss = function()
 			boss.on = false
+			boss.inArena, boss.arenaSeen = false, false
 			boss.target = nil
 			if boss.hover then
 				boss.hover:Disconnect()
