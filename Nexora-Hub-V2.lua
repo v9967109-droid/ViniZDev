@@ -18146,6 +18146,12 @@ do
 		local TweenService = game:GetService("TweenService")
 		local isBossName = function(name)
 			name = string.lower(tostring(name or ""))
+			if boss.wantPump and string.find(name, "great pumpkin", 1, true) then
+				return true
+			end
+			if not boss.wantWere then
+				return false
+			end
 			return string.find(name, "unbound werewolf", 1, true) or string.find(name, "unbound werewol", 1, true)
 				or string.find(name, "werewolf", 1, true)
 				or string.find(name, "hellfire gas", 1, true)
@@ -18316,7 +18322,7 @@ do
 			end
 			local from = hrp.Position
 			goNear(door.part)
-			for _ = 1, 6 do
+			for _ = 1, 10 do
 				if not boss.on then
 					return false
 				end
@@ -18337,6 +18343,44 @@ do
 		local entryWords = { "hellfire", "helldoor", "hell door", "hell portal" }
 		local entrySkip = { "knock", "trick", "treat", "nobody" }
 		local exitWords = { "portal", "exit", "leave", "return", "door", "gate", "hellfire" }
+		-- porta do Hellfire Gas = porta normal de Trick or Treat "coberta de chamas" (efeito de fogo no modelo)
+		local doorWords = { "knock", "trick", "treat", "halloween", "door" }
+		local isBurning = function(inst)
+			local model = inst:FindFirstAncestorOfClass("Model")
+			local root = model or inst.Parent
+			if not root then
+				return false
+			end
+			local n = 0
+			for _, d in ipairs(root:GetDescendants()) do
+				n = n + 1
+				if n > 300 then
+					break
+				end
+				if d:IsA("Fire") and d.Enabled then
+					return true
+				end
+				if d:IsA("ParticleEmitter") and d.Enabled then
+					local nm = lower(d.Name)
+					if string.find(nm, "fire", 1, true) or string.find(nm, "flame", 1, true) or string.find(nm, "hell", 1, true) then
+						return true
+					end
+				end
+			end
+			return false
+		end
+		local findEntryDoors = function()
+			local out = {}
+			for _, d in ipairs(findInteractables(doorWords, nil, nil)) do
+				if isBurning(d.inst) then
+					table.insert(out, d)
+				end
+			end
+			if #out == 0 then
+				out = findInteractables(entryWords, nil, entrySkip)
+			end
+			return out
+		end
 		local exitArena = function()
 			local list = findInteractables(exitWords, 600, entrySkip)
 			for i = 1, math.min(#list, 3) do
@@ -18383,6 +18427,113 @@ do
 				end
 			end
 			return nil
+		end
+
+		local optLow = function(option)
+			local text = option._text
+			if type(text) == "table" then
+				text = table.concat(text, " ")
+			end
+			return lower(tostring(text))
+		end
+		local firstOpt = function(options, words)
+			for _, word in ipairs(words) do
+				for _, option in ipairs(options) do
+					if string.find(optLow(option), word, 1, true) then
+						return option
+					end
+				end
+			end
+		end
+		-- fala com a Bruxa e escolhe "I want to fight The Great Pumpkin" (3 Cursed Pumpkin Seeds + 200 Pumpkin Bits)
+		local summonPumpkin = function()
+			local RS = game:GetService("ReplicatedStorage")
+			local okNL, NpcList = pcall(function()
+				return require(RS.NPCManager.NPCList)
+			end)
+			local okDC, DC = pcall(function()
+				return require(RS:WaitForChild("DialogueController", 3))
+			end)
+			if not (okNL and okDC and DC and type(NpcList) == "table" and type(NpcList.List) == "table") then
+				notify("Dialogo da bruxa indisponivel (NPCList / DialogueController)")
+				return false
+			end
+			if DC.Active then
+				return false
+			end
+			local npc
+			for name, data in pairs(NpcList.List) do
+				if string.find(lower(tostring(name)), "witch", 1, true) then
+					npc = data
+					break
+				end
+			end
+			if not npc or type(npc.DialogueCallback) ~= "function" then
+				notify("NPC da Bruxa nao encontrado na lista de NPCs")
+				return false
+			end
+			pcall(function()
+				local folder = workspace:FindFirstChild("NPCs")
+				local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+				local best, bestD
+				if folder and hrp then
+					for _, m in ipairs(folder:GetChildren()) do
+						if string.find(lower(m.Name), "witch", 1, true) then
+							local part = m:FindFirstChild("HumanoidRootPart") or m.PrimaryPart or m:FindFirstChildWhichIsA("BasePart", true)
+							if part then
+								local d = (part.Position - hrp.Position).Magnitude
+								if not bestD or d < bestD then
+									best, bestD = part, d
+								end
+							end
+						end
+					end
+				end
+				if best then
+					goNear(best)
+				end
+			end)
+			local okCb, result = pcall(npc.DialogueCallback)
+			if not okCb or not result then
+				notify("Dialogo da Bruxa nao abriu")
+				return false
+			end
+			task.spawn(pcall, DC.start, result)
+			local started, picks, seen = tick(), 0, false
+			while boss.on and tick() - started < 25 and picks < 8 do
+				task.wait(0.4)
+				if DC.Active then
+					seen = true
+					local ok, active = pcall(DC.getActiveDialogue)
+					local page = ok and active and active._pageStack and active._pageStack[#active._pageStack]
+					if page then
+						local options = page._options or {}
+						if #options == 0 then
+							pcall(DC.advance)
+						else
+							local words = picks == 0 and { "great pumpkin", "pumpkin" } or { "yes", "confirm", "sure", "continue", "accept", "ok" }
+							local pick = firstOpt(options, words)
+							if not pick then
+								local names = {}
+								for _, o in ipairs(options) do
+									table.insert(names, optLow(o))
+								end
+								notify("Opcoes da Bruxa: " .. table.concat(names, " | "))
+								break
+							end
+							pcall(DC.select, pick)
+							picks = picks + 1
+						end
+					end
+				elseif seen then
+					break
+				elseif tick() - started > 6 then
+					break
+				end
+			end
+			pcall(DC.close)
+			notify("Pedi a Great Pumpkin para a Bruxa. Precisa de 3 Cursed Pumpkin Seeds + 200 Pumpkin Bits.")
+			return seen
 		end
 
 		local startBoss = function()
@@ -18455,7 +18606,7 @@ do
 							boss.target = findBoss()
 						end
 						local target = boss.target
-						if target and string.find(lower(target.Name), "hellfire", 1, true) then
+						if target and (string.find(lower(target.Name), "hellfire", 1, true) or string.find(lower(target.Name), "great pumpkin", 1, true)) then
 							boss.inArena, boss.arenaSeen = true, true
 						end
 						if not target then
@@ -18488,11 +18639,30 @@ do
 								end
 								return
 							end
-							if tick() - (boss.scanAt or 0) >= 4 then
+							if boss.wantPump and tick() - (boss.pumpAt or 0) >= 4 then
+								boss.pumpAt = tick()
+								local crater = findInteractables({ "great pumpkin", "crater" }, nil, nil)
+								if crater[1] then
+									notify("Cratera da Great Pumpkin encontrada. Entrando...")
+									if passDoor(crater[1]) then
+										boss.inArena, boss.arenaSeen, boss.arenaAt = true, false, tick()
+										return
+									end
+									notify("Nao consegui entrar na cratera. Tentando de novo...")
+									task.wait(5)
+									return
+								end
+								if tick() - (boss.summonAt or 0) >= 60 then
+									boss.summonAt = tick()
+									summonPumpkin()
+									return
+								end
+							end
+							if boss.wantWere and tick() - (boss.scanAt or 0) >= 4 then
 								boss.scanAt = tick()
-								local list = findInteractables(entryWords, nil, entrySkip)
+								local list = findEntryDoors()
 								if list[1] then
-									notify("Porta do Hellfire Gas encontrada. Entrando...")
+									notify("Porta em chamas encontrada. Abrindo e entrando no portal...")
 									if passDoor(list[1]) then
 										boss.inArena, boss.arenaSeen, boss.arenaAt = true, false, tick()
 										return
@@ -18553,16 +18723,31 @@ do
 		})
 		GRP_Boss:AddToggle("Auto_Farm_Halloween_Boss", {
 			Text = "Auto Farm Halloween Boss",
-			Tooltip = "Procura o Unbound Werewolf, fica acima dele e ataca com cliques ate matar",
+			Tooltip = "Werewolf e Hellfire Gas",
 			Default = false,
 			Callback = function(value)
-				if value then
+				boss.wantWere = value and true or false
+				if boss.wantWere or boss.wantPump then
 					startBoss()
 				else
 					stopBoss()
 				end
 			end
 		})
+		GRP_Boss:AddToggle("Auto_Farm_Great_Pumpkin", {
+			Text = "Auto Farm Great Pumpkin (Boss Secreto)",
+			Tooltip = "Invoca com a Bruxa, entra na cratera e mata a Great Pumpkin",
+			Default = false,
+			Callback = function(value)
+				boss.wantPump = value and true or false
+				if boss.wantWere or boss.wantPump then
+					startBoss()
+				else
+					stopBoss()
+				end
+			end
+		})
+		GRP_Boss:AddLabel("Great Pumpkin: se a cratera ja estiver aberta, entra direto. Senao fala com a Bruxa (3 Cursed Pumpkin Seeds + 200 Pumpkin Bits).")
 	end
 	do
 		local RS = game:GetService("ReplicatedStorage")
