@@ -11767,26 +11767,48 @@ task.spawn(function()
 						getgenv().__CachedFruit = nil
 						getgenv().__LastFruitScan = 0
 					else
-						-- longe: vai SEMPRE com toTarget, em qualquer distância (sem CFrame direto)
+						-- longe: voa até a fruta com TWEEN (TweenService), em qualquer distância
 						getgenv().noclip = true
 						if getgenv().__FruitLogged ~= fruit then
 							getgenv().__FruitLogged = fruit
 							warn("[Nexora] Teleport To Fruit: indo até " .. tostring(fruit.Name) .. " (" .. math.floor(dist) .. " studs)")
 						end
-						-- toTarget reinicia o tween a cada chamada com destino diferente; chamar todo frame
-						-- cancelava o movimento antes de andar. Só chama de novo se não há tween rodando,
-						-- se a fruta mudou ou se ela se moveu mais de 6 studs.
 						local goal = handle.CFrame * CFrame.new(0, 3, 0)
 						local lastGoal = getgenv().__FruitGoal
-						local running = TweenManager and TweenManager.TweenRunning
+						local tw = getgenv().__FruitTween
+						local running = tw and tw.PlaybackState == Enum.PlaybackState.Playing
+						-- só cria um tween novo se não há um rodando, se a fruta mudou ou se ela se moveu mais de 6 studs
 						if (not running) or getgenv().__FruitGoalObj ~= fruit or (not lastGoal)
 							or (lastGoal.Position - goal.Position).Magnitude > 6 then
-							getgenv().__FruitGoal = goal
-							getgenv().__FruitGoalObj = fruit
+							if tw then
+								pcall(function() tw:Cancel() end)
+							end
 							pcall(function()
-								toTarget(goal)
+								if TweenManager and TweenManager.CancelTweenOnly then TweenManager.CancelTweenOnly() end
+							end)
+							pcall(function()
+								if not root:FindFirstChild("FloatForce") then
+									local bv = Instance.new("BodyVelocity")
+									bv.Name = "FloatForce"
+									bv.Velocity = Vector3.new(0, 0, 0)
+									bv.MaxForce = Vector3.new(100000, 100000, 100000)
+									bv.P = 10000
+									bv.Parent = root
+								end
+								local speed = math.clamp(tonumber(Settings["Speed Tween "]) or 220, 50, 220)
+								local dur = math.max((goal.Position - root.Position).Magnitude / speed, 0.05)
+								local newTw = game:GetService("TweenService"):Create(
+									root,
+									TweenInfo.new(dur, Enum.EasingStyle.Linear),
+									{ CFrame = goal }
+								)
+								getgenv().__FruitTween = newTw
+								getgenv().__FruitGoal = goal
+								getgenv().__FruitGoalObj = fruit
+								newTw:Play()
 							end)
 						end
+						root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 						task.wait(0.1)
 					end
 				else
@@ -11801,6 +11823,9 @@ task.spawn(function()
 					HopServer()
 					task.wait(5)
 				end
+			elseif getgenv().__FruitTween then
+				pcall(function() getgenv().__FruitTween:Cancel() end)
+				getgenv().__FruitTween = nil
 			end
 			if not StackFarm then
 				StackFarm = true
