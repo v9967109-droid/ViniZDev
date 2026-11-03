@@ -17173,87 +17173,70 @@ do
 		end
 		return best, bestObj
 	end
-	local jackRange, nearRange = 150, 60
+	local jackRange, nearRange = 3000, 60 -- nearRange ainda e usado no Trick or Treat
+	local isJack = function(mob)
+		return mob.Name == "Jack o' Lantern"
+			or mob.Name == "PumpkinHead"
+			or mob.Name == "PumpkinSnowman"
+			or string.find(string.lower(mob.Name), "^jack o") ~= nil
+			or mob:FindFirstChild("PumpkinHead") ~= nil
+	end
 	local nearbyMonster = function(hrp)
+		if _G.HalloweenKillJack == false then
+			return nil
+		end
 		local enemies = workspace:FindFirstChild("Enemies")
 		if not enemies then
 			return nil
 		end
-		local jack, jackDist, near, nearDist = nil, jackRange, nil, nearRange
+		local jack, jackDist = nil, jackRange
 		for _, mob in ipairs(enemies:GetChildren()) do
-			local root = mob:FindFirstChild("HumanoidRootPart")
-			if root and t9.Alive(mob) then
-				local dist = (root.Position - hrp.Position).Magnitude
-				if string.find(string.lower(mob.Name), "jack") then
+			local skippedAt = mob:GetAttribute("ZyroxSkip")
+			if isJack(mob) and not (skippedAt and tick() - skippedAt < 20) then
+				local root = mob:FindFirstChild("HumanoidRootPart")
+				if root and t9.Alive(mob) then
+					local dist = (root.Position - hrp.Position).Magnitude
 					if dist < jackDist then
 						jack, jackDist = mob, dist
 					end
-				elseif dist < nearDist then
-					near, nearDist = mob, dist
 				end
 			end
 		end
-		if _G.HalloweenKillJack ~= false and jack then
-			return jack
-		end
-		return near
+		return jack
 	end
-	local huntWindow = function()
-		local window = tonumber(_G.HalloweenCooldown) or 5
-		local started = tick()
+	local killSpawned = function()
+		local char = plr.Character
+		local hrp = char and char:FindFirstChild("HumanoidRootPart")
+		local mob = hrp and nearbyMonster(hrp)
+		if not mob then
+			return false
+		end
+		local previous = _G.HalloweenFarm
 		clearMovers()
 		_G.HalloweenFarm = true -- libera o ataque rapido e o _tp do hub enquanto luta
 		pcall(function()
-			while state.on and tick() - started < window do
-				local char = plr.Character
-				local hrp = char and char:FindFirstChild("HumanoidRootPart")
-				local mob = hrp and nearbyMonster(hrp)
-				if mob then
-					local fightStart, lastHp, since = tick(), nil, tick()
-					while state.on and mob.Parent and mob:FindFirstChildOfClass("Humanoid") and mob.Humanoid.Health > 0
-						and tick() - fightStart < 30 do
-						task.wait()
-						t9.Kill(mob, true)
-						local hp = mob.Humanoid.Health
-						if lastHp ~= hp then
-							lastHp, since = hp, tick()
-						elseif tick() - since > 12 then
-							mob:SetAttribute("ZyroxSkip", tick())
-							break
-						end
-					end
-					break -- matou (ou desistiu): segue para a proxima abobora
+			local fightStart, lastHp, since = tick(), nil, tick()
+			while state.on and mob.Parent and mob:FindFirstChildOfClass("Humanoid") and mob.Humanoid.Health > 0
+				and tick() - fightStart < 30 do
+				task.wait()
+				t9.Kill(mob, true)
+				local hp = mob.Humanoid.Health
+				if lastHp ~= hp then
+					lastHp, since = hp, tick()
+				elseif tick() - since > 12 then
+					mob:SetAttribute("ZyroxSkip", tick())
+					break
 				end
-				task.wait(0.15)
 			end
 		end)
-		_G.HalloweenFarm = false
-		task.wait(0.1)
+		_G.HalloweenFarm = previous
 		pcall(function()
-			local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-			if hrp and hrp:FindFirstChild("BodyClip") then
-				hrp.BodyClip:Destroy()
+			local root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+			if root and root:FindFirstChild("BodyClip") then
+				root.BodyClip:Destroy()
 			end
 		end)
-	end
-	local flyTo = function(hrp, goal)
-		local speed = tonumber(getgenv().TweenSpeedFar) or 270
-		local dist = (hrp.Position - goal.Position).Magnitude
-		local time = math.max(dist / speed, 0.05)
-		local tween = game:GetService("TweenService"):Create(hrp, TweenInfo.new(time, Enum.EasingStyle.Linear), { CFrame = goal })
-		local done = false
-		tween.Completed:Connect(function()
-			done = true
-		end)
-		tween:Play()
-		local started = tick()
-		while not done and state.on and tick() - started < time + 2 do
-			if state.current and not state.current:IsDescendantOf(workspace) then
-				break
-			end
-			task.wait(0.05)
-		end
-		tween:Cancel()
+		return true
 	end
 	local collectDist = 8 -- studs: perto o bastante pra coletar sem teleportar de novo
 	local pumpkinPart = function(obj)
@@ -17269,22 +17252,39 @@ do
 		return obj:FindFirstChild("HumanoidRootPart", true) or obj:FindFirstChildWhichIsA("BasePart", true)
 	end
 	local pumpkinHealth = function(obj)
-		local humanoid = obj:FindFirstChildOfClass("Humanoid")
+		local humanoid = obj:FindFirstChildWhichIsA("Humanoid", true)
 		if humanoid then
 			return humanoid.Health
 		end
-		local value = obj:FindFirstChild("Health")
+		local attr = obj:GetAttribute("Health")
+		if type(attr) == "number" then
+			return attr
+		end
+		local value = obj:FindFirstChild("Health", true)
 		if value and value:IsA("ValueBase") and tonumber(value.Value) then
 			return tonumber(value.Value)
 		end
 		return nil
 	end
+	local deadKeys = { "Collected", "Taken", "Dead", "Defeated", "Killed", "Destroyed", "Broken", "Claimed", "Completed" }
 	local pumpkinDead = function(obj)
 		if not obj or not obj.Parent or not obj:IsDescendantOf(workspace) then
 			return true
 		end
-		if obj:GetAttribute("Collected") or obj:GetAttribute("Taken") then
+		local part = pumpkinPart(obj)
+		if part and (not part.Parent or not part:IsDescendantOf(workspace)) then
 			return true
+		end
+		for _, inst in ipairs({ obj, part }) do
+			for _, key in ipairs(deadKeys) do
+				if inst:GetAttribute(key) then
+					return true
+				end
+			end
+			local attrHp = inst:GetAttribute("Health")
+			if type(attrHp) == "number" and attrHp <= 0 then
+				return true
+			end
 		end
 		local hp = pumpkinHealth(obj)
 		return hp ~= nil and hp <= 0
@@ -17292,24 +17292,23 @@ do
 	local VIM = game:GetService("VirtualInputManager")
 	local equipAttackTool = function()
 		local char = plr.Character
-		local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-		if not char or not humanoid then
+		if not char or char:FindFirstChildOfClass("Tool") then
 			return
 		end
-		local current = char:FindFirstChildOfClass("Tool")
-		if current and current.ToolTip == "Melee" then
+		pcall(t9.Equip)
+		if char:FindFirstChildOfClass("Tool") then
 			return
 		end
+		local humanoid = char:FindFirstChildOfClass("Humanoid")
 		for _, tool in ipairs(plr.Backpack:GetChildren()) do
-			if tool:IsA("Tool") and tool.ToolTip == "Melee" then
+			if tool:IsA("Tool") and (tool.ToolTip == "Melee" or tool.ToolTip == "Sword") and humanoid then
 				pcall(function()
 					humanoid:EquipTool(tool)
 				end)
-				return
+				break
 			end
 		end
 	end
-
 	local hitPumpkin = function(obj, part)
 		local modules = game:GetService("ReplicatedStorage"):FindFirstChild("Modules")
 		local net = modules and modules:FindFirstChild("Net")
@@ -17340,9 +17339,32 @@ do
 			VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
 		end)
 	end
+	local flyTo = function(hrp, obj)
+		local speed = math.max(tonumber(getgenv().TweenSpeedFar) or 270, 50)
+		local started = tick()
+		while state.on and tick() - started < 20 do
+			local part = pumpkinPart(obj)
+			if not part or not hrp.Parent or pumpkinDead(obj) then
+				break
+			end
+			local goalPos = part.Position + Vector3.new(0, 5, 0)
+			local delta = goalPos - hrp.Position
+			local dist = delta.Magnitude
+			if dist <= 8 then
+				hrp.CFrame = CFrame.new(goalPos)
+				break
+			end
+			local dt = math.min(RunService.Heartbeat:Wait(), 0.1)
+			hrp.CFrame = CFrame.new(hrp.Position + delta.Unit * math.min(dist, speed * dt))
+			hrp.AssemblyLinearVelocity = Vector3.zero
+		end
+	end
 	local fightPumpkin = function(obj)
 		local started, lastHit = tick(), 0
 		local lastHp, hpSince = nil, tick()
+		local lastJackCheck = 0
+		local nearSince = nil
+		local sideDir = nil -- lado de onde chegou (fixo durante a luta, evita ficar girando em volta)
 		while state.on do
 			if pumpkinDead(obj) then
 				return true
@@ -17356,14 +17378,26 @@ do
 			if not hrp or not part then
 				return false
 			end
-			local goal = CFrame.new(part.Position + Vector3.new(0, 5, 0))
-			if (hrp.Position - part.Position).Magnitude > 12 then
-				applyMovers(char)
-				if _G.HalloweenTween then
-					flyTo(hrp, goal)
-				else
-					hrp.CFrame = goal
+			if tick() - lastJackCheck >= 0.3 then
+				lastJackCheck = tick()
+				if nearbyMonster(hrp) then
+					return "jack"
 				end
+			end
+			if not sideDir then
+				local d = Vector3.new(hrp.Position.X - part.Position.X, 0, hrp.Position.Z - part.Position.Z)
+				sideDir = d.Magnitude > 0.1 and d.Unit or Vector3.new(0, 0, 1)
+			end
+			local standPos = part.Position + sideDir * (tonumber(_G.HalloweenStandDist) or 1)
+			state.face = part.Position
+			local goal = CFrame.lookAt(standPos, Vector3.new(part.Position.X, standPos.Y, part.Position.Z))
+			if _G.HalloweenTween then
+				clearMovers()
+				pcall(toTarget, goal)
+				hrp.AssemblyLinearVelocity = Vector3.zero
+			elseif (hrp.Position - part.Position).Magnitude > 12 then
+				applyMovers(char)
+				hrp.CFrame = goal
 			else
 				clearMovers()
 				hrp.CFrame = goal
@@ -17373,7 +17407,9 @@ do
 				lastHit = tick()
 				equipAttackTool()
 				hitPumpkin(obj, part)
-				clickPumpkin()
+				if _G.HalloweenClick ~= false then
+					clickPumpkin()
+				end
 			end
 			local hp = pumpkinHealth(obj)
 			if hp then
@@ -17381,6 +17417,15 @@ do
 					lastHp, hpSince = hp, tick()
 				elseif tick() - hpSince > 15 then
 					return false
+				end
+			else
+				if (hrp.Position - part.Position).Magnitude <= 15 then
+					nearSince = nearSince or tick()
+					if tick() - nearSince > 8 then
+						return false
+					end
+				else
+					nearSince = nil
 				end
 			end
 			task.wait(0.05)
@@ -17392,7 +17437,20 @@ do
 		fightPumpkin = function(obj)
 			local previous = _G.HalloweenFarm
 			_G.HalloweenFarm = true
+			state.face = nil
+			local faceConn = RunService.RenderStepped:Connect(function()
+				local char = plr.Character
+				local root = char and char:FindFirstChild("HumanoidRootPart")
+				local face = state.face
+				if root and face then
+					pcall(function()
+						root.CFrame = CFrame.lookAt(root.Position, Vector3.new(face.X, root.Position.Y, face.Z))
+					end)
+				end
+			end)
 			local ok, res = pcall(fightPumpkinRaw, obj)
+			faceConn:Disconnect()
+			state.face = nil
 			_G.HalloweenFarm = previous
 			return ok and res or false
 		end
@@ -17431,6 +17489,9 @@ do
 					if not hrp or not hum or hum.Health <= 0 then
 						return
 					end
+					if killSpawned() then
+						return
+					end
 					local _, obj = nearestPumpkin(hrp)
 					if not obj then
 						clearMovers()
@@ -17441,15 +17502,22 @@ do
 						return
 					end
 					state.current, state.currentAt = obj, tick()
-					local killed = fightPumpkin(obj)
+					local result = fightPumpkin(obj)
 					state.current = nil
 					clearMovers()
+					if result == "jack" then
+						return -- nao marca a abobora como pulada; o proximo ciclo mata o Jack e depois volta
+					end
 					state.skip[obj] = true
-					if killed then
-						huntWindow()
+					local extra = tonumber(_G.HalloweenCooldown) or 0
+					if result == true and extra > 0 then
+						local t0 = tick()
+						while state.on and tick() - t0 < extra do
+							task.wait(0.1)
+						end
 					end
 				end)
-				task.wait(0.2)
+				task.wait(0.05)
 			end
 		end)
 	end
@@ -17463,7 +17531,7 @@ do
 	end
 	GRP_Halloween:AddToggle("Halloween_Tween_Pumpkin", {
 		Text = "Tween Pumpkin",
-		Tooltip = "Voa ate as aboboras (usa o Tween Speed) em vez de teleportar",
+		Tooltip = "Usa o tween do hub (toTarget, mesmo dos outros farms / Tween Speed) para ir ate as aboboras em vez de teleportar",
 		Default = false,
 		Callback = function(value)
 			_G.HalloweenTween = value
@@ -17471,20 +17539,77 @@ do
 	})
 	GRP_Halloween:AddToggle("Halloween_Kill_Jack", {
 		Text = "Kill Jack O Lantern",
-		Tooltip = "Depois de cada abobora, mata o Jack (ou o que estiver muito perto) com ataque rapido",
+		Tooltip = "Mata so Jack o' Lantern / PumpkinHead / PumpkinSnowman assim que spawnarem (volta pra eles antes da proxima abobora)",
 		Default = true,
 		Callback = function(value)
 			_G.HalloweenKillJack = value
 		end
 	})
 	GRP_Halloween:AddSlider({
-		Text = "Cooldown entre aboboras (s)",
-		Min = 2,
-		Max = 10,
-		Default = 5,
+		Text = "Espera extra entre aboboras (s)",
+		Min = 0,
+		Max = 5,
+		Default = 0,
 		Rounding = 0,
 		Callback = function(value)
 			_G.HalloweenCooldown = value
+		end
+	})
+	do
+		local noAnimConn, charConn
+		local stopSwing = function(track)
+			pcall(function()
+				if track.Looped then
+					return
+				end
+				local priority = track.Priority
+				if priority == Enum.AnimationPriority.Action
+					or priority == Enum.AnimationPriority.Action2
+					or priority == Enum.AnimationPriority.Action3
+					or priority == Enum.AnimationPriority.Action4 then
+					track:Stop(0)
+				end
+			end)
+		end
+		local hook = function(char)
+			if noAnimConn then
+				noAnimConn:Disconnect()
+				noAnimConn = nil
+			end
+			local humanoid = char and char:WaitForChild("Humanoid", 5)
+			local animator = humanoid and (humanoid:FindFirstChildOfClass("Animator") or humanoid:WaitForChild("Animator", 5))
+			if animator then
+				noAnimConn = animator.AnimationPlayed:Connect(stopSwing)
+			end
+		end
+		GRP_Halloween:AddToggle("Halloween_No_Anim", {
+			Text = "No Attack Animation",
+			Tooltip = "Remove a animacao de balancar a arma/golpe (tambem para outras animacoes de ataque enquanto ligado)",
+			Default = false,
+			Callback = function(value)
+				if charConn then
+					charConn:Disconnect()
+					charConn = nil
+				end
+				if noAnimConn then
+					noAnimConn:Disconnect()
+					noAnimConn = nil
+				end
+				if value then
+					task.spawn(hook, plr.Character)
+					charConn = plr.CharacterAdded:Connect(function(char)
+						hook(char)
+					end)
+				end
+			end
+		})
+	end
+	GRP_Halloween:AddToggle("Halloween_Auto_Click", {
+		Text = "Auto Click",
+		Tooltip = "Clica com a arma (swing) junto dos remotes de dano. Desligue se a abobora morrer sem precisar.",
+		Default = true,
+		Callback = function(value)
+			_G.HalloweenClick = value
 		end
 	})
 	GRP_Halloween:AddToggle("Auto_Collect_Pumpkin", {
@@ -18562,9 +18687,16 @@ do
 							if #options == 0 then
 								pcall(DC.advance)
 							else
-								local pick = firstOpt(options, { "here, take them", "take them", "take", "yes", "summon", "confirm", "continue", "accept" })
-								if not pick then
-									for _, o in ipairs(options) do
+								local clean = {}
+								for _, o in ipairs(options) do
+									local t = optLow(o)
+									if not string.find(t, "craft", 1, true) and not string.find(t, "potion", 1, true) then
+										table.insert(clean, o)
+									end
+								end
+								local pick = firstOpt(clean, { "here, take them", "take them", "great pumpkin", "pumpkin", "curse", "summon", "fight", "boss", "yes", "confirm", "continue", "accept" })
+								if not pick and picks > 0 then
+									for _, o in ipairs(clean) do
 										if not isSkip(o) then
 											pick = o
 											break
@@ -18572,6 +18704,11 @@ do
 									end
 								end
 								if not pick or isSkip(pick) then
+									local names = {}
+									for _, o in ipairs(options) do
+										table.insert(names, optLow(o))
+									end
+									notify("Opcoes da Bruxa: " .. table.concat(names, " | "))
 									break
 								end
 								pcall(DC.select, pick)
