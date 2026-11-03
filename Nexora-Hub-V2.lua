@@ -11769,12 +11769,32 @@ task.spawn(function()
 					else
 						-- longe: vai SEMPRE com toTarget, em qualquer distância (sem CFrame direto)
 						getgenv().noclip = true
-						pcall(function()
-							toTarget(handle.CFrame * CFrame.new(0, 3, 0))
-						end)
+						if getgenv().__FruitLogged ~= fruit then
+							getgenv().__FruitLogged = fruit
+							warn("[Nexora] Teleport To Fruit: indo até " .. tostring(fruit.Name) .. " (" .. math.floor(dist) .. " studs)")
+						end
+						-- toTarget reinicia o tween a cada chamada com destino diferente; chamar todo frame
+						-- cancelava o movimento antes de andar. Só chama de novo se não há tween rodando,
+						-- se a fruta mudou ou se ela se moveu mais de 6 studs.
+						local goal = handle.CFrame * CFrame.new(0, 3, 0)
+						local lastGoal = getgenv().__FruitGoal
+						local running = TweenManager and TweenManager.TweenRunning
+						if (not running) or getgenv().__FruitGoalObj ~= fruit or (not lastGoal)
+							or (lastGoal.Position - goal.Position).Magnitude > 6 then
+							getgenv().__FruitGoal = goal
+							getgenv().__FruitGoalObj = fruit
+							pcall(function()
+								toTarget(goal)
+							end)
+						end
+						task.wait(0.1)
 					end
 				else
 					-- nenhuma fruta no mapa agora
+					if getgenv().__FruitLogged ~= "none" and not fruit then
+						getgenv().__FruitLogged = "none"
+						warn("[Nexora] Teleport To Fruit: nenhuma fruta encontrada no workspace")
+					end
 					task.wait(0.5)
 				end
 				if Settings["Teleport To Fruit [ Hop Server ]"] and not GetPathFruitCached() then
