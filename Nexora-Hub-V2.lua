@@ -17994,8 +17994,18 @@ do
 			task.defer(setNoAnim, true)
 		end
 	end
+	-- Save próprio ("Halloween Auto Click"): antes o nome era "Auto Click" e dividia a mesma chave
+	-- salva com o Auto Click do Farm, que voltava ligado e clicava na tela ao reentrar.
+	do
+		local savedClick = NxSettings["Halloween Auto Click"]
+		if type(savedClick) == "boolean" then
+			_G.HalloweenClick = savedClick
+		else
+			_G.HalloweenClick = true
+		end
+	end
 	GRP_Halloween:AddToggle("Halloween_Auto_Click", {
-		Text = "Auto Click",
+		Text = "Halloween Auto Click",
 		Tooltip = "Clica com a arma (swing) junto dos remotes de dano. Desligue se a abobora morrer sem precisar.",
 		Default = true,
 		Callback = function(value)
