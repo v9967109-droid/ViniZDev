@@ -2167,10 +2167,59 @@ function Nexora.CreateMain(config)
     end
     lbl(top, string.upper(SUBTITLE), UDim2.new(0, 170, 0, 20), UDim2.new(0, 110, 0, 60), 11, C.muted, Enum.Font.Code)
 
-    local minimizeBtn = button(top, "—", UDim2.fromOffset(42, 42), UDim2.new(1, -100, 0, 18))
-    minimizeBtn.TextSize = 20
-    local closeBtn = button(top, "×", UDim2.fromOffset(42, 42), UDim2.new(1, -52, 0, 18))
-    closeBtn.TextSize = 25
+    -- Controles da janela: cápsula com dois botões redondos (minimizar = âmbar, fechar = vermelho),
+    -- ícones desenhados com barras (nítidos em qualquer tela), brilho no hover e "afundar" ao tocar.
+    local minimizeBtn, closeBtn
+    do
+        local controls = make("Frame", {
+            Name = "Controls", BackgroundColor3 = Color3.fromRGB(6, 12, 24), BorderSizePixel = 0,
+            Position = UDim2.new(1, -106, 0, 17), Size = UDim2.fromOffset(96, 44),
+        }, top)
+        corner(controls, 22)
+        stroke(controls, C.stroke, 0.1, 1)
+        local function controlButton(centerX, tint, symbolColor, kind)
+            local b = make("TextButton", {
+                Name = kind, AutoButtonColor = false, Text = "", BackgroundColor3 = tint, BackgroundTransparency = .86,
+                BorderSizePixel = 0, AnchorPoint = Vector2.new(.5, .5), Position = UDim2.new(0, centerX, .5, 0),
+                Size = UDim2.fromOffset(34, 34),
+            }, controls)
+            corner(b, 17)
+            local st = stroke(b, tint, .55, 1)
+            local sc = make("UIScale", {Scale = 1}, b)
+            local marks = {}
+            local function bar(rot)
+                local f = make("Frame", {
+                    AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5),
+                    Size = UDim2.fromOffset(kind == "min" and 12 or 15, 2.5), BackgroundColor3 = symbolColor,
+                    BorderSizePixel = 0, Rotation = rot,
+                }, b)
+                corner(f, 2)
+                marks[#marks + 1] = f
+            end
+            if kind == "min" then bar(0) else bar(45); bar(-45) end
+            local hoverBg = kind == "close" and .08 or .5
+            local hoverSym = kind == "close" and Color3.new(1, 1, 1) or Color3.fromRGB(255, 222, 140)
+            local function go(bgT, strokeT, symCol, scl)
+                TweenService:Create(b, TweenInfo.new(.14), {BackgroundTransparency = bgT}):Play()
+                TweenService:Create(st, TweenInfo.new(.14), {Transparency = strokeT}):Play()
+                TweenService:Create(sc, TweenInfo.new(.14, Enum.EasingStyle.Quad), {Scale = scl}):Play()
+                for _, m in ipairs(marks) do
+                    TweenService:Create(m, TweenInfo.new(.14), {BackgroundColor3 = symCol}):Play()
+                end
+            end
+            b.MouseEnter:Connect(function() go(hoverBg, .15, hoverSym, 1.1) end)
+            b.MouseLeave:Connect(function() go(.86, .55, symbolColor, 1) end)
+            b.MouseButton1Down:Connect(function() go(hoverBg, .05, hoverSym, .88) end)
+            b.MouseButton1Up:Connect(function() go(hoverBg, .15, hoverSym, 1.1) end)
+            -- no toque não existe "sair do hover": volta ao normal logo depois do clique
+            b.MouseButton1Click:Connect(function()
+                task.delay(.2, function() go(.86, .55, symbolColor, 1) end)
+            end)
+            return b
+        end
+        minimizeBtn = controlButton(26, Color3.fromRGB(255, 184, 64), Color3.fromRGB(255, 205, 100), "min")
+        closeBtn = controlButton(70, Color3.fromRGB(255, 82, 92), Color3.fromRGB(255, 118, 128), "close")
+    end
 
     -- Abas no topo (rolagem horizontal, porque o hub tem muitas páginas).
     local tabStrip = make("ScrollingFrame", {
@@ -2237,14 +2286,70 @@ function Nexora.CreateMain(config)
     -- ScreenGui separado: o botão fica fora da janela e não some junto com a UI (nem com o keybind Toggle GUI).
     local floatGui = make("ScreenGui", {Name = "NexoraFloat", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 999, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
     local reopen = make("ImageButton", {
-        Name = "NexoraFloatingButton", AutoButtonColor = false, BackgroundColor3 = C.panel2, BorderSizePixel = 0,
-        Image = TOGGLE_IMG, ScaleType = Enum.ScaleType.Fit, Size = UDim2.fromOffset(54, 54), ZIndex = 100,
+        Name = "NexoraFloatingButton", AutoButtonColor = false, BackgroundColor3 = Color3.fromRGB(7, 14, 28), BorderSizePixel = 0,
+        Image = TOGGLE_IMG, ScaleType = Enum.ScaleType.Fit, Size = UDim2.fromOffset(58, 58), ZIndex = 100,
     }, floatGui)
-    if TOGGLE_IMG == "" then nexoraLogo(reopen, 40) end
+    if TOGGLE_IMG == "" then nexoraLogo(reopen, 42) end
     reopen:SetAttribute("NexoraKeepColor", true)
-    corner(reopen, 18)
-    stroke(reopen, C.blue, 0.1, 1.5)
+    corner(reopen, 29)
     local fScale = make("UIScale", {Scale = 1}, reopen)
+    -- Visual: anel degradê girando, pulso chamando atenção enquanto a UI está fechada, bolinha de status e zoom no hover.
+    do
+        local ringStroke = stroke(reopen, Color3.new(1, 1, 1), 0, 2.5)
+        local ringGrad = make("UIGradient", {
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, C.blue2), ColorSequenceKeypoint.new(.5, Color3.fromRGB(0, 55, 140)),
+                ColorSequenceKeypoint.new(1, C.blue2),
+            }),
+            Rotation = 0,
+        }, ringStroke)
+        pcall(function()
+            TweenService:Create(ringGrad, TweenInfo.new(3.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Rotation = 360}):Play()
+        end)
+
+        local pulse = make("Frame", {
+            Name = "Pulse", AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = UDim2.fromScale(1, 1),
+            BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 99,
+        }, reopen)
+        make("UICorner", {CornerRadius = UDim.new(.5, 0)}, pulse)
+        local pulseStroke = stroke(pulse, C.blue2, 1, 2)
+        task.spawn(function()
+            while floatGui.Parent do
+                if not gui.Enabled or not shell.Visible then
+                    pulse.Size = UDim2.fromScale(1, 1)
+                    pulseStroke.Transparency = .35
+                    local info = TweenInfo.new(1.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+                    TweenService:Create(pulse, info, {Size = UDim2.fromScale(1.55, 1.55)}):Play()
+                    TweenService:Create(pulseStroke, info, {Transparency = 1}):Play()
+                    task.wait(1.9)
+                else
+                    pulseStroke.Transparency = 1
+                    task.wait(.3)
+                end
+            end
+        end)
+
+        local dot = make("Frame", {
+            Name = "Status", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -1, 0, 1), Size = UDim2.fromOffset(14, 14),
+            BackgroundColor3 = Color3.fromRGB(110, 125, 150), BorderSizePixel = 0, ZIndex = 102,
+        }, reopen)
+        corner(dot, 7)
+        stroke(dot, Color3.fromRGB(7, 14, 28), 0, 2)
+        local function refreshDot()
+            local open = gui.Enabled and shell.Visible
+            TweenService:Create(dot, TweenInfo.new(.2), {BackgroundColor3 = open and Color3.fromRGB(70, 220, 120) or Color3.fromRGB(110, 125, 150)}):Play()
+        end
+        shell:GetPropertyChangedSignal("Visible"):Connect(refreshDot)
+        gui:GetPropertyChangedSignal("Enabled"):Connect(refreshDot)
+        refreshDot()
+
+        reopen.MouseEnter:Connect(function()
+            TweenService:Create(fScale, TweenInfo.new(.15, Enum.EasingStyle.Quad), {Scale = 1.1}):Play()
+        end)
+        reopen.MouseLeave:Connect(function()
+            TweenService:Create(fScale, TweenInfo.new(.15, Enum.EasingStyle.Quad), {Scale = 1}):Play()
+        end)
+    end
     local function bounceFloat()
         TweenService:Create(fScale, TweenInfo.new(.08), {Scale = .8}):Play()
         task.delay(.08, function() TweenService:Create(fScale, TweenInfo.new(.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play() end)
@@ -2392,14 +2497,12 @@ function Nexora.CreateMain(config)
     end)
 
     -- ============================ REDIMENSIONAR A JANELA ============================
-    -- Segure (≈0,35s) a borda direita (largura), a de baixo (altura) ou o canto inferior direito (os dois) e arraste.
-    -- A barra azul só aparece enquanto está segurando. Passar o dedo/mouse rápido pela borda não redimensiona.
-    -- Toque duplo no canto inferior direito volta ao tamanho original.
+    -- Uma única barra azul no centro da borda de baixo, sempre visível e por cima de todo o conteúdo da janela.
+    -- Só redimensiona (largura e altura) quando você segura e arrasta ESSA barra; as bordas da janela não fazem
+    -- nada. Toque duplo na barra volta ao tamanho original.
     do
         local MIN_W, MIN_H = 600, 360
-        local HOLD_TIME, MOVE_TOLERANCE = 0.35, 12
-        local mode, startIn, startW, startH, startPos
-        local pendingId, pendingMode, pressPos, pendingPos = 0, nil, nil, nil
+        local resizing, startIn, startW, startH, startPos = false, nil, nil, nil, nil
         local lastTap = 0
         local function limits()
             local cam = workspace.CurrentCamera
@@ -2407,41 +2510,23 @@ function Nexora.CreateMain(config)
             local sc = math.max(scale.Scale, 0.05)
             return sc, math.max(MIN_W, (vp.X - 16) / sc), math.max(MIN_H, (vp.Y - 16) / sc)
         end
-        local function grip(name, anchor, pos, size)
-            return make("Frame", {
-                Name = name, AnchorPoint = anchor, Position = pos, Size = size,
-                BackgroundTransparency = 1, BorderSizePixel = 0, Active = true, ZIndex = 60,
-            }, shell)
-        end
-        -- barras azuis: nascem invisíveis e só aparecem enquanto a borda está sendo segurada
-        local function pill(parent, size)
-            local f = make("Frame", {
-                AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = size,
-                BackgroundColor3 = C.blue2, BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 61,
-            }, parent)
-            corner(f, 3)
-            return f
-        end
-        local rightGrip = grip("ResizeRight", Vector2.new(1, 0), UDim2.new(1, 2, 0, HEADER_H), UDim2.new(0, 12, 1, -(HEADER_H + 44)))
-        local bottomGrip = grip("ResizeBottom", Vector2.new(0, 1), UDim2.new(0, SIDEBAR_W, 1, 2), UDim2.new(1, -(SIDEBAR_W + 44), 0, 12))
-        local cornerGrip = grip("ResizeCorner", Vector2.new(1, 1), UDim2.new(1, 2, 1, 2), UDim2.fromOffset(36, 36))
-        local rightPill = pill(rightGrip, UDim2.fromOffset(4, 56))
-        local bottomPill = pill(bottomGrip, UDim2.fromOffset(56, 4))
-        local mark = lbl(cornerGrip, "◢", UDim2.new(1, -8, 1, -8), UDim2.fromOffset(0, 0), 20, C.blue2, Enum.Font.GothamBold)
-        mark.TextXAlignment = Enum.TextXAlignment.Right
-        mark.TextYAlignment = Enum.TextYAlignment.Bottom
-        mark.TextTransparency = 1
-        mark.ZIndex = 61
-
-        local function fade(obj, prop, value)
+        -- Barra no centro da borda de baixo (fica longe do canto, dos controles do celular e do conteúdo).
+        local handle = make("Frame", {
+            Name = "ResizeHandle", AnchorPoint = Vector2.new(.5, 1), Position = UDim2.new(.5, 0, 1, -2),
+            Size = UDim2.fromOffset(140, 30), BackgroundTransparency = 1, BorderSizePixel = 0, Active = true,
+            Visible = true, ZIndex = 500,
+        }, shell)
+        local bar = make("Frame", {
+            Name = "Bar", AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = UDim2.fromOffset(90, 8),
+            BackgroundColor3 = Color3.fromRGB(0, 140, 255), BackgroundTransparency = .15, BorderSizePixel = 0,
+            Visible = true, ZIndex = 501,
+        }, handle)
+        corner(bar, 4)
+        stroke(bar, Color3.fromRGB(255, 255, 255), .6, 1)
+        local function fade(value)
             pcall(function()
-                TweenService:Create(obj, TweenInfo.new(.12), {[prop] = value}):Play()
+                TweenService:Create(bar, TweenInfo.new(.12), {BackgroundTransparency = value}):Play()
             end)
-        end
-        local function showHint(m, on)
-            if m == "right" or m == "corner" then fade(rightPill, "BackgroundTransparency", on and .3 or 1) end
-            if m == "bottom" or m == "corner" then fade(bottomPill, "BackgroundTransparency", on and .3 or 1) end
-            if m == "corner" then fade(mark, "TextTransparency", on and 0 or 1) end
         end
         local function isPress(input)
             return input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch
@@ -2452,65 +2537,33 @@ function Nexora.CreateMain(config)
             -- a janela é ancorada no centro: desloca meia diferença para o canto superior esquerdo ficar parado
             shell.Position = UDim2.new(basePos.X.Scale, basePos.X.Offset + (w - baseW) * sc / 2, basePos.Y.Scale, basePos.Y.Offset + (h - baseH) * sc / 2)
         end
-        -- Começa a contar o "segurar": só depois de HOLD_TIME parado a borda entra em modo de redimensionar.
-        local function begin(m, input)
+        handle.InputBegan:Connect(function(input)
             if animating or not isPress(input) then return end
-            pendingId = pendingId + 1
-            local id = pendingId
-            pendingMode, pressPos, pendingPos = m, input.Position, input.Position
-            task.delay(HOLD_TIME, function()
-                if id ~= pendingId or not pendingMode or mode then return end
-                mode, startIn = pendingMode, pendingPos
-                startW, startH, startPos = shell.Size.X.Offset, shell.Size.Y.Offset, shell.Position
-                showHint(mode, true)
-            end)
-        end
-        local function finish()
-            pendingId = pendingId + 1
-            pendingMode = nil
-            if mode then
-                showHint(mode, false)
-                mode = nil
-                pcall(function() getgenv().NexoraUISize = {w = shell.Size.X.Offset, h = shell.Size.Y.Offset} end)
-            end
-        end
-        rightGrip.InputBegan:Connect(function(i) begin("right", i) end)
-        bottomGrip.InputBegan:Connect(function(i) begin("bottom", i) end)
-        cornerGrip.InputBegan:Connect(function(i)
-            if animating or not isPress(i) then return end
             if tick() - lastTap < 0.35 then
-                lastTap = 0
-                finish()
+                lastTap, resizing = 0, false
                 setSize(W, H, shell.Position, shell.Size.X.Offset, shell.Size.Y.Offset)
                 pcall(function() getgenv().NexoraUISize = nil end)
-            else
-                lastTap = tick()
-                begin("corner", i)
+                return
             end
+            lastTap = tick()
+            resizing, startIn = true, input.Position
+            startW, startH, startPos = shell.Size.X.Offset, shell.Size.Y.Offset, shell.Position
+            fade(0)
         end)
         UIS.InputChanged:Connect(function(input)
+            if not resizing then return end
             if not (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
                 return
             end
-            if mode then
-                local sc, maxW, maxH = limits()
-                local d = input.Position - startIn
-                local w, h = startW, startH
-                if mode ~= "bottom" then w = startW + d.X / sc end
-                if mode ~= "right" then h = startH + d.Y / sc end
-                setSize(math.clamp(w, MIN_W, maxW), math.clamp(h, MIN_H, maxH), startPos, startW, startH)
-            elseif pendingMode then
-                pendingPos = input.Position
-                -- mexeu antes de completar o "segurar": era só um deslize, cancela
-                if (input.Position - pressPos).Magnitude > MOVE_TOLERANCE then
-                    pendingId = pendingId + 1
-                    pendingMode = nil
-                end
-            end
+            local sc, maxW, maxH = limits()
+            local d = input.Position - startIn
+            setSize(math.clamp(startW + d.X / sc, MIN_W, maxW), math.clamp(startH + d.Y / sc, MIN_H, maxH), startPos, startW, startH)
         end)
         UIS.InputEnded:Connect(function(input)
-            if isPress(input) then
-                finish()
+            if resizing and isPress(input) then
+                resizing = false
+                fade(0.15)
+                pcall(function() getgenv().NexoraUISize = {w = shell.Size.X.Offset, h = shell.Size.Y.Offset} end)
             end
         end)
         -- Reaplica o tamanho escolhido se a UI for executada de novo na mesma sessão.
