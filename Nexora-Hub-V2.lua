@@ -2118,7 +2118,17 @@ function Nexora.CreateMain(config)
         Size = UDim2.fromOffset(W, H), BackgroundColor3 = C.bg, BorderSizePixel = 0,
     }, gui)
     corner(shell, 24)
-    stroke(shell, C.blue, 0.12, 1.5)
+    local shellStroke = stroke(shell, Color3.new(1, 1, 1), 0, 2.5)
+    local shellGrad = make("UIGradient", {
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, C.blue2), ColorSequenceKeypoint.new(.5, Color3.fromRGB(0, 55, 140)),
+            ColorSequenceKeypoint.new(1, C.blue2),
+        }),
+        Rotation = 0,
+    }, shellStroke)
+    pcall(function()
+        TweenService:Create(shellGrad, TweenInfo.new(3.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Rotation = 360}):Play()
+    end)
     gradient(shell, Color3.fromRGB(8, 15, 29), Color3.fromRGB(3, 7, 14), 35)
     local scale = make("UIScale", {Scale = 1}, shell)
 
@@ -2144,19 +2154,9 @@ function Nexora.CreateMain(config)
     corner(top, 22)
     gradient(top, Color3.fromRGB(10, 21, 39), Color3.fromRGB(5, 10, 20), 0)
 
-    local logoBox = make("Frame", {Name = "LogoBox", BackgroundColor3 = C.panel2, BorderSizePixel = 0, Position = UDim2.new(0, 16, 0, 15), Size = UDim2.fromOffset(76, 74)}, top)
-    corner(logoBox, 17)
-    stroke(logoBox, C.stroke, 0.1)
-    if LOGO ~= "" then
-        make("ImageLabel", {
-            Name = "Logo", BackgroundTransparency = 1, Image = LOGO, ScaleType = Enum.ScaleType.Fit,
-            Size = UDim2.new(1, -16, 1, -16), Position = UDim2.fromOffset(8, 8),
-        }, logoBox)
-    else
-        nexoraLogo(logoBox, 58)
-    end
+    -- (ícone removido do cabeçalho: fica só o nome)
 
-    local titleLbl = lbl(top, "", UDim2.new(0, 170, 0, 36), UDim2.new(0, 108, 0, 22), 24, C.white, Enum.Font.Arcade)
+    local titleLbl = lbl(top, "", UDim2.new(0, 260, 0, 36), UDim2.new(0, 24, 0, 22), 24, C.white, Enum.Font.Arcade)
     titleLbl.RichText = true
     local tUp = string.upper(TITLE)
     local first, rest = string.match(tUp, "^(%S+)%s+(.+)$")
@@ -2165,7 +2165,7 @@ function Nexora.CreateMain(config)
     else
         titleLbl.Text = '<font color="#FFFFFF">' .. tUp .. '</font>'
     end
-    lbl(top, string.upper(SUBTITLE), UDim2.new(0, 170, 0, 20), UDim2.new(0, 110, 0, 60), 11, C.muted, Enum.Font.Code)
+    lbl(top, SUBTITLE, UDim2.new(0, 260, 0, 20), UDim2.new(0, 26, 0, 60), 11, C.muted, Enum.Font.Code)
 
     -- Controles da janela: cápsula com dois botões redondos (minimizar = âmbar, fechar = vermelho),
     -- ícones desenhados com barras (nítidos em qualquer tela), brilho no hover e "afundar" ao tocar.
@@ -2504,28 +2504,53 @@ function Nexora.CreateMain(config)
         local MIN_W, MIN_H = 600, 360
         local resizing, startIn, startW, startH, startPos = false, nil, nil, nil, nil
         local lastTap = 0
+        local SIZE_FILE = "NexoraHub_UISize.json"
+        local function saveSize(w, h)
+            pcall(function()
+                if w and h then getgenv().NexoraUISize = {w = w, h = h} else getgenv().NexoraUISize = nil end
+                if writefile then
+                    writefile(SIZE_FILE, (w and h) and game:GetService("HttpService"):JSONEncode({w = math.floor(w), h = math.floor(h)}) or "")
+                end
+            end)
+        end
+        local function loadSize()
+            local saved
+            pcall(function()
+                if readfile and isfile and isfile(SIZE_FILE) then
+                    local raw = readfile(SIZE_FILE)
+                    if raw and raw ~= "" then saved = game:GetService("HttpService"):JSONDecode(raw) end
+                end
+            end)
+            if not (saved and saved.w and saved.h) then saved = getgenv().NexoraUISize end
+            return saved
+        end
         local function limits()
             local cam = workspace.CurrentCamera
             local vp = cam and cam.ViewportSize or Vector2.new(1280, 720)
             local sc = math.max(scale.Scale, 0.05)
             return sc, math.max(MIN_W, (vp.X - 16) / sc), math.max(MIN_H, (vp.Y - 16) / sc)
         end
-        -- Barra no centro da borda de baixo (fica longe do canto, dos controles do celular e do conteúdo).
+        -- Alça no canto inferior direito (formato de "L"), por cima de todo o conteúdo da janela.
         local handle = make("Frame", {
-            Name = "ResizeHandle", AnchorPoint = Vector2.new(.5, 1), Position = UDim2.new(.5, 0, 1, -2),
-            Size = UDim2.fromOffset(140, 30), BackgroundTransparency = 1, BorderSizePixel = 0, Active = true,
+            Name = "ResizeHandle", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -4, 1, -4),
+            Size = UDim2.fromOffset(46, 46), BackgroundTransparency = 1, BorderSizePixel = 0, Active = true,
             Visible = true, ZIndex = 500,
         }, shell)
-        local bar = make("Frame", {
-            Name = "Bar", AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = UDim2.fromOffset(90, 8),
-            BackgroundColor3 = Color3.fromRGB(0, 140, 255), BackgroundTransparency = .15, BorderSizePixel = 0,
-            Visible = true, ZIndex = 501,
-        }, handle)
-        corner(bar, 4)
-        stroke(bar, Color3.fromRGB(255, 255, 255), .6, 1)
+        local bar = make("Frame", {Name = "Bar", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 501}, handle)
+        local barH = make("Frame", {
+            Name = "H", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -8, 1, -8), Size = UDim2.fromOffset(26, 6),
+            BackgroundColor3 = Color3.fromRGB(0, 140, 255), BackgroundTransparency = .15, BorderSizePixel = 0, ZIndex = 501,
+        }, bar)
+        corner(barH, 3)
+        local barV = make("Frame", {
+            Name = "V", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -8, 1, -8), Size = UDim2.fromOffset(6, 26),
+            BackgroundColor3 = Color3.fromRGB(0, 140, 255), BackgroundTransparency = .15, BorderSizePixel = 0, ZIndex = 501,
+        }, bar)
+        corner(barV, 3)
         local function fade(value)
             pcall(function()
-                TweenService:Create(bar, TweenInfo.new(.12), {BackgroundTransparency = value}):Play()
+                TweenService:Create(barH, TweenInfo.new(.12), {BackgroundTransparency = value}):Play()
+                TweenService:Create(barV, TweenInfo.new(.12), {BackgroundTransparency = value}):Play()
             end)
         end
         local function isPress(input)
@@ -2542,7 +2567,7 @@ function Nexora.CreateMain(config)
             if tick() - lastTap < 0.35 then
                 lastTap, resizing = 0, false
                 setSize(W, H, shell.Position, shell.Size.X.Offset, shell.Size.Y.Offset)
-                pcall(function() getgenv().NexoraUISize = nil end)
+                saveSize(nil)
                 return
             end
             lastTap = tick()
@@ -2563,12 +2588,12 @@ function Nexora.CreateMain(config)
             if resizing and isPress(input) then
                 resizing = false
                 fade(0.15)
-                pcall(function() getgenv().NexoraUISize = {w = shell.Size.X.Offset, h = shell.Size.Y.Offset} end)
+                saveSize(shell.Size.X.Offset, shell.Size.Y.Offset)
             end
         end)
-        -- Reaplica o tamanho escolhido se a UI for executada de novo na mesma sessão.
+        -- Reaplica o tamanho salvo (arquivo NexoraHub_UISize.json) sempre que a UI abre.
         pcall(function()
-            local saved = getgenv().NexoraUISize
+            local saved = loadSize()
             if saved and saved.w and saved.h then
                 local _, maxW, maxH = limits()
                 shell.Size = UDim2.fromOffset(math.clamp(saved.w, MIN_W, maxW), math.clamp(saved.h, MIN_H, maxH))
