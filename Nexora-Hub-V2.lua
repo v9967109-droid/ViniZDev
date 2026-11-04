@@ -18357,16 +18357,23 @@ do
 		GRP_Boss:AddLabel("Auto Farm Halloween Boss\nUnbound Werewolf e Hellfire Gas: entra na porta, mata o boss, escapa das correntes e sai pelo portal.")
 		local VirtualUser = game:GetService("VirtualUser")
 		local TweenService = game:GetService("TweenService")
-		local isBossName = function(name)
+		-- kind: "were" (Unbound Werewolf), "hell" (Hellfire Gas), "pump" (Great Pumpkin) ou nil (todos)
+		local isBossName = function(name, kind)
 			local flat = string.gsub(string.lower(tostring(name or "")), "%s+", "")
-			if boss.wantPump and string.find(flat, "greatpumpkin", 1, true) then
+			if boss.wantPump and (kind == nil or kind == "pump") and string.find(flat, "greatpumpkin", 1, true) then
 				return true
 			end
-			if not boss.wantWere then
+			if not boss.wantWere or kind == "pump" then
 				return false
 			end
-			return string.find(flat, "unboundwerewol", 1, true) or string.find(flat, "werewolf", 1, true)
-				or string.find(flat, "hellfiregas", 1, true)
+			local isWere = string.find(flat, "unboundwerewol", 1, true) or string.find(flat, "werewolf", 1, true)
+			local isHell = string.find(flat, "hellfiregas", 1, true)
+			if kind == "were" then
+				return isWere
+			elseif kind == "hell" then
+				return isHell
+			end
+			return isWere or isHell
 		end
 		local rootOf = function(model)
 			return model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart", true)
@@ -18378,37 +18385,38 @@ do
 			local hum = model:FindFirstChildOfClass("Humanoid")
 			return hum ~= nil and rootOf(model) ~= nil and hum.Health > 0
 		end
-		local matchesBoss = function(mob)
-			if isBossName(mob.Name) then
+		local matchesBoss = function(mob, kind)
+			if isBossName(mob.Name, kind) then
 				return true
 			end
 			local h = mob:FindFirstChildOfClass("Humanoid")
-			return h ~= nil and isBossName(h.DisplayName)
+			return h ~= nil and isBossName(h.DisplayName, kind)
 		end
-		local findBoss = function()
+		local findBoss = function(kind)
 			local enemies = workspace:FindFirstChild("Enemies")
 			if enemies then
 				for _, mob in ipairs(enemies:GetChildren()) do
-					if matchesBoss(mob) and bossAlive(mob) then
+					if matchesBoss(mob, kind) and bossAlive(mob) then
 						return mob
 					end
 				end
 			end
 			for _, mob in ipairs(workspace:GetChildren()) do
-				if mob:IsA("Model") and matchesBoss(mob) and bossAlive(mob) then
+				if mob:IsA("Model") and matchesBoss(mob, kind) and bossAlive(mob) then
 					return mob
 				end
 			end
 			-- dentro da arena o boss pode estar em outra pasta: varre o mapa (a cada 3s)
-			if boss.inArena and tick() - (boss.deepAt or 0) >= 3 then
-				boss.deepAt = tick()
+			local deepKey = "deepAt" .. tostring(kind or "")
+			if boss.inArena and tick() - (boss[deepKey] or 0) >= 3 then
+				boss[deepKey] = tick()
 				local n = 0
 				for _, d in ipairs(workspace:GetDescendants()) do
 					n = n + 1
 					if n % 5000 == 0 then
 						task.wait()
 					end
-					if d:IsA("Humanoid") and d.Parent and d.Parent:IsA("Model") and d.Health > 0 and matchesBoss(d.Parent) and bossAlive(d.Parent) then
+					if d:IsA("Humanoid") and d.Parent and d.Parent:IsA("Model") and d.Health > 0 and matchesBoss(d.Parent, kind) and bossAlive(d.Parent) then
 						return d.Parent
 					end
 				end
@@ -18891,7 +18899,7 @@ do
 		local bossWhat = function()
 			local what = {}
 			if boss.wantWere then
-				table.insert(what, "Unbound Werewolf / porta do Hellfire Gas")
+				table.insert(what, "Unbound Werewolf ou Hellfire Gas (vai no que spawnar)")
 			end
 			if boss.wantPump then
 				table.insert(what, "Great Pumpkin")
@@ -18991,7 +18999,32 @@ do
 							return
 						end
 						if not bossAlive(boss.target) then
-							boss.target = findBoss()
+							-- Detecta QUAL boss esta spawnado (Werewolf ou Hellfire Gas) e vai no que existir.
+							-- Fora da arena checa o Werewolf primeiro; dentro da arena, o Hellfire primeiro.
+							-- Sempre olha os dois, entao nao fica preso procurando um so.
+							local found, kind
+							local order = boss.inArena and { "hell", "were", "pump" } or { "were", "hell", "pump" }
+							for _, k in ipairs(order) do
+								found = findBoss(k)
+								if found then
+									kind = k
+									break
+								end
+							end
+							boss.target = found
+							if found then
+								if kind ~= boss.lastKind then
+									boss.lastKind = kind
+									notify("Detectado: " .. (kind == "were" and "Unbound Werewolf spawnado"
+										or kind == "hell" and "Hellfire Gas spawnado" or "Great Pumpkin") .. ". Indo atras dele.")
+								end
+								-- Werewolf apareceu enquanto esperava o Hellfire Gas na arena: larga a espera e vai nele
+								if kind == "were" and boss.inArena then
+									boss.inArena, boss.arenaSeen = false, false
+								end
+							else
+								boss.lastKind = nil
+							end
 						end
 						local target = boss.target
 						if target and isArenaBoss(target) then
@@ -19055,7 +19088,7 @@ do
 									return
 								end
 							end
-							if boss.wantWere and tick() - (boss.scanAt or 0) >= 4 then
+							if boss.wantWere and tick() - (boss.scanAt or 0) >= 2 then
 								boss.scanAt = tick()
 								local list = findEntryDoors()
 								if list[1] then
