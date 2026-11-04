@@ -2392,10 +2392,14 @@ function Nexora.CreateMain(config)
     end)
 
     -- ============================ REDIMENSIONAR A JANELA ============================
-    -- Borda direita = largura, borda de baixo = altura, canto (◢) = os dois. Toque duplo no canto volta ao tamanho original.
+    -- Segure (≈0,35s) a borda direita (largura), a de baixo (altura) ou o canto inferior direito (os dois) e arraste.
+    -- A barra azul só aparece enquanto está segurando. Passar o dedo/mouse rápido pela borda não redimensiona.
+    -- Toque duplo no canto inferior direito volta ao tamanho original.
     do
         local MIN_W, MIN_H = 600, 360
+        local HOLD_TIME, MOVE_TOLERANCE = 0.35, 12
         local mode, startIn, startW, startH, startPos
+        local pendingId, pendingMode, pressPos, pendingPos = 0, nil, nil, nil
         local lastTap = 0
         local function limits()
             local cam = workspace.CurrentCamera
@@ -2409,31 +2413,38 @@ function Nexora.CreateMain(config)
                 BackgroundTransparency = 1, BorderSizePixel = 0, Active = true, ZIndex = 60,
             }, shell)
         end
+        -- barras azuis: nascem invisíveis e só aparecem enquanto a borda está sendo segurada
         local function pill(parent, size)
             local f = make("Frame", {
                 AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = size,
-                BackgroundColor3 = C.blue2, BackgroundTransparency = .45, BorderSizePixel = 0, ZIndex = 61,
+                BackgroundColor3 = C.blue2, BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 61,
             }, parent)
             corner(f, 3)
             return f
         end
-        local rightGrip = grip("ResizeRight", Vector2.new(1, 0), UDim2.new(1, 4, 0, HEADER_H), UDim2.new(0, 16, 1, -(HEADER_H + 44)))
-        local bottomGrip = grip("ResizeBottom", Vector2.new(0, 1), UDim2.new(0, SIDEBAR_W, 1, 4), UDim2.new(1, -(SIDEBAR_W + 44), 0, 16))
-        local cornerGrip = grip("ResizeCorner", Vector2.new(1, 1), UDim2.new(1, 2, 1, 2), UDim2.fromOffset(40, 40))
-        pill(rightGrip, UDim2.fromOffset(4, 56))
-        pill(bottomGrip, UDim2.fromOffset(56, 4))
+        local rightGrip = grip("ResizeRight", Vector2.new(1, 0), UDim2.new(1, 2, 0, HEADER_H), UDim2.new(0, 12, 1, -(HEADER_H + 44)))
+        local bottomGrip = grip("ResizeBottom", Vector2.new(0, 1), UDim2.new(0, SIDEBAR_W, 1, 2), UDim2.new(1, -(SIDEBAR_W + 44), 0, 12))
+        local cornerGrip = grip("ResizeCorner", Vector2.new(1, 1), UDim2.new(1, 2, 1, 2), UDim2.fromOffset(36, 36))
+        local rightPill = pill(rightGrip, UDim2.fromOffset(4, 56))
+        local bottomPill = pill(bottomGrip, UDim2.fromOffset(56, 4))
         local mark = lbl(cornerGrip, "◢", UDim2.new(1, -8, 1, -8), UDim2.fromOffset(0, 0), 20, C.blue2, Enum.Font.GothamBold)
         mark.TextXAlignment = Enum.TextXAlignment.Right
         mark.TextYAlignment = Enum.TextYAlignment.Bottom
+        mark.TextTransparency = 1
         mark.ZIndex = 61
 
+        local function fade(obj, prop, value)
+            pcall(function()
+                TweenService:Create(obj, TweenInfo.new(.12), {[prop] = value}):Play()
+            end)
+        end
+        local function showHint(m, on)
+            if m == "right" or m == "corner" then fade(rightPill, "BackgroundTransparency", on and .3 or 1) end
+            if m == "bottom" or m == "corner" then fade(bottomPill, "BackgroundTransparency", on and .3 or 1) end
+            if m == "corner" then fade(mark, "TextTransparency", on and 0 or 1) end
+        end
         local function isPress(input)
             return input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch
-        end
-        local function begin(m, input)
-            if animating or not isPress(input) then return end
-            mode, startIn = m, input.Position
-            startW, startH, startPos = shell.Size.X.Offset, shell.Size.Y.Offset, shell.Position
         end
         local function setSize(w, h, basePos, baseW, baseH)
             local sc = limits()
@@ -2441,12 +2452,35 @@ function Nexora.CreateMain(config)
             -- a janela é ancorada no centro: desloca meia diferença para o canto superior esquerdo ficar parado
             shell.Position = UDim2.new(basePos.X.Scale, basePos.X.Offset + (w - baseW) * sc / 2, basePos.Y.Scale, basePos.Y.Offset + (h - baseH) * sc / 2)
         end
+        -- Começa a contar o "segurar": só depois de HOLD_TIME parado a borda entra em modo de redimensionar.
+        local function begin(m, input)
+            if animating or not isPress(input) then return end
+            pendingId = pendingId + 1
+            local id = pendingId
+            pendingMode, pressPos, pendingPos = m, input.Position, input.Position
+            task.delay(HOLD_TIME, function()
+                if id ~= pendingId or not pendingMode or mode then return end
+                mode, startIn = pendingMode, pendingPos
+                startW, startH, startPos = shell.Size.X.Offset, shell.Size.Y.Offset, shell.Position
+                showHint(mode, true)
+            end)
+        end
+        local function finish()
+            pendingId = pendingId + 1
+            pendingMode = nil
+            if mode then
+                showHint(mode, false)
+                mode = nil
+                pcall(function() getgenv().NexoraUISize = {w = shell.Size.X.Offset, h = shell.Size.Y.Offset} end)
+            end
+        end
         rightGrip.InputBegan:Connect(function(i) begin("right", i) end)
         bottomGrip.InputBegan:Connect(function(i) begin("bottom", i) end)
         cornerGrip.InputBegan:Connect(function(i)
             if animating or not isPress(i) then return end
             if tick() - lastTap < 0.35 then
-                lastTap, mode = 0, nil
+                lastTap = 0
+                finish()
                 setSize(W, H, shell.Position, shell.Size.X.Offset, shell.Size.Y.Offset)
                 pcall(function() getgenv().NexoraUISize = nil end)
             else
@@ -2455,20 +2489,28 @@ function Nexora.CreateMain(config)
             end
         end)
         UIS.InputChanged:Connect(function(input)
-            if not mode or not (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            if not (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
                 return
             end
-            local sc, maxW, maxH = limits()
-            local d = input.Position - startIn
-            local w, h = startW, startH
-            if mode ~= "bottom" then w = startW + d.X / sc end
-            if mode ~= "right" then h = startH + d.Y / sc end
-            setSize(math.clamp(w, MIN_W, maxW), math.clamp(h, MIN_H, maxH), startPos, startW, startH)
+            if mode then
+                local sc, maxW, maxH = limits()
+                local d = input.Position - startIn
+                local w, h = startW, startH
+                if mode ~= "bottom" then w = startW + d.X / sc end
+                if mode ~= "right" then h = startH + d.Y / sc end
+                setSize(math.clamp(w, MIN_W, maxW), math.clamp(h, MIN_H, maxH), startPos, startW, startH)
+            elseif pendingMode then
+                pendingPos = input.Position
+                -- mexeu antes de completar o "segurar": era só um deslize, cancela
+                if (input.Position - pressPos).Magnitude > MOVE_TOLERANCE then
+                    pendingId = pendingId + 1
+                    pendingMode = nil
+                end
+            end
         end)
         UIS.InputEnded:Connect(function(input)
-            if mode and isPress(input) then
-                mode = nil
-                pcall(function() getgenv().NexoraUISize = {w = shell.Size.X.Offset, h = shell.Size.Y.Offset} end)
+            if isPress(input) then
+                finish()
             end
         end)
         -- Reaplica o tamanho escolhido se a UI for executada de novo na mesma sessão.
