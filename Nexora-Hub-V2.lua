@@ -22776,6 +22776,20 @@ do
 
 	UpdStFruit = function()
 		local found, answer = 0, nil
+		-- fruta na mao (equipada): desequipa para ela voltar a mochila e ser guardada junto com as outras
+		local char = plr.Character
+		local hum = char and char:FindFirstChildOfClass("Humanoid")
+		if char and hum then
+			for _, held in ipairs(char:GetChildren()) do
+				if held:IsA("Tool") and held:FindFirstChild("EatRemote", true) then
+					pcall(function()
+						hum:UnequipTools()
+					end)
+					task.wait(0.2)
+					break
+				end
+			end
+		end
 		local children, v102 = plr.Backpack:GetChildren()
 		for _, v1 in next, children, v102 do
 			local StoreFruitRemote = v1:FindFirstChild("EatRemote", true)
@@ -22788,7 +22802,7 @@ do
 			end
 		end
 		if found > 0 then
-			say("Store Fruit", found .. " fruta(s) na mochila, resposta do servidor: " .. tostring(answer))
+			say("Store Fruit", found .. " fruta(s) (mochila/mao), resposta do servidor: " .. tostring(answer))
 		end
 	end
 
