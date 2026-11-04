@@ -18780,28 +18780,40 @@ do
 			return nil
 		end
 		local enemies = workspace:FindFirstChild("Enemies")
-		if not enemies then
-			return nil
-		end
 		local jack, jackDist = nil, jackRange
-		for _, mob in ipairs(enemies:GetChildren()) do
-			local skippedAt = mob:GetAttribute("ZyroxSkip")
-			local snow = isSnowman(mob)
-			local wanted
-			if snow then
-				wanted = _G.HalloweenKillSnowman ~= false
-			else
-				wanted = _G.HalloweenKillJack ~= false and isJack(mob)
-			end
-			if wanted and not (skippedAt and tick() - skippedAt < 20) then
-				local root = mob:FindFirstChild("HumanoidRootPart")
-				if root and t9.Alive(mob) then
-					local dist = (root.Position - hrp.Position).Magnitude
-					if dist < jackDist then
-						jack, jackDist = mob, dist
+		local scan = function(folder, anyDist)
+			local best, bestDist = nil, anyDist and math.huge or jackRange
+			for _, mob in ipairs(folder:GetChildren()) do
+				if mob:IsA("Model") then
+					local skippedAt = mob:GetAttribute("ZyroxSkip")
+					local snow = isSnowman(mob)
+					local wanted
+					if snow then
+						wanted = _G.HalloweenKillSnowman ~= false
+					else
+						wanted = _G.HalloweenKillJack ~= false and isJack(mob)
+					end
+					if wanted and not (skippedAt and tick() - skippedAt < 20) then
+						local root = mob:FindFirstChild("HumanoidRootPart")
+						if root and t9.Alive(mob) then
+							local dist = (root.Position - hrp.Position).Magnitude
+							if dist < bestDist then
+								best, bestDist = mob, dist
+							end
+						end
 					end
 				end
 			end
+			return best
+		end
+		-- 1) mobs ja carregados perto do player (workspace.Enemies)
+		if enemies then
+			jack = scan(enemies, false)
+		end
+		-- 2) mobs LONGE: o streaming do Roblox nao carrega eles em workspace.Enemies,
+		--    mas o servidor deixa o modelo em ReplicatedStorage com a posicao do spawn
+		if not jack then
+			jack = scan(game:GetService("ReplicatedStorage"), true)
 		end
 		return jack
 	end
@@ -18815,6 +18827,33 @@ do
 		local previous = _G.HalloweenFarm
 		clearMovers()
 		_G.HalloweenFarm = true -- libera o ataque rapido e o _tp do hub enquanto luta
+		-- mob longe (ainda em ReplicatedStorage): voa ate o spawn ate ele carregar em workspace.Enemies
+		if mob.Parent ~= workspace:FindFirstChild("Enemies") then
+			local remote = mob
+			local travelStart = tick()
+			pcall(function()
+				while state.on and tick() - travelStart < 25 do
+					local enemies = workspace:FindFirstChild("Enemies")
+					local loaded = enemies and enemies:FindFirstChild(remote.Name)
+					if loaded and loaded:FindFirstChild("HumanoidRootPart") and t9.Alive(loaded) then
+						mob = loaded
+						return
+					end
+					local root = remote.Parent and remote:FindFirstChild("HumanoidRootPart")
+					if not root then
+						return
+					end
+					task.wait()
+					pcall(t9.Equip)
+					pcall(toTarget, root.CFrame * CFrame.new(0, 8, 0))
+				end
+			end)
+			if mob == remote then
+				remote:SetAttribute("ZyroxSkip", tick()) -- nao carregou: ignora por 20s
+				_G.HalloweenFarm = previous
+				return true
+			end
+		end
 		pcall(function()
 			local fightStart, lastHp, since = tick(), nil, tick()
 			while state.on and mob.Parent and mob:FindFirstChildOfClass("Humanoid") and mob.Humanoid.Health > 0
