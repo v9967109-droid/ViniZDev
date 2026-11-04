@@ -2391,6 +2391,96 @@ function Nexora.CreateMain(config)
         end
     end)
 
+    -- ============================ REDIMENSIONAR A JANELA ============================
+    -- Borda direita = largura, borda de baixo = altura, canto (◢) = os dois. Toque duplo no canto volta ao tamanho original.
+    do
+        local MIN_W, MIN_H = 600, 360
+        local mode, startIn, startW, startH, startPos
+        local lastTap = 0
+        local function limits()
+            local cam = workspace.CurrentCamera
+            local vp = cam and cam.ViewportSize or Vector2.new(1280, 720)
+            local sc = math.max(scale.Scale, 0.05)
+            return sc, math.max(MIN_W, (vp.X - 16) / sc), math.max(MIN_H, (vp.Y - 16) / sc)
+        end
+        local function grip(name, anchor, pos, size)
+            return make("Frame", {
+                Name = name, AnchorPoint = anchor, Position = pos, Size = size,
+                BackgroundTransparency = 1, BorderSizePixel = 0, Active = true, ZIndex = 60,
+            }, shell)
+        end
+        local function pill(parent, size)
+            local f = make("Frame", {
+                AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = size,
+                BackgroundColor3 = C.blue2, BackgroundTransparency = .45, BorderSizePixel = 0, ZIndex = 61,
+            }, parent)
+            corner(f, 3)
+            return f
+        end
+        local rightGrip = grip("ResizeRight", Vector2.new(1, 0), UDim2.new(1, 4, 0, HEADER_H), UDim2.new(0, 16, 1, -(HEADER_H + 44)))
+        local bottomGrip = grip("ResizeBottom", Vector2.new(0, 1), UDim2.new(0, SIDEBAR_W, 1, 4), UDim2.new(1, -(SIDEBAR_W + 44), 0, 16))
+        local cornerGrip = grip("ResizeCorner", Vector2.new(1, 1), UDim2.new(1, 2, 1, 2), UDim2.fromOffset(40, 40))
+        pill(rightGrip, UDim2.fromOffset(4, 56))
+        pill(bottomGrip, UDim2.fromOffset(56, 4))
+        local mark = lbl(cornerGrip, "◢", UDim2.new(1, -8, 1, -8), UDim2.fromOffset(0, 0), 20, C.blue2, Enum.Font.GothamBold)
+        mark.TextXAlignment = Enum.TextXAlignment.Right
+        mark.TextYAlignment = Enum.TextYAlignment.Bottom
+        mark.ZIndex = 61
+
+        local function isPress(input)
+            return input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch
+        end
+        local function begin(m, input)
+            if animating or not isPress(input) then return end
+            mode, startIn = m, input.Position
+            startW, startH, startPos = shell.Size.X.Offset, shell.Size.Y.Offset, shell.Position
+        end
+        local function setSize(w, h, basePos, baseW, baseH)
+            local sc = limits()
+            shell.Size = UDim2.fromOffset(w, h)
+            -- a janela é ancorada no centro: desloca meia diferença para o canto superior esquerdo ficar parado
+            shell.Position = UDim2.new(basePos.X.Scale, basePos.X.Offset + (w - baseW) * sc / 2, basePos.Y.Scale, basePos.Y.Offset + (h - baseH) * sc / 2)
+        end
+        rightGrip.InputBegan:Connect(function(i) begin("right", i) end)
+        bottomGrip.InputBegan:Connect(function(i) begin("bottom", i) end)
+        cornerGrip.InputBegan:Connect(function(i)
+            if animating or not isPress(i) then return end
+            if tick() - lastTap < 0.35 then
+                lastTap, mode = 0, nil
+                setSize(W, H, shell.Position, shell.Size.X.Offset, shell.Size.Y.Offset)
+                pcall(function() getgenv().NexoraUISize = nil end)
+            else
+                lastTap = tick()
+                begin("corner", i)
+            end
+        end)
+        UIS.InputChanged:Connect(function(input)
+            if not mode or not (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                return
+            end
+            local sc, maxW, maxH = limits()
+            local d = input.Position - startIn
+            local w, h = startW, startH
+            if mode ~= "bottom" then w = startW + d.X / sc end
+            if mode ~= "right" then h = startH + d.Y / sc end
+            setSize(math.clamp(w, MIN_W, maxW), math.clamp(h, MIN_H, maxH), startPos, startW, startH)
+        end)
+        UIS.InputEnded:Connect(function(input)
+            if mode and isPress(input) then
+                mode = nil
+                pcall(function() getgenv().NexoraUISize = {w = shell.Size.X.Offset, h = shell.Size.Y.Offset} end)
+            end
+        end)
+        -- Reaplica o tamanho escolhido se a UI for executada de novo na mesma sessão.
+        pcall(function()
+            local saved = getgenv().NexoraUISize
+            if saved and saved.w and saved.h then
+                local _, maxW, maxH = limits()
+                shell.Size = UDim2.fromOffset(math.clamp(saved.w, MIN_W, maxW), math.clamp(saved.h, MIN_H, maxH))
+            end
+        end)
+    end
+
     -- ============================ PÁGINAS ============================
     local Main = {}
     local pages, activePage = {}, nil
@@ -29292,12 +29382,75 @@ spawn(function()
 end)
 GetItemsMain = Main.CreatePage({ Page_Name = "Get and Upgrade Items", Page_Title = "Get and Upgrade Items Tab" })
 GetItemsSection = GetItemsMain.CreateSection("Get Items")
+-- Auto Trade Bone (Death King, Surprise = 50 Bones). O loop nasce aqui, junto do toggle, para não depender
+-- de código que roda bem depois no script (se algo falhasse no meio, o loop nunca iniciava).
+getgenv().__NexoraBoneTradeGen = getgenv().__NexoraBoneTradeGen or 0
+function StartBoneTrade()
+	getgenv().__NexoraBoneTradeGen = getgenv().__NexoraBoneTradeGen + 1
+	local gen = getgenv().__NexoraBoneTradeGen
+	local function noti(msg)
+		pcall(function() Main.CreateNoti({ Title = "Auto Trade Bone", Desc = msg, ShowTime = 4 }) end)
+	end
+	task.spawn(function()
+		local warnedSea, warnedBones, fails = false, false, 0
+		while getgenv().__NexoraBoneTradeGen == gen and Settings["Auto Trade Bone"] do
+			local sea3 = game.PlaceId == 7449423635 or game.PlaceId == 100117331123089
+			if not sea3 then
+				-- a loja de Bones (Death King) só existe no Terceiro Mar
+				if not warnedSea then
+					warnedSea = true
+					noti("Só funciona no Terceiro Mar (Haunted Castle).")
+				end
+				task.wait(3)
+			else
+				warnedSea = false
+				local okCount, enough = pcall(function()
+					return CheckCountItem("Bones", 50)
+				end)
+				if okCount and not enough then
+					-- menos de 50 Bones: não adianta chamar o servidor, só espera juntar
+					if not warnedBones then
+						warnedBones = true
+						noti("Bones insuficientes (precisa de 50). Aguardando...")
+					end
+					task.wait(3)
+				else
+					warnedBones = false
+					local ok, res = pcall(function()
+						local rs = game:GetService("ReplicatedStorage")
+						local remotes = rs:WaitForChild("Remotes", 5)
+						local remote = remotes and remotes:WaitForChild("CommF_", 5)
+						return remote and remote:InvokeServer("Bones", "Buy", 1, 1)
+					end)
+					if not ok then
+						fails = fails + 1
+						if fails % 5 == 1 then
+							warn("[Nexora][Auto Trade Bone] erro ao chamar o servidor: " .. tostring(res))
+						end
+						task.wait(3)
+					else
+						fails = 0
+						task.wait(1.5)
+					end
+				end
+			end
+		end
+	end)
+end
 GetItemsSection.CreateToggle(
 	{ Title = "Auto Trade Bone", Desc = nil, Default = Settings["Auto Trade Bone"] or false },
 	function(g)
 		SaveSettings("Auto Trade Bone", g)
+		if g then
+			StartBoneTrade()
+		else
+			getgenv().__NexoraBoneTradeGen = getgenv().__NexoraBoneTradeGen + 1
+		end
 	end
 )
+if Settings["Auto Trade Bone"] then
+	StartBoneTrade()
+end
 GetItemsSection.CreateToggle(
 	{ Title = "Auto Buy Legendary Sword", Desc = nil, Default = Settings["Auto Buy Legendary Sword"] or false },
 	function(g)
@@ -34734,26 +34887,6 @@ end)
 pcall(function()
 	TextUtil = require(game.ReplicatedStorage.Modules.Util.TextUtil)
 end)
-
--- Auto Trade Bone: loop independente para não depender do ciclo de compra de frutas.
-do
-	getgenv().__NexoraBoneTradeGen = (getgenv().__NexoraBoneTradeGen or 0) + 1
-	local boneGen = getgenv().__NexoraBoneTradeGen
-	task.spawn(function()
-		while getgenv().__NexoraBoneTradeGen == boneGen do
-			if Settings["Auto Trade Bone"] then
-				pcall(function()
-					local rs = game:GetService("ReplicatedStorage")
-					local remote = rs:FindFirstChild("Remotes") and rs.Remotes:FindFirstChild("CommF_")
-					if remote then remote:InvokeServer("Bones", "Buy", 1, 1) end
-				end)
-				task.wait(2)
-			else
-				task.wait(0.5)
-			end
-		end
-	end)
-end
 
 -- Movimento: movido para fora do RenderStepped (antes criava um loop novo a cada frame).
 getgenv().__MoveGen = (getgenv().__MoveGen or 0) + 1
