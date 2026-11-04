@@ -18896,6 +18896,168 @@ do
 			return talks > 0
 		end
 
+		-- ===== Great Pumpkin: coletar candies do chão e sair pelo portal verde (volta pra Bruxa) =====
+		local heldByChar = function(inst)
+			local node = inst.Parent
+			while node and node ~= workspace do
+				if node:FindFirstChildOfClass("Humanoid") then
+					return true
+				end
+				node = node.Parent
+			end
+			return false
+		end
+		local candyPart = function(inst)
+			if inst:IsA("BasePart") then
+				return inst
+			elseif inst:IsA("Model") then
+				return inst.PrimaryPart or inst:FindFirstChildWhichIsA("BasePart", true)
+			elseif inst:IsA("Tool") then
+				return inst:FindFirstChild("Handle")
+			end
+			return nil
+		end
+		local collectCandies = function()
+			local char = plr.Character
+			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			if not hrp then
+				return 0
+			end
+			local center = boss.arenaCenter or hrp.Position
+			local got, started, empty, tried, logged = 0, tick(), 0, {}, false
+			notify("Great Pumpkin derrotado. Coletando os candies do chao...")
+			while boss.on and tick() - started < 45 do
+				char = plr.Character
+				hrp = char and char:FindFirstChild("HumanoidRootPart")
+				if not hrp then
+					break
+				end
+				local list, n = {}, 0
+				for _, inst in ipairs(workspace:GetDescendants()) do
+					n = n + 1
+					if n % 4000 == 0 then
+						task.wait()
+					end
+					if not tried[inst] and (inst:IsA("BasePart") or inst:IsA("Model") or inst:IsA("Tool")) then
+						local nm = string.gsub(lower(inst.Name), "[%s_%-]+", "")
+						if string.find(nm, "candycorn", 1, true) then
+							local part = candyPart(inst)
+							if part and part.Parent and not heldByChar(inst) and (part.Position - center).Magnitude <= 400
+								and not (part.Anchored and part.Size.Magnitude > 12) then
+								table.insert(list, { inst = inst, part = part, dist = (part.Position - hrp.Position).Magnitude })
+							end
+						end
+					end
+				end
+				if #list == 0 then
+					empty = empty + 1
+					if empty >= 3 then
+						break
+					end
+					task.wait(0.7)
+				else
+					empty = 0
+					table.sort(list, function(a, b)
+						return a.dist < b.dist
+					end)
+					if not logged then
+						logged = true
+						warn("[Nexora][Great Pumpkin] candies encontrados: " .. #list .. " (ex.: " .. list[1].inst:GetFullName() .. ")")
+					end
+					for i = 1, math.min(#list, 12) do
+						if not boss.on then
+							break
+						end
+						local item = list[i]
+						tried[item.inst] = true
+						local h = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+						if h and item.part.Parent then
+							h.CFrame = CFrame.new(item.part.Position + Vector3.new(0, 2, 0))
+							h.AssemblyLinearVelocity = Vector3.zero
+							pcall(function()
+								firetouchinterest(h, item.part, 0)
+								firetouchinterest(h, item.part, 1)
+							end)
+							pcall(function()
+								for _, pp in ipairs(item.inst:GetDescendants()) do
+									if pp:IsA("ProximityPrompt") and fireproximityprompt then
+										fireproximityprompt(pp)
+									end
+								end
+							end)
+							got = got + 1
+							task.wait(0.12)
+						end
+					end
+				end
+			end
+			if got == 0 then
+				warn("[Nexora][Great Pumpkin] nenhum Candy Corn encontrado no chao")
+			end
+			return got
+		end
+		local findPortalParts = function()
+			local char = plr.Character
+			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			local list, n = {}, 0
+			if not hrp then
+				return list
+			end
+			for _, inst in ipairs(workspace:GetDescendants()) do
+				n = n + 1
+				if n % 4000 == 0 then
+					task.wait()
+				end
+				if inst:IsA("BasePart") and string.find(lower(inst.Name), "portal", 1, true) and not heldByChar(inst) then
+					local d = (inst.Position - hrp.Position).Magnitude
+					if d <= 900 then
+						table.insert(list, { part = inst, dist = d })
+					end
+				end
+			end
+			table.sort(list, function(a, b)
+				return a.dist < b.dist
+			end)
+			return list
+		end
+		-- depois dos candies aparece um portal verde que leva de volta pra Bruxa
+		local leaveAfterPumpkin = function()
+			local char = plr.Character
+			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			if not hrp then
+				return false
+			end
+			local from = hrp.Position
+			notify("Esperando o portal que volta para a Bruxa...")
+			local started = tick()
+			while boss.on and tick() - started < 25 do
+				local parts = findPortalParts()
+				if parts[1] then
+					local p = parts[1].part
+					goNear(p, 15)
+					for _ = 1, 6 do
+						local h = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+						if not h or not boss.on then
+							return false
+						end
+						h.CFrame = CFrame.new(p.Position)
+						h.AssemblyLinearVelocity = Vector3.zero
+						pcall(function()
+							firetouchinterest(h, p, 0)
+							firetouchinterest(h, p, 1)
+						end)
+						task.wait(0.4)
+						h = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+						if h and (h.Position - from).Magnitude > 150 then
+							return true
+						end
+					end
+				end
+				task.wait(0.5)
+			end
+			return false
+		end
+
 		local bossWhat = function()
 			local what = {}
 			if boss.wantWere then
@@ -19030,6 +19192,9 @@ do
 						if target and isArenaBoss(target) then
 							boss.inArena, boss.arenaSeen = true, true
 						end
+						if target and isPumpkinBoss(target) then
+							boss.wasPump = true
+						end
 						if target and isPumpkinBoss(target) and not boss.arenaCenter then
 							local h0 = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
 							boss.arenaCenter = h0 and h0.Position or nil
@@ -19048,8 +19213,15 @@ do
 								notify("Boss derrotado. Saindo da arena...")
 								task.wait(2)
 								local left = false
+								if boss.wasPump then
+									boss.wasPump = false
+									pcall(collectCandies)
+									local okL, res = pcall(leaveAfterPumpkin)
+									left = okL and res == true
+									boss.arenaCenter = nil
+								end
 								for _ = 1, 4 do
-									if not boss.on then
+									if left or not boss.on then
 										break
 									end
 									if exitArena() then
@@ -19066,6 +19238,13 @@ do
 							end
 							if boss.wantPump and tick() - (boss.pumpAt or 0) >= 2 then
 								boss.pumpAt = tick()
+								-- vai ate a Bruxa primeiro (a cratera fica ao lado dela e so carrega perto) e depois entra no "Enter"
+								local witchPart = findWitchPart()
+								local hw = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+								if witchPart and hw and (hw.Position - witchPart.Position).Magnitude > 80 then
+									notify("Indo ate a Bruxa primeiro...")
+									goNear(witchPart, 240)
+								end
 								local crater = findInteractables({ "great pumpkin", "crater" }, nil, nil)
 								if crater[1] then
 									notify("Cratera da Great Pumpkin encontrada. Entrando...")
