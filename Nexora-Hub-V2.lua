@@ -14349,7 +14349,20 @@ local FarmotherMain = NXSQPage
 		end
 		HiddenEvent.cannonTarget = cannonTarget
 		if not HiddenEvent.cannonLoop then
-			HiddenEvent.cannonLoop = game:GetService("RunService").RenderStepped:Connect(function(...) end)
+			-- o jogo reescreve yaw/pitch do canhao todo frame (por isso ele ficava girando):
+			-- reaplica a mira no alvo a cada frame enquanto estamos sentados nele
+			HiddenEvent.cannonLoop = game:GetService("RunService").RenderStepped:Connect(function()
+				local state = HiddenEvent.cannonState
+				local target = HiddenEvent.cannonTarget
+				if not state or not target then
+					return
+				end
+				local seat = state.seat
+				local humanoid = localPlayer.Character and localPlayer.Character:FindFirstChildOfClass("Humanoid")
+				if seat and humanoid and humanoid.SeatPart == seat then
+					pcall(SetCannonAim, state, target)
+				end
+			end)
 		end
 		pcall(SetCannonAim, v6, cannonTarget)
 		task.wait(0.2)
@@ -14561,36 +14574,83 @@ local FarmotherMain = NXSQPage
 	end
 	ListHiddenServers = function()
 		local tbl9 = {}
-		local ok, result = pcall(function()
-			return ReplicatedStorage.__ServerBrowser:InvokeServer(1)
-		end)
-		if ok and type(result) == "table" then
-			for k in pairs(result) do
-				if type(k) == "string" then
-					tbl9[k] = true
+		local startPage = math.random(1, 5)
+		local found = 0
+
+		for page = startPage, startPage + 4 do
+			local ok, result = pcall(function()
+				return ReplicatedStorage.__ServerBrowser:InvokeServer(page)
+			end)
+
+			if ok and type(result) == "table" then
+				for k, v in pairs(result) do
+					if type(k) == "string" and type(v) == "table" then
+						local count = tonumber(v.Count)
+
+						-- Blox Fruits: max 12 jogadores; ignora servidor cheio
+						if count and count < 11 and not tbl9[k] then
+							tbl9[k] = count
+							found += 1
+						end
+					end
+				end
+			end
+
+			if found >= 6 then
+				break
+			end
+
+			task.wait(0.2)
+		end
+
+		-- fallback: pagina 1
+		if found == 0 then
+			local ok, result = pcall(function()
+				return ReplicatedStorage.__ServerBrowser:InvokeServer(1)
+			end)
+
+			if ok and type(result) == "table" then
+				for k, v in pairs(result) do
+					if type(k) == "string" and type(v) == "table" and (tonumber(v.Count) or 99) < 11 then
+						tbl9[k] = tonumber(v.Count)
+					end
 				end
 			end
 		end
+
 		return tbl9
 	end
+
 	QueueHiddenReload = function()
-		local queueOnTeleport = rawget(getgenv(), "queue_on_teleport") or syn and syn.queue_on_teleport or fluxus and fluxus.queue_on_teleport
+		if HiddenEvent.reloadQueued then
+			return true
+		end
+
+		local queueOnTeleport = rawget(getgenv(), "queue_on_teleport") or (syn and syn.queue_on_teleport) or (fluxus and fluxus.queue_on_teleport)
 		if not queueOnTeleport then
 			return false
 		end
-		pcall(function()
-			queueOnTeleport([[task.spawn(function()
-	repeat
-		task.wait(1)
-	until game:IsLoaded()
+
+		-- defina antes de executar: getgenv().NexoraReloadURL = "https://.../seuscript.lua"
+		-- sem URL, usa o arquivo ZyroxHub.lua da pasta workspace do executor
+		local loadLine
+		local url = getgenv().NexoraReloadURL or getgenv().ZyroxReloadURL
+
+		if type(url) == "string" and url ~= "" then
+			loadLine = string.format("loadstring(game:HttpGet(%q))()", url)
+		else
+			loadLine = 'loadstring(readfile("ZyroxHub.lua"))()'
+		end
+
+		-- ZyroxResumeSecret religa o Auto Secret Quest depois do hop
+		local prefix = "getgenv().ZyroxResumeSecret = true;\n"
+
+		local body = [==[task.spawn(function()
+	repeat task.wait(1) until game:IsLoaded()
 	local players = game:GetService("Players")
-	repeat
-		task.wait(0.5)
-	until players.LocalPlayer
+	repeat task.wait(0.5) until players.LocalPlayer
 	local player = players.LocalPlayer
-	repeat
-		task.wait(0.5)
-	until player:FindFirstChild("PlayerGui")
+	repeat task.wait(0.5) until player:FindFirstChild("PlayerGui")
 	local waited = 0
 	while not player.Character and waited < 240 do
 		task.wait(2)
@@ -14605,30 +14665,93 @@ local FarmotherMain = NXSQPage
 	character:WaitForChild("HumanoidRootPart", 60)
 	task.wait(5)
 	pcall(function()
-		loadstring(readfile("ZyroxHub.lua"))()
+		__LOAD__
 	end)
-end)]])
+end)]==]
+
+		body = body:gsub("__LOAD__", function()
+			return loadLine
 		end)
-		return true
+
+		local ok = pcall(queueOnTeleport, prefix .. body)
+		HiddenEvent.reloadQueued = ok
+
+		return ok
 	end
+
 	HopHiddenServer = function()
 		HiddenEvent.hopped = HiddenEvent.hopped or {}
+
+		-- ja esta tentando trocar de servidor
+		if HiddenEvent.hopping and tick() - HiddenEvent.hopping < 30 then
+			return true
+		end
+
 		QueueHiddenReload()
-		local v6 = ListHiddenServers()
-		for i_ = 1, 2 do
-			for k in pairs(v6) do
+		local TeleportService = game:GetService("TeleportService")
+
+		for _ = 1, 2 do
+			local list = {}
+
+			for k in pairs(ListHiddenServers()) do
 				if k ~= game.JobId and not HiddenEvent.hopped[k] then
-					HiddenEvent.hopped[k] = true
-					HiddenNotify("Dead boss hour, switching server", "hop" .. k, "travel")
-					local function fn()
-						ReplicatedStorage.__ServerBrowser:InvokeServer("teleport", k)
-					end
-					pcall(fn)
-					return true
+					table.insert(list, k)
 				end
 			end
+
+			for i = #list, 2, -1 do
+				local j = math.random(i)
+				list[i], list[j] = list[j], list[i]
+			end
+
+			for _, k in ipairs(list) do
+				HiddenEvent.hopped[k] = true
+				HiddenEvent.hopping = tick()
+				HiddenNotify("Dead boss hour, switching server", "hop" .. k, "travel")
+
+				local failed = false
+				local conn = TeleportService.TeleportInitFailed:Connect(function(player)
+					if player == localPlayer then
+						failed = true
+					end
+				end)
+
+				-- metodo 1: browser do jogo
+				pcall(function()
+					ReplicatedStorage.__ServerBrowser:InvokeServer("teleport", k)
+				end)
+
+				local t0 = tick()
+				while tick() - t0 < 6 and not failed do
+					task.wait(0.25)
+				end
+
+				-- metodo 2: TeleportService (so se o 1 nao falhou explicitamente)
+				if not failed then
+					pcall(function()
+						TeleportService:TeleportToPlaceInstance(game.PlaceId, k, localPlayer)
+					end)
+
+					t0 = tick()
+					while tick() - t0 < 8 and not failed do
+						task.wait(0.25)
+					end
+				end
+
+				conn:Disconnect()
+
+				-- sem falha reportada: o teleport esta em andamento
+				if not failed then
+					return true
+				end
+
+				task.wait(0.5)
+			end
+
 			HiddenEvent.hopped = {}
 		end
+
+		HiddenEvent.hopping = nil
 		return false
 	end
 	RunChefsKiss = function(arg)
@@ -16353,7 +16476,13 @@ end)]])
 				end
 				if (progress.SecondsRemaining or 0) > 0 then
 					local time_ = lookout.time
-					local n = progress.SecondsRemaining - tick() - time_
+					-- SecondsRemaining e o tempo restante no momento da consulta (ou um timestamp do servidor): desconta so o que ja passou
+					local n
+					if progress.SecondsRemaining > 1e8 then
+						n = progress.SecondsRemaining - workspace:GetServerTimeNow()
+					else
+						n = progress.SecondsRemaining - (tick() - time_)
+					end
 					if n > 300 then
 						HiddenEvent.retryOverride = HiddenEvent.retryOverride or {}
 						HiddenEvent.retryOverride.Lookout = n - 60
@@ -17380,6 +17509,14 @@ end)]])
 		end
 		v6 = createToggle
 		v6 = v6(tbl9, fn)
+		if getgenv().ZyroxResumeSecret then
+			getgenv().ZyroxResumeSecret = nil
+			task.delay(8, function()
+				pcall(function()
+					v6:SetStage(true)
+				end)
+			end)
+		end
 	end
 	end)
 	if not sqOk then
