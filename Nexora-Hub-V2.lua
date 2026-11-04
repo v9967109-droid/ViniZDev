@@ -18681,17 +18681,21 @@ do
 	local state = { on = false, noclip = nil, cursorGui = nil, cursor = nil, skip = {}, current = nil, currentAt = 0 }
 	local GRP_Halloween = NXH:AddLeftGroupbox("Pumpkin Hunt")
 	GRP_Halloween:AddLabel("Auto Collect Pumpkin\nVoa ate a abobora mais proxima e bate nela ate derrotar, depois vai para a proxima.")
+
 	local notify = function(msg)
 		pcall(function()
 			NXlib:Notify({ Title = "Halloween", Description = msg, Duration = 4 })
 		end)
 	end
+
+	-- BodyVelocity / BodyGyro / PlatformStand (so enquanto longe da abobora)
 	local applyMovers = function(char)
 		local hrp = char and char:FindFirstChild("HumanoidRootPart")
 		local hum = char and char:FindFirstChildOfClass("Humanoid")
 		if not hrp or not hum then
 			return nil
 		end
+		-- BodyClip do shouldTween trava junto com FarmBodyVelocity
 		local bodyClip = hrp:FindFirstChild("BodyClip")
 		if bodyClip then
 			bodyClip:Destroy()
@@ -18713,6 +18717,7 @@ do
 		hum.PlatformStand = true
 		return hrp
 	end
+
 	local clearMovers = function()
 		local char = plr.Character
 		local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -18729,6 +18734,7 @@ do
 			hum.PlatformStand = false
 		end
 	end
+
 	local nearestPumpkin = function(hrp)
 		local folder = workspace:FindFirstChild("PumpkinHunt")
 		if not folder then
@@ -18737,6 +18743,7 @@ do
 		local best, bestObj, bestDist = nil, nil, math.huge
 		for _, obj in ipairs(folder:GetChildren()) do
 			if obj:GetAttribute("Collected") or obj:GetAttribute("Taken") or state.skip[obj] then
+				-- skip already taken
 			else
 				local pos
 				if obj:IsA("Model") then
@@ -18760,7 +18767,12 @@ do
 		end
 		return best, bestObj
 	end
+
+	-- Sem cooldown: assim que a abobora morre ele segue para a proxima. Se um Jack / PumpkinHead /
+	-- PumpkinSnowman estiver spawnado, ele volta e mata antes (checado a cada ciclo e durante a luta).
 	local jackRange, nearRange = 3000, 60 -- nearRange ainda e usado no Trick or Treat
+
+	-- [Jack] mira so no "Jack o' Lantern" / "PumpkinHead" / "PumpkinSnowman" de workspace.Enemies (nomes achados no Dex); nao ataca mais outros mobs
 	local isJack = function(mob)
 		return mob.Name == "Jack o' Lantern"
 			or mob.Name == "PumpkinHead"
@@ -18768,55 +18780,31 @@ do
 			or string.find(string.lower(mob.Name), "^jack o") ~= nil
 			or mob:FindFirstChild("PumpkinHead") ~= nil
 	end
-	-- Pumpkin Snowman: o nome exibido e "Pumpkin Snowman [Lv. 2945]" (com espaco), entao compara sem espacos/simbolos
-	local isSnowman = function(mob)
-		local hum = mob:FindFirstChildOfClass("Humanoid")
-		local txt = (string.gsub(string.lower(mob.Name .. " " .. (hum and hum.DisplayName or "")), "[^%a]", ""))
-		return string.find(txt, "pumpkinsnowman", 1, true) ~= nil
-			or (string.find(txt, "snowman", 1, true) ~= nil and string.find(txt, "pumpkin", 1, true) ~= nil)
-	end
+
 	local nearbyMonster = function(hrp)
-		if _G.HalloweenKillJack == false and _G.HalloweenKillSnowman == false then
+		if _G.HalloweenKillJack == false then
 			return nil
 		end
 		local enemies = workspace:FindFirstChild("Enemies")
+		if not enemies then
+			return nil
+		end
 		local jack, jackDist = nil, jackRange
-		local scan = function(folder, anyDist)
-			local best, bestDist = nil, anyDist and math.huge or jackRange
-			for _, mob in ipairs(folder:GetChildren()) do
-				if mob:IsA("Model") then
-					local skippedAt = mob:GetAttribute("ZyroxSkip")
-					local snow = isSnowman(mob)
-					local wanted
-					if snow then
-						wanted = _G.HalloweenKillSnowman ~= false
-					else
-						wanted = _G.HalloweenKillJack ~= false and isJack(mob)
-					end
-					if wanted and not (skippedAt and tick() - skippedAt < 20) then
-						local root = mob:FindFirstChild("HumanoidRootPart")
-						if root and t9.Alive(mob) then
-							local dist = (root.Position - hrp.Position).Magnitude
-							if dist < bestDist then
-								best, bestDist = mob, dist
-							end
-						end
+		for _, mob in ipairs(enemies:GetChildren()) do
+			local skippedAt = mob:GetAttribute("ZyroxSkip")
+			if isJack(mob) and not (skippedAt and tick() - skippedAt < 20) then
+				local root = mob:FindFirstChild("HumanoidRootPart")
+				if root and t9.Alive(mob) then
+					local dist = (root.Position - hrp.Position).Magnitude
+					if dist < jackDist then
+						jack, jackDist = mob, dist
 					end
 				end
 			end
-			return best
-		end
-		-- 1) mobs ja carregados perto do player (workspace.Enemies)
-		if enemies then
-			jack = scan(enemies, false)
-		end
-		-- 2) mobs LONGE: o streaming do Roblox nao carrega eles em workspace.Enemies,
-		--    mas o servidor deixa o modelo em ReplicatedStorage com a posicao do spawn
-		if not jack then
-			jack = scan(game:GetService("ReplicatedStorage"), true)
 		end
 		return jack
 	end
+
 	local killSpawned = function()
 		local char = plr.Character
 		local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -18827,39 +18815,15 @@ do
 		local previous = _G.HalloweenFarm
 		clearMovers()
 		_G.HalloweenFarm = true -- libera o ataque rapido e o _tp do hub enquanto luta
-		-- mob longe (ainda em ReplicatedStorage): voa ate o spawn ate ele carregar em workspace.Enemies
-		if mob.Parent ~= workspace:FindFirstChild("Enemies") then
-			local remote = mob
-			local travelStart = tick()
-			pcall(function()
-				while state.on and tick() - travelStart < 25 do
-					local enemies = workspace:FindFirstChild("Enemies")
-					local loaded = enemies and enemies:FindFirstChild(remote.Name)
-					if loaded and loaded:FindFirstChild("HumanoidRootPart") and t9.Alive(loaded) then
-						mob = loaded
-						return
-					end
-					local root = remote.Parent and remote:FindFirstChild("HumanoidRootPart")
-					if not root then
-						return
-					end
-					task.wait()
-					pcall(t9.Equip)
-					pcall(toTarget, root.CFrame * CFrame.new(0, 8, 0))
-				end
-			end)
-			if mob == remote then
-				remote:SetAttribute("ZyroxSkip", tick()) -- nao carregou: ignora por 20s
-				_G.HalloweenFarm = previous
-				return true
-			end
-		end
+
 		pcall(function()
+			-- luta ate morrer (anti-trava: 12s sem dano pula o monstro; limite de 30s)
 			local fightStart, lastHp, since = tick(), nil, tick()
 			while state.on and mob.Parent and mob:FindFirstChildOfClass("Humanoid") and mob.Humanoid.Health > 0
 				and tick() - fightStart < 30 do
 				task.wait()
-				t9.Kill(mob, true)
+				t9.Kill(mob, true, 10) -- abobora/Jack: mantem 10 studs
+
 				local hp = mob.Humanoid.Health
 				if lastHp ~= hp then
 					lastHp, since = hp, tick()
@@ -18869,6 +18833,7 @@ do
 				end
 			end
 		end)
+
 		_G.HalloweenFarm = previous
 		pcall(function()
 			local root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
@@ -18878,7 +18843,10 @@ do
 		end)
 		return true
 	end
+
 	local collectDist = 8 -- studs: perto o bastante pra coletar sem teleportar de novo
+
+	-- ===== [Akuma] ataque na abobora =====
 	local pumpkinPart = function(obj)
 		if not obj then
 			return nil
@@ -18891,22 +18859,40 @@ do
 		end
 		return obj:FindFirstChild("HumanoidRootPart", true) or obj:FindFirstChildWhichIsA("BasePart", true)
 	end
+
 	local pumpkinHealth = function(obj)
 		local humanoid = obj:FindFirstChildWhichIsA("Humanoid", true)
 		if humanoid then
 			return humanoid.Health
 		end
-		local attr = obj:GetAttribute("Health")
-		if type(attr) == "number" then
-			return attr
-		end
-		local value = obj:FindFirstChild("Health", true)
-		if value and value:IsA("ValueBase") and tonumber(value.Value) then
-			return tonumber(value.Value)
+		for _, key in ipairs({ "Health", "HP", "Hp", "CurrentHealth" }) do
+			local attr = obj:GetAttribute(key)
+			if type(attr) == "number" then
+				return attr
+			end
+			local value = obj:FindFirstChild(key, true)
+			if value and value:IsA("ValueBase") and tonumber(value.Value) then
+				return tonumber(value.Value)
+			end
 		end
 		return nil
 	end
+
+	-- true se ainda ha alguma parte visivel (a abobora some/fica transparente ao morrer, antes do servidor remover)
+	local pumpkinVisible = function(obj)
+		if obj:IsA("BasePart") and obj.Transparency < 0.95 then
+			return true
+		end
+		for _, d in ipairs(obj:GetDescendants()) do
+			if d:IsA("BasePart") and d.Transparency < 0.95 then
+				return true
+			end
+		end
+		return false
+	end
+
 	local deadKeys = { "Collected", "Taken", "Dead", "Defeated", "Killed", "Destroyed", "Broken", "Claimed", "Completed" }
+
 	local pumpkinDead = function(obj)
 		if not obj or not obj.Parent or not obj:IsDescendantOf(workspace) then
 			return true
@@ -18929,13 +18915,15 @@ do
 		local hp = pumpkinHealth(obj)
 		return hp ~= nil and hp <= 0
 	end
+
 	local VIM = game:GetService("VirtualInputManager")
+
 	local equipAttackTool = function()
 		local char = plr.Character
 		if not char or char:FindFirstChildOfClass("Tool") then
 			return
 		end
-		pcall(t9.Equip)
+		pcall(EquipWeapon, _G.SelectWeapon)
 		if char:FindFirstChildOfClass("Tool") then
 			return
 		end
@@ -18949,6 +18937,7 @@ do
 			end
 		end
 	end
+
 	local hitPumpkin = function(obj, part)
 		local modules = game:GetService("ReplicatedStorage"):FindFirstChild("Modules")
 		local net = modules and modules:FindFirstChild("Net")
@@ -18967,6 +18956,7 @@ do
 			registerHit:FireServer(part)
 		end)
 	end
+
 	local clickPumpkin = function()
 		pcall(function()
 			local tool = plr.Character and plr.Character:FindFirstChildOfClass("Tool")
@@ -18979,6 +18969,8 @@ do
 			VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
 		end)
 	end
+
+	-- voa ate a abobora a cada frame (velocidade = Tween Speed do hub); reavalia o destino, entao acompanha abobora que se mexe
 	local flyTo = function(hrp, obj)
 		local speed = math.max(tonumber(getgenv().TweenSpeedFar) or 270, 50)
 		local started = tick()
@@ -18999,11 +18991,14 @@ do
 			hrp.AssemblyLinearVelocity = Vector3.zero
 		end
 	end
+
+	-- vai ate a abobora e bate nela ate morrer (true = derrotada, false = desistiu)
 	local fightPumpkin = function(obj)
 		local started, lastHit = tick(), 0
 		local lastHp, hpSince = nil, tick()
 		local lastJackCheck = 0
 		local nearSince = nil
+		local wasVisible, lastVisCheck = pumpkinVisible(obj), 0
 		local sideDir = nil -- lado de onde chegou (fixo durante a luta, evita ficar girando em volta)
 		while state.on do
 			if pumpkinDead(obj) then
@@ -19012,18 +19007,26 @@ do
 			if tick() - started > 40 then
 				return false
 			end
+
 			local char = plr.Character
 			local hrp = char and char:FindFirstChild("HumanoidRootPart")
 			local part = pumpkinPart(obj)
 			if not hrp or not part then
 				return false
 			end
-			if tick() - lastJackCheck >= 0.3 then
-				lastJackCheck = tick()
-				if nearbyMonster(hrp) then
-					return "jack"
+
+			-- sumiu visualmente (todas as partes transparentes) = morreu, nao espera o servidor remover
+			if wasVisible and tick() - lastVisCheck >= 0.1 then
+				lastVisCheck = tick()
+				if not pumpkinVisible(obj) then
+					return true
 				end
 			end
+
+			-- Jack / PumpkinHead / PumpkinSnowman que spawnar durante a luta NAO interrompe: termina a abobora
+			-- e o proximo ciclo do loop principal (killSpawned) volta pra matar eles antes da proxima abobora.
+
+			-- [Frente] fica ~1 stud (HalloweenStandDist) na frente da abobora, olhando pra ela
 			if not sideDir then
 				local d = Vector3.new(hrp.Position.X - part.Position.X, 0, hrp.Position.Z - part.Position.Z)
 				sideDir = d.Magnitude > 0.1 and d.Unit or Vector3.new(0, 0, 1)
@@ -19032,17 +19035,20 @@ do
 			state.face = part.Position
 			local goal = CFrame.lookAt(standPos, Vector3.new(part.Position.X, standPos.Y, part.Position.Z))
 			if _G.HalloweenTween then
+				-- [Tween do hub] usa o mesmo _tp dos outros farms (Part guia + BodyClip, HalloweenFarm = true libera)
 				clearMovers()
-				pcall(toTarget, goal)
+				pcall(_tp, goal)
 				hrp.AssemblyLinearVelocity = Vector3.zero
 			elseif (hrp.Position - part.Position).Magnitude > 12 then
 				applyMovers(char)
 				hrp.CFrame = goal
 			else
+				-- perto: fica parado em cima da abobora e bate
 				clearMovers()
 				hrp.CFrame = goal
 				hrp.AssemblyLinearVelocity = Vector3.zero
 			end
+
 			if tick() - lastHit >= 0.12 then
 				lastHit = tick()
 				equipAttackTool()
@@ -19051,27 +19057,34 @@ do
 					clickPumpkin()
 				end
 			end
+
+			-- anti-trava: se a vida da abobora nao muda por 15s, desiste dela
 			local hp = pumpkinHealth(obj)
 			if hp then
 				if hp ~= lastHp then
 					lastHp, hpSince = hp, tick()
-				elseif tick() - hpSince > 15 then
+				elseif tick() - hpSince > 6 then
 					return false
 				end
 			else
+				-- vida ilegivel (ex.: abobora que outro jogador derrotou): perto dela por 8s sem ela morrer = desiste
 				if (hrp.Position - part.Position).Magnitude <= 15 then
 					nearSince = nearSince or tick()
-					if tick() - nearSince > 8 then
+					if tick() - nearSince > 4 then
 						return false
 					end
 				else
 					nearSince = nil
 				end
 			end
-			task.wait(0.05)
+
+			task.wait()
 		end
 		return false
 	end
+
+
+	-- [Akuma] libera o ataque rapido do hub enquanto bate na abobora
 	do
 		local fightPumpkinRaw = fightPumpkin
 		fightPumpkin = function(obj)
@@ -19095,6 +19108,8 @@ do
 			return ok and res or false
 		end
 	end
+
+
 	local start = function()
 		if state.on then
 			return
@@ -19104,12 +19119,16 @@ do
 		end
 		state.on = true
 		notify("Auto Collect Pumpkin ligado: indo ate a abobora e atacando.")
+
+		-- limpa BodyClip do hub se estiver no caminho
 		pcall(function()
 			local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
 			if hrp and hrp:FindFirstChild("BodyClip") then
 				hrp.BodyClip:Destroy()
 			end
 		end)
+
+		-- noclip enquanto ligado
 		state.noclip = RunService.Stepped:Connect(function()
 			local char = plr.Character
 			if char then
@@ -19120,6 +19139,8 @@ do
 				end
 			end
 		end)
+
+		-- [Akuma] voa ate a abobora mais proxima, bate ate derrotar e segue para a proxima
 		task.spawn(function()
 			while state.on do
 				pcall(function()
@@ -19129,9 +19150,12 @@ do
 					if not hrp or not hum or hum.Health <= 0 then
 						return
 					end
+
+					-- prioridade: Jack / PumpkinHead / PumpkinSnowman spawnado
 					if killSpawned() then
 						return
 					end
+
 					local _, obj = nearestPumpkin(hrp)
 					if not obj then
 						clearMovers()
@@ -19141,6 +19165,7 @@ do
 						end
 						return
 					end
+
 					state.current, state.currentAt = obj, tick()
 					local result = fightPumpkin(obj)
 					state.current = nil
@@ -19157,10 +19182,11 @@ do
 						end
 					end
 				end)
-				task.wait(0.05)
+				task.wait()
 			end
 		end)
 	end
+
 	local stop = function()
 		state.on = false
 		if state.noclip then
@@ -19169,30 +19195,25 @@ do
 		end
 		pcall(clearMovers)
 	end
+
 	GRP_Halloween:AddToggle("Halloween_Tween_Pumpkin", {
 		Text = "Tween Pumpkin",
-		Tooltip = "Usa o tween do hub (toTarget, mesmo dos outros farms / Tween Speed) para ir ate as aboboras em vez de teleportar",
+		Tooltip = "Usa o tween do hub (_tp, mesmo dos outros farms / Tween Speed) para ir ate as aboboras em vez de teleportar",
 		Default = false,
 		Callback = function(value)
 			_G.HalloweenTween = value
 		end
 	})
+
 	GRP_Halloween:AddToggle("Halloween_Kill_Jack", {
 		Text = "Kill Jack O Lantern",
-		Tooltip = "Mata so Jack o' Lantern / PumpkinHead / PumpkinSnowman assim que spawnarem (volta pra eles antes da proxima abobora)",
+		Tooltip = "Mata so Jack o' Lantern / PumpkinHead / PumpkinSnowman que ja spawnaram: termina a abobora atual e volta pra eles antes da proxima. Nao fica esperando eles nascerem.",
 		Default = true,
 		Callback = function(value)
 			_G.HalloweenKillJack = value
 		end
 	})
-	GRP_Halloween:AddToggle("Halloween_Kill_Snowman", {
-		Text = "Kill Pumpkin Snowman",
-		Tooltip = "Se o Pumpkin Snowman spawnar, vai ate ele e ataca antes de continuar nas aboboras",
-		Default = true,
-		Callback = function(value)
-			_G.HalloweenKillSnowman = value
-		end
-	})
+
 	GRP_Halloween:AddSlider({
 		Text = "Espera extra entre aboboras (s)",
 		Min = 0,
@@ -19203,12 +19224,11 @@ do
 			_G.HalloweenCooldown = value
 		end
 	})
+
+	-- [No Anim] para a animacao de balancar a arma (o dano e registrado pelos remotes, nao pela animacao)
 	do
-		-- No Attack Animation: o estado do toggle é salvo em Settings["No Attack Animation"] (pela própria UI).
-		-- Ao entrar no jogo, o efeito é reaplicado direto daqui (sem depender só da restauração tardia dos toggles),
-		-- e um loop reata o gancho sempre que o Animator mudar (respawn, personagem carregando depois, etc.).
-		local noAnimConn, hookedAnimator
-		local noAnimGen = 0
+		local noAnimConn, charConn
+
 		local stopSwing = function(track)
 			pcall(function()
 				if track.Looped then
@@ -19223,65 +19243,51 @@ do
 				end
 			end)
 		end
-		local attachAnimator = function()
-			local char = plr.Character
-			local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-			local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
-			if animator and animator ~= hookedAnimator then
-				if noAnimConn then
-					noAnimConn:Disconnect()
-				end
-				hookedAnimator = animator
-				noAnimConn = animator.AnimationPlayed:Connect(stopSwing)
-			end
-		end
-		local setNoAnim = function(value)
-			noAnimGen = noAnimGen + 1
-			local myGen = noAnimGen
+
+		local hook = function(char)
 			if noAnimConn then
 				noAnimConn:Disconnect()
 				noAnimConn = nil
 			end
-			hookedAnimator = nil
-			if value ~= true then
-				return
+			local humanoid = char and char:WaitForChild("Humanoid", 5)
+			local animator = humanoid and (humanoid:FindFirstChildOfClass("Animator") or humanoid:WaitForChild("Animator", 5))
+			if animator then
+				noAnimConn = animator.AnimationPlayed:Connect(stopSwing)
 			end
-			task.spawn(function()
-				while noAnimGen == myGen do
-					pcall(attachAnimator)
-					task.wait(.5)
-				end
-			end)
 		end
+
 		GRP_Halloween:AddToggle("Halloween_No_Anim", {
 			Text = "No Attack Animation",
 			Tooltip = "Remove a animacao de balancar a arma/golpe (tambem para outras animacoes de ataque enquanto ligado)",
 			Default = false,
-			Callback = setNoAnim,
+			Callback = function(value)
+				if charConn then
+					charConn:Disconnect()
+					charConn = nil
+				end
+				if noAnimConn then
+					noAnimConn:Disconnect()
+					noAnimConn = nil
+				end
+				if value then
+					task.spawn(hook, plr.Character)
+					charConn = plr.CharacterAdded:Connect(function(char)
+						hook(char)
+					end)
+				end
+			end
 		})
-		-- Save: se estava ligado quando você saiu, liga de novo ao entrar.
-		if NxSettings["No Attack Animation"] == true then
-			task.defer(setNoAnim, true)
-		end
 	end
-	-- Save próprio ("Halloween Auto Click"): antes o nome era "Auto Click" e dividia a mesma chave
-	-- salva com o Auto Click do Farm, que voltava ligado e clicava na tela ao reentrar.
-	do
-		local savedClick = NxSettings["Halloween Auto Click"]
-		if type(savedClick) == "boolean" then
-			_G.HalloweenClick = savedClick
-		else
-			_G.HalloweenClick = true
-		end
-	end
+
 	GRP_Halloween:AddToggle("Halloween_Auto_Click", {
-		Text = "Halloween Auto Click",
+		Text = "Auto Click",
 		Tooltip = "Clica com a arma (swing) junto dos remotes de dano. Desligue se a abobora morrer sem precisar.",
 		Default = true,
 		Callback = function(value)
 			_G.HalloweenClick = value
 		end
 	})
+
 	GRP_Halloween:AddToggle("Auto_Collect_Pumpkin", {
 		Text = "Auto Collect Pumpkin",
 		Default = false,
@@ -19293,6 +19299,7 @@ do
 			end
 		end
 	})
+
 	-- ===== [Akuma] Auto Trick or Treat =====
 	-- Evento: portas em varias ilhas (minuto :00 a :10 de cada hora). Bate na porta, escolhe "Treat" no dialogo
 	-- (Candy Corn) e segue para a proxima. Se a porta disparar uma luta, mata os inimigos novos e continua.
