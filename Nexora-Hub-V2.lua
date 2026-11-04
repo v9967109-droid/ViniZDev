@@ -2111,7 +2111,7 @@ function Nexora.CreateMain(config)
     local gui = make("ScreenGui", {Name = "NexoraUI", ResetOnSpawn = false, IgnoreGuiInset = true, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
 
     local W, H = 860, 540
-    local HEADER_H, SIDEBAR_W = 104, 112
+    local HEADER_H, SIDEBAR_W = 118, 112
 
     local shell = make("Frame", {
         Name = "Window", AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5),
@@ -2156,7 +2156,7 @@ function Nexora.CreateMain(config)
 
     -- (ícone removido do cabeçalho: fica só o nome)
 
-    local titleLbl = lbl(top, "", UDim2.new(0, 260, 0, 36), UDim2.new(0, 24, 0, 22), 24, C.white, Enum.Font.Arcade)
+    local titleLbl = lbl(top, "", UDim2.new(0, 260, 0, 32), UDim2.new(0, 24, 0, 8), 24, C.white, Enum.Font.Arcade)
     titleLbl.RichText = true
     local tUp = string.upper(TITLE)
     local first, rest = string.match(tUp, "^(%S+)%s+(.+)$")
@@ -2165,7 +2165,7 @@ function Nexora.CreateMain(config)
     else
         titleLbl.Text = '<font color="#FFFFFF">' .. tUp .. '</font>'
     end
-    lbl(top, SUBTITLE, UDim2.new(0, 260, 0, 20), UDim2.new(0, 26, 0, 60), 11, C.muted, Enum.Font.Code)
+    lbl(top, SUBTITLE, UDim2.new(0, 260, 0, 18), UDim2.new(0, 26, 0, 40), 11, C.muted, Enum.Font.Code)
 
     -- Controles da janela: cápsula com dois botões redondos (minimizar = âmbar, fechar = vermelho),
     -- ícones desenhados com barras (nítidos em qualquer tela), brilho no hover e "afundar" ao tocar.
@@ -2173,7 +2173,7 @@ function Nexora.CreateMain(config)
     do
         local controls = make("Frame", {
             Name = "Controls", BackgroundColor3 = Color3.fromRGB(6, 12, 24), BorderSizePixel = 0,
-            Position = UDim2.new(1, -106, 0, 17), Size = UDim2.fromOffset(96, 44),
+            Position = UDim2.new(1, -106, 0, 8), Size = UDim2.fromOffset(96, 44),
         }, top)
         corner(controls, 22)
         stroke(controls, C.stroke, 0.1, 1)
@@ -2224,15 +2224,16 @@ function Nexora.CreateMain(config)
     -- Abas no topo (rolagem horizontal, porque o hub tem muitas páginas).
     local tabStrip = make("ScrollingFrame", {
         Name = "Tabs", BackgroundTransparency = 1, BorderSizePixel = 0,
-        Position = UDim2.new(0, 292, 0, 20), Size = UDim2.new(1, -(292 + 112), 0, 66),
+        Position = UDim2.new(0, 16, 0, 66), Size = UDim2.new(1, -32, 0, 46),
         CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.X,
         ScrollingDirection = Enum.ScrollingDirection.X, ScrollBarThickness = 3, ScrollBarImageColor3 = C.blue,
+        ClipsDescendants = true,
     }, top)
     make("UIListLayout", {
         FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Top,
         Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder,
     }, tabStrip)
-    make("UIPadding", {PaddingTop = UDim.new(0, 2)}, tabStrip)
+    make("UIPadding", {PaddingTop = UDim.new(0, 1), PaddingLeft = UDim.new(0, 2), PaddingRight = UDim.new(0, 8)}, tabStrip)
 
     -- ============================ BARRA LATERAL ============================
     local sidebar = make("Frame", {Name = "Sidebar", BackgroundColor3 = Color3.fromRGB(6, 13, 25), BorderSizePixel = 0, Position = UDim2.new(0, 0, 0, HEADER_H), Size = UDim2.new(0, SIDEBAR_W, 1, -HEADER_H)}, shell)
@@ -2667,7 +2668,7 @@ function Nexora.CreateMain(config)
             local sz = TextService:GetTextSize(navText, 15, Enum.Font.GothamMedium, Vector2.new(1000, 100))
             tabW = math.ceil(sz.X) + 36
         end)
-        local tab = button(tabStrip, navText, UDim2.fromOffset(tabW, 56))
+        local tab = button(tabStrip, navText, UDim2.fromOffset(tabW, 38))
         tab:SetAttribute("NexoraKeepColor", true)
         tab.TextSize = 15
         tab.TextColor3 = C.muted
@@ -18012,10 +18013,14 @@ do
 			end
 		end
 	})
+	-- ===== [Akuma] Auto Trick or Treat =====
+	-- Evento: portas em varias ilhas (minuto :00 a :10 de cada hora). Bate na porta, escolhe "Treat" no dialogo
+	-- (Candy Corn) e segue para a proxima. Se a porta disparar uma luta, mata os inimigos novos e continua.
 	do
 		local trick = { on = false, noclip = nil, flying = false, visited = {}, doors = {}, scannedAt = 0, warned = false, useBig = true, killMobs = true, mobRadius = 120, hitGhost = true, ghosts = {} }
 		local GRP_Trick = NXH:AddLeftGroupbox("Trick or Treat")
 		GRP_Trick:AddLabel("Auto Trick or Treat\nBate nas portas, escolhe Treat no dialogo e vai para a proxima casa. O evento roda do minuto :00 ate :10 de cada hora.")
+
 		local keywords = { "knock", "trick", "treat" }
 		local matchText = function(text)
 			text = string.lower(tostring(text or ""))
@@ -18026,6 +18031,8 @@ do
 			end
 			return false
 		end
+
+		-- o prompt/detector ou ate 4 ancestrais tem nome de porta do evento
 		local isDoorObject = function(inst)
 			local node, depth = inst, 0
 			while node and node ~= workspace and depth < 5 do
@@ -18041,6 +18048,7 @@ do
 			end
 			return false
 		end
+
 		local objectPart = function(inst)
 			local node = inst.Parent
 			while node and node ~= workspace do
@@ -18057,6 +18065,8 @@ do
 			end
 			return nil
 		end
+
+		-- porta grande (HalloweenDoor2) x normal (HalloweenDoor)
 		local isBigDoor = function(inst)
 			local node, depth = inst, 0
 			while node and node ~= workspace and depth < 6 do
@@ -18068,6 +18078,8 @@ do
 			end
 			return false
 		end
+
+		-- posicao real do prompt (nao do PrimaryPart do modelo, que em porta grande fica longe)
 		local doorPos = function(door)
 			local p = door.inst.Parent
 			if p then
@@ -18080,6 +18092,8 @@ do
 			end
 			return door.part.Position
 		end
+
+		-- mensagem "It seems like nobody is home..." na tela
 		local nobodyHome = function()
 			local ok, res = pcall(function()
 				local pg = plr:FindFirstChildOfClass("PlayerGui")
@@ -18098,6 +18112,7 @@ do
 			end)
 			return ok and res
 		end
+
 		local scanDoors = function(maxAge)
 			if tick() - trick.scannedAt < (maxAge or 120) then
 				return trick.doors
@@ -18125,6 +18140,7 @@ do
 			trick.doors = list
 			return list
 		end
+
 		local goTo = function(goal)
 			local char = plr.Character
 			local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -18137,6 +18153,7 @@ do
 			end
 			trick.flying = true
 			if _G.HalloweenTween or dist > 400 then
+				-- distancias grandes sempre por tween (teleporte longo e arriscado)
 				applyMovers(char)
 				local speed = tonumber(getgenv().TweenSpeedFar) or 270
 				local time = math.max(dist / speed, 0.05)
@@ -18157,6 +18174,7 @@ do
 			end
 			trick.flying = false
 		end
+
 		local triggerDoor = function(door)
 			local inst = door.inst
 			if inst:IsA("ProximityPrompt") then
@@ -18173,6 +18191,7 @@ do
 					fired = pcall(fireproximityprompt, inst)
 				end
 				if not fired then
+					-- reserva: aperta a tecla do prompt
 					pcall(function()
 						local key = inst.KeyboardKeyCode
 						if key == Enum.KeyCode.Unknown then
@@ -18190,6 +18209,7 @@ do
 				pcall(fireclickdetector, inst)
 			end
 		end
+
 		local optionText = function(option)
 			local text = option._text
 			if type(text) == "table" then
@@ -18197,6 +18217,8 @@ do
 			end
 			return string.lower(tostring(text))
 		end
+
+		-- conversa com o NPC da porta: escolhe "Treat" e avanca ate o dialogo fechar
 		local handleDialogue = function()
 			local okReq, DC = pcall(function()
 				return require(game:GetService("ReplicatedStorage"):WaitForChild("DialogueController", 3))
@@ -18251,13 +18273,16 @@ do
 							pcall(DC.select, pick or options[1])
 						end
 					end
-				elseif seen or tick() - started > 6 then
+				elseif seen or tick() - started > 4 then
 					break
 				end
 			end
 			pcall(DC.close)
 			return seen, false
 		end
+
+		-- luta contra o que a porta invocar (so inimigos que nao estavam la antes)
+		-- mata os mobs que a porta spawnar (so os novos, o mais perto primeiro) e segue para a proxima porta
 		local fightNew = function(before, doorPos)
 			if not trick.killMobs then
 				return
@@ -18275,6 +18300,8 @@ do
 					if not hrp or not enemies then
 						break
 					end
+
+					-- alvo: mob NOVO perto da porta/do player, ou qualquer mob vivo bem perto (como o nearbyMonster)
 					local target, best = nil, math.huge
 					for _, mob in ipairs(enemies:GetChildren()) do
 						local root = mob:FindFirstChild("HumanoidRootPart")
@@ -18289,6 +18316,7 @@ do
 							end
 						end
 					end
+
 					if target then
 						seen, lastSeen = true, tick()
 						local hum = target:FindFirstChildOfClass("Humanoid")
@@ -18299,17 +18327,26 @@ do
 							if not tRoot or not myHrp then
 								break
 							end
-							pcall(t9.Kill, target, true)
+
+							-- mesma funcao do Auto Collect (BringEnemy + _tp em cima do mob)
+							pcall(t9.Kill, target, true, 10) -- fantasma: mantem 10 studs
+
+							-- reserva [Akuma]: se o _tp nao colocou o player perto, teleporta direto em cima
 							if (myHrp.Position - tRoot.Position).Magnitude > 25 then
 								myHrp.CFrame = CFrame.lookAt(tRoot.Position + Vector3.new(0, 8, 0), tRoot.Position)
 								myHrp.AssemblyLinearVelocity = Vector3.zero
 							end
+
+							-- clique direto no mob (tool + RegisterHit + mouse virtual)
 							if tick() - lastClick >= 0.12 then
 								lastClick = tick()
 								pcall(equipAttackTool)
 								pcall(hitPumpkin, target, tRoot)
-								pcall(clickPumpkin)
+								if _G.HalloweenClick ~= false then
+									pcall(clickPumpkin)
+								end
 							end
+
 							task.wait()
 							if lastHp ~= hum.Health then
 								lastHp, since = hum.Health, tick()
@@ -18320,6 +18357,7 @@ do
 						end
 						before[target] = true
 					else
+						-- sem mob: espera ate 5s pelo primeiro spawn; depois de matar, so 1.5s por mais algum
 						if tick() - lastSeen > (seen and 1.5 or 5) then
 							break
 						end
@@ -18337,19 +18375,28 @@ do
 				end
 			end)
 		end
+
+		-- ===== Fantasma do "Ghost Chase" (aparece em algumas portas, precisa de 3 hits) =====
 		local isGhostName = function(name)
 			name = string.lower(tostring(name or ""))
 			if string.find(name, "ghostship", 1, true) or string.find(name, "ghost fruit", 1, true) then
 				return false
 			end
-			return string.find(name, "ghost", 1, true) ~= nil
+			for _, key in ipairs({ "ghost", "spirit", "specter", "spectre", "phantom", "fantasma", "haunt", "wraith", "boo" }) do
+				if string.find(name, key, 1, true) then
+					return true
+				end
+			end
+			return false
 		end
+
 		local ghostPart = function(inst)
 			if inst:IsA("BasePart") then
 				return inst
 			end
 			return inst.PrimaryPart or inst:FindFirstChild("HumanoidRootPart", true) or inst:FindFirstChildWhichIsA("BasePart", true)
 		end
+
 		local fightGhost = function(since)
 			if not trick.hitGhost then
 				return
@@ -18358,7 +18405,7 @@ do
 				local hrp = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
 				local best, bestDist = nil, 400
 				for _, g in ipairs(trick.ghosts) do
-					if g.t >= since - 0.5 and g.inst.Parent and hrp then
+					if g.t >= since - 4 and g.inst.Parent and hrp then
 						local part = ghostPart(g.inst)
 						if part then
 							local dist = (part.Position - hrp.Position).Magnitude
@@ -18368,10 +18415,34 @@ do
 						end
 					end
 				end
+				-- reserva: varre o mapa atras de um fantasma perto (caso o DescendantAdded tenha perdido)
+				if not best and hrp then
+					pcall(function()
+						local roots = { workspace, workspace:FindFirstChild("Enemies"), workspace:FindFirstChild("NPCs"), workspace:FindFirstChild("Map") }
+						for _, root in ipairs(roots) do
+							if root then
+								local list = (root == workspace or root.Name == "Map") and root:GetChildren() or root:GetDescendants()
+								for _, inst in ipairs(list) do
+									if (inst:IsA("Model") or inst:IsA("BasePart")) and isGhostName(inst.Name) and not (plr.Character and inst:IsDescendantOf(plr.Character)) then
+										local part = ghostPart(inst)
+										if part then
+											local dist = (part.Position - hrp.Position).Magnitude
+											if dist < bestDist then
+												best, bestDist = inst, dist
+											end
+										end
+									end
+								end
+							end
+						end
+					end)
+				end
 				return best
 			end
+
+			-- espera ate 3s o fantasma aparecer (so se ele realmente nascer nesta porta)
 			local ghost
-			local deadline = tick() + 3
+			local deadline = tick() + 8
 			while trick.on and tick() < deadline and not ghost do
 				ghost = pick()
 				if not ghost then
@@ -18382,6 +18453,7 @@ do
 				return
 			end
 			notify("Fantasma detectado (" .. ghost.Name .. "): dando os hits...")
+
 			local started, hits, lastHit = tick(), 0, 0
 			while trick.on and ghost.Parent and tick() - started < 15 and hits < 12 do
 				local char = plr.Character
@@ -18394,6 +18466,7 @@ do
 				if hum and hum.Health <= 0 then
 					break
 				end
+				-- fica em cima do fantasma (ele persegue; assim sempre esta no alcance)
 				hrp.CFrame = CFrame.new(part.Position + Vector3.new(0, 5, 0))
 				hrp.AssemblyLinearVelocity = Vector3.zero
 				if tick() - lastHit >= 0.35 then
@@ -18416,6 +18489,7 @@ do
 			end
 			trick.ghosts = {}
 		end
+
 		local doorPartOf = function(inst)
 			if not (inst:IsA("ProximityPrompt") or inst:IsA("ClickDetector")) then
 				return nil
@@ -18429,6 +18503,7 @@ do
 			end
 			return nil
 		end
+
 		local startTrick = function()
 			if trick.on then
 				return
@@ -18451,19 +18526,38 @@ do
 				if not trick.hitGhost then
 					return
 				end
-				if (inst:IsA("Model") or inst:IsA("BasePart")) and isGhostName(inst.Name) then
+				local register = function(obj)
 					local char = plr.Character
-					if char and inst:IsDescendantOf(char) then
+					if char and obj:IsDescendantOf(char) then
 						return
 					end
 					if #trick.ghosts > 50 then
 						table.remove(trick.ghosts, 1)
 					end
-					table.insert(trick.ghosts, { inst = inst, t = tick() })
+					table.insert(trick.ghosts, { inst = obj, t = tick() })
+				end
+				if inst:IsA("Model") or inst:IsA("BasePart") then
+					if isGhostName(inst.Name) then
+						register(inst)
+					else
+						local c
+						c = inst:GetPropertyChangedSignal("Name"):Connect(function()
+							if isGhostName(inst.Name) then
+								register(inst)
+							end
+							c:Disconnect()
+						end)
+						task.delay(5, function()
+							if c.Connected then
+								c:Disconnect()
+							end
+						end)
+					end
 				end
 			end)
 			trick.visited = {}
 			notify("Auto Trick or Treat ligado. Procurando portas do evento...")
+
 			trick.noclip = RunService.Stepped:Connect(function()
 				if not trick.flying then
 					return
@@ -18477,6 +18571,7 @@ do
 					end
 				end
 			end)
+
 			task.spawn(function()
 				while trick.on do
 					pcall(function()
@@ -18486,8 +18581,10 @@ do
 						if not hrp or not hum or hum.Health <= 0 then
 							return
 						end
+
+						-- porta disponivel mais proxima (cada porta so de novo depois de 60s)
 						local best, bestDist
-						for _, door in ipairs(scanDoors(120)) do
+						for _, door in ipairs(scanDoors(30)) do
 							local inst, part = door.inst, door.part
 							if inst.Parent and part.Parent then
 								local enabled = true
@@ -18503,6 +18600,7 @@ do
 								end
 							end
 						end
+
 						if not best then
 							if not trick.warned then
 								trick.warned = true
@@ -18513,6 +18611,7 @@ do
 							return
 						end
 						trick.warned = false
+
 						local part = best.part
 						local dpos = doorPos(best)
 						local stand = dpos + Vector3.new(0, 1, 0)
@@ -18523,6 +18622,7 @@ do
 						local stay = CFrame.lookAt(stand, dpos)
 						goTo(stay)
 						hrp.CFrame = stay
+
 						local before = {}
 						local enemies = workspace:FindFirstChild("Enemies")
 						if enemies then
@@ -18530,13 +18630,17 @@ do
 								before[mob] = true
 							end
 						end
+
 						trick.visited[best.inst] = tick()
 						local tStart = tick()
+
+						-- fica parado em frente a porta ate o dialogo/evento terminar (sair cancela: "You walked away")
 						local held = true
 						task.spawn(function()
 							local lastSnap = 0
 							while held and trick.on do
 								local root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+								-- so corrige se foi empurrado longe (>20) e no maximo 1x a cada 2s; nao zera velocidade
 								if root and (root.Position - stay.Position).Magnitude > 20 and tick() - lastSnap > 2 then
 									lastSnap = tick()
 									root.CFrame = stay
@@ -18544,12 +18648,24 @@ do
 								task.wait(0.25)
 							end
 						end)
+
 						local talked, empty = false, false
 						local waitT = tick()
 						while nobodyHome() and tick() - waitT < 3 do
 							task.wait(0.2) -- espera sumir a mensagem da porta anterior
 						end
-						for _ = 1, 2 do
+						for attempt = 1, 3 do
+							if attempt >= 2 then
+								-- porta que nao respondeu: chega mais perto (o servidor checa a distancia ate o prompt)
+								local near = dpos + Vector3.new(0, 1, 0)
+								if away.Magnitude > 1 then
+									near = near + away.Unit * (attempt == 2 and 2 or 0.5)
+								end
+								stay = CFrame.lookAt(near, dpos)
+								pcall(function()
+									hrp.CFrame = stay
+								end)
+							end
 							local okDC, DCm = pcall(function()
 								return require(game:GetService("ReplicatedStorage"):WaitForChild("DialogueController", 3))
 							end)
@@ -18563,11 +18679,11 @@ do
 							if talked then
 								break
 							end
-							task.wait(0.8)
+							task.wait(0.4)
 						end
 						held = false
 						if not talked then
-							trick.visited[best.inst] = tick() + (empty and 300 or 120)
+							trick.visited[best.inst] = tick() + (empty and 300 or 30)
 							pcall(function()
 								local i = best.inst
 								local info = (best.big and "[GRANDE] " or "[normal] ") .. i.Parent.Name .. "/" .. (i.Parent.Parent and i.Parent.Parent.Name or "?")
@@ -18588,6 +18704,7 @@ do
 				end
 			end)
 		end
+
 		local stopTrick = function()
 			trick.on = false
 			trick.flying = false
@@ -18605,6 +18722,7 @@ do
 			end
 			pcall(clearMovers)
 		end
+
 		GRP_Trick:AddToggle("Trick_Hit_Ghost", {
 			Text = "Atacar fantasma (Ghost Chase)",
 			Tooltip = "Quando a porta soltar o fantasma, fica em cima dele e da os hits ate sumir",
@@ -18613,6 +18731,7 @@ do
 				trick.hitGhost = value
 			end
 		})
+
 		GRP_Trick:AddToggle("Trick_Kill_Door_Mobs", {
 			Text = "Matar mobs da porta (nearest)",
 			Tooltip = "Mata os mobs que a porta spawnar, o mais perto primeiro, e vai para a proxima",
@@ -18621,6 +18740,7 @@ do
 				trick.killMobs = value
 			end
 		})
+
 		GRP_Trick:AddSlider({
 			Text = "Raio dos mobs da porta",
 			Min = 40,
@@ -18631,6 +18751,7 @@ do
 				trick.mobRadius = value
 			end
 		})
+
 		GRP_Trick:AddToggle("Trick_Include_Big_Doors", {
 			Text = "Incluir portas grandes (HalloweenDoor2)",
 			Tooltip = "Normais sempre primeiro. Desligue se as grandes derem erro.",
@@ -18639,6 +18760,7 @@ do
 				trick.useBig = value
 			end
 		})
+
 		GRP_Trick:AddToggle("Auto_Trick_Or_Treat", {
 			Text = "Auto Trick or Treat",
 			Tooltip = "Bate nas portas do evento, escolhe Treat e repete em todas as casas",
@@ -18651,6 +18773,7 @@ do
 				end
 			end
 		})
+
 	end
 	do
 		local boss = { on = false, noclip = nil, hover = nil, target = nil, prevFarm = nil, warned = false, height = 25 }
