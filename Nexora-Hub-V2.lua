@@ -17933,7 +17933,11 @@ do
 		end
 	})
 	do
-		local noAnimConn, charConn
+		-- No Attack Animation: o estado do toggle é salvo em Settings["No Attack Animation"] (pela própria UI).
+		-- Ao entrar no jogo, o efeito é reaplicado direto daqui (sem depender só da restauração tardia dos toggles),
+		-- e um loop reata o gancho sempre que o Animator mudar (respawn, personagem carregando depois, etc.).
+		local noAnimConn, hookedAnimator
+		local noAnimGen = 0
 		local stopSwing = function(track)
 			pcall(function()
 				if track.Looped then
@@ -17948,38 +17952,46 @@ do
 				end
 			end)
 		end
-		local hook = function(char)
+		local attachAnimator = function()
+			local char = plr.Character
+			local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+			local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
+			if animator and animator ~= hookedAnimator then
+				if noAnimConn then
+					noAnimConn:Disconnect()
+				end
+				hookedAnimator = animator
+				noAnimConn = animator.AnimationPlayed:Connect(stopSwing)
+			end
+		end
+		local setNoAnim = function(value)
+			noAnimGen = noAnimGen + 1
+			local myGen = noAnimGen
 			if noAnimConn then
 				noAnimConn:Disconnect()
 				noAnimConn = nil
 			end
-			local humanoid = char and char:WaitForChild("Humanoid", 5)
-			local animator = humanoid and (humanoid:FindFirstChildOfClass("Animator") or humanoid:WaitForChild("Animator", 5))
-			if animator then
-				noAnimConn = animator.AnimationPlayed:Connect(stopSwing)
+			hookedAnimator = nil
+			if value ~= true then
+				return
 			end
+			task.spawn(function()
+				while noAnimGen == myGen do
+					pcall(attachAnimator)
+					task.wait(.5)
+				end
+			end)
 		end
 		GRP_Halloween:AddToggle("Halloween_No_Anim", {
 			Text = "No Attack Animation",
 			Tooltip = "Remove a animacao de balancar a arma/golpe (tambem para outras animacoes de ataque enquanto ligado)",
 			Default = false,
-			Callback = function(value)
-				if charConn then
-					charConn:Disconnect()
-					charConn = nil
-				end
-				if noAnimConn then
-					noAnimConn:Disconnect()
-					noAnimConn = nil
-				end
-				if value then
-					task.spawn(hook, plr.Character)
-					charConn = plr.CharacterAdded:Connect(function(char)
-						hook(char)
-					end)
-				end
-			end
+			Callback = setNoAnim,
 		})
+		-- Save: se estava ligado quando você saiu, liga de novo ao entrar.
+		if NxSettings["No Attack Animation"] == true then
+			task.defer(setNoAnim, true)
+		end
 	end
 	GRP_Halloween:AddToggle("Halloween_Auto_Click", {
 		Text = "Auto Click",
