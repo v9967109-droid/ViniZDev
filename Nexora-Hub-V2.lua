@@ -12534,9 +12534,87 @@ local FarmotherMain = NXSQPage
 			ToTarget(arg)
 		end
 	end
+	-- ===== Skypea (Sky Area 1 / 2 / 3) =====
+	-- O tween direto nao chega nas ilhas do ceu; o jogo leva ate la pelo portal (requestEntrance).
+	HiddenEvent.SkyPortalBad = {}
+	HiddenEvent.SkyPortalLast = 0
+	HiddenEvent.SkyDests = function()
+		local function mapPos(...)
+			local node = workspace:FindFirstChild("Map")
+			for _, name in ipairs({ ... }) do
+				node = node and (node:FindFirstChild(name) or node:FindFirstChild(name, true))
+			end
+			if not node then
+				return nil
+			end
+			if node:IsA("BasePart") then
+				return node.Position
+			end
+			local ok, p = pcall(function()
+				return node:GetPivot().Position
+			end)
+			return ok and p or nil
+		end
+		local sky3Exit = Vector3.new(-4607.82, 872.54, -1667.56)
+		return {
+			Sky1 = mapPos("SkyArea1", "PathwayTemple", "ExitPoint") or sky3Exit,
+			Sky2 = mapPos("SkyArea2", "PathwayHouse", "EntrancePoint"),
+			Sky3 = Vector3.new(-7894.62, 5545.49, -380.25),
+			Sky3Exit = sky3Exit,
+		}
+	end
+	-- posicao de uma ilha do ceu pelo nome (quando o mapa nao devolve a ilha)
+	HiddenEvent.SkyIslandPos = function(name)
+		local d = HiddenEvent.SkyDests()
+		if name == "Sky" or name == "SkyArea1" or name == "Sky1" then
+			return d.Sky1
+		elseif name == "SkyArea2" or name == "Sky2" then
+			return d.Sky2 or d.Sky1
+		elseif name == "SkyArea3" or name == "Sky3" then
+			return d.Sky3
+		end
+	end
+	HiddenEvent.SkyPortalAssist = function(target)
+		if GetCurrentSea() ~= 1 or tick() - HiddenEvent.SkyPortalLast < 4 then
+			return false
+		end
+		local root = localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart")
+		if not root then
+			return false
+		end
+		local direct = (target - root.Position).Magnitude
+		if direct < 1500 then
+			return false
+		end
+		local bestName, best, bestDist
+		for name, pos in pairs(HiddenEvent.SkyDests()) do
+			local dist = (pos - target).Magnitude
+			if tick() - (HiddenEvent.SkyPortalBad[name] or -1e9) > 900 and (not bestDist or dist < bestDist) then
+				bestName, best, bestDist = name, pos, dist
+			end
+		end
+		-- so usa o portal se o alvo ficar pelo menos 10% mais perto
+		if not best or not (bestDist < direct * 0.9) then
+			return false
+		end
+		HiddenEvent.SkyPortalLast = tick()
+		SetHiddenStep("Skypea portal: " .. bestName)
+		pcall(function()
+			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("requestEntrance", best)
+		end)
+		task.wait(1)
+		local root2 = localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart")
+		if root2 and (target - root2.Position).Magnitude >= direct then
+			HiddenEvent.SkyPortalBad[bestName] = tick()
+		end
+		return true
+	end
 	HiddenGoTo = function(arg, arg2)
 		if localPlayer:DistanceFromCharacter(arg) <= (arg2 or 8) then
 			return true
+		end
+		if Settings["Auto Secret Quest"] and HiddenEvent.SkyPortalAssist(arg) then
+			return false
 		end
 		HiddenMove(CFrame.new(arg))
 		return false
@@ -12544,6 +12622,11 @@ local FarmotherMain = NXSQPage
 	HiddenGoToIsland = function(arg)
 		local v6 = GetHiddenIsland(arg)
 		if not v6 then
+			local skyPos = HiddenEvent.SkyIslandPos(arg)
+			if skyPos then
+				SetHiddenStep("Travel to " .. arg)
+				return HiddenGoTo(skyPos + Vector3.new(0, 30, 0), 150)
+			end
 			return
 		end
 		SetHiddenStep("Travel to " .. arg)
@@ -21824,34 +21907,100 @@ BerrySection.CreateToggle(
 BerrySection.CreateToggle(
 	{ Title = "Auto Collect Berry", Desc = nil, Default = Settings["Auto Collect Berry"] or false },
 	function(y)
-		if y then
-			spawn(function()
-				while Settings["Auto Collect Berry"] and (task.wait(0.1)) do
-					pcall(function()
-						local P = DetectBerry()
-						if P then
-							local Y = DetectModelBerry(P)
-							if not Y then
-								toTarget(P.Parent.WorldPivot)
-							else
-								toTarget(Y.WorldPivot)
-								local P = Y:FindFirstChild("ProximityPrompt")
-								if P then
-									fireproximityprompt(P)
-								end
-							end
-						else
-							A.CreateNoti({ Title = "Nexora Hub", Desc = "Waiting Berry spawn", ShowTime = 5 })
-							if Settings["Hop Find Berry"] then
-								HopServer()
-							end
-							wait(5)
-						end
-					end)
-				end
-			end)
-		end
 		SaveSettings("Auto Collect Berry", y)
+		if not y then
+			return
+		end
+		-- um unico loop por vez (religar o toggle nao empilha loops)
+		local env = getgenv()
+		env.__NxBerryLoop = (env.__NxBerryLoop or 0) + 1
+		local loopId = env.__NxBerryLoop
+		task.spawn(function()
+			local CS = game:GetService("CollectionService")
+			local lastNoti = 0
+			local function PivotOf(o)
+				if typeof(o) == "CFrame" then
+					return o
+				end
+				if typeof(o) ~= "Instance" then
+					return nil
+				end
+				if o:IsA("Model") then
+					local ok, p = pcall(function()
+						return o:GetPivot()
+					end)
+					return ok and p or nil
+				end
+				if o:IsA("BasePart") then
+					return o.CFrame
+				end
+			end
+			-- onde o arbusto fica (atributo CFrame do pai, senao o pivot)
+			local function BushCFrame(bush)
+				local parent = bush.Parent
+				local cf = parent and parent:GetAttribute("CFrame")
+				if typeof(cf) == "CFrame" then
+					return cf
+				end
+				return PivotOf(parent) or PivotOf(bush)
+			end
+			-- arbusto COM berry mais PERTO (antes pegava sempre o primeiro da lista)
+			local function NearestBush(root)
+				local best, bestD
+				for _, bush in ipairs(CS:GetTagged("BerryBush")) do
+					if bush.Parent and not bush.Parent:FindFirstChild("IgnoredBerry") and DetectBerryCFrame(bush:GetAttributes()) then
+						local cf = BushCFrame(bush)
+						if cf then
+							local d = (cf.Position - root.Position).Magnitude
+							if not bestD or d < bestD then
+								best, bestD = bush, d
+							end
+						end
+					end
+				end
+				return best
+			end
+			while Settings["Auto Collect Berry"] and env.__NxBerryLoop == loopId and task.wait(0.1) do
+				pcall(function()
+					local char = t.Character
+					local root = char and char:FindFirstChild("HumanoidRootPart")
+					if not root then
+						return
+					end
+					local bush = NearestBush(root)
+					if bush then
+						local berry = bush:GetChildren()[1]
+						local cf = (berry and PivotOf(berry)) or BushCFrame(bush)
+						if not cf then
+							return
+						end
+						if (cf.Position - root.Position).Magnitude > 10 then
+							toTarget(cf)
+						elseif berry then
+							local prompt = berry:FindFirstChildWhichIsA("ProximityPrompt", true)
+							if prompt then
+								pcall(function()
+									prompt.HoldDuration = 0
+								end)
+								fireproximityprompt(prompt)
+								task.wait(0.3)
+							end
+						end
+					else
+						if tick() - lastNoti > 10 then
+							lastNoti = tick()
+							pcall(function()
+								A.CreateNoti({ Title = "Nexora Hub", Desc = "Waiting Berry spawn", ShowTime = 5 })
+							end)
+						end
+						if Settings["Hop Find Berry"] then
+							pcall(HopServer)
+						end
+						task.wait(5)
+					end
+				end)
+			end
+		end)
 	end
 )
 FarmChestSection = FarmotherMain.CreateSection("Farm Chest")
