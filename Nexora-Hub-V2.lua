@@ -2298,7 +2298,7 @@ function Nexora.CreateMain(config)
 
     local gui = make("ScreenGui", {Name = "NexoraUI", ResetOnSpawn = false, IgnoreGuiInset = true, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
 
-    local W, H = (BANANA and 820 or 760), (BANANA and 500 or 540)
+    local W, H = 860, (BANANA and 500 or 540)
     local HEADER_H, SIDEBAR_W = 48, 210
 
     local shell = make("Frame", {
@@ -3563,7 +3563,7 @@ function Nexora.CreateMain(config)
 
     local gui = make("ScreenGui", {Name = "NexoraUI", ResetOnSpawn = false, IgnoreGuiInset = true, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
 
-    local W, H = 760, 540
+    local W, H = 860, 540
     local HEADER_H, SIDEBAR_W = 118, 112
 
     local shell = make("Frame", {
