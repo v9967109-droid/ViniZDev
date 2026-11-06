@@ -3234,19 +3234,24 @@ function Nexora.CreateMain(config)
                     local bPos, bSize = b.AbsolutePosition, b.AbsoluteSize
                     local shellW, shellH = shellSize.X / s, shellSize.Y / s
                     local count = #listValues + (multi and 1 or 0)
-                    local h = math.max(40, math.min(220, count * 36 + 8))
+                    local h = math.max(40, math.min(196, count * 32 + 12))
                     local w = math.max(bSize.X / s, 150)
                     local x = (bPos.X - shellPos.X) / s
                     local y = (bPos.Y - shellPos.Y + bSize.Y) / s + 5
                     if y + h > shellH - 8 then y = math.max(8, (bPos.Y - shellPos.Y) / s - h - 5) end
                     x = math.clamp(x, 6, math.max(6, shellW - w - 6))
                     local menu = make("ScrollingFrame", {
-                        Name = menuName, Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(w, h), CanvasSize = UDim2.new(),
-                        ScrollBarThickness = 3, ScrollBarImageColor3 = C.blue, BackgroundColor3 = C.panel2, BorderSizePixel = 0,
-                        ZIndex = 100, Active = true,
+                        Name = menuName, Position = UDim2.fromOffset(x, y - 6), Size = UDim2.fromOffset(w, h), CanvasSize = UDim2.new(),
+                        ScrollBarThickness = 2, ScrollBarImageColor3 = C.blue, BackgroundColor3 = C.panel2, BorderSizePixel = 0,
+                        ZIndex = 200, Active = true, ClipsDescendants = true, ScrollingDirection = Enum.ScrollingDirection.Y,
+                        ElasticBehavior = Enum.ElasticBehavior.Never,
                     }, shell)
+                    pcall(function() TweenService:Create(menu, TweenInfo.new(.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.fromOffset(x, y)}):Play() end)
+                    -- Se a página rolar, o botão sai do lugar: fecha o menu em vez de ficar flutuando solto.
+                    local posConn = b:GetPropertyChangedSignal("AbsolutePosition"):Connect(function() if menu and menu.Parent then menu:Destroy() end end)
+                    menu.Destroying:Connect(function() posConn:Disconnect() end)
                     menu:SetAttribute("NexoraOwner", t)
-                    corner(menu, 10); stroke(menu, C.blue, 0.35)
+                    corner(menu, 10); stroke(menu, C.blue, 0.2, 1.5)
                     -- Fecha o menu ao tocar fora dele.
                     local outsideConnection
                     outsideConnection = UIS.InputBegan:Connect(function(input, processed)
@@ -3266,21 +3271,24 @@ function Nexora.CreateMain(config)
                         end)
                     end)
                     menu.Destroying:Connect(function() if outsideConnection then outsideConnection:Disconnect() end end)
-                    local lay = make("UIListLayout", {Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder}, menu)
-                    make("UIPadding", {PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4), PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 4)}, menu)
-                    lay:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() menu.CanvasSize = UDim2.new(0, 0, 0, lay.AbsoluteContentSize.Y + 8) end)
+                    local lay = make("UIListLayout", {Padding = UDim.new(0, 3), SortOrder = Enum.SortOrder.LayoutOrder}, menu)
+                    make("UIPadding", {PaddingTop = UDim.new(0, 5), PaddingBottom = UDim.new(0, 5), PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5)}, menu)
+                    lay:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() menu.CanvasSize = UDim2.new(0, 0, 0, lay.AbsoluteContentSize.Y + 10) end)
                     local function styleOption(ob, on)
                         ob.BackgroundTransparency = on and 0 or 1
                         ob.BackgroundColor3 = on and C.tabOn or C.panel2
+                        ob.TextColor3 = on and C.blue or C.white
                     end
                     for index, value in ipairs(listValues) do
                         local isOn = multi and selected[value] == true
                         local ob = make("TextButton", {
-                            AutoButtonColor = false, BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 34),
+                            AutoButtonColor = false, BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 29),
                             Text = (multi and (isOn and "✓  " or "□  ") or "") .. tostring(value), TextColor3 = C.white, TextSize = 13,
-                            Font = Enum.Font.GothamMedium, ZIndex = 101, LayoutOrder = index,
+                            Font = Enum.Font.GothamMedium, ZIndex = 201, LayoutOrder = index, TextXAlignment = Enum.TextXAlignment.Left,
+                            TextTruncate = Enum.TextTruncate.AtEnd,
                         }, menu)
-                        corner(ob, 8)
+                        corner(ob, 7)
+                        make("UIPadding", {PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 8)}, ob)
                         if multi then styleOption(ob, isOn) end
                         ob.MouseEnter:Connect(function() if not (multi and selected[value]) then ob.BackgroundTransparency = 0; ob.BackgroundColor3 = C.hover end end)
                         ob.MouseLeave:Connect(function() styleOption(ob, multi and selected[value] == true) end)
@@ -3301,8 +3309,8 @@ function Nexora.CreateMain(config)
                     end
                     if multi then
                         local done = make("TextButton", {
-                            AutoButtonColor = false, BackgroundColor3 = C.blue, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 34),
-                            Text = "Done", TextColor3 = Color3.new(1, 1, 1), TextSize = 13, Font = Enum.Font.GothamBold, ZIndex = 101, LayoutOrder = #listValues + 1,
+                            AutoButtonColor = false, BackgroundColor3 = C.blue, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 29),
+                            Text = "Done", TextColor3 = Color3.new(1, 1, 1), TextSize = 13, Font = Enum.Font.GothamBold, ZIndex = 201, LayoutOrder = #listValues + 1,
                         }, menu)
                         corner(done, 8)
                         done.MouseButton1Click:Connect(function() menu:Destroy() end)
@@ -4576,19 +4584,24 @@ function Nexora.CreateMain(config)
                     local bPos, bSize = b.AbsolutePosition, b.AbsoluteSize
                     local shellW, shellH = shellSize.X / s, shellSize.Y / s
                     local count = #listValues + (multi and 1 or 0)
-                    local h = math.max(40, math.min(220, count * 36 + 8))
+                    local h = math.max(40, math.min(196, count * 32 + 12))
                     local w = math.max(bSize.X / s, 150)
                     local x = (bPos.X - shellPos.X) / s
                     local y = (bPos.Y - shellPos.Y + bSize.Y) / s + 5
                     if y + h > shellH - 8 then y = math.max(8, (bPos.Y - shellPos.Y) / s - h - 5) end
                     x = math.clamp(x, 6, math.max(6, shellW - w - 6))
                     local menu = make("ScrollingFrame", {
-                        Name = menuName, Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(w, h), CanvasSize = UDim2.new(),
-                        ScrollBarThickness = 3, ScrollBarImageColor3 = C.blue, BackgroundColor3 = C.panel2, BorderSizePixel = 0,
-                        ZIndex = 100, Active = true,
+                        Name = menuName, Position = UDim2.fromOffset(x, y - 6), Size = UDim2.fromOffset(w, h), CanvasSize = UDim2.new(),
+                        ScrollBarThickness = 2, ScrollBarImageColor3 = C.blue, BackgroundColor3 = C.panel2, BorderSizePixel = 0,
+                        ZIndex = 200, Active = true, ClipsDescendants = true, ScrollingDirection = Enum.ScrollingDirection.Y,
+                        ElasticBehavior = Enum.ElasticBehavior.Never,
                     }, shell)
+                    pcall(function() TweenService:Create(menu, TweenInfo.new(.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.fromOffset(x, y)}):Play() end)
+                    -- Se a página rolar, o botão sai do lugar: fecha o menu em vez de ficar flutuando solto.
+                    local posConn = b:GetPropertyChangedSignal("AbsolutePosition"):Connect(function() if menu and menu.Parent then menu:Destroy() end end)
+                    menu.Destroying:Connect(function() posConn:Disconnect() end)
                     menu:SetAttribute("NexoraOwner", t)
-                    corner(menu, 10); stroke(menu, C.blue, 0.35)
+                    corner(menu, 10); stroke(menu, C.blue, 0.2, 1.5)
                     -- Fecha o menu ao tocar fora dele.
                     local outsideConnection
                     outsideConnection = UIS.InputBegan:Connect(function(input, processed)
@@ -4608,21 +4621,24 @@ function Nexora.CreateMain(config)
                         end)
                     end)
                     menu.Destroying:Connect(function() if outsideConnection then outsideConnection:Disconnect() end end)
-                    local lay = make("UIListLayout", {Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder}, menu)
-                    make("UIPadding", {PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4), PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 4)}, menu)
-                    lay:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() menu.CanvasSize = UDim2.new(0, 0, 0, lay.AbsoluteContentSize.Y + 8) end)
+                    local lay = make("UIListLayout", {Padding = UDim.new(0, 3), SortOrder = Enum.SortOrder.LayoutOrder}, menu)
+                    make("UIPadding", {PaddingTop = UDim.new(0, 5), PaddingBottom = UDim.new(0, 5), PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5)}, menu)
+                    lay:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() menu.CanvasSize = UDim2.new(0, 0, 0, lay.AbsoluteContentSize.Y + 10) end)
                     local function styleOption(ob, on)
                         ob.BackgroundTransparency = on and 0 or 1
                         ob.BackgroundColor3 = on and C.tabOn or C.panel2
+                        ob.TextColor3 = on and C.blue or C.white
                     end
                     for index, value in ipairs(listValues) do
                         local isOn = multi and selected[value] == true
                         local ob = make("TextButton", {
-                            AutoButtonColor = false, BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 34),
+                            AutoButtonColor = false, BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 29),
                             Text = (multi and (isOn and "✓  " or "□  ") or "") .. tostring(value), TextColor3 = C.white, TextSize = 13,
-                            Font = Enum.Font.GothamMedium, ZIndex = 101, LayoutOrder = index,
+                            Font = Enum.Font.GothamMedium, ZIndex = 201, LayoutOrder = index, TextXAlignment = Enum.TextXAlignment.Left,
+                            TextTruncate = Enum.TextTruncate.AtEnd,
                         }, menu)
-                        corner(ob, 8)
+                        corner(ob, 7)
+                        make("UIPadding", {PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 8)}, ob)
                         if multi then styleOption(ob, isOn) end
                         ob.MouseEnter:Connect(function() if not (multi and selected[value]) then ob.BackgroundTransparency = 0; ob.BackgroundColor3 = C.hover end end)
                         ob.MouseLeave:Connect(function() styleOption(ob, multi and selected[value] == true) end)
@@ -4643,8 +4659,8 @@ function Nexora.CreateMain(config)
                     end
                     if multi then
                         local done = make("TextButton", {
-                            AutoButtonColor = false, BackgroundColor3 = C.blue, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 34),
-                            Text = "Done", TextColor3 = Color3.new(1, 1, 1), TextSize = 13, Font = Enum.Font.GothamBold, ZIndex = 101, LayoutOrder = #listValues + 1,
+                            AutoButtonColor = false, BackgroundColor3 = C.blue, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 29),
+                            Text = "Done", TextColor3 = Color3.new(1, 1, 1), TextSize = 13, Font = Enum.Font.GothamBold, ZIndex = 201, LayoutOrder = #listValues + 1,
                         }, menu)
                         corner(done, 8)
                         done.MouseButton1Click:Connect(function() menu:Destroy() end)
