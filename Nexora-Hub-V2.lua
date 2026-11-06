@@ -2158,6 +2158,19 @@ local C = {
     tabOn = Color3.fromRGB(30, 30, 35),
     tabOff = Color3.fromRGB(24, 24, 28),
 }
+if BANANA then
+    C.bg = Color3.fromRGB(10, 15, 28)
+    C.panel = Color3.fromRGB(16, 24, 42)
+    C.panel2 = Color3.fromRGB(22, 34, 60)
+    C.element = Color3.fromRGB(20, 30, 54)
+    C.hover = Color3.fromRGB(32, 50, 88)
+    C.stroke = Color3.fromRGB(60, 90, 150)
+    C.white = Color3.fromRGB(244, 248, 255)
+    C.muted = Color3.fromRGB(140, 160, 195)
+    C.off = Color3.fromRGB(44, 60, 96)
+    C.tabOn = Color3.fromRGB(26, 42, 78)
+    C.tabOff = Color3.fromRGB(16, 24, 42)
+end
 
 local function make(class, props, parent)
     local o = Instance.new(class)
@@ -2318,12 +2331,36 @@ function Nexora.CreateMain(config)
         TweenService:Create(shellGrad, TweenInfo.new(3.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Rotation = 360}):Play()
     end)
     gradient(shell, Color3.fromRGB(26, 26, 30), Color3.fromRGB(15, 15, 18), 35)
-    if BANANA then shell.BackgroundTransparency = 0.1 end
+    if BANANA then
+        shell.BackgroundTransparency = 0.22
+        shellStroke.Thickness = 1.6
+        gradient(shell, Color3.fromRGB(18, 28, 52), Color3.fromRGB(7, 11, 22), 35)
+        -- brilho de vidro no topo
+        local sheen = make("Frame", {BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.94, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0.35, 0), ZIndex = 0}, shell)
+        corner(sheen, 14)
+        make("UIGradient", {Rotation = 90, Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1)})}, sheen)
+        -- blur do mundo atras da UI (aparece quando a janela esta aberta)
+        task.spawn(function()
+            local Lighting = game:GetService("Lighting")
+            local blur = Lighting:FindFirstChild("NexoraBlur") or Instance.new("BlurEffect")
+            blur.Name = "NexoraBlur"; blur.Size = 0; blur.Parent = Lighting
+            local last
+            while gui.Parent do
+                local open = gui.Enabled and shell.Visible
+                if open ~= last then
+                    last = open
+                    pcall(function() TweenService:Create(blur, TweenInfo.new(.35, Enum.EasingStyle.Quad), {Size = open and 16 or 0}):Play() end)
+                end
+                task.wait(.15)
+            end
+            pcall(function() blur:Destroy() end)
+        end)
+    end
     local scale = make("UIScale", {Scale = 1}, shell)
 
     local glow = make("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 10, 1, 10), Position = UDim2.new(0, -5, 0, -5), ZIndex = 0}, shell)
     corner(glow, 27)
-    stroke(glow, C.blue2, 0.72, 3)
+    stroke(glow, C.blue2, BANANA and 0.82 or 0.72, 3)
 
     local userScale = 1   -- tamanho escolhido na aba "Resize UI"
     -- Resize: a escala (texto/abas) e FIXA e encaixada na tela. Largura e altura da janela mudam pela aba
@@ -2361,7 +2398,11 @@ function Nexora.CreateMain(config)
     local top = make("Frame", {Name = "Header", Size = UDim2.new(1, 0, 0, HEADER_H), BackgroundColor3 = Color3.fromRGB(22, 22, 26), BorderSizePixel = 0}, shell)
     corner(top, 14)
     gradient(top, Color3.fromRGB(32, 32, 37), Color3.fromRGB(22, 22, 26), 0)
-    if BANANA then top.BackgroundTransparency = 0.2 end
+    if BANANA then
+        top.BackgroundTransparency = 0.45
+        gradient(top, Color3.fromRGB(34, 54, 98), Color3.fromRGB(14, 22, 42), 0)
+        make("Frame", {BackgroundColor3 = C.blue2, BackgroundTransparency = 0.7, BorderSizePixel = 0, Position = UDim2.new(0, 14, 1, -1), Size = UDim2.new(1, -28, 0, 1)}, top)
+    end
 
     -- (ícone removido do cabeçalho: fica só o nome)
 
@@ -2440,7 +2481,10 @@ function Nexora.CreateMain(config)
 
     -- ============================ BARRA LATERAL ============================
     local sidebar = make("Frame", {Name = "Sidebar", BackgroundColor3 = Color3.fromRGB(22, 22, 26), BorderSizePixel = 0, Position = UDim2.new(0, 0, 0, HEADER_H), Size = UDim2.new(0, SIDEBAR_W, 1, -HEADER_H)}, shell)
-    if BANANA then sidebar.BackgroundTransparency = 0.25 end
+    if BANANA then
+        sidebar.BackgroundTransparency = 0.5
+        gradient(sidebar, Color3.fromRGB(22, 34, 62), Color3.fromRGB(10, 16, 30), 90)
+    end
     corner(sidebar, 12)
     make("Frame", {BackgroundColor3 = C.stroke, BorderSizePixel = 0, Position = UDim2.new(1, -1, 0, 0), Size = UDim2.new(0, 1, 1, 0)}, sidebar)
 
@@ -2916,10 +2960,11 @@ function Nexora.CreateMain(config)
             local wrap = make("Frame", {Name = sectionName, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = sectionOrder}, col.frame)
             make("UIListLayout", {Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder}, wrap)
             if BANANA then
-                wrap.BackgroundTransparency = 0.25
-                wrap.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-                corner(wrap, 10)
-                stroke(wrap, C.stroke, 0.3, 1)
+                wrap.BackgroundTransparency = 0.42
+                wrap.BackgroundColor3 = Color3.fromRGB(14, 22, 42)
+                corner(wrap, 12)
+                stroke(wrap, C.stroke, 0.55, 1)
+                gradient(wrap, Color3.fromRGB(26, 40, 72), Color3.fromRGB(12, 18, 34), 90)
                 make("UIPadding", {PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 4), PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8)}, wrap)
             end
             local heading = make("Frame", {BackgroundColor3 = C.panel2, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 36), LayoutOrder = 1}, wrap)
@@ -2949,8 +2994,9 @@ function Nexora.CreateMain(config)
                 local name = lbl(row, t, UDim2.new(1, -70, 1, 0), UDim2.new(0, 17, 0, 0), 14, C.white, BANANA and Enum.Font.GothamBold or nil)
                 name.TextWrapped = true
                 local box = make("Frame", {BackgroundColor3 = val and C.blue or C.element, BorderSizePixel = 0, AnchorPoint = Vector2.new(1, .5), Position = UDim2.new(1, -14, .5, 0), Size = UDim2.fromOffset(28, 28)}, row)
-                corner(box, 5)
+                corner(box, 8)
                 stroke(box, C.blue, 0, 2)
+                if BANANA then gradient(box, Color3.new(1, 1, 1), Color3.fromRGB(190, 215, 255), 90) end
                 local function paint(animate)
                     local col2 = val and C.blue or C.element
                     if animate then
