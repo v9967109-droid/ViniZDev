@@ -1,4 +1,4 @@
--- Tela de carregamento (Nexora Hub): pequena e rápida. O resto do script só roda depois dela terminar.
+-- Tela de carregamento (Nexora Hub): rapida e animada. O resto do script so roda depois dela terminar.
 do
 	pcall(function()
 		local TS = game:GetService("TweenService")
@@ -8,64 +8,80 @@ do
 		local gui = Instance.new("ScreenGui")
 		gui.Name = "NexoraLoading"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true; gui.DisplayOrder = 10000
 		gui.Parent = host
-		local GOLD, GOLD_L, GRAY = Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255), Color3.fromRGB(165,165,174)
+		local BLUE, BLUE_L, DEEP = Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 55, 140)
 		local function mk(class, props, parent)
 			local o = Instance.new(class)
 			for k, v in pairs(props) do o[k] = v end
 			o.Parent = parent
 			return o
 		end
-		local function sfx(id, vol, speed) return end -- SFX REMOVIDO DIRETO
-		local card = mk("CanvasGroup", {AnchorPoint=Vector2.new(.5,.5), Position=UDim2.fromScale(.5,.5), Size=UDim2.fromOffset(230,128), BackgroundColor3=Color3.fromRGB(8,8,11), BorderSizePixel=0, GroupTransparency=1}, gui)
-		mk("UICorner", {CornerRadius = UDim.new(0, 24)}, card)
-		mk("UIStroke", {Color=GOLD, Thickness=1, Transparency=0.55}, card)
-		local sc = mk("UIScale", {Scale=0.9}, card)
-		local logo = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,12), Size=UDim2.fromOffset(46,46), BackgroundColor3=Color3.fromRGB(8,8,10), BorderSizePixel=0}, card)
-		mk("UICorner", {CornerRadius=UDim.new(1,0)}, logo)
-		mk("UIStroke", {Color=GOLD, Thickness=2}, logo)
-		mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,2), Size=UDim2.new(1,0,0,13), Text="♛", TextColor3=Color3.fromRGB(80, 180, 255), Font=Enum.Font.Fantasy, TextSize=12}, logo)
-		local n = mk("TextLabel", {BackgroundTransparency=1, Position=UDim2.new(0,0,0,10), Size=UDim2.new(1,0,1,-12), Text="N", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.Arcade, TextSize=26}, logo)
-		mk("UIGradient", {Rotation=90, Color=ColorSequence.new(Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 140, 255))}, n)
-		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,62), Size=UDim2.fromOffset(220,20), BackgroundTransparency=1, Text="NEXORA HUB", TextColor3=Color3.fromRGB(0, 140, 255), Font=Enum.Font.Arcade, TextSize=16}, card)
-		mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,80), Size=UDim2.fromOffset(220,14), BackgroundTransparency=1, Text="BLOX FRUITS • ViniZDev", TextColor3=Color3.fromRGB(165,165,174), Font=Enum.Font.Code, TextSize=11}, card)
-		local track = mk("Frame", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,92), Size=UDim2.fromOffset(150,3), BackgroundColor3=Color3.fromRGB(30,28,24), BorderSizePixel=0}, card)
-		mk("UICorner", {CornerRadius=UDim.new(1,0)}, track)
-		local fill = mk("Frame", {Size=UDim2.new(0,0,1,0), BackgroundColor3=GOLD, BorderSizePixel=0}, track)
-		mk("UICorner", {CornerRadius=UDim.new(1,0)}, fill)
-		mk("UIGradient", {Color=ColorSequence.new(Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255))}, fill)
-		local status = mk("TextLabel", {AnchorPoint=Vector2.new(.5,0), Position=UDim2.new(.5,0,0,102), Size=UDim2.fromOffset(220,14), BackgroundTransparency=1, Text="Carregando...", TextColor3=GRAY, Font=Enum.Font.SourceSansBold, TextSize=10}, card)
-		-- entrada rápida + som de abertura
-		TS:Create(card, TweenInfo.new(.18, Enum.EasingStyle.Quad), {GroupTransparency=0}):Play()
-		TS:Create(sc, TweenInfo.new(.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale=1}):Play()
-		local PING = "rbxasset://sounds/electronicpingshort.wav"
-		sfx(PING, 0.5, 1.0)
-		task.delay(.09, function() sfx(PING, 0.45, 1.26) end)
-		task.delay(.18, function() sfx(PING, 0.4, 1.5) end)
-		-- progresso curto (~1,3s) bloqueando o resto do script até terminar
-		local steps = { {0,"Carregando..."}, {0.45,"Preparando interface..."}, {0.8,"Quase pronto..."} }
-		local DURATION, startT = 1.3, tick()
+		local function ring3() return ColorSequence.new({ColorSequenceKeypoint.new(0, BLUE_L), ColorSequenceKeypoint.new(.5, DEEP), ColorSequenceKeypoint.new(1, BLUE_L)}) end
+		local function spin(g, t) pcall(function() TS:Create(g, TweenInfo.new(t, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Rotation = g.Rotation + 360}):Play() end) end
+		local dim = mk("Frame", {Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, BorderSizePixel = 0}, gui)
+		-- brilho externo
+		local glow = mk("Frame", {AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = UDim2.fromOffset(300, 176), BackgroundTransparency = 1}, gui)
+		mk("UICorner", {CornerRadius = UDim.new(0, 30)}, glow)
+		local glowS = mk("UIStroke", {Color = BLUE_L, Thickness = 6, Transparency = 1}, glow)
+		local card = mk("CanvasGroup", {AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = UDim2.fromOffset(280, 156), BackgroundColor3 = Color3.fromRGB(8, 14, 26), BorderSizePixel = 0, GroupTransparency = 1}, gui)
+		mk("UICorner", {CornerRadius = UDim.new(0, 22)}, card)
+		mk("UIGradient", {Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(11, 20, 38), Color3.fromRGB(3, 7, 14))}, card)
+		local edge = mk("UIStroke", {Color = Color3.new(1, 1, 1), Thickness = 2}, card)
+		spin(mk("UIGradient", {Color = ring3()}, edge), 3.5)
+		local sc = mk("UIScale", {Scale = 0.88}, card)
+		-- logo com anel girando e pulso
+		local logo = mk("Frame", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 14), Size = UDim2.fromOffset(54, 54), BackgroundColor3 = Color3.fromRGB(6, 11, 21), BorderSizePixel = 0}, card)
+		mk("UICorner", {CornerRadius = UDim.new(1, 0)}, logo)
+		local lring = mk("UIStroke", {Color = Color3.new(1, 1, 1), Thickness = 2.5}, logo)
+		spin(mk("UIGradient", {Color = ring3()}, lring), 1.6)
+		local pulse = mk("UIScale", {Scale = 1}, logo)
+		pcall(function() TS:Create(pulse, TweenInfo.new(.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Scale = 1.09}):Play() end)
+		mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, 3), Size = UDim2.new(1, 0, 0, 14), Text = "♛", TextColor3 = BLUE_L, Font = Enum.Font.FredokaOne, TextSize = 13}, logo)
+		local n = mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, 11), Size = UDim2.new(1, 0, 1, -13), Text = "N", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.FredokaOne, TextSize = 30}, logo)
+		mk("UIGradient", {Rotation = 90, Color = ColorSequence.new(BLUE_L, BLUE)}, n)
+		mk("TextLabel", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 74), Size = UDim2.fromOffset(240, 20), BackgroundTransparency = 1, Text = "NEXORA HUB", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 17}, card)
+		mk("TextLabel", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 94), Size = UDim2.fromOffset(240, 14), BackgroundTransparency = 1, Text = "BLOX FRUITS • ViniZDev", TextColor3 = Color3.fromRGB(151, 166, 190), Font = Enum.Font.GothamMedium, TextSize = 10}, card)
+		-- barra de progresso com brilho passando
+		local track = mk("Frame", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 120), Size = UDim2.fromOffset(190, 5), BackgroundColor3 = Color3.fromRGB(20, 30, 48), BorderSizePixel = 0, ClipsDescendants = true}, card)
+		mk("UICorner", {CornerRadius = UDim.new(1, 0)}, track)
+		local fill = mk("Frame", {Size = UDim2.new(0, 0, 1, 0), BackgroundColor3 = BLUE, BorderSizePixel = 0}, track)
+		mk("UICorner", {CornerRadius = UDim.new(1, 0)}, fill)
+		mk("UIGradient", {Color = ColorSequence.new(BLUE, BLUE_L)}, fill)
+		local shine = mk("Frame", {Size = UDim2.new(0, 36, 1, 0), Position = UDim2.new(0, -40, 0, 0), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = .55, BorderSizePixel = 0}, track)
+		mk("UIGradient", {Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(.5, 0), NumberSequenceKeypoint.new(1, 1)})}, shine)
+		pcall(function() TS:Create(shine, TweenInfo.new(.9, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Position = UDim2.new(1, 4, 0, 0)}):Play() end)
+		local status = mk("TextLabel", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 132), Size = UDim2.fromOffset(240, 14), BackgroundTransparency = 1, Text = "Carregando... 0%", TextColor3 = Color3.fromRGB(165, 165, 174), Font = Enum.Font.GothamMedium, TextSize = 11}, card)
+		-- entrada
+		TS:Create(dim, TweenInfo.new(.25), {BackgroundTransparency = .5}):Play()
+		TS:Create(card, TweenInfo.new(.2, Enum.EasingStyle.Quad), {GroupTransparency = 0}):Play()
+		TS:Create(sc, TweenInfo.new(.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+		TS:Create(glowS, TweenInfo.new(.4), {Transparency = .78}):Play()
+		task.delay(.45, function() pcall(function() TS:Create(glowS, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Transparency = .9}):Play() end) end)
+		-- progresso curto (~1,4s) bloqueando o resto do script ate terminar
+		local steps = { {0, "Carregando"}, {0.45, "Preparando interface"}, {0.8, "Quase pronto"} }
+		local DURATION, startT = 1.4, tick()
+		local label = "Carregando"
 		while true do
 			local p = math.clamp((tick() - startT) / DURATION, 0, 1)
 			fill.Size = UDim2.new(1 - (1 - p) ^ 2, 0, 1, 0)
-			for _, st in ipairs(steps) do if p >= st[1] then status.Text = st[2] end end
+			for _, st in ipairs(steps) do if p >= st[1] then label = st[2] end end
+			status.Text = label .. "... " .. math.floor(p * 100) .. "%"
 			if p >= 1 then break end
 			task.wait()
 		end
 		status.Text = "Pronto!"
-		sfx(PING, 0.55, 1.5)
-		task.delay(.1, function() sfx(PING, 0.5, 2.0) end)
-		task.wait(0.12)
-		local out = TS:Create(card, TweenInfo.new(.22, Enum.EasingStyle.Quad), {GroupTransparency=1})
-		out:Play()
-		TS:Create(sc, TweenInfo.new(.22, Enum.EasingStyle.Quad), {Scale=0.94}):Play()
-		task.delay(.3, function() gui:Destroy() end)
+		task.wait(0.15)
+		TS:Create(card, TweenInfo.new(.24, Enum.EasingStyle.Quad), {GroupTransparency = 1}):Play()
+		TS:Create(sc, TweenInfo.new(.24, Enum.EasingStyle.Quad), {Scale = 0.94}):Play()
+		TS:Create(dim, TweenInfo.new(.24), {BackgroundTransparency = 1}):Play()
+		TS:Create(glowS, TweenInfo.new(.2), {Transparency = 1}):Play()
+		task.delay(.32, function() gui:Destroy() end)
 	end)
-	-- compatibilidade: o fim do script ainda chama isto, mas a tela já terminou.
+	-- compatibilidade: o fim do script ainda chama isto, mas a tela ja terminou.
 	getgenv().NexoraLoadingFinish = function() end
 end
 
 -- ===================== TELA DE ESCOLHA DE INTERFACE =====================
--- Depois do carregamento: Classic (UI original) ou Banana Cat Hub (UI nova, azul). So a escolhida e carregada.
+-- Depois do carregamento: Classic (UI original) ou Banana Cat Hub (UI nova). So a escolhida e carregada.
 do
 	local env = getgenv()
 	local skip = env.NexoraSkipUIChoice and (env.NexoraUIChoice == "Classic" or env.NexoraUIChoice == "Banana")
@@ -80,47 +96,156 @@ do
 			local gui = Instance.new("ScreenGui")
 			gui.Name = "NexoraUIChoice"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true; gui.DisplayOrder = 10001
 			gui.Parent = host
+			local BLUE, BLUE_L, DEEP = Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 55, 140)
 			local function mk(class, props, parent)
 				local o = Instance.new(class)
 				for k, v in pairs(props) do o[k] = v end
 				o.Parent = parent
 				return o
 			end
-			local card = mk("CanvasGroup", {AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = UDim2.fromOffset(300, 214), BackgroundColor3 = Color3.fromRGB(8, 8, 11), BorderSizePixel = 0, GroupTransparency = 1}, gui)
-			mk("UICorner", {CornerRadius = UDim.new(0, 18)}, card)
-			mk("UIStroke", {Color = Color3.fromRGB(80, 180, 255), Thickness = 1, Transparency = 0.5}, card)
-			local sc = mk("UIScale", {Scale = 0.92}, card)
-			mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 14), Size = UDim2.new(1, 0, 0, 24), Text = "NEXORA HUB", TextColor3 = Color3.fromRGB(255, 255, 255), Font = Enum.Font.GothamBold, TextSize = 18}, card)
-			mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 38), Size = UDim2.new(1, 0, 0, 18), Text = "Escolha a interface", TextColor3 = Color3.fromRGB(165, 165, 174), Font = Enum.Font.GothamMedium, TextSize = 13}, card)
+			local function ring3(a, b) return ColorSequence.new({ColorSequenceKeypoint.new(0, a), ColorSequenceKeypoint.new(.5, b), ColorSequenceKeypoint.new(1, a)}) end
+			local function spin(g, t) pcall(function() TS:Create(g, TweenInfo.new(t, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Rotation = g.Rotation + 360}):Play() end) end
+			local function box(parent, x, y, w, h, col, r)
+				local f = mk("Frame", {Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(w, h), BackgroundColor3 = col, BorderSizePixel = 0}, parent)
+				if r then mk("UICorner", {CornerRadius = UDim.new(0, r)}, f) end
+				return f
+			end
+			-- desfoque do jogo atras (opcional)
+			local blur
+			pcall(function()
+				blur = Instance.new("BlurEffect"); blur.Name = "NexoraUIChoiceBlur"; blur.Size = 0
+				blur.Parent = game:GetService("Lighting")
+				TS:Create(blur, TweenInfo.new(.3), {Size = 14}):Play()
+			end)
+			local dim = mk("Frame", {Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, BorderSizePixel = 0}, gui)
+			TS:Create(dim, TweenInfo.new(.3), {BackgroundTransparency = .45}):Play()
+			local CW, CH = 340, 296
+			local glow = mk("Frame", {AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = UDim2.fromOffset(CW + 18, CH + 18), BackgroundTransparency = 1}, gui)
+			mk("UICorner", {CornerRadius = UDim.new(0, 32)}, glow)
+			local glowS = mk("UIStroke", {Color = BLUE_L, Thickness = 6, Transparency = 1}, glow)
+			local gsc = mk("UIScale", {Scale = 1}, glow)
+			local card = mk("CanvasGroup", {AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = UDim2.fromOffset(CW, CH), BackgroundColor3 = Color3.fromRGB(8, 14, 26), BorderSizePixel = 0, GroupTransparency = 1}, gui)
+			mk("UICorner", {CornerRadius = UDim.new(0, 24)}, card)
+			mk("UIGradient", {Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(11, 20, 38), Color3.fromRGB(3, 7, 14))}, card)
+			local edge = mk("UIStroke", {Color = Color3.new(1, 1, 1), Thickness = 2}, card)
+			spin(mk("UIGradient", {Color = ring3(BLUE_L, DEEP)}, edge), 4)
+			local sc = mk("UIScale", {Scale = 1}, card)
+			local fit = 1
+			pcall(function()
+				local v = workspace.CurrentCamera.ViewportSize
+				fit = math.clamp(math.min((v.X - 20) / CW, (v.Y - 20) / CH, 1), .35, 1)
+			end)
+			gsc.Scale = fit; sc.Scale = fit * .9
+			mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 14), Size = UDim2.new(1, 0, 0, 22), Text = "ESCOLHA SUA INTERFACE", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 16}, card)
+			mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 37), Size = UDim2.new(1, 0, 0, 16), Text = "Como o Nexora Hub vai abrir", TextColor3 = Color3.fromRGB(151, 166, 190), Font = Enum.Font.GothamMedium, TextSize = 11}, card)
+			local sep = mk("Frame", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 60), Size = UDim2.new(.8, 0, 0, 1), BackgroundColor3 = BLUE_L, BorderSizePixel = 0}, card)
+			mk("UIGradient", {Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(.5, .1), NumberSequenceKeypoint.new(1, 1)})}, sep)
 			local chosen = false
-			local function option(text, y, color, value)
-				local b = mk("TextButton", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, y), Size = UDim2.fromOffset(250, 46), BackgroundColor3 = Color3.fromRGB(22, 22, 28), AutoButtonColor = false, Text = text, TextColor3 = Color3.fromRGB(255, 255, 255), Font = Enum.Font.GothamBold, TextSize = 16, BorderSizePixel = 0}, card)
-				mk("UICorner", {CornerRadius = UDim.new(0, 10)}, b)
-				local st = mk("UIStroke", {Color = color, Thickness = 1.5, Transparency = 0.35}, b)
-				b.MouseEnter:Connect(function()
-					TS:Create(b, TweenInfo.new(.12), {BackgroundColor3 = Color3.fromRGB(32, 32, 40)}):Play()
-					TS:Create(st, TweenInfo.new(.12), {Transparency = 0}):Play()
-				end)
-				b.MouseLeave:Connect(function()
-					TS:Create(b, TweenInfo.new(.12), {BackgroundColor3 = Color3.fromRGB(22, 22, 28)}):Play()
-					TS:Create(st, TweenInfo.new(.12), {Transparency = 0.35}):Play()
-				end)
-				b.MouseButton1Click:Connect(function()
-					if chosen then return end
-					chosen = true
-					env.NexoraUIChoice = value
-					TS:Create(card, TweenInfo.new(.2), {GroupTransparency = 1}):Play()
-					TS:Create(sc, TweenInfo.new(.2), {Scale = 0.94}):Play()
-					task.delay(.25, function() gui:Destroy() end)
+			local function pick(value)
+				if chosen then return end
+				chosen = true
+				env.NexoraUIChoice = value
+				TS:Create(card, TweenInfo.new(.22, Enum.EasingStyle.Quad), {GroupTransparency = 1}):Play()
+				TS:Create(sc, TweenInfo.new(.22, Enum.EasingStyle.Quad), {Scale = fit * .94}):Play()
+				TS:Create(dim, TweenInfo.new(.22), {BackgroundTransparency = 1}):Play()
+				TS:Create(glowS, TweenInfo.new(.2), {Transparency = 1}):Play()
+				if blur then TS:Create(blur, TweenInfo.new(.25), {Size = 0}):Play() end
+				task.delay(.3, function()
+					gui:Destroy()
+					if blur then blur:Destroy() end
 				end)
 			end
-			option("Classic", 70, Color3.fromRGB(245, 166, 35), "Classic")
-			option("Banana Cat Hub", 128, Color3.fromRGB(59, 130, 246), "Banana")
-			TS:Create(card, TweenInfo.new(.2), {GroupTransparency = 0}):Play()
-			TS:Create(sc, TweenInfo.new(.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+			local function option(y, name, tag, accent, preview, value, delay)
+				local btn = mk("TextButton", {Position = UDim2.fromOffset(15, y + 12), Size = UDim2.fromOffset(310, 94), BackgroundColor3 = Color3.fromRGB(11, 19, 34), AutoButtonColor = false, Text = "", BorderSizePixel = 0, BackgroundTransparency = 1}, card)
+				mk("UICorner", {CornerRadius = UDim.new(0, 16)}, btn)
+				local bs = mk("UIStroke", {Color = Color3.new(1, 1, 1), Thickness = 1.5, Transparency = .5}, btn)
+				spin(mk("UIGradient", {Color = ring3(accent, Color3.fromRGB(20, 40, 80))}, bs), 5)
+				local bsc = mk("UIScale", {Scale = 1}, btn)
+				-- previa da interface
+				local pv = mk("Frame", {Position = UDim2.fromOffset(12, 14), Size = UDim2.fromOffset(100, 66), BackgroundColor3 = Color3.fromRGB(5, 9, 17), BorderSizePixel = 0, ClipsDescendants = true}, btn)
+				mk("UICorner", {CornerRadius = UDim.new(0, 8)}, pv)
+				mk("UIStroke", {Color = accent, Thickness = 1, Transparency = .45}, pv)
+				preview(pv, accent)
+				mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.fromOffset(126, 14), Size = UDim2.new(1, -136, 0, 24), Text = name, TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 17, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd}, btn)
+				mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.fromOffset(126, 39), Size = UDim2.new(1, -136, 0, 28), Text = tag, TextColor3 = Color3.fromRGB(151, 166, 190), Font = Enum.Font.GothamMedium, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true}, btn)
+				local go = mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.fromOffset(126, 68), Size = UDim2.new(1, -136, 0, 16), Text = "ESCOLHER  ›", TextColor3 = accent, Font = Enum.Font.GothamBold, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left}, btn)
+				local flash = mk("Frame", {Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 5}, btn)
+				mk("UICorner", {CornerRadius = UDim.new(0, 16)}, flash)
+				btn.MouseEnter:Connect(function()
+					TS:Create(btn, TweenInfo.new(.14), {BackgroundColor3 = Color3.fromRGB(16, 30, 54)}):Play()
+					TS:Create(bs, TweenInfo.new(.14), {Transparency = 0, Thickness = 2.5}):Play()
+					TS:Create(bsc, TweenInfo.new(.16, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1.035}):Play()
+				end)
+				btn.MouseLeave:Connect(function()
+					TS:Create(btn, TweenInfo.new(.14), {BackgroundColor3 = Color3.fromRGB(11, 19, 34)}):Play()
+					TS:Create(bs, TweenInfo.new(.14), {Transparency = .5, Thickness = 1.5}):Play()
+					TS:Create(bsc, TweenInfo.new(.14), {Scale = 1}):Play()
+				end)
+				btn.MouseButton1Down:Connect(function()
+					TS:Create(bsc, TweenInfo.new(.08), {Scale = .965}):Play()
+				end)
+				btn.MouseButton1Click:Connect(function()
+					if chosen then return end
+					flash.BackgroundTransparency = .55
+					TS:Create(flash, TweenInfo.new(.25), {BackgroundTransparency = 1}):Play()
+					task.delay(.08, function() pick(value) end)
+				end)
+				-- entrada em sequencia
+				task.delay(delay, function()
+					TS:Create(btn, TweenInfo.new(.28, Enum.EasingStyle.Quad), {BackgroundTransparency = 0, Position = UDim2.fromOffset(15, y)}):Play()
+				end)
+			end
+			-- previa do Classic: cabecalho, abas no topo, linhas com toggle
+			local function pvClassic(f, accent)
+				box(f, 0, 0, 100, 14, Color3.fromRGB(7, 13, 24), nil)
+				box(f, 6, 4, 34, 5, Color3.fromRGB(239, 244, 255), 2)
+				box(f, 6, 18, 20, 8, accent, 3)
+				box(f, 29, 18, 20, 8, Color3.fromRGB(8, 47, 91), 3)
+				box(f, 52, 18, 20, 8, Color3.fromRGB(8, 47, 91), 3)
+				box(f, 75, 18, 20, 8, Color3.fromRGB(8, 47, 91), 3)
+				for i = 0, 2 do
+					box(f, 6, 32 + i * 11, 88, 8, Color3.fromRGB(11, 18, 31), 3)
+					box(f, 10, 34 + i * 11, 30, 4, Color3.fromRGB(151, 166, 190), 2)
+					box(f, 83, 33 + i * 11, 7, 6, i == 1 and accent or Color3.fromRGB(46, 57, 75), 2)
+				end
+			end
+			-- previa do Banana Cat Hub: lateral com busca, card central, checkboxes
+			local function pvBanana(f, accent)
+				f.BackgroundColor3 = Color3.fromRGB(17, 17, 20)
+				box(f, 0, 0, 30, 66, Color3.fromRGB(24, 24, 28), nil)
+				box(f, 4, 4, 22, 6, Color3.fromRGB(32, 32, 37), 3)
+				for i = 0, 3 do
+					box(f, 8, 15 + i * 8, 16, 3, i == 1 and Color3.fromRGB(240, 240, 242) or Color3.fromRGB(150, 150, 160), 1)
+				end
+				box(f, 4, 21, 2, 7, accent, 1)
+				local card = box(f, 34, 4, 62, 58, Color3.fromRGB(24, 24, 28), 5)
+				box(card, 19, 5, 24, 3, Color3.fromRGB(240, 240, 242), 1)
+				box(card, 14, 11, 34, 1, accent, 0)
+				for i = 0, 2 do
+					box(card, 4, 16 + i * 13, 54, 10, Color3.fromRGB(32, 32, 37), 3)
+					box(card, 8, 19 + i * 13, 24, 4, Color3.fromRGB(150, 150, 160), 1)
+					local cb = box(card, 45, 18 + i * 13, 8, 7, i == 0 and accent or Color3.fromRGB(32, 32, 37), 2)
+					mk("UIStroke", {Color = accent, Thickness = 1}, cb)
+				end
+			end
+			option(70, "Classic", "UI original: abas no topo e visual azul-marinho.", BLUE, pvClassic, "Classic", .15)
+			option(176, "Banana Cat Hub", "Nova UI: busca e abas na lateral, seções em card.", Color3.fromRGB(59, 130, 246), pvBanana, "Banana", .27)
+			-- entrada geral
+			TS:Create(card, TweenInfo.new(.22, Enum.EasingStyle.Quad), {GroupTransparency = 0}):Play()
+			TS:Create(sc, TweenInfo.new(.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = fit}):Play()
+			TS:Create(glowS, TweenInfo.new(.4), {Transparency = .78}):Play()
+			task.delay(.45, function() pcall(function() TS:Create(glowS, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Transparency = .9}):Play() end) end)
 			while not env.NexoraUIChoice and gui.Parent do task.wait(0.05) end
 		end)
-		if not env.NexoraUIChoice then env.NexoraUIChoice = "Classic" end
+		if not env.NexoraUIChoice then
+			-- falhou ao montar a tela: limpa o que ficou e abre o Classic
+			pcall(function()
+				local h = (gethui and gethui()) or game:GetService("CoreGui")
+				local g = h:FindFirstChild("NexoraUIChoice"); if g then g:Destroy() end
+				local b = game:GetService("Lighting"):FindFirstChild("NexoraUIChoiceBlur"); if b then b:Destroy() end
+			end)
+			env.NexoraUIChoice = "Classic"
+		end
 	end
 end
 
@@ -1981,7 +2106,9 @@ game:GetService("Players").LocalPlayer.Idled:connect(function()
 	wait(1)
 	vu:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 end)
-local A = (function()
+local A
+if getgenv().NexoraUIChoice == "Banana" then
+A = (function()
 -- NexoraUI.lua | Biblioteca de interface (layout Zaque Hub Premium, marca Nexora Hub)
 -- API compatível com a source Nexora Hub:
 -- CreateMain, CreatePage, CreateSection, CreateToggle, CreateButton,
@@ -2677,7 +2804,7 @@ function Nexora.CreateMain(config)
         -- Reaplica o tamanho salvo (arquivo NexoraHub_UISize.json) sempre que a UI abre.
         pcall(function()
             local saved = loadSize()
-            if saved and saved.w and saved.h then
+            if false and saved and saved.w and saved.h then
                 local _, maxW, maxH = limits()
                 shell.Size = UDim2.fromOffset(math.clamp(saved.w, MIN_W, maxW), math.clamp(saved.h, MIN_H, maxH))
             end
@@ -3235,6 +3362,1238 @@ task.delay(10, function() Nexora.RestoreSavedToggles() end)
 return Nexora
 
 end)()
+else
+A = (function()
+-- NexoraUI.lua | Biblioteca de interface (layout Zaque Hub Premium, marca Nexora Hub)
+-- API compatível com a source Nexora Hub:
+-- CreateMain, CreatePage, CreateSection, CreateToggle, CreateButton,
+-- CreateDropdown, CreateSlider, CreateLabel, CreateBox, CreateNoti, CreateBind.
+-- Esta biblioteca só cria a UI; a source principal continua responsável pelas funções do jogo.
+
+local Nexora = {}
+Nexora.Options = {}
+Nexora.OptionOrder = {}
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local TextService = game:GetService("TextService")
+local CoreGui = game:GetService("CoreGui")
+local parentGui = (gethui and gethui()) or CoreGui
+
+-- ============================ CONFIG DA MARCA ============================
+-- Nome, textos e logo (ID numérico ou "rbxassetid://ID"; vazio = logo desenhada do Nexora).
+local CONFIG = {
+    Title = "Nexora Hub",
+    Subtitle = "BLOX FRUITS • ViniZDev",
+    Credits = "BLOX FRUITS • ViniZDev",
+    Logo = "",          -- vazio = usa a logo desenhada do Nexora (coroa + N). Ou coloque um ID de imagem.
+    ToggleImage = "",   -- idem, para o botão flutuante
+}
+
+local old = parentGui:FindFirstChild("NexoraUI")
+if old then old:Destroy() end
+local oldFloat = parentGui:FindFirstChild("NexoraFloat")
+if oldFloat then oldFloat:Destroy() end
+
+local C = {
+    bg = Color3.fromRGB(5, 9, 17),
+    panel = Color3.fromRGB(9, 15, 27),
+    panel2 = Color3.fromRGB(12, 20, 35),
+    element = Color3.fromRGB(11, 18, 31),
+    hover = Color3.fromRGB(16, 28, 48),
+    press = Color3.fromRGB(10, 40, 80),
+    stroke = Color3.fromRGB(29, 48, 76),
+    blue = Color3.fromRGB(0, 128, 255),
+    blue2 = Color3.fromRGB(25, 157, 255),
+    white = Color3.fromRGB(239, 244, 255),
+    muted = Color3.fromRGB(151, 166, 190),
+    off = Color3.fromRGB(46, 57, 75),
+    tabOn = Color3.fromRGB(8, 47, 91),
+    tabOff = Color3.fromRGB(8, 14, 25),
+}
+
+local function make(class, props, parent)
+    local o = Instance.new(class)
+    for k, v in pairs(props or {}) do o[k] = v end
+    o.Parent = parent
+    return o
+end
+local function corner(obj, radius)
+    return make("UICorner", {CornerRadius = UDim.new(0, radius or 8)}, obj)
+end
+local function stroke(obj, color, transparency, thickness)
+    return make("UIStroke", {
+        Color = color or C.stroke,
+        Transparency = transparency or 0,
+        Thickness = thickness or 1,
+        ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+    }, obj)
+end
+local function gradient(obj, a, b, rotation)
+    return make("UIGradient", {
+        Color = ColorSequence.new({ColorSequenceKeypoint.new(0, a), ColorSequenceKeypoint.new(1, b)}),
+        Rotation = rotation or 0,
+    }, obj)
+end
+local function imageAsset(value)
+    local s = tostring(value or "")
+    if s == "" then return "" end
+    if s:match("^%d+$") then return "rbxassetid://" .. s end
+    return s
+end
+-- Logo do Nexora: círculo com contorno azul, coroa ♛ e a letra N em degradê.
+local function nexoraLogo(parent, px)
+    local f = make("Frame", {
+        Name = "NexoraLogo", AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5),
+        Size = UDim2.fromOffset(px, px), BackgroundColor3 = Color3.fromRGB(8, 8, 10), BorderSizePixel = 0,
+    }, parent)
+    corner(f, px)
+    stroke(f, C.blue, 0, math.max(1.5, px / 22))
+    make("TextLabel", {
+        BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, math.floor(px * 0.06)), Size = UDim2.new(1, 0, 0, math.floor(px * 0.28)),
+        Text = "♛", TextColor3 = C.blue2, Font = Enum.Font.Fantasy, TextSize = math.max(8, math.floor(px * 0.26)),
+    }, f)
+    local n = make("TextLabel", {
+        BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, math.floor(px * 0.2)), Size = UDim2.new(1, 0, 1, -math.floor(px * 0.22)),
+        Text = "N", TextColor3 = C.blue, Font = Enum.Font.Arcade, TextSize = math.max(10, math.floor(px * 0.56)),
+    }, f)
+    gradient(n, C.blue2, C.blue, 90)
+    return f
+end
+local function lbl(parent, text, size, pos, textSize, color, font)
+    return make("TextLabel", {
+        BackgroundTransparency = 1,
+        Position = pos or UDim2.new(),
+        Size = size or UDim2.new(1, 0, 0, 24),
+        Text = tostring(text or ""),
+        TextColor3 = color or C.white,
+        TextSize = textSize or 14,
+        Font = font or Enum.Font.GothamMedium,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Center,
+    }, parent)
+end
+local function button(parent, text, size, pos)
+    local b = make("TextButton", {
+        AutoButtonColor = false,
+        Text = text or "",
+        TextColor3 = C.white,
+        TextSize = 14,
+        Font = Enum.Font.GothamMedium,
+        BackgroundColor3 = C.element,
+        BorderSizePixel = 0,
+        Size = size,
+        Position = pos or UDim2.new(),
+    }, parent)
+    corner(b, 12)
+    stroke(b, C.stroke, 0.15)
+    b.MouseEnter:Connect(function()
+        if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.12), {BackgroundColor3 = C.hover}):Play() end
+    end)
+    b.MouseLeave:Connect(function()
+        if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.12), {BackgroundColor3 = C.element}):Play() end
+    end)
+    b.MouseButton1Down:Connect(function()
+        if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.08), {BackgroundColor3 = C.press}):Play() end
+    end)
+    b.MouseButton1Up:Connect(function()
+        if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.14), {BackgroundColor3 = C.hover}):Play() end
+    end)
+    return b
+end
+
+local function addOption(title, typ, value, page, section, callback)
+    local opt = {Title = title, name = title, type = typ, value = value, Page_Name = page, Section_Name = section, Callback = callback}
+    local control = {}
+    control.GetText = function() return tostring(opt.value or "") end
+    control.SetValue = function(a, b)
+        local v = b
+        if b == nil then v = a end
+        if v == control then return end
+        opt.value = v
+        if opt._setValue then opt._setValue(v) end
+        if callback then task.spawn(function() pcall(callback, v) end) end
+    end
+    control.SetStage = control.SetValue
+    control.SetSubValue = function(a, b, c)
+        local key, v
+        if c ~= nil then key, v = b, c else key, v = a, b end
+        opt.value = opt.value or {}
+        opt.value[key] = v
+        if opt._setSubValue then opt._setSubValue(key, v) end
+        if callback then task.spawn(function() pcall(callback, opt.value) end) end
+    end
+    opt.FunctionCreate = control
+    Nexora.Options[title] = opt
+    table.insert(Nexora.OptionOrder, opt)
+    return opt
+end
+
+-- Símbolo do cabeçalho de cada seção (pelo nome).
+local function sectionIcon(name)
+    local n = string.lower(tostring(name))
+    local map = {
+        {"setting", "⚙"}, {"config", "⚙"}, {"farm", "▣"}, {"raid", "⚔"}, {"boss", "⚔"}, {"pvp", "⚔"},
+        {"fight", "⚔"}, {"race", "♨"}, {"fruit", "✧"}, {"shop", "♧"}, {"misc", "★"}, {"esp", "◎"},
+        {"player", "♟"}, {"status", "★"}, {"server", "★"},
+    }
+    for _, m in ipairs(map) do if string.find(n, m[1], 1, true) then return m[2] end end
+    return "✦"
+end
+
+function Nexora.CreateMain(config)
+    config = config or {}
+    local TITLE = tostring(config.Title or CONFIG.Title)
+    local SUBTITLE = tostring(config.Subtitle or CONFIG.Subtitle)
+    local CREDITS = tostring(config.Credits or config.Desc or CONFIG.Credits)
+    local LOGO = imageAsset(config.Logo or CONFIG.Logo)
+    local TOGGLE_IMG = imageAsset(config.ToggleImage or CONFIG.ToggleImage)
+
+    local gui = make("ScreenGui", {Name = "NexoraUI", ResetOnSpawn = false, IgnoreGuiInset = true, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
+
+    local W, H = 860, 540
+    local HEADER_H, SIDEBAR_W = 118, 112
+
+    local shell = make("Frame", {
+        Name = "Window", AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5),
+        Size = UDim2.fromOffset(W, H), BackgroundColor3 = C.bg, BorderSizePixel = 0,
+    }, gui)
+    corner(shell, 24)
+    local shellStroke = stroke(shell, Color3.new(1, 1, 1), 0, 2.5)
+    local shellGrad = make("UIGradient", {
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, C.blue2), ColorSequenceKeypoint.new(.5, Color3.fromRGB(0, 55, 140)),
+            ColorSequenceKeypoint.new(1, C.blue2),
+        }),
+        Rotation = 0,
+    }, shellStroke)
+    pcall(function()
+        TweenService:Create(shellGrad, TweenInfo.new(3.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Rotation = 360}):Play()
+    end)
+    gradient(shell, Color3.fromRGB(8, 15, 29), Color3.fromRGB(3, 7, 14), 35)
+    local scale = make("UIScale", {Scale = 1}, shell)
+
+    local glow = make("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 10, 1, 10), Position = UDim2.new(0, -5, 0, -5), ZIndex = 0}, shell)
+    corner(glow, 27)
+    stroke(glow, C.blue2, 0.72, 3)
+
+    local userScale = 1   -- tamanho escolhido na aba "Resize UI"
+    local function fitScale()
+        local cam = workspace.CurrentCamera
+        if cam then
+            local v = cam.ViewportSize
+            return math.clamp(math.min((v.X - 16) / W, (v.Y - 16) / H, 1) * userScale, .15, 1)
+        end
+        return userScale
+    end
+    scale.Scale = fitScale()
+    getgenv().NexoraSetUIScale = function(pct)
+        userScale = math.clamp((tonumber(pct) or 100) / 100, .3, 1)
+        scale.Scale = fitScale()
+    end
+    if workspace.CurrentCamera then
+        workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function() scale.Scale = fitScale() end)
+    end
+
+    -- ============================ CABEÇALHO ============================
+    local top = make("Frame", {Name = "Header", Size = UDim2.new(1, 0, 0, HEADER_H), BackgroundColor3 = Color3.fromRGB(7, 13, 24), BorderSizePixel = 0}, shell)
+    corner(top, 22)
+    gradient(top, Color3.fromRGB(10, 21, 39), Color3.fromRGB(5, 10, 20), 0)
+
+    -- (ícone removido do cabeçalho: fica só o nome)
+
+    local titleLbl = lbl(top, "", UDim2.new(0, 260, 0, 32), UDim2.new(0, 24, 0, 8), 24, C.white, Enum.Font.Arcade)
+    titleLbl.RichText = true
+    local tUp = string.upper(TITLE)
+    local first, rest = string.match(tUp, "^(%S+)%s+(.+)$")
+    if first then
+        titleLbl.Text = '<font color="#FFFFFF">' .. first .. '</font> <font color="#008CFF">' .. rest .. '</font>'
+    else
+        titleLbl.Text = '<font color="#FFFFFF">' .. tUp .. '</font>'
+    end
+    lbl(top, SUBTITLE, UDim2.new(0, 260, 0, 18), UDim2.new(0, 26, 0, 40), 11, C.muted, Enum.Font.Code)
+
+    -- Controles da janela: cápsula com dois botões redondos (minimizar = âmbar, fechar = vermelho),
+    -- ícones desenhados com barras (nítidos em qualquer tela), brilho no hover e "afundar" ao tocar.
+    local minimizeBtn, closeBtn
+    do
+        local controls = make("Frame", {
+            Name = "Controls", BackgroundColor3 = Color3.fromRGB(6, 12, 24), BorderSizePixel = 0,
+            Position = UDim2.new(1, -106, 0, 8), Size = UDim2.fromOffset(96, 44),
+        }, top)
+        corner(controls, 22)
+        stroke(controls, C.stroke, 0.1, 1)
+        local function controlButton(centerX, tint, symbolColor, kind)
+            local b = make("TextButton", {
+                Name = kind, AutoButtonColor = false, Text = "", BackgroundColor3 = tint, BackgroundTransparency = .86,
+                BorderSizePixel = 0, AnchorPoint = Vector2.new(.5, .5), Position = UDim2.new(0, centerX, .5, 0),
+                Size = UDim2.fromOffset(34, 34),
+            }, controls)
+            corner(b, 17)
+            local st = stroke(b, tint, .55, 1)
+            local sc = make("UIScale", {Scale = 1}, b)
+            local marks = {}
+            local function bar(rot)
+                local f = make("Frame", {
+                    AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5),
+                    Size = UDim2.fromOffset(kind == "min" and 12 or 15, 2.5), BackgroundColor3 = symbolColor,
+                    BorderSizePixel = 0, Rotation = rot,
+                }, b)
+                corner(f, 2)
+                marks[#marks + 1] = f
+            end
+            if kind == "min" then bar(0) else bar(45); bar(-45) end
+            local hoverBg = kind == "close" and .08 or .5
+            local hoverSym = kind == "close" and Color3.new(1, 1, 1) or Color3.fromRGB(255, 222, 140)
+            local function go(bgT, strokeT, symCol, scl)
+                TweenService:Create(b, TweenInfo.new(.14), {BackgroundTransparency = bgT}):Play()
+                TweenService:Create(st, TweenInfo.new(.14), {Transparency = strokeT}):Play()
+                TweenService:Create(sc, TweenInfo.new(.14, Enum.EasingStyle.Quad), {Scale = scl}):Play()
+                for _, m in ipairs(marks) do
+                    TweenService:Create(m, TweenInfo.new(.14), {BackgroundColor3 = symCol}):Play()
+                end
+            end
+            b.MouseEnter:Connect(function() go(hoverBg, .15, hoverSym, 1.1) end)
+            b.MouseLeave:Connect(function() go(.86, .55, symbolColor, 1) end)
+            b.MouseButton1Down:Connect(function() go(hoverBg, .05, hoverSym, .88) end)
+            b.MouseButton1Up:Connect(function() go(hoverBg, .15, hoverSym, 1.1) end)
+            -- no toque não existe "sair do hover": volta ao normal logo depois do clique
+            b.MouseButton1Click:Connect(function()
+                task.delay(.2, function() go(.86, .55, symbolColor, 1) end)
+            end)
+            return b
+        end
+        minimizeBtn = controlButton(26, Color3.fromRGB(255, 184, 64), Color3.fromRGB(255, 205, 100), "min")
+        closeBtn = controlButton(70, Color3.fromRGB(255, 82, 92), Color3.fromRGB(255, 118, 128), "close")
+    end
+
+    -- Abas no topo (rolagem horizontal, porque o hub tem muitas páginas).
+    local tabStrip = make("ScrollingFrame", {
+        Name = "Tabs", BackgroundTransparency = 1, BorderSizePixel = 0,
+        Position = UDim2.new(0, 16, 0, 66), Size = UDim2.new(1, -32, 0, 46),
+        CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.X,
+        ScrollingDirection = Enum.ScrollingDirection.X, ScrollBarThickness = 3, ScrollBarImageColor3 = C.blue,
+        ClipsDescendants = true,
+    }, top)
+    make("UIListLayout", {
+        FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Top,
+        Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder,
+    }, tabStrip)
+    make("UIPadding", {PaddingTop = UDim.new(0, 1), PaddingLeft = UDim.new(0, 2), PaddingRight = UDim.new(0, 8)}, tabStrip)
+
+    -- ============================ BARRA LATERAL ============================
+    local sidebar = make("Frame", {Name = "Sidebar", BackgroundColor3 = Color3.fromRGB(6, 13, 25), BorderSizePixel = 0, Position = UDim2.new(0, 0, 0, HEADER_H), Size = UDim2.new(0, SIDEBAR_W, 1, -HEADER_H)}, shell)
+    corner(sidebar, 20)
+    make("Frame", {BackgroundColor3 = C.stroke, BorderSizePixel = 0, Position = UDim2.new(1, -1, 0, 0), Size = UDim2.new(0, 1, 1, 0)}, sidebar)
+
+    local sideButtons = {}
+    local function sideButton(symbol, y)
+        local b = button(sidebar, symbol, UDim2.new(1, -22, 0, 58), UDim2.new(0, 11, 0, y))
+        b.TextSize = 23
+        b.TextColor3 = C.muted
+        b.BackgroundTransparency = 1
+        b:SetAttribute("NexoraKeepColor", true)
+        local s = b:FindFirstChildOfClass("UIStroke")
+        if s then s.Transparency = 1 end
+        sideButtons[#sideButtons + 1] = {btn = b, stroke = s}
+        return b
+    end
+    local function paintSide(entry, on)
+        entry.btn.BackgroundTransparency = on and 0 or 1
+        entry.btn.BackgroundColor3 = on and Color3.fromRGB(10, 53, 105) or C.panel
+        entry.btn.TextColor3 = on and C.white or C.muted
+        if entry.stroke then
+            entry.stroke.Color = on and C.blue or C.stroke
+            entry.stroke.Transparency = on and 0.1 or 1
+        end
+    end
+    local homeBtn = sideButton("⌂", 18)
+    local gearBtn = sideButton("⚙", 88)
+    local infoBtn = sideButton("ⓘ", 158)
+
+    local crown = lbl(sidebar, "♛", UDim2.new(1, 0, 0, 35), UDim2.new(0, 0, 1, -92), 31, C.blue2, Enum.Font.GothamBold)
+    crown.TextXAlignment = Enum.TextXAlignment.Center
+    local brand = lbl(sidebar, TITLE, UDim2.new(1, 0, 0, 24), UDim2.new(0, 0, 1, -55), 12, C.white, Enum.Font.GothamBold)
+    brand.TextXAlignment = Enum.TextXAlignment.Center
+
+    -- ============================ ÁREA DE CONTEÚDO ============================
+    local content = make("Frame", {Name = "Content", BackgroundTransparency = 1, Position = UDim2.new(0, SIDEBAR_W + 16, 0, HEADER_H + 12), Size = UDim2.new(1, -(SIDEBAR_W + 32), 1, -(HEADER_H + 26))}, shell)
+    local search = make("TextBox", {
+        Name = "Search", Position = UDim2.new(0, 0, 0, 0), Size = UDim2.new(1, -8, 0, 36),
+        BackgroundColor3 = C.element, BorderSizePixel = 0, PlaceholderText = "Pesquisar...", Text = "",
+        TextColor3 = C.white, PlaceholderColor3 = C.muted, Font = Enum.Font.GothamMedium, TextSize = 13,
+        TextXAlignment = Enum.TextXAlignment.Left, ClearTextOnFocus = false,
+    }, content)
+    corner(search, 10)
+    stroke(search, C.stroke, 0.15)
+    make("UIPadding", {PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 14)}, search)
+    local pageHolder = make("Frame", {Name = "Pages", BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, 46), Size = UDim2.new(1, 0, 1, -46)}, content)
+
+    -- ============================ BOTÃO FLUTUANTE ============================
+    -- ScreenGui separado: o botão fica fora da janela e não some junto com a UI (nem com o keybind Toggle GUI).
+    local floatGui = make("ScreenGui", {Name = "NexoraFloat", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 999, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
+    local reopen = make("ImageButton", {
+        Name = "NexoraFloatingButton", AutoButtonColor = false, BackgroundColor3 = Color3.fromRGB(7, 14, 28), BorderSizePixel = 0,
+        Image = TOGGLE_IMG, ScaleType = Enum.ScaleType.Fit, Size = UDim2.fromOffset(58, 58), ZIndex = 100,
+    }, floatGui)
+    if TOGGLE_IMG == "" then nexoraLogo(reopen, 42) end
+    reopen:SetAttribute("NexoraKeepColor", true)
+    corner(reopen, 29)
+    local fScale = make("UIScale", {Scale = 1}, reopen)
+    -- Visual: anel degradê girando, pulso chamando atenção enquanto a UI está fechada, bolinha de status e zoom no hover.
+    do
+        local ringStroke = stroke(reopen, Color3.new(1, 1, 1), 0, 2.5)
+        local ringGrad = make("UIGradient", {
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, C.blue2), ColorSequenceKeypoint.new(.5, Color3.fromRGB(0, 55, 140)),
+                ColorSequenceKeypoint.new(1, C.blue2),
+            }),
+            Rotation = 0,
+        }, ringStroke)
+        pcall(function()
+            TweenService:Create(ringGrad, TweenInfo.new(3.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Rotation = 360}):Play()
+        end)
+
+        local pulse = make("Frame", {
+            Name = "Pulse", AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = UDim2.fromScale(1, 1),
+            BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 99,
+        }, reopen)
+        make("UICorner", {CornerRadius = UDim.new(.5, 0)}, pulse)
+        local pulseStroke = stroke(pulse, C.blue2, 1, 2)
+        task.spawn(function()
+            while floatGui.Parent do
+                if not gui.Enabled or not shell.Visible then
+                    pulse.Size = UDim2.fromScale(1, 1)
+                    pulseStroke.Transparency = .35
+                    local info = TweenInfo.new(1.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+                    TweenService:Create(pulse, info, {Size = UDim2.fromScale(1.55, 1.55)}):Play()
+                    TweenService:Create(pulseStroke, info, {Transparency = 1}):Play()
+                    task.wait(1.9)
+                else
+                    pulseStroke.Transparency = 1
+                    task.wait(.3)
+                end
+            end
+        end)
+
+        local dot = make("Frame", {
+            Name = "Status", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -1, 0, 1), Size = UDim2.fromOffset(14, 14),
+            BackgroundColor3 = Color3.fromRGB(110, 125, 150), BorderSizePixel = 0, ZIndex = 102,
+        }, reopen)
+        corner(dot, 7)
+        stroke(dot, Color3.fromRGB(7, 14, 28), 0, 2)
+        local function refreshDot()
+            local open = gui.Enabled and shell.Visible
+            TweenService:Create(dot, TweenInfo.new(.2), {BackgroundColor3 = open and Color3.fromRGB(70, 220, 120) or Color3.fromRGB(110, 125, 150)}):Play()
+        end
+        shell:GetPropertyChangedSignal("Visible"):Connect(refreshDot)
+        gui:GetPropertyChangedSignal("Enabled"):Connect(refreshDot)
+        refreshDot()
+
+        reopen.MouseEnter:Connect(function()
+            TweenService:Create(fScale, TweenInfo.new(.15, Enum.EasingStyle.Quad), {Scale = 1.1}):Play()
+        end)
+        reopen.MouseLeave:Connect(function()
+            TweenService:Create(fScale, TweenInfo.new(.15, Enum.EasingStyle.Quad), {Scale = 1}):Play()
+        end)
+    end
+    local function bounceFloat()
+        TweenService:Create(fScale, TweenInfo.new(.08), {Scale = .8}):Play()
+        task.delay(.08, function() TweenService:Create(fScale, TweenInfo.new(.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play() end)
+    end
+
+    local FLOAT_POS_FILE = "NexoraHub_FloatPosition.json"
+    local function loadFloatPosition()
+        local saved
+        pcall(function()
+            if readfile and isfile and isfile(FLOAT_POS_FILE) then
+                saved = game:GetService("HttpService"):JSONDecode(readfile(FLOAT_POS_FILE))
+            end
+        end)
+        if type(saved) == "table" and tonumber(saved.x) and tonumber(saved.y) then
+            return UDim2.new(0, tonumber(saved.x), 0, tonumber(saved.y))
+        end
+        local cam = workspace.CurrentCamera
+        local vp = cam and cam.ViewportSize or Vector2.new(800, 600)
+        return UDim2.new(0, 18, 0, math.max(10, math.floor(vp.Y / 2 - 27)))
+    end
+    local function saveFloatPosition()
+        pcall(function()
+            if writefile then
+                local p = reopen.Position
+                writefile(FLOAT_POS_FILE, game:GetService("HttpService"):JSONEncode({x = math.floor(p.X.Offset), y = math.floor(p.Y.Offset)}))
+            end
+        end)
+    end
+    reopen.AnchorPoint = Vector2.new(0, 0)
+    reopen.Position = loadFloatPosition()
+    reopen.Visible = true
+
+    -- ============================ ABRIR / FECHAR ============================
+    -- Sempre parte da escala "encaixada" (fitScale) e da posição de repouso, cancelando a animação anterior.
+    local floatDragging, floatStart, floatPos, floatMoved = false, nil, nil, false
+    local playClose
+    local animToken, animating, isClosing, animTweens = 0, false, false, {}
+    local restPos = shell.Position
+    local function stopAnim()
+        for _, tw in ipairs(animTweens) do pcall(function() tw:Cancel() end) end
+        animTweens = {}
+    end
+    local function playOpen()
+        animToken = animToken + 1
+        local token = animToken
+        stopAnim()
+        isClosing = false
+        if not animating then restPos = shell.Position end
+        animating = true
+        local base = fitScale()
+        shell.Visible = true
+        shell.Position = restPos + UDim2.new(0, 0, 0, 22)
+        scale.Scale = base * 0.93
+        local t1 = TweenService:Create(shell, TweenInfo.new(.34, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position = restPos})
+        local t2 = TweenService:Create(scale, TweenInfo.new(.34, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = base})
+        animTweens = {t1, t2}
+        t1:Play(); t2:Play()
+        t1.Completed:Connect(function()
+            if token ~= animToken then return end
+            animating = false
+            shell.Position = restPos
+            scale.Scale = fitScale()
+        end)
+    end
+    playClose = function()
+        if not shell.Visible or isClosing then return end
+        animToken = animToken + 1
+        local token = animToken
+        stopAnim()
+        if not animating then restPos = shell.Position end
+        animating, isClosing = true, true
+        local base = fitScale()
+        local t1 = TweenService:Create(shell, TweenInfo.new(.2, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {Position = restPos + UDim2.new(0, 0, 0, 18)})
+        local t2 = TweenService:Create(scale, TweenInfo.new(.2, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {Scale = base * 0.93})
+        animTweens = {t1, t2}
+        t1:Play(); t2:Play()
+        t1.Completed:Connect(function()
+            if token ~= animToken then return end
+            shell.Visible = false
+            shell.Position = restPos
+            scale.Scale = fitScale()
+            animating, isClosing = false, false
+        end)
+    end
+
+    minimizeBtn.MouseButton1Click:Connect(function() playClose() end)
+    closeBtn.MouseButton1Click:Connect(function() playClose() end)
+
+    -- O mesmo botão flutuante fica sempre visível e alterna abrir/fechar.
+    reopen.Activated:Connect(function()
+        if floatMoved then
+            task.defer(function() floatMoved = false end)
+            return
+        end
+        pcall(bounceFloat)
+        if not gui.Enabled then
+            gui.Enabled = true
+            pcall(function() getgenv().UIToggled = true end)
+            playOpen()
+            return
+        end
+        if shell.Visible then playClose() else playOpen() end
+    end)
+    reopen.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            floatDragging = true; floatMoved = false; floatStart = input.Position; floatPos = reopen.Position
+        end
+    end)
+    UIS.InputChanged:Connect(function(input)
+        if floatDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local d = input.Position - floatStart
+            if math.abs(d.X) > 4 or math.abs(d.Y) > 4 then floatMoved = true end
+            if floatMoved then
+                local cam = workspace.CurrentCamera
+                local vp = cam and cam.ViewportSize or Vector2.new(800, 600)
+                local x = math.clamp(floatPos.X.Offset + d.X, 0, math.max(0, vp.X - reopen.AbsoluteSize.X))
+                local y = math.clamp(floatPos.Y.Offset + d.Y, 0, math.max(0, vp.Y - reopen.AbsoluteSize.Y))
+                reopen.Position = UDim2.new(0, x, 0, y)
+            end
+        end
+    end)
+    UIS.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            floatDragging = false
+            if floatMoved then saveFloatPosition() end
+            -- Mantém floatMoved até Activated decidir se foi clique ou arrasto.
+        end
+    end)
+
+    -- Arrastar a janela pelo cabeçalho.
+    local dragging, dragStart, startPos = false, nil, nil
+    top.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true; dragStart = input.Position; startPos = shell.Position
+        end
+    end)
+    top.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
+    end)
+    UIS.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local d = input.Position - dragStart
+            shell.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+        end
+    end)
+
+    -- ============================ REDIMENSIONAR A JANELA ============================
+    -- Uma única barra azul no centro da borda de baixo, sempre visível e por cima de todo o conteúdo da janela.
+    -- Só redimensiona (largura e altura) quando você segura e arrasta ESSA barra; as bordas da janela não fazem
+    -- nada. Toque duplo na barra volta ao tamanho original.
+    do
+        local MIN_W, MIN_H = 600, 360
+        local resizing, startIn, startW, startH, startPos = false, nil, nil, nil, nil
+        local lastTap = 0
+        local SIZE_FILE = "NexoraHub_UISize.json"
+        local function saveSize(w, h)
+            pcall(function()
+                if w and h then getgenv().NexoraUISize = {w = w, h = h} else getgenv().NexoraUISize = nil end
+                if writefile then
+                    writefile(SIZE_FILE, (w and h) and game:GetService("HttpService"):JSONEncode({w = math.floor(w), h = math.floor(h)}) or "")
+                end
+            end)
+        end
+        local function loadSize()
+            local saved
+            pcall(function()
+                if readfile and isfile and isfile(SIZE_FILE) then
+                    local raw = readfile(SIZE_FILE)
+                    if raw and raw ~= "" then saved = game:GetService("HttpService"):JSONDecode(raw) end
+                end
+            end)
+            if not (saved and saved.w and saved.h) then saved = getgenv().NexoraUISize end
+            return saved
+        end
+        local function limits()
+            local cam = workspace.CurrentCamera
+            local vp = cam and cam.ViewportSize or Vector2.new(1280, 720)
+            local sc = math.max(scale.Scale, 0.05)
+            return sc, math.max(MIN_W, (vp.X - 16) / sc), math.max(MIN_H, (vp.Y - 16) / sc)
+        end
+        -- Alça no canto inferior direito (formato de "L"), por cima de todo o conteúdo da janela.
+        local handle = make("Frame", {
+            Name = "ResizeHandle", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -4, 1, -4),
+            Size = UDim2.fromOffset(46, 46), BackgroundTransparency = 1, BorderSizePixel = 0, Active = true,
+            Visible = false, ZIndex = 500,
+        }, shell)
+        local bar = make("Frame", {Name = "Bar", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 501}, handle)
+        local barH = make("Frame", {
+            Name = "H", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -8, 1, -8), Size = UDim2.fromOffset(26, 6),
+            BackgroundColor3 = Color3.fromRGB(0, 140, 255), BackgroundTransparency = .15, BorderSizePixel = 0, ZIndex = 501,
+        }, bar)
+        corner(barH, 3)
+        local barV = make("Frame", {
+            Name = "V", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -8, 1, -8), Size = UDim2.fromOffset(6, 26),
+            BackgroundColor3 = Color3.fromRGB(0, 140, 255), BackgroundTransparency = .15, BorderSizePixel = 0, ZIndex = 501,
+        }, bar)
+        corner(barV, 3)
+        local function fade(value)
+            pcall(function()
+                TweenService:Create(barH, TweenInfo.new(.12), {BackgroundTransparency = value}):Play()
+                TweenService:Create(barV, TweenInfo.new(.12), {BackgroundTransparency = value}):Play()
+            end)
+        end
+        local function isPress(input)
+            return input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch
+        end
+        local function setSize(w, h, basePos, baseW, baseH)
+            local sc = limits()
+            shell.Size = UDim2.fromOffset(w, h)
+            -- a janela é ancorada no centro: desloca meia diferença para o canto superior esquerdo ficar parado
+            shell.Position = UDim2.new(basePos.X.Scale, basePos.X.Offset + (w - baseW) * sc / 2, basePos.Y.Scale, basePos.Y.Offset + (h - baseH) * sc / 2)
+        end
+        handle.InputBegan:Connect(function(input)
+            if true or animating or not isPress(input) then return end -- resize por arrasto desligado: use a aba Resize UI
+            if tick() - lastTap < 0.35 then
+                lastTap, resizing = 0, false
+                setSize(W, H, shell.Position, shell.Size.X.Offset, shell.Size.Y.Offset)
+                saveSize(nil)
+                return
+            end
+            lastTap = tick()
+            resizing, startIn = true, input.Position
+            startW, startH, startPos = shell.Size.X.Offset, shell.Size.Y.Offset, shell.Position
+            fade(0)
+        end)
+        UIS.InputChanged:Connect(function(input)
+            if not resizing then return end
+            if not (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                return
+            end
+            local sc, maxW, maxH = limits()
+            local d = input.Position - startIn
+            setSize(math.clamp(startW + d.X / sc, MIN_W, maxW), math.clamp(startH + d.Y / sc, MIN_H, maxH), startPos, startW, startH)
+        end)
+        UIS.InputEnded:Connect(function(input)
+            if resizing and isPress(input) then
+                resizing = false
+                fade(0.15)
+                saveSize(shell.Size.X.Offset, shell.Size.Y.Offset)
+            end
+        end)
+        -- Reaplica o tamanho salvo (arquivo NexoraHub_UISize.json) sempre que a UI abre.
+        pcall(function()
+            local saved = loadSize()
+            if false and saved and saved.w and saved.h then
+                local _, maxW, maxH = limits()
+                shell.Size = UDim2.fromOffset(math.clamp(saved.w, MIN_W, maxW), math.clamp(saved.h, MIN_H, maxH))
+            end
+        end)
+    end
+
+    -- ============================ PÁGINAS ============================
+    local Main = {}
+    local pages, activePage = {}, nil
+    local function updateSide()
+        paintSide(sideButtons[1], activePage ~= nil and activePage == pages[1])
+        local isSettings = false
+        if activePage and string.find(string.lower(activePage.title), "setting", 1, true) then isSettings = true end
+        paintSide(sideButtons[2], isSettings)
+        paintSide(sideButtons[3], false)
+    end
+    local function showPage(p)
+        local changed = (activePage ~= p)
+        activePage = p
+        for _, item in ipairs(pages) do
+            local on = (item == p)
+            item.frame.Visible = on
+            item.tab.TextColor3 = on and C.white or C.muted
+            item.tab.BackgroundColor3 = on and C.tabOn or C.tabOff
+            item.tabStroke.Color = on and C.blue or C.stroke
+            item.tabStroke.Transparency = on and 0.08 or 0.2
+        end
+        if changed and p.frame then
+            p.frame.Position = UDim2.new(0, 18, 0, 0)
+            TweenService:Create(p.frame, TweenInfo.new(.28, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)}):Play()
+        end
+        updateSide()
+    end
+    homeBtn.MouseButton1Click:Connect(function()
+        if pages[1] then showPage(pages[1]) end
+        tabStrip.CanvasPosition = Vector2.new(0, 0)
+    end)
+    gearBtn.MouseButton1Click:Connect(function()
+        for _, p in ipairs(pages) do
+            if string.find(string.lower(p.title), "setting", 1, true) then showPage(p); return end
+        end
+    end)
+    infoBtn.MouseButton1Click:Connect(function()
+        pcall(function() Main.CreateNoti({Title = TITLE, Desc = CREDITS, ShowTime = 4}) end)
+    end)
+
+    function Main.CreatePage(pageConfig)
+        pageConfig = pageConfig or {}
+        local pageName = pageConfig.Page_Name or pageConfig.Page_Title or "Page"
+        local navText = tostring(pageConfig.Page_Title or pageName)
+
+        local frame = make("ScrollingFrame", {
+            Name = pageName, BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.fromScale(1, 1),
+            CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y,
+            ScrollingDirection = Enum.ScrollingDirection.Y, ScrollBarThickness = 3, ScrollBarImageColor3 = C.blue, Visible = false,
+        }, pageHolder)
+        make("UIPadding", {PaddingRight = UDim.new(0, 8), PaddingBottom = UDim.new(0, 14)}, frame)
+        local holder = make("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y}, frame)
+        make("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 14), SortOrder = Enum.SortOrder.LayoutOrder}, holder)
+        local columns = {}
+        for i = 1, 2 do
+            local col = make("Frame", {BackgroundTransparency = 1, Size = UDim2.new(.5, -7, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = i}, holder)
+            make("UIListLayout", {Padding = UDim.new(0, 14), SortOrder = Enum.SortOrder.LayoutOrder}, col)
+            columns[i] = {frame = col, weight = 0, count = 0}
+        end
+
+        -- Aba no topo
+        local tabW = #navText * 9 + 36
+        pcall(function()
+            local sz = TextService:GetTextSize(navText, 15, Enum.Font.GothamMedium, Vector2.new(1000, 100))
+            tabW = math.ceil(sz.X) + 36
+        end)
+        local tab = button(tabStrip, navText, UDim2.fromOffset(tabW, 38))
+        tab:SetAttribute("NexoraKeepColor", true)
+        tab.TextSize = 15
+        tab.TextColor3 = C.muted
+        tab.BackgroundColor3 = C.tabOff
+        tab.LayoutOrder = #pages + 1
+        local tabStroke = tab:FindFirstChildOfClass("UIStroke")
+
+        local p = {name = pageName, title = navText, frame = frame, tab = tab, tabStroke = tabStroke}
+        pages[#pages + 1] = p
+        tab.MouseButton1Click:Connect(function() showPage(p) end)
+        if #pages == 1 then showPage(p) end
+
+        local Page = {}
+        local sectionOrder = 0
+        function Page.CreateSection(sectionName)
+            sectionName = tostring(sectionName or "Section")
+            -- Coluna com menos conteúdo estimado recebe a seção (equilibra as duas colunas).
+            local col = columns[1]
+            if columns[2].weight < columns[1].weight then col = columns[2] end
+            col.weight = col.weight + 90
+            sectionOrder = sectionOrder + 1
+
+            local wrap = make("Frame", {Name = sectionName, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = sectionOrder}, col.frame)
+            make("UIListLayout", {Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder}, wrap)
+            local heading = make("Frame", {BackgroundColor3 = C.panel2, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 66), LayoutOrder = 1}, wrap)
+            corner(heading, 15)
+            stroke(heading, C.stroke, 0.25)
+            local accent = make("Frame", {BackgroundColor3 = C.blue, BorderSizePixel = 0, Position = UDim2.new(0, 13, 0, 14), Size = UDim2.new(0, 5, 0, 38)}, heading)
+            corner(accent, 4)
+            local ic = lbl(heading, sectionIcon(sectionName), UDim2.new(0, 44, 1, 0), UDim2.new(0, 28, 0, 0), 23, C.blue2, Enum.Font.GothamBold)
+            ic.TextXAlignment = Enum.TextXAlignment.Center
+            local ttl = lbl(heading, sectionName, UDim2.new(1, -90, 0, 26), UDim2.new(0, 78, 0, 10), 18, C.white, Enum.Font.GothamBold)
+            ttl.TextTruncate = Enum.TextTruncate.AtEnd
+            lbl(heading, "Configure your options here.", UDim2.new(1, -90, 0, 20), UDim2.new(0, 79, 0, 36), 12, C.muted)
+
+            local body = make("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 2}, wrap)
+            make("UIListLayout", {Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder}, body)
+            make("UIPadding", {PaddingBottom = UDim.new(0, 10)}, body)
+
+            local order = 0
+            local function nextOrder() order = order + 1; return order end
+            local function weigh(h) col.weight = col.weight + h + 10 end
+
+            local Section = {}
+
+            function Section.CreateToggle(cfg, callback)
+                cfg = cfg or {}; local t = cfg.Title or "Toggle"
+                -- Usa o arquivo de settings por jogador já existente.
+                Settings = Settings or {}
+                local savedToggle = Settings[t]
+                local val
+                if type(savedToggle) == "boolean" then val = savedToggle else val = (cfg.Default == true) end
+                local row = button(body, "", UDim2.new(1, 0, 0, 52)); row.LayoutOrder = nextOrder(); weigh(52)
+                local name = lbl(row, t, UDim2.new(1, -86, 1, 0), UDim2.new(0, 17, 0, 0), 14, C.white)
+                name.TextWrapped = true
+                local track = make("Frame", {BackgroundColor3 = val and C.blue or C.off, BorderSizePixel = 0, AnchorPoint = Vector2.new(1, .5), Position = UDim2.new(1, -15, .5, 0), Size = UDim2.fromOffset(42, 23)}, row)
+                corner(track, 20)
+                local knob = make("Frame", {BackgroundColor3 = Color3.fromRGB(226, 236, 250), BorderSizePixel = 0, Position = val and UDim2.new(1, -20, 0, 3) or UDim2.new(0, 3, 0, 3), Size = UDim2.fromOffset(17, 17)}, track)
+                corner(knob, 20)
+                local function paint(animate)
+                    local pos = val and UDim2.new(1, -20, 0, 3) or UDim2.new(0, 3, 0, 3)
+                    local col2 = val and C.blue or C.off
+                    if animate then
+                        TweenService:Create(track, TweenInfo.new(.15), {BackgroundColor3 = col2}):Play()
+                        TweenService:Create(knob, TweenInfo.new(.15), {Position = pos}):Play()
+                    else
+                        track.BackgroundColor3 = col2; knob.Position = pos
+                    end
+                end
+                paint(false)
+                local opt = addOption(t, "toggle", val, pageName, sectionName, callback)
+                local function applyToggle(v, fire)
+                    val = not not v; opt.value = val; paint(true)
+                    -- Persiste no mesmo formato/caminho do Settings original.
+                    Settings[t] = val
+                    pcall(function() SaveSettings(t, val) end)
+                    if fire and callback then task.spawn(function() pcall(callback, val) end) end
+                end
+                opt._setValue = function(v) applyToggle(v, false) end
+                row.MouseButton1Click:Connect(function() applyToggle(not val, true) end)
+                -- A restauração das opções salvas roda ao final do carregamento (RestoreSavedToggles).
+                return opt
+            end
+
+            function Section.CreateButton(cfg, callback)
+                cfg = cfg or {}; local t = cfg.Title or "Button"
+                local b = button(body, t, UDim2.new(1, 0, 0, 52)); b.LayoutOrder = nextOrder(); weigh(52)
+                b.TextSize = 14
+                b.TextWrapped = true
+                addOption(t, "button", false, pageName, sectionName, callback)
+                b.MouseButton1Click:Connect(function() if callback then task.spawn(callback) end end)
+                return b
+            end
+
+            function Section.CreateLabel(cfg)
+                local t = type(cfg) == "table" and (cfg.Title or cfg.Text or "") or tostring(cfg or "")
+                weigh(30)
+                local holderL = make("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = nextOrder()}, body)
+                make("UIPadding", {PaddingLeft = UDim.new(0, 4), PaddingTop = UDim.new(0, 3), PaddingBottom = UDim.new(0, 3)}, holderL)
+                local txt = make("TextLabel", {
+                    BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y,
+                    Text = tostring(t), TextColor3 = C.muted, TextSize = 13, Font = Enum.Font.GothamMedium,
+                    TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true,
+                }, holderL)
+                local handle = {Object = txt}
+                handle.SetText = function(value) txt.Text = tostring(value or "") end
+                handle.GetText = function() return txt.Text end
+                return handle
+            end
+
+            function Section.CreateSlider(cfg, callback)
+                cfg = cfg or {}; local t = cfg.Title or "Slider"
+                local min = cfg.Min or cfg.MinValue or 0
+                local max = cfg.Max or cfg.MaxValue or 100
+                local val = math.clamp(cfg.Default or cfg.Value or min, min, max)
+                weigh(66)
+                local r = make("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 66), LayoutOrder = nextOrder()}, body)
+                local ttl2 = lbl(r, t, UDim2.new(.75, 0, 0, 24), UDim2.new(0, 2, 0, 0), 14, C.white)
+                ttl2.TextTruncate = Enum.TextTruncate.AtEnd
+                local num = lbl(r, tostring(val), UDim2.new(.25, 0, 0, 24), UDim2.new(.75, -2, 0, 0), 14, C.blue2)
+                num.TextXAlignment = Enum.TextXAlignment.Right
+                local ratio0 = (val - min) / math.max(1, max - min)
+                local bar = make("Frame", {BackgroundColor3 = C.off, BorderSizePixel = 0, Position = UDim2.new(0, 2, 0, 38), Size = UDim2.new(1, -4, 0, 7)}, r)
+                corner(bar, 6)
+                local fill = make("Frame", {BackgroundColor3 = C.blue, BorderSizePixel = 0, Size = UDim2.new(ratio0, 0, 1, 0)}, bar)
+                corner(fill, 6)
+                local knob = make("Frame", {BackgroundColor3 = C.white, BorderSizePixel = 0, AnchorPoint = Vector2.new(.5, .5), Position = UDim2.new(ratio0, 0, .5, 0), Size = UDim2.fromOffset(15, 15)}, bar)
+                corner(knob, 20)
+                local hit = make("TextButton", {BackgroundTransparency = 1, Text = "", Size = UDim2.new(1, 0, 0, 28), Position = UDim2.new(0, 0, 0, 29)}, r)
+                local opt
+                local sliding = false
+                local function set(x)
+                    local ratio = math.clamp((x - bar.AbsolutePosition.X) / math.max(1, bar.AbsoluteSize.X), 0, 1)
+                    val = math.floor(min + (max - min) * ratio + 0.5)
+                    fill.Size = UDim2.new(ratio, 0, 1, 0); knob.Position = UDim2.new(ratio, 0, .5, 0); num.Text = tostring(val)
+                    if opt then opt.value = val end
+                    if callback then pcall(callback, val) end
+                end
+                opt = addOption(t, "slider", val, pageName, sectionName, callback)
+                opt._setValue = function(v)
+                    val = math.clamp(tonumber(v) or min, min, max)
+                    local ratio = (val - min) / math.max(1, max - min)
+                    fill.Size = UDim2.new(ratio, 0, 1, 0); knob.Position = UDim2.new(ratio, 0, .5, 0); num.Text = tostring(val)
+                end
+                hit.InputBegan:Connect(function(i)
+                    if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+                        sliding = true; set(i.Position.X)
+                    end
+                end)
+                UIS.InputChanged:Connect(function(i)
+                    if sliding and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then set(i.Position.X) end
+                end)
+                UIS.InputEnded:Connect(function(i)
+                    if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then sliding = false end
+                end)
+                return opt
+            end
+
+            function Section.CreateDropdown(cfg, callback)
+                cfg = cfg or {}
+                local t = cfg.Title or "Dropdown"
+                local rawList = cfg.List or cfg.Values or cfg.Options or {}
+                local multi = cfg.Selected == true
+                local listValues = {}
+                local function rebuildList(src)
+                    listValues = {}
+                    if type(src) ~= "table" then return end
+                    -- Multi-select sources pass a dictionary {name = enabled}; ordinary
+                    -- dropdowns pass an array. Support both without losing dictionary keys.
+                    if #src > 0 then
+                        for _, value in ipairs(src) do table.insert(listValues, value) end
+                    else
+                        for key in pairs(src) do table.insert(listValues, key) end
+                        table.sort(listValues, function(a, b) return tostring(a) < tostring(b) end)
+                    end
+                end
+                rebuildList(rawList)
+                local selected = cfg.Default
+                if multi then
+                    selected = type(selected) == "table" and table.clone(selected) or {}
+                    for _, value in ipairs(listValues) do
+                        if selected[value] == nil then selected[value] = type(rawList) == "table" and rawList[value] == true or false end
+                    end
+                else
+                    selected = selected or "Select..."
+                end
+                local function displayValue()
+                    if not multi then return tostring(selected) end
+                    local chosen = {}
+                    for _, value in ipairs(listValues) do if selected[value] then table.insert(chosen, tostring(value)) end end
+                    if #chosen == 0 then return "None selected" end
+                    local shown = table.concat(chosen, ", ")
+                    return #shown > 32 and (string.sub(shown, 1, 29) .. "...") or shown
+                end
+                weigh(82)
+                local holderD = make("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 82), LayoutOrder = nextOrder()}, body)
+                local dl = lbl(holderD, t, UDim2.new(1, 0, 0, 24), UDim2.new(0, 3, 0, 0), 14, C.white, Enum.Font.GothamBold)
+                dl.TextTruncate = Enum.TextTruncate.AtEnd
+                local b = button(holderD, "", UDim2.new(1, 0, 0, 48), UDim2.new(0, 0, 0, 29))
+                local selLabel = lbl(b, displayValue(), UDim2.new(1, -52, 1, 0), UDim2.new(0, 16, 0, 0), 14, C.white)
+                selLabel.TextTruncate = Enum.TextTruncate.AtEnd
+                local arrow = lbl(b, "⌄", UDim2.new(0, 28, 1, 0), UDim2.new(1, -38, 0, -4), 22, C.muted)
+                arrow.TextXAlignment = Enum.TextXAlignment.Center
+                local opt = addOption(t, "dropdown", selected, pageName, sectionName, callback)
+                local function refreshButton()
+                    selLabel.Text = displayValue()
+                    opt.value = selected
+                end
+                opt._setValue = function(v)
+                    if multi then selected = type(v) == "table" and table.clone(v) or {} else selected = v end
+                    refreshButton()
+                end
+                opt.GetNewList = function(_, newList)
+                    rebuildList(newList or {})
+                    if multi then
+                        for _, value in ipairs(listValues) do if selected[value] == nil then selected[value] = false end end
+                    elseif not table.find(listValues, selected) then
+                        selected = "Select..."
+                    end
+                    refreshButton()
+                end
+                opt.SetList = opt.GetNewList
+                b.MouseButton1Click:Connect(function()
+                    local menuName = "NexoraDropdownOverlay"
+                    local oldMenu = shell:FindFirstChild(menuName)
+                    if oldMenu then
+                        local same = oldMenu:GetAttribute("NexoraOwner") == t
+                        oldMenu:Destroy()
+                        if same then return end
+                    end
+                    -- O menu fica dentro da janela (mesma escala): converte posições absolutas em pixels de design.
+                    local s = math.max(scale.Scale, 0.01)
+                    local shellPos, shellSize = shell.AbsolutePosition, shell.AbsoluteSize
+                    local bPos, bSize = b.AbsolutePosition, b.AbsoluteSize
+                    local shellW, shellH = shellSize.X / s, shellSize.Y / s
+                    local count = #listValues + (multi and 1 or 0)
+                    local h = math.max(40, math.min(220, count * 36 + 8))
+                    local w = math.max(bSize.X / s, 150)
+                    local x = (bPos.X - shellPos.X) / s
+                    local y = (bPos.Y - shellPos.Y + bSize.Y) / s + 5
+                    if y + h > shellH - 8 then y = math.max(8, (bPos.Y - shellPos.Y) / s - h - 5) end
+                    x = math.clamp(x, 6, math.max(6, shellW - w - 6))
+                    local menu = make("ScrollingFrame", {
+                        Name = menuName, Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(w, h), CanvasSize = UDim2.new(),
+                        ScrollBarThickness = 3, ScrollBarImageColor3 = C.blue, BackgroundColor3 = C.panel2, BorderSizePixel = 0,
+                        ZIndex = 100, Active = true,
+                    }, shell)
+                    menu:SetAttribute("NexoraOwner", t)
+                    corner(menu, 10); stroke(menu, C.blue, 0.35)
+                    -- Fecha o menu ao tocar fora dele.
+                    local outsideConnection
+                    outsideConnection = UIS.InputBegan:Connect(function(input, processed)
+                        if processed then return end
+                        if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then return end
+                        task.defer(function()
+                            if not menu or not menu.Parent then
+                                if outsideConnection then outsideConnection:Disconnect() end
+                                return
+                            end
+                            local pt = input.Position
+                            local mp, ms = menu.AbsolutePosition, menu.AbsoluteSize
+                            local bp, bs = b.AbsolutePosition, b.AbsoluteSize
+                            local insideMenu = pt.X >= mp.X and pt.X <= mp.X + ms.X and pt.Y >= mp.Y and pt.Y <= mp.Y + ms.Y
+                            local insideButton = pt.X >= bp.X and pt.X <= bp.X + bs.X and pt.Y >= bp.Y and pt.Y <= bp.Y + bs.Y
+                            if not insideMenu and not insideButton then menu:Destroy() end
+                        end)
+                    end)
+                    menu.Destroying:Connect(function() if outsideConnection then outsideConnection:Disconnect() end end)
+                    local lay = make("UIListLayout", {Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder}, menu)
+                    make("UIPadding", {PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4), PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 4)}, menu)
+                    lay:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() menu.CanvasSize = UDim2.new(0, 0, 0, lay.AbsoluteContentSize.Y + 8) end)
+                    local function styleOption(ob, on)
+                        ob.BackgroundTransparency = on and 0 or 1
+                        ob.BackgroundColor3 = on and C.tabOn or C.panel2
+                    end
+                    for index, value in ipairs(listValues) do
+                        local isOn = multi and selected[value] == true
+                        local ob = make("TextButton", {
+                            AutoButtonColor = false, BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 34),
+                            Text = (multi and (isOn and "✓  " or "□  ") or "") .. tostring(value), TextColor3 = C.white, TextSize = 13,
+                            Font = Enum.Font.GothamMedium, ZIndex = 101, LayoutOrder = index,
+                        }, menu)
+                        corner(ob, 8)
+                        if multi then styleOption(ob, isOn) end
+                        ob.MouseEnter:Connect(function() if not (multi and selected[value]) then ob.BackgroundTransparency = 0; ob.BackgroundColor3 = C.hover end end)
+                        ob.MouseLeave:Connect(function() styleOption(ob, multi and selected[value] == true) end)
+                        ob.MouseButton1Click:Connect(function()
+                            if multi then
+                                selected[value] = not selected[value]
+                                refreshButton()
+                                if callback then task.spawn(function() pcall(callback, value, selected[value]) end) end
+                                -- Fecha após cada escolha; toque no dropdown de novo para escolher outro item.
+                                menu:Destroy()
+                            else
+                                selected = value
+                                refreshButton()
+                                menu:Destroy()
+                                if callback then task.spawn(function() pcall(callback, value) end) end
+                            end
+                        end)
+                    end
+                    if multi then
+                        local done = make("TextButton", {
+                            AutoButtonColor = false, BackgroundColor3 = C.blue, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 34),
+                            Text = "Done", TextColor3 = Color3.new(1, 1, 1), TextSize = 13, Font = Enum.Font.GothamBold, ZIndex = 101, LayoutOrder = #listValues + 1,
+                        }, menu)
+                        corner(done, 8)
+                        done.MouseButton1Click:Connect(function() menu:Destroy() end)
+                    end
+                end)
+                return opt
+            end
+
+            function Section.CreateBox(cfg, callback)
+                cfg = cfg or {}
+                local t = cfg.Title or "Text input"
+                weigh(82)
+                local r = make("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 82), LayoutOrder = nextOrder()}, body)
+                local bl = lbl(r, t, UDim2.new(1, 0, 0, 24), UDim2.new(0, 3, 0, 0), 14, C.white, Enum.Font.GothamBold)
+                bl.TextTruncate = Enum.TextTruncate.AtEnd
+                local input = make("TextBox", {
+                    Position = UDim2.new(0, 0, 0, 29), Size = UDim2.new(1, 0, 0, 48), BackgroundColor3 = C.element, BorderSizePixel = 0,
+                    Text = tostring(cfg.Default or ""), PlaceholderText = cfg.Placeholder or "Digite aqui...", TextColor3 = C.white,
+                    PlaceholderColor3 = C.muted, Font = Enum.Font.GothamMedium, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left,
+                    ClearTextOnFocus = false,
+                }, r)
+                corner(input, 12); stroke(input, C.stroke, 0.15)
+                make("UIPadding", {PaddingLeft = UDim.new(0, 16), PaddingRight = UDim.new(0, 16)}, input)
+                local opt = addOption(t, "box", input.Text, pageName, sectionName, callback)
+                local function setText(v, fire)
+                    input.Text = tostring(v == nil and "" or v); opt.value = input.Text
+                    if fire and callback then task.spawn(function() pcall(callback, input.Text) end) end
+                end
+                opt._setValue = function(v) setText(v, false) end
+                opt.FunctionCreate.GetText = function() return input.Text end
+                input.FocusLost:Connect(function() setText(input.Text, true) end)
+                return opt
+            end
+
+            function Section.CreateNoti(text, duration)
+                return Main.CreateNoti(text, duration)
+            end
+            return Section
+        end
+        return Page
+    end
+
+    function Main.CreateBind(cfg, callback)
+        cfg = cfg or {}
+        local key = cfg.Key or Enum.KeyCode.LeftControl
+        local bindGui = gui
+        local MainBind = {}
+        local conn = UIS.InputBegan:Connect(function(input, processed)
+            if processed then return end
+            if input.KeyCode == key then
+                if callback then task.spawn(function() pcall(callback) end) else bindGui.Enabled = not bindGui.Enabled end
+            end
+        end)
+        MainBind.Disconnect = function() if conn then conn:Disconnect() end end
+        MainBind.SetKey = function(v) key = v end
+        return MainBind
+    end
+    Main.CreateNotification = function(payload)
+        return Main.CreateNoti(payload)
+    end
+
+    -- ============================ NOTIFICAÇÕES ============================
+    local NotifContainer = nil
+    local function getNotifContainer()
+        if NotifContainer and NotifContainer.Parent then return NotifContainer end
+        local cGui = parentGui:FindFirstChild("NexoraNotifs")
+        if cGui then cGui:Destroy() end
+        cGui = make("ScreenGui", {Name = "NexoraNotifs", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 1000, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
+        NotifContainer = make("Frame", {Name = "Container", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -12, 0, 12), Size = UDim2.new(0, 320, 1, -24), BackgroundTransparency = 1}, cGui)
+        make("UIListLayout", {FillDirection = Enum.FillDirection.Vertical, HorizontalAlignment = Enum.HorizontalAlignment.Right, VerticalAlignment = Enum.VerticalAlignment.Top, Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder}, NotifContainer)
+        return NotifContainer
+    end
+    function Main.CreateNoti(text, duration)
+        local title, desc
+        if type(text) == "table" then
+            duration = text.ShowTime or duration or 4
+            title = tostring(text.Title or TITLE)
+            desc = tostring(text.Desc or text.Text or "")
+        else
+            duration = duration or 4
+            title = TITLE
+            desc = tostring(text)
+        end
+        local container = getNotifContainer()
+        local card = make("Frame", {Name = "Notif", BackgroundColor3 = C.panel, BorderSizePixel = 0, Size = UDim2.new(0, 310, 0, 72), ClipsDescendants = true}, container)
+        corner(card, 16)
+        local border = stroke(card, C.blue, 0.2, 1.2)
+        gradient(card, Color3.fromRGB(12, 22, 38), Color3.fromRGB(6, 11, 20), 90)
+        local sideBar = make("Frame", {Name = "SideBar", BackgroundColor3 = C.blue, BorderSizePixel = 0, Size = UDim2.new(0, 3, 1, 0)}, card)
+        corner(sideBar, 2)
+        local iconBg = make("Frame", {BackgroundColor3 = C.panel2, BorderSizePixel = 0, Size = UDim2.new(0, 40, 0, 40), Position = UDim2.new(0, 14, 0, 10)}, card)
+        corner(iconBg, 12)
+        stroke(iconBg, C.stroke, 0.2)
+        if LOGO ~= "" then
+            make("ImageLabel", {BackgroundTransparency = 1, Image = LOGO, ScaleType = Enum.ScaleType.Fit, Size = UDim2.new(1, -8, 1, -8), Position = UDim2.fromOffset(4, 4)}, iconBg)
+        else
+            nexoraLogo(iconBg, 32)
+        end
+        make("TextLabel", {BackgroundTransparency = 1, Position = UDim2.new(0, 64, 0, 8), Size = UDim2.new(1, -72, 0, 18), Text = string.upper(title), TextColor3 = C.white, Font = Enum.Font.GothamBold, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd}, card)
+        make("TextLabel", {BackgroundTransparency = 1, Position = UDim2.new(0, 64, 0, 28), Size = UDim2.new(1, -72, 0, 32), Text = desc, TextColor3 = C.muted, Font = Enum.Font.GothamMedium, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true}, card)
+        local progressBg = make("Frame", {BackgroundColor3 = C.off, BorderSizePixel = 0, Size = UDim2.new(1, -16, 0, 2), Position = UDim2.new(0, 8, 1, -6)}, card)
+        corner(progressBg, 1)
+        local progressBar = make("Frame", {BackgroundColor3 = C.blue2, BorderSizePixel = 0, Size = UDim2.new(1, 0, 1, 0)}, progressBg)
+        corner(progressBar, 1)
+        card.Position = UDim2.new(0, 340, 0, 0)
+        card.Size = UDim2.new(0, 310, 0, 0)
+        TweenService:Create(card, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0), Size = UDim2.new(0, 310, 0, 72)}):Play()
+        TweenService:Create(progressBar, TweenInfo.new(duration, Enum.EasingStyle.Linear), {Size = UDim2.new(0, 0, 1, 0)}):Play()
+        task.spawn(function()
+            while card.Parent do
+                TweenService:Create(border, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.5}):Play()
+                task.wait(1)
+                TweenService:Create(border, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.1}):Play()
+                task.wait(1)
+            end
+        end)
+        task.delay(duration, function()
+            if card and card.Parent then
+                TweenService:Create(card, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position = UDim2.new(0, 340, 0, 0)}):Play()
+                task.wait(0.3)
+                if card then card:Destroy() end
+            end
+        end)
+        return card
+    end
+    search:GetPropertyChangedSignal("Text"):Connect(function()
+        local q = string.lower(search.Text)
+        for _, p in ipairs(pages) do
+            local has = (q == "")
+            if not has and string.find(string.lower(p.title), q, 1, true) then has = true end
+            if not has then
+                for _, d in ipairs(p.frame:GetDescendants()) do
+                    if (d:IsA("TextLabel") or d:IsA("TextButton")) and string.find(string.lower(d.Text), q, 1, true) then
+                        has = true
+                        break
+                    end
+                end
+            end
+            p.tab.Visible = has
+        end
+    end)
+    task.defer(playOpen)
+    return Main
+end
+
+function Nexora.CreateNoti(config, duration)
+    return Main.CreateNoti(config, duration)
+end
+
+function Nexora.RestoreSavedToggles()
+    if getgenv().__NexoraRestoreDone then return end
+    getgenv().__NexoraRestoreDone = true
+    for _, opt in ipairs(Nexora.OptionOrder) do
+        -- usa o estado real da UI (inclui toggles com Default = true ainda sem valor salvo)
+        if opt and opt.type == "toggle" and opt.value == true then
+            local control = opt.FunctionCreate
+            if control and type(control.SetStage) == "function" then
+                pcall(function() control:SetStage(true) end)
+            elseif type(opt.Callback) == "function" then
+                pcall(opt.Callback, true)
+            end
+            task.wait()
+        end
+    end
+end
+getgenv().__NexoraRestoreDone = false
+-- fallback: se o script principal der erro antes do fim, restaura mesmo assim
+task.delay(10, function() Nexora.RestoreSavedToggles() end)
+
+return Nexora
+
+end)()
+end
 Main = A.CreateMain({ Credits = "BLOX FRUITS • ViniZDev" })
 
 PageShop = Main.CreatePage({ Page_Name = "Shop", Page_Title = "Shop" })
@@ -35449,12 +36808,12 @@ SizeUISlider = SizeUISection.CreateSlider({
 	Max = 100,
 	Default = Settings["UI Scale"] or 100,
 }, function(v)
-	SaveSettings("UI Scale", v)
+	pcall(SaveSettings, "UI Scale", v)
 	-- aplica so depois de soltar o slider (mudar o tamanho com o dedo em cima faria a barra pular)
 	local env = getgenv()
 	env.__NxScaleTok = (env.__NxScaleTok or 0) + 1
 	local tok = env.__NxScaleTok
-	task.delay(0.45, function()
+	task.delay(0.3, function()
 		if env.__NxScaleTok == tok and env.NexoraSetUIScale then
 			env.NexoraSetUIScale(v)
 		end
