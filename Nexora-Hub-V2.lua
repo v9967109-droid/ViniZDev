@@ -1960,10 +1960,10 @@ local C = {
     panel2 = Color3.fromRGB(30, 30, 35),
     element = Color3.fromRGB(32, 32, 37),
     hover = Color3.fromRGB(42, 42, 48),
-    press = Color3.fromRGB(70, 52, 20),
+    press = Color3.fromRGB(20, 40, 80),
     stroke = Color3.fromRGB(52, 52, 60),
-    blue = Color3.fromRGB(245, 166, 35),   -- cor de destaque (laranja); nome mantido para nao quebrar o resto
-    blue2 = Color3.fromRGB(255, 190, 70),
+    blue = Color3.fromRGB(59, 130, 246),   -- cor de destaque (azul); nome mantido para nao quebrar o resto
+    blue2 = Color3.fromRGB(96, 165, 250),
     white = Color3.fromRGB(240, 240, 242),
     muted = Color3.fromRGB(150, 150, 160),
     off = Color3.fromRGB(62, 62, 70),
@@ -2121,7 +2121,7 @@ function Nexora.CreateMain(config)
     local shellStroke = stroke(shell, Color3.new(1, 1, 1), 0, 2.5)
     local shellGrad = make("UIGradient", {
         Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, C.blue2), ColorSequenceKeypoint.new(.5, Color3.fromRGB(130, 85, 10)),
+            ColorSequenceKeypoint.new(0, C.blue2), ColorSequenceKeypoint.new(.5, Color3.fromRGB(20, 50, 110)),
             ColorSequenceKeypoint.new(1, C.blue2),
         }),
         Rotation = 0,
@@ -2161,7 +2161,7 @@ function Nexora.CreateMain(config)
     local titleLbl = lbl(top, "", UDim2.new(1, -240, 0, 30), UDim2.new(0, 120, 0, 9), 19, C.white, Enum.Font.GothamBold)
     titleLbl.RichText = true
     titleLbl.TextXAlignment = Enum.TextXAlignment.Center
-    titleLbl.Text = '<font color="#F5A623">' .. TITLE .. '</font> <font color="#FFFFFF">-- Blox Fruits</font>'
+    titleLbl.Text = '<font color="#3B82F6">' .. TITLE .. '</font> <font color="#FFFFFF">-- Blox Fruits</font>'
     titleLbl.TextTruncate = Enum.TextTruncate.AtEnd
 
     -- Controles da janela: cápsula com dois botões redondos (minimizar = âmbar, fechar = vermelho),
@@ -2204,7 +2204,7 @@ function Nexora.CreateMain(config)
             end
             if kind == "min" then bar(0) else bar(45); bar(-45) end
             local hoverBg = kind == "close" and .08 or .5
-            local hoverSym = kind == "close" and Color3.new(1, 1, 1) or Color3.fromRGB(255, 222, 140)
+            local hoverSym = kind == "close" and Color3.new(1, 1, 1) or Color3.fromRGB(170, 205, 255)
             local function go(bgT, strokeT, symCol, scl)
                 TweenService:Create(b, TweenInfo.new(.14), {BackgroundTransparency = bgT}):Play()
                 TweenService:Create(st, TweenInfo.new(.14), {Transparency = strokeT}):Play()
@@ -2223,7 +2223,7 @@ function Nexora.CreateMain(config)
             end)
             return b
         end
-        minimizeBtn = controlButton(26, Color3.fromRGB(255, 184, 64), Color3.fromRGB(255, 205, 100), "min")
+        minimizeBtn = controlButton(26, Color3.fromRGB(80, 150, 255), Color3.fromRGB(130, 180, 255), "min")
         closeBtn = controlButton(70, Color3.fromRGB(255, 82, 92), Color3.fromRGB(255, 118, 128), "close")
     end
 
@@ -2247,7 +2247,7 @@ function Nexora.CreateMain(config)
     end
     local function paintSide(entry, on)
         entry.btn.BackgroundTransparency = on and 0 or 1
-        entry.btn.BackgroundColor3 = on and Color3.fromRGB(60, 44, 14) or C.panel
+        entry.btn.BackgroundColor3 = on and Color3.fromRGB(18, 36, 74) or C.panel
         entry.btn.TextColor3 = on and C.white or C.muted
         if entry.stroke then
             entry.stroke.Color = on and C.blue or C.stroke
@@ -2311,7 +2311,7 @@ function Nexora.CreateMain(config)
         local ringStroke = stroke(reopen, Color3.new(1, 1, 1), 0, 2.5)
         local ringGrad = make("UIGradient", {
             Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, C.blue2), ColorSequenceKeypoint.new(.5, Color3.fromRGB(130, 85, 10)),
+                ColorSequenceKeypoint.new(0, C.blue2), ColorSequenceKeypoint.new(.5, Color3.fromRGB(20, 50, 110)),
                 ColorSequenceKeypoint.new(1, C.blue2),
             }),
             Rotation = 0,
@@ -2552,12 +2552,12 @@ function Nexora.CreateMain(config)
         local bar = make("Frame", {Name = "Bar", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 501}, handle)
         local barH = make("Frame", {
             Name = "H", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -8, 1, -8), Size = UDim2.fromOffset(26, 6),
-            BackgroundColor3 = Color3.fromRGB(245, 166, 35), BackgroundTransparency = .15, BorderSizePixel = 0, ZIndex = 501,
+            BackgroundColor3 = Color3.fromRGB(59, 130, 246), BackgroundTransparency = .15, BorderSizePixel = 0, ZIndex = 501,
         }, bar)
         corner(barH, 3)
         local barV = make("Frame", {
             Name = "V", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -8, 1, -8), Size = UDim2.fromOffset(6, 26),
-            BackgroundColor3 = Color3.fromRGB(245, 166, 35), BackgroundTransparency = .15, BorderSizePixel = 0, ZIndex = 501,
+            BackgroundColor3 = Color3.fromRGB(59, 130, 246), BackgroundTransparency = .15, BorderSizePixel = 0, ZIndex = 501,
         }, bar)
         corner(barV, 3)
         local function fade(value)
