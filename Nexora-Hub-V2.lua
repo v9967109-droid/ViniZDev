@@ -20614,9 +20614,10 @@ do
 	do
 		local boss = { on = false, noclip = nil, hover = nil, target = nil, prevFarm = nil, warned = false, height = 25 }
 		local GRP_Boss = NXH:AddRightGroupbox("Halloween Boss")
-		GRP_Boss:AddLabel("Auto Farm Halloween Boss\nUnbound Werewolf e Hellfire Gas: entra na porta, mata o boss, escapa das correntes e sai pelo portal.")
+		GRP_Boss:AddLabel("Auto Farm Halloween Boss\nUnbound Werewolf (portal do Observatory) e Hellfire Gas (porta em chamas): entra no portal, mata o boss, escapa das correntes e sai da arena.")
 		local VirtualUser = game:GetService("VirtualUser")
 		local TweenService = game:GetService("TweenService")
+		local lower = string.lower
 		-- kind: "were" (Unbound Werewolf), "hell" (Hellfire Gas), "pump" (Great Pumpkin) ou nil (todos)
 		local isBossName = function(name, kind)
 			local flat = string.gsub(string.lower(tostring(name or "")), "%s+", "")
@@ -20687,6 +20688,7 @@ do
 			local h = model:FindFirstChildOfClass("Humanoid")
 			local txt = string.gsub(lower(model.Name .. " " .. (h and h.DisplayName or "")), "%s+", "")
 			return string.find(txt, "hellfire", 1, true) or string.find(txt, "greatpumpkin", 1, true)
+				or string.find(txt, "werewolf", 1, true) or string.find(txt, "unboundwerewol", 1, true)
 		end
 		local isPumpkinBoss = function(model)
 			local h = model:FindFirstChildOfClass("Humanoid")
@@ -20714,7 +20716,6 @@ do
 				VirtualUser:Button1Up(Vector2.new(1280, 672))
 			end)
 		end
-		local lower = string.lower
 		local hasAny = function(text, words)
 			for _, w in ipairs(words) do
 				if string.find(text, w, 1, true) then
@@ -20789,6 +20790,20 @@ do
 			local inst = door.inst
 			local char = plr.Character
 			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			if not inst then
+				-- portal sem prompt/clique (ex.: portal do Werewolf): encosta na parte e dispara o toque
+				pcall(function()
+					if hrp and door.part and door.part.Parent then
+						hrp.CFrame = door.part.CFrame
+						hrp.AssemblyLinearVelocity = Vector3.zero
+						if firetouchinterest then
+							firetouchinterest(hrp, door.part, 0)
+							firetouchinterest(hrp, door.part, 1)
+						end
+					end
+				end)
+				return
+			end
 			pcall(function()
 				if inst:IsA("ProximityPrompt") and fireproximityprompt then
 					local old = inst.HoldDuration
@@ -20826,6 +20841,9 @@ do
 				return false
 			end
 			local from = hrp.Position
+			if not boss.inArena then
+				boss.entryPos = from
+			end
 			goNear(door.part)
 			for _ = 1, 10 do
 				if not boss.on then
@@ -20837,7 +20855,7 @@ do
 					task.wait(0.25)
 					waited = waited + 0.25
 					local h = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-					if h and (h.Position - from).Magnitude > 150 then
+					if h and (h.Position - from).Magnitude > 50 then
 						return true
 					end
 				end
@@ -20874,6 +20892,176 @@ do
 			end
 			return false
 		end
+		-- ===== Portal do Unbound Werewolf (leva ao Observatory) =====
+		-- Ao abrir uma porta de Trick or Treat pode surgir um portal novo no mapa. Guardamos tudo que nasce com nome de
+		-- portal/werewolf/observatory enquanto o farm esta ligado e usamos o mais recente (ate 2 min).
+		local WOLF = {
+			words = { "werewolf", "observatory", "wolf", "howl" },
+			skip = { "hydra", "mansion", "tiki", "castle", "crater", "pumpkin", "jack", "knock", "trick", "treat", "nobody" },
+		}
+		-- ===== deteccao do portal ROXO do Werewolf (nome do portal nao e conhecido: usa nome "portal" + cor roxa) =====
+		local PURPLE_SKIP = { "hydra", "mansion", "tiki", "castle", "crater", "knock", "nobody", "halloweendoor", "teleport" }
+		local isPurple = function(c)
+			return c.B >= 0.45 and c.G <= 0.4 and (c.B - c.G) >= 0.25 and (c.R - c.G) >= 0.05
+		end
+		local purpleEmitter = function(e)
+			local ok, res = pcall(function()
+				for _, kp in ipairs(e.Color.Keypoints) do
+					if isPurple(kp.Value) then
+						return true
+					end
+				end
+				return false
+			end)
+			return ok and res == true
+		end
+		local emitterPart = function(e)
+			local par = e.Parent
+			if par and par:IsA("Attachment") then
+				par = par.Parent
+			end
+			if par and par:IsA("BasePart") then
+				return par
+			end
+			return nil
+		end
+		local isMobOrChar = function(part)
+			if part:FindFirstAncestor("Enemies") then
+				return true
+			end
+			local model = part:FindFirstAncestorOfClass("Model")
+			if model and (model:FindFirstChildOfClass("Humanoid") or game:GetService("Players"):GetPlayerFromCharacter(model)) then
+				return true
+			end
+			return false
+		end
+		boss.fresh = boss.fresh or {}
+		local noteFresh = function(d)
+			if d:IsA("ParticleEmitter") then
+				if d.Enabled and purpleEmitter(d) then
+					local part = emitterPart(d)
+					if part and not isMobOrChar(part) and not hasAny(lower(part:GetFullName()), PURPLE_SKIP) then
+						table.insert(boss.fresh, { inst = part, at = tick() })
+						if #boss.fresh > 40 then
+							table.remove(boss.fresh, 1)
+						end
+					end
+				end
+				return
+			end
+			local nm = lower(d.Name)
+			if not (string.find(nm, "portal", 1, true) or string.find(nm, "werewolf", 1, true) or string.find(nm, "observatory", 1, true)) then
+				return
+			end
+			if not (d:IsA("BasePart") or d:IsA("Model") or d:IsA("ProximityPrompt") or d:IsA("ClickDetector")) then
+				return
+			end
+			if hasAny(nm, WOLF.skip) and not string.find(nm, "werewolf", 1, true) then
+				return
+			end
+			table.insert(boss.fresh, { inst = d, at = tick() })
+			if #boss.fresh > 40 then
+				table.remove(boss.fresh, 1)
+			end
+		end
+		local findPurplePortals = function()
+			if tick() - (boss.purpleAt or 0) < 4 then
+				local keep = {}
+				for _, e in ipairs(boss.purpleList or {}) do
+					if e.part and e.part.Parent then
+						table.insert(keep, e)
+					end
+				end
+				return keep
+			end
+			boss.purpleAt = tick()
+			local out, seen, count = {}, {}, 0
+			local char = plr.Character
+			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			if not hrp then
+				return out
+			end
+			for _, d in ipairs(workspace:GetDescendants()) do
+				count = count + 1
+				if count % 4000 == 0 then
+					task.wait()
+				end
+				local part, score
+				if d:IsA("ParticleEmitter") and d.Enabled and d.Rate > 0 and purpleEmitter(d) then
+					part, score = emitterPart(d), 1
+				elseif d:IsA("BasePart") and string.find(lower(d.Name), "portal", 1, true) then
+					part, score = d, 2
+				end
+				if part and not seen[part] and not part:IsDescendantOf(char) and not isMobOrChar(part) then
+					local full = lower(part:GetFullName())
+					if (not hasAny(full, PURPLE_SKIP) or string.find(full, "werewolf", 1, true)) and (score == 2 or part.Size.Magnitude >= 5) then
+						seen[part] = true
+						local interact = part:FindFirstChildWhichIsA("ProximityPrompt", true)
+							or (part.Parent and part.Parent:FindFirstChildWhichIsA("ProximityPrompt", true))
+							or part:FindFirstChildWhichIsA("ClickDetector", true)
+							or part:FindFirstChildWhichIsA("TouchTransmitter")
+						table.insert(out, { inst = interact, part = part, dist = (part.Position - hrp.Position).Magnitude, score = score })
+					end
+				end
+			end
+			table.sort(out, function(x, y)
+				if x.score ~= y.score then
+					return x.score < y.score
+				end
+				return x.dist < y.dist
+			end)
+			boss.purpleList = out
+			return out
+		end
+		local findWolfPortals = function()
+			local out = {}
+			local char = plr.Character
+			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			if not hrp then
+				return out
+			end
+			-- 1) prompts/cliques/toques com nome de werewolf/observatory
+			for _, d in ipairs(findInteractables(WOLF.words, nil, { "knock", "nobody", "halloweendoor", "trick", "treat" })) do
+				table.insert(out, d)
+			end
+			-- 2) portais que acabaram de nascer
+			if #out == 0 then
+				for i = #boss.fresh, 1, -1 do
+					local f = boss.fresh[i]
+					local inst = f.inst
+					if tick() - f.at > 120 or not inst or not inst.Parent then
+						table.remove(boss.fresh, i)
+					else
+						local part
+						if inst:IsA("BasePart") then
+							part = inst
+						elseif inst:IsA("Model") then
+							part = inst.PrimaryPart or inst:FindFirstChildWhichIsA("BasePart", true)
+						else
+							part = partOf(inst)
+						end
+						if part and part:IsA("BasePart") then
+							local interact
+							for _, c in ipairs(inst:GetDescendants()) do
+								if c:IsA("ProximityPrompt") or c:IsA("ClickDetector") or c:IsA("TouchTransmitter") then
+									interact = c
+									break
+								end
+							end
+							table.insert(out, { inst = interact, part = part, dist = (part.Position - hrp.Position).Magnitude })
+						end
+					end
+				end
+				table.sort(out, function(a, b)
+					return a.dist < b.dist
+				end)
+			end
+			-- 3) portal roxo / qualquer "portal" fora da lista de portais conhecidos (Hydra, Mansao, Tiki, Castelo...)
+			if #out == 0 then
+				out = findPurplePortals()
+			end
+			return out
+		end
 		local findEntryDoors = function()
 			local out = {}
 			for _, d in ipairs(findInteractables(doorWords, nil, nil)) do
@@ -20884,6 +21072,9 @@ do
 			if #out == 0 then
 				out = findInteractables(entryWords, nil, entrySkip)
 			end
+			if #out == 0 then
+				out = findWolfPortals()
+			end
 			return out
 		end
 		local exitArena = function()
@@ -20893,6 +21084,19 @@ do
 					return false
 				end
 				if passDoor(list[i]) then
+					return true
+				end
+			end
+			-- sem portal de saida (ex.: Observatory do Werewolf): volta para onde estava antes de entrar
+			if boss.entryPos then
+				local h = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+				if h then
+					pcall(function()
+						h.CFrame = CFrame.new(boss.entryPos + Vector3.new(0, 5, 0))
+						h.AssemblyLinearVelocity = Vector3.zero
+					end)
+					task.wait(0.5)
+					boss.entryPos = nil
 					return true
 				end
 			end
@@ -21341,6 +21545,13 @@ do
 			boss.inArena, boss.arenaSeen, boss.arenaAt = false, false, 0
 			boss.arenaCenter = nil
 			boss.summonAt, boss.summonWait, boss.pumpAt = 0, 0, 0
+			boss.fresh, boss.entryPos = {}, nil
+			if boss.added then
+				boss.added:Disconnect()
+			end
+			boss.added = workspace.DescendantAdded:Connect(function(d)
+				pcall(noteFresh, d)
+			end)
 			task.spawn(function()
 				while boss.on do
 					local label = findBreakFree()
@@ -21531,7 +21742,7 @@ do
 								boss.scanAt = tick()
 								local list = findEntryDoors()
 								if list[1] then
-									notify("Porta em chamas encontrada. Abrindo e entrando no portal...")
+									notify("Porta/portal do boss encontrado (" .. string.sub(list[1].part and list[1].part.Name or "?", 1, 28) .. "). Entrando...")
 									if passDoor(list[1]) then
 										boss.inArena, boss.arenaSeen, boss.arenaAt = true, false, tick()
 										return
@@ -21576,6 +21787,10 @@ do
 			if boss.noclip then
 				boss.noclip:Disconnect()
 				boss.noclip = nil
+			end
+			if boss.added then
+				boss.added:Disconnect()
+				boss.added = nil
 			end
 			_G.HalloweenFarm = boss.prevFarm
 			pcall(clearMovers)
