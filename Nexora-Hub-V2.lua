@@ -35,7 +35,7 @@ do
 		spin(mk("UIGradient", {Color = ring3()}, lring), 1.6)
 		local pulse = mk("UIScale", {Scale = 1}, logo)
 		pcall(function() TS:Create(pulse, TweenInfo.new(.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Scale = 1.09}):Play() end)
-		mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, 3), Size = UDim2.new(1, 0, 0, 14), Text = "♛", TextColor3 = BLUE_L, Font = Enum.Font.FredokaOne, TextSize = 13}, logo)
+		mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, 3), Size = UDim2.new(1, 0, 0, 14), Text = "👑", TextColor3 = BLUE_L, Font = Enum.Font.FredokaOne, TextSize = 13}, logo)
 		local n = mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, 11), Size = UDim2.new(1, 0, 1, -13), Text = "N", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.FredokaOne, TextSize = 30}, logo)
 		mk("UIGradient", {Rotation = 90, Color = ColorSequence.new(BLUE_L, BLUE)}, n)
 		mk("TextLabel", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 74), Size = UDim2.fromOffset(240, 20), BackgroundTransparency = 1, Text = "NEXORA HUB", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 17}, card)
@@ -2223,7 +2223,7 @@ local function nexoraLogo(parent, px)
     -- coroa flutuando
     local crown = make("TextLabel", {
         BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, math.floor(px * 0.07)), Size = UDim2.new(1, 0, 0, math.floor(px * 0.26)),
-        Text = "♛", TextColor3 = C.blue2, Font = Enum.Font.GothamBold, TextSize = math.max(8, math.floor(px * 0.24)), ZIndex = 3,
+        Text = "👑", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = math.max(8, math.floor(px * 0.27)), ZIndex = 3,
     }, f)
     pcall(function() TweenService:Create(crown, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Position = UDim2.new(0, 0, 0, math.floor(px * 0.03))}):Play() end)
     -- N grande, branco-azulado, com contorno e brilho passando
@@ -2544,7 +2544,7 @@ function Nexora.CreateMain(config)
     local gearBtn = sideButton("⚙", 88)
     local infoBtn = sideButton("ⓘ", 158)
 
-    local crown = lbl(sidebar, "♛", UDim2.new(1, 0, 0, 35), UDim2.new(0, 0, 1, -92), 31, C.blue2, Enum.Font.GothamBold)
+    local crown = lbl(sidebar, "👑", UDim2.new(1, 0, 0, 35), UDim2.new(0, 0, 1, -92), 31, C.blue2, Enum.Font.GothamBold)
     crown.TextXAlignment = Enum.TextXAlignment.Center
     local brand = lbl(sidebar, TITLE, UDim2.new(1, 0, 0, 24), UDim2.new(0, 0, 1, -55), 12, C.white, Enum.Font.GothamBold)
     brand.TextXAlignment = Enum.TextXAlignment.Center
@@ -3589,7 +3589,7 @@ local function nexoraLogo(parent, px)
     -- coroa flutuando
     local crown = make("TextLabel", {
         BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, math.floor(px * 0.07)), Size = UDim2.new(1, 0, 0, math.floor(px * 0.26)),
-        Text = "♛", TextColor3 = C.blue2, Font = Enum.Font.GothamBold, TextSize = math.max(8, math.floor(px * 0.24)), ZIndex = 3,
+        Text = "👑", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = math.max(8, math.floor(px * 0.27)), ZIndex = 3,
     }, f)
     pcall(function() TweenService:Create(crown, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Position = UDim2.new(0, 0, 0, math.floor(px * 0.03))}):Play() end)
     -- N grande, branco-azulado, com contorno e brilho passando
@@ -3908,7 +3908,7 @@ function Nexora.CreateMain(config)
     local gearBtn = sideButton("⚙", 88)
     local infoBtn = sideButton("ⓘ", 158)
 
-    local crown = lbl(sidebar, "♛", UDim2.new(1, 0, 0, 35), UDim2.new(0, 0, 1, -92), 31, C.blue2, Enum.Font.GothamBold)
+    local crown = lbl(sidebar, "👑", UDim2.new(1, 0, 0, 35), UDim2.new(0, 0, 1, -92), 31, C.blue2, Enum.Font.GothamBold)
     crown.TextXAlignment = Enum.TextXAlignment.Center
     local brand = lbl(sidebar, TITLE, UDim2.new(1, 0, 0, 24), UDim2.new(0, 0, 1, -55), 12, C.white, Enum.Font.GothamBold)
     brand.TextXAlignment = Enum.TextXAlignment.Center
