@@ -2298,7 +2298,7 @@ function Nexora.CreateMain(config)
 
     local gui = make("ScreenGui", {Name = "NexoraUI", ResetOnSpawn = false, IgnoreGuiInset = true, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
 
-    local W, H = 860, (BANANA and 500 or 540)
+    local W, H = (BANANA and 820 or 760), (BANANA and 500 or 540)
     local HEADER_H, SIDEBAR_W = 48, 210
 
     local shell = make("Frame", {
@@ -2326,21 +2326,23 @@ function Nexora.CreateMain(config)
     stroke(glow, C.blue2, 0.72, 3)
 
     local userScale = 1   -- tamanho escolhido na aba "Resize UI"
-    -- Resize sem achatar: a largura/texto continuam encolhendo pelo UIScale, mas a ALTURA logica da janela
-    -- cresce conforme o tamanho diminui (HEIGHT_GAIN), mantendo a proporcao e mostrando mais conteudo.
-    local HEIGHT_GAIN = (BANANA and 0.85 or 0.75)
+    -- Resize: o UI Size muda o TAMANHO DA JANELA (largura e altura logicas), e o texto/abas quase nao encolhem
+    -- (UIScale so cai ate ~80%). O 100% usa so ~82% da tela para nao sair dela. A altura encolhe menos que a
+    -- largura para a janela nao ficar achatada.
+    local FIT_MARGIN, TEXT_MIN, MIN_WIN_W, MIN_WIN_H = 0.82, 0.80, 560, 340
     local function fitScale()
         local cam = workspace.CurrentCamera
-        local sc = userScale
-        local vy
-        if cam then
-            local v = cam.ViewportSize
-            vy = v.Y
-            sc = math.clamp(math.min((v.X - 16) / W, (v.Y - 16) / H, 1) * userScale, .15, 1)
-        end
-        local h2 = H * (1 + (1 - userScale) * HEIGHT_GAIN)
-        if vy then h2 = math.min(h2, math.max(H, (vy - 16) / math.max(sc, .05))) end
-        pcall(function() shell.Size = UDim2.fromOffset(W, math.floor(h2)) end)
+        local u = userScale
+        local vx, vy = 1280, 720
+        if cam then vx, vy = cam.ViewportSize.X, cam.ViewportSize.Y end
+        local base = math.min((vx - 16) / W, (vy - 16) / H, 1) * FIT_MARGIN
+        local sc = math.clamp(base * (TEXT_MIN + (1 - TEXT_MIN) * u), .15, 1)
+        local f = math.clamp(u / (TEXT_MIN + (1 - TEXT_MIN) * u), .5, 1)
+        local w2 = math.max(MIN_WIN_W, W * f)
+        local h2 = math.max(MIN_WIN_H, H * (f ^ 0.4))
+        w2 = math.min(w2, math.max(MIN_WIN_W, (vx - 16) / math.max(sc, .05)))
+        h2 = math.min(h2, math.max(MIN_WIN_H, (vy - 16) / math.max(sc, .05)))
+        pcall(function() shell.Size = UDim2.fromOffset(math.floor(w2), math.floor(h2)) end)
         return sc
     end
     scale.Scale = fitScale()
@@ -3561,7 +3563,7 @@ function Nexora.CreateMain(config)
 
     local gui = make("ScreenGui", {Name = "NexoraUI", ResetOnSpawn = false, IgnoreGuiInset = true, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
 
-    local W, H = 860, 540
+    local W, H = 760, 540
     local HEADER_H, SIDEBAR_W = 118, 112
 
     local shell = make("Frame", {
@@ -3588,21 +3590,23 @@ function Nexora.CreateMain(config)
     stroke(glow, C.blue2, 0.72, 3)
 
     local userScale = 1   -- tamanho escolhido na aba "Resize UI"
-    -- Resize sem achatar: a largura/texto continuam encolhendo pelo UIScale, mas a ALTURA logica da janela
-    -- cresce conforme o tamanho diminui (HEIGHT_GAIN), mantendo a proporcao e mostrando mais conteudo.
-    local HEIGHT_GAIN = 0.8
+    -- Resize: o UI Size muda o TAMANHO DA JANELA (largura e altura logicas), e o texto/abas quase nao encolhem
+    -- (UIScale so cai ate ~80%). O 100% usa so ~82% da tela para nao sair dela. A altura encolhe menos que a
+    -- largura para a janela nao ficar achatada.
+    local FIT_MARGIN, TEXT_MIN, MIN_WIN_W, MIN_WIN_H = 0.82, 0.80, 560, 340
     local function fitScale()
         local cam = workspace.CurrentCamera
-        local sc = userScale
-        local vy
-        if cam then
-            local v = cam.ViewportSize
-            vy = v.Y
-            sc = math.clamp(math.min((v.X - 16) / W, (v.Y - 16) / H, 1) * userScale, .15, 1)
-        end
-        local h2 = H * (1 + (1 - userScale) * HEIGHT_GAIN)
-        if vy then h2 = math.min(h2, math.max(H, (vy - 16) / math.max(sc, .05))) end
-        pcall(function() shell.Size = UDim2.fromOffset(W, math.floor(h2)) end)
+        local u = userScale
+        local vx, vy = 1280, 720
+        if cam then vx, vy = cam.ViewportSize.X, cam.ViewportSize.Y end
+        local base = math.min((vx - 16) / W, (vy - 16) / H, 1) * FIT_MARGIN
+        local sc = math.clamp(base * (TEXT_MIN + (1 - TEXT_MIN) * u), .15, 1)
+        local f = math.clamp(u / (TEXT_MIN + (1 - TEXT_MIN) * u), .5, 1)
+        local w2 = math.max(MIN_WIN_W, W * f)
+        local h2 = math.max(MIN_WIN_H, H * (f ^ 0.4))
+        w2 = math.min(w2, math.max(MIN_WIN_W, (vx - 16) / math.max(sc, .05)))
+        h2 = math.min(h2, math.max(MIN_WIN_H, (vy - 16) / math.max(sc, .05)))
+        pcall(function() shell.Size = UDim2.fromOffset(math.floor(w2), math.floor(h2)) end)
         return sc
     end
     scale.Scale = fitScale()
