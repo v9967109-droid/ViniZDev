@@ -2326,23 +2326,32 @@ function Nexora.CreateMain(config)
     stroke(glow, C.blue2, 0.72, 3)
 
     local userScale = 1   -- tamanho escolhido na aba "Resize UI"
-    -- Resize: a LARGURA fica em ~66% da tela e a ALTURA acompanha a tela (~88%), entao a janela nao fica so larga.
-    -- O slider reduz a janela inteira de forma suave (no minimo ~70%), sempre na mesma proporcao.
-    local FIT_MARGIN, SLIDER_MIN, HEIGHT_FILL = 0.656, (BANANA and 0.85 or 0.70), 0.88
+    -- Resize: a escala (texto/abas) e FIXA e encaixada na tela. Largura e altura da janela mudam pela aba
+    -- "Resize UI" (sliders Width/Height), como o redimensionamento antigo, sem mexer no tamanho das abas.
+    local FIT_MARGIN, HEIGHT_FILL = 0.656, 0.88
+    local MIN_W, MIN_H = 480, 300
+    local userW, userH = 1, 1
     local function fitScale()
         local cam = workspace.CurrentCamera
         local vx, vy = 1280, 720
         if cam then vx, vy = cam.ViewportSize.X, cam.ViewportSize.Y end
-        local full = math.min(FIT_MARGIN * vx / W, 0.92 * vy / H, 1)
-        local hFull = math.clamp(HEIGHT_FILL * vy / full, H, H * 1.35)
-        local sc = math.clamp(full * (SLIDER_MIN + (1 - SLIDER_MIN) * userScale), .15, 1)
-        pcall(function() shell.Size = UDim2.fromOffset(W, math.floor(hFull)) end)
+        local sc = math.clamp(math.min(FIT_MARGIN * vx / W, 0.92 * vy / H, 1), .15, 1)
+        local hFull = math.clamp(HEIGHT_FILL * vy / sc, H, H * 1.35)
+        local maxW = math.max(MIN_W, (vx - 16) / sc)
+        local maxH = math.max(MIN_H, (vy - 16) / sc)
+        local w2 = math.clamp(W * userW, MIN_W, maxW)
+        local h2 = math.clamp(hFull * userH, MIN_H, maxH)
+        pcall(function() shell.Size = UDim2.fromOffset(math.floor(w2), math.floor(h2)) end)
         return sc
     end
     scale.Scale = fitScale()
-    getgenv().NexoraSetUIScale = function(pct)
-        userScale = math.clamp((tonumber(pct) or 100) / 100, .3, 1)
+    getgenv().NexoraSetUISize = function(wp, hp)
+        userW = math.clamp((tonumber(wp) or 100) / 100, .5, 1.6)
+        userH = math.clamp((tonumber(hp) or 100) / 100, .5, 1.6)
         scale.Scale = fitScale()
+    end
+    getgenv().NexoraSetUIScale = function(pct)
+        getgenv().NexoraSetUISize(pct, pct)
     end
     if workspace.CurrentCamera then
         workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function() scale.Scale = fitScale() end)
@@ -3584,23 +3593,32 @@ function Nexora.CreateMain(config)
     stroke(glow, C.blue2, 0.72, 3)
 
     local userScale = 1   -- tamanho escolhido na aba "Resize UI"
-    -- Resize: a LARGURA fica em ~66% da tela e a ALTURA acompanha a tela (~88%), entao a janela nao fica so larga.
-    -- O slider reduz a janela inteira de forma suave (no minimo ~70%), sempre na mesma proporcao.
-    local FIT_MARGIN, SLIDER_MIN, HEIGHT_FILL = 0.656, 0.70, 0.88
+    -- Resize: a escala (texto/abas) e FIXA e encaixada na tela. Largura e altura da janela mudam pela aba
+    -- "Resize UI" (sliders Width/Height), como o redimensionamento antigo, sem mexer no tamanho das abas.
+    local FIT_MARGIN, HEIGHT_FILL = 0.656, 0.88
+    local MIN_W, MIN_H = 480, 300
+    local userW, userH = 1, 1
     local function fitScale()
         local cam = workspace.CurrentCamera
         local vx, vy = 1280, 720
         if cam then vx, vy = cam.ViewportSize.X, cam.ViewportSize.Y end
-        local full = math.min(FIT_MARGIN * vx / W, 0.92 * vy / H, 1)
-        local hFull = math.clamp(HEIGHT_FILL * vy / full, H, H * 1.35)
-        local sc = math.clamp(full * (SLIDER_MIN + (1 - SLIDER_MIN) * userScale), .15, 1)
-        pcall(function() shell.Size = UDim2.fromOffset(W, math.floor(hFull)) end)
+        local sc = math.clamp(math.min(FIT_MARGIN * vx / W, 0.92 * vy / H, 1), .15, 1)
+        local hFull = math.clamp(HEIGHT_FILL * vy / sc, H, H * 1.35)
+        local maxW = math.max(MIN_W, (vx - 16) / sc)
+        local maxH = math.max(MIN_H, (vy - 16) / sc)
+        local w2 = math.clamp(W * userW, MIN_W, maxW)
+        local h2 = math.clamp(hFull * userH, MIN_H, maxH)
+        pcall(function() shell.Size = UDim2.fromOffset(math.floor(w2), math.floor(h2)) end)
         return sc
     end
     scale.Scale = fitScale()
-    getgenv().NexoraSetUIScale = function(pct)
-        userScale = math.clamp((tonumber(pct) or 100) / 100, .3, 1)
+    getgenv().NexoraSetUISize = function(wp, hp)
+        userW = math.clamp((tonumber(wp) or 100) / 100, .5, 1.6)
+        userH = math.clamp((tonumber(hp) or 100) / 100, .5, 1.6)
         scale.Scale = fitScale()
+    end
+    getgenv().NexoraSetUIScale = function(pct)
+        getgenv().NexoraSetUISize(pct, pct)
     end
     if workspace.CurrentCamera then
         workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function() scale.Scale = fitScale() end)
@@ -36812,46 +36830,50 @@ SizeUITab = Main.CreatePage({
 	Page_Title = "Resize UI",
 })
 SizeUISection = SizeUITab.CreateSection("Resize UI")
-local compactPct = ((Settings["UI Scale"] or 100) < 100) and Settings["UI Scale"] or 80
-SizeUISlider = SizeUISection.CreateSlider({
-	Title = "UI Size (%)",
-	Min = 40,
-	Max = 100,
-	Default = Settings["UI Scale"] or 100,
-}, function(v)
-	if (tonumber(v) or 100) < 100 then compactPct = v end
-	pcall(SaveSettings, "UI Scale", v)
+local curW, curH = Settings["UI Width"] or 100, Settings["UI Height"] or 100
+local function applyUISize()
 	-- aplica so depois de soltar o slider (mudar o tamanho com o dedo em cima faria a barra pular)
 	local env = getgenv()
 	env.__NxScaleTok = (env.__NxScaleTok or 0) + 1
 	local tok = env.__NxScaleTok
 	task.delay(0.3, function()
-		if env.__NxScaleTok == tok and env.NexoraSetUIScale then
-			env.NexoraSetUIScale(v)
+		if env.__NxScaleTok == tok and env.NexoraSetUISize then
+			env.NexoraSetUISize(curW, curH)
 		end
 	end)
+end
+SizeUIWidthSlider = SizeUISection.CreateSlider({
+	Title = "Width (%)",
+	Min = 60,
+	Max = 150,
+	Default = curW,
+}, function(v)
+	curW = tonumber(v) or 100
+	pcall(SaveSettings, "UI Width", curW)
+	applyUISize()
 end)
-SizeUISection.CreateToggle({ Title = "Compact UI", Desc = nil, Default = (Settings["UI Scale"] or 100) < 100 }, function(on)
-	local pct = on and compactPct or 100
-	pcall(function()
-		SizeUISlider._setValue(pct)
-	end)
-	SaveSettings("UI Scale", pct)
-	if getgenv().NexoraSetUIScale then
-		getgenv().NexoraSetUIScale(pct)
+SizeUIHeightSlider = SizeUISection.CreateSlider({
+	Title = "Height (%)",
+	Min = 60,
+	Max = 150,
+	Default = curH,
+}, function(v)
+	curH = tonumber(v) or 100
+	pcall(SaveSettings, "UI Height", curH)
+	applyUISize()
+end)
+SizeUISection.CreateButton({ Title = "Reset Size" }, function()
+	curW, curH = 100, 100
+	pcall(function() SizeUIWidthSlider._setValue(100) end)
+	pcall(function() SizeUIHeightSlider._setValue(100) end)
+	pcall(SaveSettings, "UI Width", 100)
+	pcall(SaveSettings, "UI Height", 100)
+	if getgenv().NexoraSetUISize then
+		getgenv().NexoraSetUISize(100, 100)
 	end
 end)
-SizeUISection.CreateButton({ Title = "Reset to 100%" }, function()
-	pcall(function()
-		SizeUISlider._setValue(100)
-	end)
-	SaveSettings("UI Scale", 100)
-	if getgenv().NexoraSetUIScale then
-		getgenv().NexoraSetUIScale(100)
-	end
-end)
-if getgenv().NexoraSetUIScale then
-	getgenv().NexoraSetUIScale(Settings["UI Scale"] or 100)
+if getgenv().NexoraSetUISize then
+	getgenv().NexoraSetUISize(curW, curH)
 end
 SettingPage = Main.CreatePage({ Page_Name = "Setting", Page_Title = "Setting Tab" })
 a = SettingPage.CreateSection("Settings")
