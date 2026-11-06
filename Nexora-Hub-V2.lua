@@ -2137,15 +2137,20 @@ function Nexora.CreateMain(config)
     corner(glow, 27)
     stroke(glow, C.blue2, 0.72, 3)
 
+    local userScale = 1   -- tamanho escolhido na aba "Resize UI"
     local function fitScale()
         local cam = workspace.CurrentCamera
         if cam then
             local v = cam.ViewportSize
-            return math.clamp(math.min((v.X - 16) / W, (v.Y - 16) / H, 1), .3, 1)
+            return math.clamp(math.min((v.X - 16) / W, (v.Y - 16) / H, 1) * userScale, .15, 1)
         end
-        return 1
+        return userScale
     end
     scale.Scale = fitScale()
+    getgenv().NexoraSetUIScale = function(pct)
+        userScale = math.clamp((tonumber(pct) or 100) / 100, .3, 1)
+        scale.Scale = fitScale()
+    end
     if workspace.CurrentCamera then
         workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function() scale.Scale = fitScale() end)
     end
@@ -2547,7 +2552,7 @@ function Nexora.CreateMain(config)
         local handle = make("Frame", {
             Name = "ResizeHandle", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -4, 1, -4),
             Size = UDim2.fromOffset(46, 46), BackgroundTransparency = 1, BorderSizePixel = 0, Active = true,
-            Visible = true, ZIndex = 500,
+            Visible = false, ZIndex = 500,
         }, shell)
         local bar = make("Frame", {Name = "Bar", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 501}, handle)
         local barH = make("Frame", {
@@ -2576,7 +2581,7 @@ function Nexora.CreateMain(config)
             shell.Position = UDim2.new(basePos.X.Scale, basePos.X.Offset + (w - baseW) * sc / 2, basePos.Y.Scale, basePos.Y.Offset + (h - baseH) * sc / 2)
         end
         handle.InputBegan:Connect(function(input)
-            if animating or not isPress(input) then return end
+            if true or animating or not isPress(input) then return end -- resize por arrasto desligado: use a aba Resize UI
             if tick() - lastTap < 0.35 then
                 lastTap, resizing = 0, false
                 setSize(W, H, shell.Position, shell.Size.X.Offset, shell.Size.Y.Offset)
@@ -35361,6 +35366,50 @@ SectionWebhook.CreateToggle(
 		SaveSettings("Webhook Find Mirage", b)
 	end
 )
+SizeUITab = Main.CreatePage({
+	Page_Name = "Resize UI",
+	Page_Title = "Resize UI",
+})
+SizeUISection = SizeUITab.CreateSection("Resize UI")
+SizeUISlider = SizeUISection.CreateSlider({
+	Title = "UI Size (%)",
+	Min = 40,
+	Max = 100,
+	Default = Settings["UI Scale"] or 100,
+}, function(v)
+	SaveSettings("UI Scale", v)
+	-- aplica so depois de soltar o slider (mudar o tamanho com o dedo em cima faria a barra pular)
+	local env = getgenv()
+	env.__NxScaleTok = (env.__NxScaleTok or 0) + 1
+	local tok = env.__NxScaleTok
+	task.delay(0.45, function()
+		if env.__NxScaleTok == tok and env.NexoraSetUIScale then
+			env.NexoraSetUIScale(v)
+		end
+	end)
+end)
+SizeUISection.CreateToggle({ Title = "Compact UI (60%)", Desc = nil, Default = (Settings["UI Scale"] or 100) <= 60 }, function(on)
+	local pct = on and 60 or 100
+	pcall(function()
+		SizeUISlider._setValue(pct)
+	end)
+	SaveSettings("UI Scale", pct)
+	if getgenv().NexoraSetUIScale then
+		getgenv().NexoraSetUIScale(pct)
+	end
+end)
+SizeUISection.CreateButton({ Title = "Reset to 100%" }, function()
+	pcall(function()
+		SizeUISlider._setValue(100)
+	end)
+	SaveSettings("UI Scale", 100)
+	if getgenv().NexoraSetUIScale then
+		getgenv().NexoraSetUIScale(100)
+	end
+end)
+if getgenv().NexoraSetUIScale then
+	getgenv().NexoraSetUIScale(Settings["UI Scale"] or 100)
+end
 SettingPage = Main.CreatePage({ Page_Name = "Setting", Page_Title = "Setting Tab" })
 a = SettingPage.CreateSection("Settings")
 a.CreateToggle({ Title = "White Screen", Desc = nil, Default = Settings["White Screen"] or false }, function(b)
