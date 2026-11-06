@@ -40973,67 +40973,63 @@ getgenv().DSClickInterval = 0.05
 getgenv().DragonstormRemoteDelay = 0.05
 getgenv().__DragonstormLastShot = 0
 
+-- REMOTE ONLY: o clique da gun usa só os remotes do próprio jogo (sem VirtualInputManager, VirtualUser, toque ou Tool:Activate).
+local function GunTargetInfo(x)
+    if typeof(x) == "Instance" then
+        if x:IsA("BasePart") then return x.Position, x end
+        if x:IsA("Model") then
+            local hrp = x:FindFirstChild("HumanoidRootPart") or x.PrimaryPart or x:FindFirstChildWhichIsA("BasePart", true)
+            return (hrp and hrp.Position or x:GetPivot().Position), hrp
+        end
+    elseif typeof(x) == "Vector3" then return x, nil
+    elseif typeof(x) == "CFrame" then return x.Position, nil end
+end
+
+-- "Click" da arma: remote TAP da própria tool, na posição da mira.
 function DragonstormPhysicalClick(force, toolName)
     toolName = toolName or "Dragonstorm"
     local now = os.clock()
-    local lastKey = "__PhysicalClickLast_" .. tostring(toolName)
+    local lastKey = "__RemoteClickLast_" .. tostring(toolName)
     if not force and now - (getgenv()[lastKey] or 0) < 0.05 then return false end
     getgenv()[lastKey] = now
-    task.spawn(function()
-        pcall(function()
-            local Camera = workspace.CurrentCamera
-            if not Camera then return end
-            local vp = Camera.ViewportSize
-            local x, y = math.floor(vp.X / 2), 2
-            local VIM = game:GetService("VirtualInputManager")
-            VIM:SendMouseMoveEvent(x, y, game)
-            VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
-            VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
-            pcall(function() local tool = t.Character and t.Character:FindFirstChild(toolName) if tool then tool:Activate() end end)
-            pcall(function() local VU = game:GetService("VirtualUser") VU:CaptureController() VU:ClickButton1(Vector2.new(x, y)) end)
-        end)
+    pcall(function()
+        local char = game.Players.LocalPlayer.Character
+        local tool = char and char:FindFirstChild(toolName)
+        local remote = tool and tool:FindFirstChild("RemoteEvent")
+        local aim = getgenv().AimPos
+        if remote and aim then remote:FireServer("TAP", aim.Position) end
     end)
     return true
 end
 getgenv().DragonstormPhysicalClick = DragonstormPhysicalClick
 
 getgenv().SpamGunDragonStorm = function(targetPart)
-    local plr = game.Players.LocalPlayer
-    local char = plr and plr.Character
-    if not char then return end
-    local tool = char:FindFirstChild("Dragonstorm")
-    if not tool then return end
-    if not targetPart then return end
-    local targetPos, hitPart
-    if typeof(targetPart) == "Instance" then
-        if targetPart:IsA("BasePart") then targetPos = targetPart.Position hitPart = targetPart
-        elseif targetPart:IsA("Model") then local hrp = targetPart:FindFirstChild("HumanoidRootPart") or targetPart.PrimaryPart if hrp then targetPos = hrp.Position hitPart = hrp else targetPos = targetPart:GetPivot().Position end
-        end
-    elseif typeof(targetPart) == "Vector3" then targetPos = targetPart
-    elseif typeof(targetPart) == "CFrame" then targetPos = targetPart.Position end
+    local rs = game:GetService("ReplicatedStorage")
+    local char = game.Players.LocalPlayer.Character
+    local tool = char and char:FindFirstChild("Dragonstorm")
+    if not tool or not targetPart then return end
+    local targetPos, hitPart = GunTargetInfo(targetPart)
     if not targetPos then return end
     local now = os.clock()
-    if now - (getgenv().__DragonstormLastShot or 0) < 0.06 then return end
+    if now - (getgenv().__DragonstormLastShot or 0) < (getgenv().DragonstormRemoteDelay or 0.06) then return end
     getgenv().__DragonstormLastShot = now
     getgenv().AimPos = CFrame.new(targetPos)
-    -- FAST: 3 physical clicks + 3 activates per call = no more 2 sec delay
-    for i=1,3 do
-        pcall(function() if DragonstormPhysicalClick then DragonstormPhysicalClick(true, "Dragonstorm") end end)
-        pcall(function() tool:Activate() end)
-        pcall(function()
-            local VU = game:GetService("VirtualUser")
-            VU:CaptureController()
-            VU:ClickButton1(Vector2.new(0,0))
-        end)
-    end
+    -- 1) Validator2 (o jogo exige antes do tiro; protegido porque os upvalues mudam com updates)
     pcall(function()
-        local net = game:GetService("ReplicatedStorage").Modules.Net
-        local shoot = net and net:FindFirstChild("RE/ShootGunEvent")
-        if shoot then if hitPart then shoot:FireServer(targetPos, {hitPart}) else shoot:FireServer(targetPos, {}) end end
+        local l = getupvalues(require(rs.Controllers.CombatController).Attack)[9]
+        local I, _, o, V, N, y, P = debug.getupvalue(l, 15), debug.getupvalue(l, 13), debug.getupvalue(l, 16), debug.getupvalue(l, 17), debug.getupvalue(l, 14), debug.getupvalue(l, 12), debug.getupvalue(l, 18)
+        local d2 = ((N * _ + y * I) % o * o + y * _) % V
+        N = math.floor(d2 / o); y = d2 - N * o; P += 1
+        debug.setupvalue(l, 15, I); debug.setupvalue(l, 13, _); debug.setupvalue(l, 16, o)
+        debug.setupvalue(l, 17, V); debug.setupvalue(l, 14, N); debug.setupvalue(l, 12, y); debug.setupvalue(l, 18, P)
+        rs.Remotes.Validator2:FireServer(math.floor(d2 / V * 16777215), P)
     end)
+    -- 2) Tiro (RE/ShootGunEvent) + 3) clique (TAP da tool)
     pcall(function()
-        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("ShootGun", targetPos)
+        local shoot = rs.Modules.Net:FindFirstChild("RE/ShootGunEvent")
+        if shoot then shoot:FireServer(targetPos, hitPart and { hitPart } or {}) end
     end)
+    DragonstormPhysicalClick(true, "Dragonstorm")
 end
 
 function UseDragonstormAllSeaEvents(Part)
