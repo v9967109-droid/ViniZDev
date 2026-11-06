@@ -2298,7 +2298,7 @@ function Nexora.CreateMain(config)
 
     local gui = make("ScreenGui", {Name = "NexoraUI", ResetOnSpawn = false, IgnoreGuiInset = true, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
 
-    local W, H = 860, (BANANA and 500 or 540)
+    local W, H = (BANANA and 720 or 860), (BANANA and 500 or 540)
     local HEADER_H, SIDEBAR_W = 48, 210
 
     local shell = make("Frame", {
@@ -2328,7 +2328,7 @@ function Nexora.CreateMain(config)
     local userScale = 1   -- tamanho escolhido na aba "Resize UI"
     -- Resize: a LARGURA fica em ~66% da tela e a ALTURA acompanha a tela (~88%), entao a janela nao fica so larga.
     -- O slider reduz a janela inteira de forma suave (no minimo ~70%), sempre na mesma proporcao.
-    local FIT_MARGIN, SLIDER_MIN, HEIGHT_FILL = 0.656, 0.70, 0.88
+    local FIT_MARGIN, SLIDER_MIN, HEIGHT_FILL = 0.656, (BANANA and 0.85 or 0.70), 0.88
     local function fitScale()
         local cam = workspace.CurrentCamera
         local vx, vy = 1280, 720
