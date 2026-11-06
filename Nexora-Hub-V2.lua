@@ -2326,13 +2326,22 @@ function Nexora.CreateMain(config)
     stroke(glow, C.blue2, 0.72, 3)
 
     local userScale = 1   -- tamanho escolhido na aba "Resize UI"
+    -- Resize sem achatar: a largura/texto continuam encolhendo pelo UIScale, mas a ALTURA logica da janela
+    -- cresce conforme o tamanho diminui (HEIGHT_GAIN), mantendo a proporcao e mostrando mais conteudo.
+    local HEIGHT_GAIN = (BANANA and 0.85 or 0.75)
     local function fitScale()
         local cam = workspace.CurrentCamera
+        local sc = userScale
+        local vy
         if cam then
             local v = cam.ViewportSize
-            return math.clamp(math.min((v.X - 16) / W, (v.Y - 16) / H, 1) * userScale, .15, 1)
+            vy = v.Y
+            sc = math.clamp(math.min((v.X - 16) / W, (v.Y - 16) / H, 1) * userScale, .15, 1)
         end
-        return userScale
+        local h2 = H * (1 + (1 - userScale) * HEIGHT_GAIN)
+        if vy then h2 = math.min(h2, math.max(H, (vy - 16) / math.max(sc, .05))) end
+        pcall(function() shell.Size = UDim2.fromOffset(W, math.floor(h2)) end)
+        return sc
     end
     scale.Scale = fitScale()
     getgenv().NexoraSetUIScale = function(pct)
@@ -3579,13 +3588,22 @@ function Nexora.CreateMain(config)
     stroke(glow, C.blue2, 0.72, 3)
 
     local userScale = 1   -- tamanho escolhido na aba "Resize UI"
+    -- Resize sem achatar: a largura/texto continuam encolhendo pelo UIScale, mas a ALTURA logica da janela
+    -- cresce conforme o tamanho diminui (HEIGHT_GAIN), mantendo a proporcao e mostrando mais conteudo.
+    local HEIGHT_GAIN = 0.8
     local function fitScale()
         local cam = workspace.CurrentCamera
+        local sc = userScale
+        local vy
         if cam then
             local v = cam.ViewportSize
-            return math.clamp(math.min((v.X - 16) / W, (v.Y - 16) / H, 1) * userScale, .15, 1)
+            vy = v.Y
+            sc = math.clamp(math.min((v.X - 16) / W, (v.Y - 16) / H, 1) * userScale, .15, 1)
         end
-        return userScale
+        local h2 = H * (1 + (1 - userScale) * HEIGHT_GAIN)
+        if vy then h2 = math.min(h2, math.max(H, (vy - 16) / math.max(sc, .05))) end
+        pcall(function() shell.Size = UDim2.fromOffset(W, math.floor(h2)) end)
+        return sc
     end
     scale.Scale = fitScale()
     getgenv().NexoraSetUIScale = function(pct)
