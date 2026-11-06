@@ -1955,20 +1955,20 @@ local oldFloat = parentGui:FindFirstChild("NexoraFloat")
 if oldFloat then oldFloat:Destroy() end
 
 local C = {
-    bg = Color3.fromRGB(5, 9, 17),
-    panel = Color3.fromRGB(9, 15, 27),
-    panel2 = Color3.fromRGB(12, 20, 35),
-    element = Color3.fromRGB(11, 18, 31),
-    hover = Color3.fromRGB(16, 28, 48),
-    press = Color3.fromRGB(10, 40, 80),
-    stroke = Color3.fromRGB(29, 48, 76),
-    blue = Color3.fromRGB(0, 128, 255),
-    blue2 = Color3.fromRGB(25, 157, 255),
-    white = Color3.fromRGB(239, 244, 255),
-    muted = Color3.fromRGB(151, 166, 190),
-    off = Color3.fromRGB(46, 57, 75),
-    tabOn = Color3.fromRGB(8, 47, 91),
-    tabOff = Color3.fromRGB(8, 14, 25),
+    bg = Color3.fromRGB(17, 17, 20),
+    panel = Color3.fromRGB(24, 24, 28),
+    panel2 = Color3.fromRGB(30, 30, 35),
+    element = Color3.fromRGB(32, 32, 37),
+    hover = Color3.fromRGB(42, 42, 48),
+    press = Color3.fromRGB(70, 52, 20),
+    stroke = Color3.fromRGB(52, 52, 60),
+    blue = Color3.fromRGB(245, 166, 35),   -- cor de destaque (laranja); nome mantido para nao quebrar o resto
+    blue2 = Color3.fromRGB(255, 190, 70),
+    white = Color3.fromRGB(240, 240, 242),
+    muted = Color3.fromRGB(150, 150, 160),
+    off = Color3.fromRGB(62, 62, 70),
+    tabOn = Color3.fromRGB(30, 30, 35),
+    tabOff = Color3.fromRGB(24, 24, 28),
 }
 
 local function make(class, props, parent)
@@ -2044,7 +2044,7 @@ local function button(parent, text, size, pos)
         Size = size,
         Position = pos or UDim2.new(),
     }, parent)
-    corner(b, 12)
+    corner(b, 8)
     stroke(b, C.stroke, 0.15)
     b.MouseEnter:Connect(function()
         if not b:GetAttribute("NexoraKeepColor") then TweenService:Create(b, TweenInfo.new(.12), {BackgroundColor3 = C.hover}):Play() end
@@ -2110,18 +2110,18 @@ function Nexora.CreateMain(config)
 
     local gui = make("ScreenGui", {Name = "NexoraUI", ResetOnSpawn = false, IgnoreGuiInset = true, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
 
-    local W, H = 860, 540
-    local HEADER_H, SIDEBAR_W = 118, 112
+    local W, H = 860, 500
+    local HEADER_H, SIDEBAR_W = 48, 210
 
     local shell = make("Frame", {
         Name = "Window", AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5),
         Size = UDim2.fromOffset(W, H), BackgroundColor3 = C.bg, BorderSizePixel = 0,
     }, gui)
-    corner(shell, 24)
+    corner(shell, 14)
     local shellStroke = stroke(shell, Color3.new(1, 1, 1), 0, 2.5)
     local shellGrad = make("UIGradient", {
         Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, C.blue2), ColorSequenceKeypoint.new(.5, Color3.fromRGB(0, 55, 140)),
+            ColorSequenceKeypoint.new(0, C.blue2), ColorSequenceKeypoint.new(.5, Color3.fromRGB(130, 85, 10)),
             ColorSequenceKeypoint.new(1, C.blue2),
         }),
         Rotation = 0,
@@ -2129,7 +2129,8 @@ function Nexora.CreateMain(config)
     pcall(function()
         TweenService:Create(shellGrad, TweenInfo.new(3.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Rotation = 360}):Play()
     end)
-    gradient(shell, Color3.fromRGB(8, 15, 29), Color3.fromRGB(3, 7, 14), 35)
+    gradient(shell, Color3.fromRGB(26, 26, 30), Color3.fromRGB(15, 15, 18), 35)
+    shell.BackgroundTransparency = 0.1
     local scale = make("UIScale", {Scale = 1}, shell)
 
     local glow = make("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 10, 1, 10), Position = UDim2.new(0, -5, 0, -5), ZIndex = 0}, shell)
@@ -2150,30 +2151,35 @@ function Nexora.CreateMain(config)
     end
 
     -- ============================ CABEÇALHO ============================
-    local top = make("Frame", {Name = "Header", Size = UDim2.new(1, 0, 0, HEADER_H), BackgroundColor3 = Color3.fromRGB(7, 13, 24), BorderSizePixel = 0}, shell)
-    corner(top, 22)
-    gradient(top, Color3.fromRGB(10, 21, 39), Color3.fromRGB(5, 10, 20), 0)
+    local top = make("Frame", {Name = "Header", Size = UDim2.new(1, 0, 0, HEADER_H), BackgroundColor3 = Color3.fromRGB(22, 22, 26), BorderSizePixel = 0}, shell)
+    corner(top, 14)
+    gradient(top, Color3.fromRGB(32, 32, 37), Color3.fromRGB(22, 22, 26), 0)
+    top.BackgroundTransparency = 0.2
 
     -- (ícone removido do cabeçalho: fica só o nome)
 
-    local titleLbl = lbl(top, "", UDim2.new(0, 260, 0, 32), UDim2.new(0, 24, 0, 8), 24, C.white, Enum.Font.Arcade)
+    local titleLbl = lbl(top, "", UDim2.new(1, -240, 0, 30), UDim2.new(0, 120, 0, 9), 19, C.white, Enum.Font.GothamBold)
     titleLbl.RichText = true
-    local tUp = string.upper(TITLE)
-    local first, rest = string.match(tUp, "^(%S+)%s+(.+)$")
-    if first then
-        titleLbl.Text = '<font color="#FFFFFF">' .. first .. '</font> <font color="#008CFF">' .. rest .. '</font>'
-    else
-        titleLbl.Text = '<font color="#FFFFFF">' .. tUp .. '</font>'
-    end
-    lbl(top, SUBTITLE, UDim2.new(0, 260, 0, 18), UDim2.new(0, 26, 0, 40), 11, C.muted, Enum.Font.Code)
+    titleLbl.TextXAlignment = Enum.TextXAlignment.Center
+    titleLbl.Text = '<font color="#F5A623">' .. TITLE .. '</font> <font color="#FFFFFF">-- Blox Fruits</font>'
+    titleLbl.TextTruncate = Enum.TextTruncate.AtEnd
 
     -- Controles da janela: cápsula com dois botões redondos (minimizar = âmbar, fechar = vermelho),
     -- ícones desenhados com barras (nítidos em qualquer tela), brilho no hover e "afundar" ao tocar.
+    local function magnifier(parent, x, y, s, color)
+        local holder = make("Frame", {BackgroundTransparency = 1, Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(s, s), ZIndex = 5}, parent)
+        local ring = make("Frame", {BackgroundTransparency = 1, Size = UDim2.fromOffset(s * 0.66, s * 0.66), ZIndex = 5}, holder)
+        corner(ring, s)
+        stroke(ring, color, 0, 2)
+        local handle = make("Frame", {BackgroundColor3 = color, BorderSizePixel = 0, AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromOffset(s * 0.82, s * 0.82), Size = UDim2.fromOffset(s * 0.4, 2.5), Rotation = 45, ZIndex = 5}, holder)
+        corner(handle, 1)
+        return holder
+    end
     local minimizeBtn, closeBtn
     do
         local controls = make("Frame", {
-            Name = "Controls", BackgroundColor3 = Color3.fromRGB(6, 12, 24), BorderSizePixel = 0,
-            Position = UDim2.new(1, -106, 0, 8), Size = UDim2.fromOffset(96, 44),
+            Name = "Controls", BackgroundColor3 = Color3.fromRGB(20, 20, 24), BorderSizePixel = 0,
+            Position = UDim2.new(1, -106, 0, 2), Size = UDim2.fromOffset(96, 44),
         }, top)
         corner(controls, 22)
         stroke(controls, C.stroke, 0.1, 1)
@@ -2221,23 +2227,10 @@ function Nexora.CreateMain(config)
         closeBtn = controlButton(70, Color3.fromRGB(255, 82, 92), Color3.fromRGB(255, 118, 128), "close")
     end
 
-    -- Abas no topo (rolagem horizontal, porque o hub tem muitas páginas).
-    local tabStrip = make("ScrollingFrame", {
-        Name = "Tabs", BackgroundTransparency = 1, BorderSizePixel = 0,
-        Position = UDim2.new(0, 16, 0, 66), Size = UDim2.new(1, -32, 0, 46),
-        CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.X,
-        ScrollingDirection = Enum.ScrollingDirection.X, ScrollBarThickness = 3, ScrollBarImageColor3 = C.blue,
-        ClipsDescendants = true,
-    }, top)
-    make("UIListLayout", {
-        FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Top,
-        Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder,
-    }, tabStrip)
-    make("UIPadding", {PaddingTop = UDim.new(0, 1), PaddingLeft = UDim.new(0, 2), PaddingRight = UDim.new(0, 8)}, tabStrip)
-
     -- ============================ BARRA LATERAL ============================
-    local sidebar = make("Frame", {Name = "Sidebar", BackgroundColor3 = Color3.fromRGB(6, 13, 25), BorderSizePixel = 0, Position = UDim2.new(0, 0, 0, HEADER_H), Size = UDim2.new(0, SIDEBAR_W, 1, -HEADER_H)}, shell)
-    corner(sidebar, 20)
+    local sidebar = make("Frame", {Name = "Sidebar", BackgroundColor3 = Color3.fromRGB(22, 22, 26), BorderSizePixel = 0, Position = UDim2.new(0, 0, 0, HEADER_H), Size = UDim2.new(0, SIDEBAR_W, 1, -HEADER_H)}, shell)
+    sidebar.BackgroundTransparency = 0.25
+    corner(sidebar, 12)
     make("Frame", {BackgroundColor3 = C.stroke, BorderSizePixel = 0, Position = UDim2.new(1, -1, 0, 0), Size = UDim2.new(0, 1, 1, 0)}, sidebar)
 
     local sideButtons = {}
@@ -2254,7 +2247,7 @@ function Nexora.CreateMain(config)
     end
     local function paintSide(entry, on)
         entry.btn.BackgroundTransparency = on and 0 or 1
-        entry.btn.BackgroundColor3 = on and Color3.fromRGB(10, 53, 105) or C.panel
+        entry.btn.BackgroundColor3 = on and Color3.fromRGB(60, 44, 14) or C.panel
         entry.btn.TextColor3 = on and C.white or C.muted
         if entry.stroke then
             entry.stroke.Color = on and C.blue or C.stroke
@@ -2269,25 +2262,44 @@ function Nexora.CreateMain(config)
     crown.TextXAlignment = Enum.TextXAlignment.Center
     local brand = lbl(sidebar, TITLE, UDim2.new(1, 0, 0, 24), UDim2.new(0, 0, 1, -55), 12, C.white, Enum.Font.GothamBold)
     brand.TextXAlignment = Enum.TextXAlignment.Center
+    for _, e in ipairs(sideButtons) do e.btn.Visible = false end
+    crown.Visible = false
+    brand.Visible = false
+    -- lista de abas na vertical, dentro da barra lateral
+    local tabStrip = make("ScrollingFrame", {
+        Name = "Tabs", BackgroundTransparency = 1, BorderSizePixel = 0,
+        Position = UDim2.new(0, 6, 0, 54), Size = UDim2.new(1, -12, 1, -62),
+        CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        ScrollingDirection = Enum.ScrollingDirection.Y, ScrollBarThickness = 2, ScrollBarImageColor3 = C.blue,
+        ClipsDescendants = true,
+    }, sidebar)
+    make("UIListLayout", {Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder}, tabStrip)
 
     -- ============================ ÁREA DE CONTEÚDO ============================
-    local content = make("Frame", {Name = "Content", BackgroundTransparency = 1, Position = UDim2.new(0, SIDEBAR_W + 16, 0, HEADER_H + 12), Size = UDim2.new(1, -(SIDEBAR_W + 32), 1, -(HEADER_H + 26))}, shell)
+    local content = make("Frame", {Name = "Content", BackgroundTransparency = 1, Position = UDim2.new(0, SIDEBAR_W + 12, 0, HEADER_H + 8), Size = UDim2.new(1, -(SIDEBAR_W + 24), 1, -(HEADER_H + 16))}, shell)
     local search = make("TextBox", {
-        Name = "Search", Position = UDim2.new(0, 0, 0, 0), Size = UDim2.new(1, -8, 0, 36),
-        BackgroundColor3 = C.element, BorderSizePixel = 0, PlaceholderText = "Pesquisar...", Text = "",
+        Name = "Search", Position = UDim2.new(0, 8, 0, 10), Size = UDim2.new(1, -16, 0, 34),
+        BackgroundColor3 = C.element, BorderSizePixel = 0, PlaceholderText = "Search section or Function", Text = "",
         TextColor3 = C.white, PlaceholderColor3 = C.muted, Font = Enum.Font.GothamMedium, TextSize = 13,
         TextXAlignment = Enum.TextXAlignment.Left, ClearTextOnFocus = false,
-    }, content)
-    corner(search, 10)
+    }, sidebar)
+    corner(search, 8)
     stroke(search, C.stroke, 0.15)
-    make("UIPadding", {PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 14)}, search)
-    local pageHolder = make("Frame", {Name = "Pages", BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, 46), Size = UDim2.new(1, 0, 1, -46)}, content)
+    make("UIPadding", {PaddingLeft = UDim.new(0, 36), PaddingRight = UDim.new(0, 14)}, search)
+    magnifier(sidebar, 17, 19, 16, C.muted)
+    local pageHolder = make("Frame", {Name = "Pages", BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, 38), Size = UDim2.new(1, 0, 1, -38)}, content)
+    local pageTitle = lbl(content, "", UDim2.new(1, -8, 0, 30), UDim2.new(0, 4, 0, 0), 20, C.white, Enum.Font.GothamBold)
+    do
+        local sb = make("TextButton", {BackgroundTransparency = 1, Text = "", AutoButtonColor = false, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -6, 0, 0), Size = UDim2.fromOffset(32, 30), ZIndex = 5}, content)
+        magnifier(sb, 6, 5, 20, C.blue2)
+        sb.MouseButton1Click:Connect(function() pcall(function() search:CaptureFocus() end) end)
+    end
 
     -- ============================ BOTÃO FLUTUANTE ============================
     -- ScreenGui separado: o botão fica fora da janela e não some junto com a UI (nem com o keybind Toggle GUI).
     local floatGui = make("ScreenGui", {Name = "NexoraFloat", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 999, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
     local reopen = make("ImageButton", {
-        Name = "NexoraFloatingButton", AutoButtonColor = false, BackgroundColor3 = Color3.fromRGB(7, 14, 28), BorderSizePixel = 0,
+        Name = "NexoraFloatingButton", AutoButtonColor = false, BackgroundColor3 = Color3.fromRGB(24, 24, 28), BorderSizePixel = 0,
         Image = TOGGLE_IMG, ScaleType = Enum.ScaleType.Fit, Size = UDim2.fromOffset(58, 58), ZIndex = 100,
     }, floatGui)
     if TOGGLE_IMG == "" then nexoraLogo(reopen, 42) end
@@ -2299,7 +2311,7 @@ function Nexora.CreateMain(config)
         local ringStroke = stroke(reopen, Color3.new(1, 1, 1), 0, 2.5)
         local ringGrad = make("UIGradient", {
             Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, C.blue2), ColorSequenceKeypoint.new(.5, Color3.fromRGB(0, 55, 140)),
+                ColorSequenceKeypoint.new(0, C.blue2), ColorSequenceKeypoint.new(.5, Color3.fromRGB(130, 85, 10)),
                 ColorSequenceKeypoint.new(1, C.blue2),
             }),
             Rotation = 0,
@@ -2335,7 +2347,7 @@ function Nexora.CreateMain(config)
             BackgroundColor3 = Color3.fromRGB(110, 125, 150), BorderSizePixel = 0, ZIndex = 102,
         }, reopen)
         corner(dot, 7)
-        stroke(dot, Color3.fromRGB(7, 14, 28), 0, 2)
+        stroke(dot, Color3.fromRGB(24, 24, 28), 0, 2)
         local function refreshDot()
             local open = gui.Enabled and shell.Visible
             TweenService:Create(dot, TweenInfo.new(.2), {BackgroundColor3 = open and Color3.fromRGB(70, 220, 120) or Color3.fromRGB(110, 125, 150)}):Play()
@@ -2540,12 +2552,12 @@ function Nexora.CreateMain(config)
         local bar = make("Frame", {Name = "Bar", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 501}, handle)
         local barH = make("Frame", {
             Name = "H", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -8, 1, -8), Size = UDim2.fromOffset(26, 6),
-            BackgroundColor3 = Color3.fromRGB(0, 140, 255), BackgroundTransparency = .15, BorderSizePixel = 0, ZIndex = 501,
+            BackgroundColor3 = Color3.fromRGB(245, 166, 35), BackgroundTransparency = .15, BorderSizePixel = 0, ZIndex = 501,
         }, bar)
         corner(barH, 3)
         local barV = make("Frame", {
             Name = "V", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -8, 1, -8), Size = UDim2.fromOffset(6, 26),
-            BackgroundColor3 = Color3.fromRGB(0, 140, 255), BackgroundTransparency = .15, BorderSizePixel = 0, ZIndex = 501,
+            BackgroundColor3 = Color3.fromRGB(245, 166, 35), BackgroundTransparency = .15, BorderSizePixel = 0, ZIndex = 501,
         }, bar)
         corner(barV, 3)
         local function fade(value)
@@ -2615,13 +2627,12 @@ function Nexora.CreateMain(config)
     local function showPage(p)
         local changed = (activePage ~= p)
         activePage = p
+        pageTitle.Text = p.title
         for _, item in ipairs(pages) do
             local on = (item == p)
             item.frame.Visible = on
             item.tab.TextColor3 = on and C.white or C.muted
-            item.tab.BackgroundColor3 = on and C.tabOn or C.tabOff
-            item.tabStroke.Color = on and C.blue or C.stroke
-            item.tabStroke.Transparency = on and 0.08 or 0.2
+            if item.tabBar then item.tabBar.Visible = on end
         end
         if changed and p.frame then
             p.frame.Position = UDim2.new(0, 18, 0, 0)
@@ -2657,26 +2668,26 @@ function Nexora.CreateMain(config)
         make("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 14), SortOrder = Enum.SortOrder.LayoutOrder}, holder)
         local columns = {}
         for i = 1, 2 do
-            local col = make("Frame", {BackgroundTransparency = 1, Size = UDim2.new(.5, -7, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = i}, holder)
+            local col = make("Frame", {BackgroundTransparency = 1, Size = UDim2.new(i == 1 and 1 or 0, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = i}, holder)
             make("UIListLayout", {Padding = UDim.new(0, 14), SortOrder = Enum.SortOrder.LayoutOrder}, col)
-            columns[i] = {frame = col, weight = 0, count = 0}
+            columns[i] = {frame = col, weight = (i == 2) and math.huge or 0, count = 0}
         end
 
-        -- Aba no topo
-        local tabW = #navText * 9 + 36
-        pcall(function()
-            local sz = TextService:GetTextSize(navText, 15, Enum.Font.GothamMedium, Vector2.new(1000, 100))
-            tabW = math.ceil(sz.X) + 36
-        end)
-        local tab = button(tabStrip, navText, UDim2.fromOffset(tabW, 38))
+        -- Aba na barra lateral (lista vertical, barra laranja na ativa)
+        local tab = button(tabStrip, navText, UDim2.new(1, 0, 0, 36))
         tab:SetAttribute("NexoraKeepColor", true)
         tab.TextSize = 15
         tab.TextColor3 = C.muted
-        tab.BackgroundColor3 = C.tabOff
+        tab.BackgroundTransparency = 1
+        tab.TextXAlignment = Enum.TextXAlignment.Left
+        tab.TextTruncate = Enum.TextTruncate.AtEnd
         tab.LayoutOrder = #pages + 1
+        make("UIPadding", {PaddingLeft = UDim.new(0, 18)}, tab)
         local tabStroke = tab:FindFirstChildOfClass("UIStroke")
-
-        local p = {name = pageName, title = navText, frame = frame, tab = tab, tabStroke = tabStroke}
+        if tabStroke then tabStroke.Transparency = 1 end
+        local tabBar = make("Frame", {BackgroundColor3 = C.blue, BorderSizePixel = 0, Position = UDim2.new(0, -12, .5, -9), Size = UDim2.fromOffset(4, 18), Visible = false}, tab)
+        corner(tabBar, 2)
+        local p = {name = pageName, title = navText, frame = frame, tab = tab, tabStroke = tabStroke, tabBar = tabBar}
         pages[#pages + 1] = p
         tab.MouseButton1Click:Connect(function() showPage(p) end)
         if #pages == 1 then showPage(p) end
@@ -2692,18 +2703,18 @@ function Nexora.CreateMain(config)
             sectionOrder = sectionOrder + 1
 
             local wrap = make("Frame", {Name = sectionName, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = sectionOrder}, col.frame)
-            make("UIListLayout", {Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder}, wrap)
-            local heading = make("Frame", {BackgroundColor3 = C.panel2, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 66), LayoutOrder = 1}, wrap)
-            corner(heading, 15)
-            stroke(heading, C.stroke, 0.25)
-            local accent = make("Frame", {BackgroundColor3 = C.blue, BorderSizePixel = 0, Position = UDim2.new(0, 13, 0, 14), Size = UDim2.new(0, 5, 0, 38)}, heading)
-            corner(accent, 4)
-            local ic = lbl(heading, sectionIcon(sectionName), UDim2.new(0, 44, 1, 0), UDim2.new(0, 28, 0, 0), 23, C.blue2, Enum.Font.GothamBold)
-            ic.TextXAlignment = Enum.TextXAlignment.Center
-            local ttl = lbl(heading, sectionName, UDim2.new(1, -90, 0, 26), UDim2.new(0, 78, 0, 10), 18, C.white, Enum.Font.GothamBold)
+            make("UIListLayout", {Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder}, wrap)
+            wrap.BackgroundTransparency = 0.25
+            wrap.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+            corner(wrap, 10)
+            stroke(wrap, C.stroke, 0.3, 1)
+            make("UIPadding", {PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 4), PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8)}, wrap)
+            local heading = make("Frame", {BackgroundColor3 = C.panel2, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 36), LayoutOrder = 1}, wrap)
+            corner(heading, 8)
+            local ttl = lbl(heading, sectionName, UDim2.new(1, -20, 1, -2), UDim2.new(0, 10, 0, 0), 16, C.white, Enum.Font.GothamBold)
+            ttl.TextXAlignment = Enum.TextXAlignment.Center
             ttl.TextTruncate = Enum.TextTruncate.AtEnd
-            lbl(heading, "Configure your options here.", UDim2.new(1, -90, 0, 20), UDim2.new(0, 79, 0, 36), 12, C.muted)
-
+            make("Frame", {BackgroundColor3 = C.blue, BorderSizePixel = 0, Position = UDim2.new(0, 0, 1, -2), Size = UDim2.new(1, 0, 0, 2)}, heading)
             local body = make("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 2}, wrap)
             make("UIListLayout", {Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder}, body)
             make("UIPadding", {PaddingBottom = UDim.new(0, 10)}, body)
@@ -2721,21 +2732,18 @@ function Nexora.CreateMain(config)
                 local savedToggle = Settings[t]
                 local val
                 if type(savedToggle) == "boolean" then val = savedToggle else val = (cfg.Default == true) end
-                local row = button(body, "", UDim2.new(1, 0, 0, 52)); row.LayoutOrder = nextOrder(); weigh(52)
-                local name = lbl(row, t, UDim2.new(1, -86, 1, 0), UDim2.new(0, 17, 0, 0), 14, C.white)
+                local row = button(body, "", UDim2.new(1, 0, 0, 46)); row.LayoutOrder = nextOrder(); weigh(46)
+                local name = lbl(row, t, UDim2.new(1, -70, 1, 0), UDim2.new(0, 17, 0, 0), 14, C.white, Enum.Font.GothamBold)
                 name.TextWrapped = true
-                local track = make("Frame", {BackgroundColor3 = val and C.blue or C.off, BorderSizePixel = 0, AnchorPoint = Vector2.new(1, .5), Position = UDim2.new(1, -15, .5, 0), Size = UDim2.fromOffset(42, 23)}, row)
-                corner(track, 20)
-                local knob = make("Frame", {BackgroundColor3 = Color3.fromRGB(226, 236, 250), BorderSizePixel = 0, Position = val and UDim2.new(1, -20, 0, 3) or UDim2.new(0, 3, 0, 3), Size = UDim2.fromOffset(17, 17)}, track)
-                corner(knob, 20)
+                local box = make("Frame", {BackgroundColor3 = val and C.blue or C.element, BorderSizePixel = 0, AnchorPoint = Vector2.new(1, .5), Position = UDim2.new(1, -14, .5, 0), Size = UDim2.fromOffset(28, 28)}, row)
+                corner(box, 5)
+                stroke(box, C.blue, 0, 2)
                 local function paint(animate)
-                    local pos = val and UDim2.new(1, -20, 0, 3) or UDim2.new(0, 3, 0, 3)
-                    local col2 = val and C.blue or C.off
+                    local col2 = val and C.blue or C.element
                     if animate then
-                        TweenService:Create(track, TweenInfo.new(.15), {BackgroundColor3 = col2}):Play()
-                        TweenService:Create(knob, TweenInfo.new(.15), {Position = pos}):Play()
+                        TweenService:Create(box, TweenInfo.new(.15), {BackgroundColor3 = col2}):Play()
                     else
-                        track.BackgroundColor3 = col2; knob.Position = pos
+                        box.BackgroundColor3 = col2
                     end
                 end
                 paint(false)
@@ -2785,13 +2793,17 @@ function Nexora.CreateMain(config)
                 local max = cfg.Max or cfg.MaxValue or 100
                 local val = math.clamp(cfg.Default or cfg.Value or min, min, max)
                 weigh(66)
-                local r = make("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 66), LayoutOrder = nextOrder()}, body)
-                local ttl2 = lbl(r, t, UDim2.new(.75, 0, 0, 24), UDim2.new(0, 2, 0, 0), 14, C.white)
+                local r = make("Frame", {BackgroundColor3 = C.element, BackgroundTransparency = 0, Size = UDim2.new(1, 0, 0, 66), LayoutOrder = nextOrder()}, body)
+                corner(r, 8)
+                local ttl2 = lbl(r, t, UDim2.new(1, -130, 0, 30), UDim2.new(0, 12, 0, 2), 14, C.white, Enum.Font.GothamBold)
                 ttl2.TextTruncate = Enum.TextTruncate.AtEnd
-                local num = lbl(r, tostring(val), UDim2.new(.25, 0, 0, 24), UDim2.new(.75, -2, 0, 0), 14, C.blue2)
-                num.TextXAlignment = Enum.TextXAlignment.Right
+                local numBox = make("Frame", {BackgroundColor3 = C.bg, BorderSizePixel = 0, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 5), Size = UDim2.fromOffset(100, 26)}, r)
+                corner(numBox, 6)
+                stroke(numBox, C.stroke, 0.15)
+                local num = lbl(numBox, tostring(val), UDim2.fromScale(1, 1), UDim2.new(), 14, C.white, Enum.Font.GothamBold)
+                num.TextXAlignment = Enum.TextXAlignment.Center
                 local ratio0 = (val - min) / math.max(1, max - min)
-                local bar = make("Frame", {BackgroundColor3 = C.off, BorderSizePixel = 0, Position = UDim2.new(0, 2, 0, 38), Size = UDim2.new(1, -4, 0, 7)}, r)
+                local bar = make("Frame", {BackgroundColor3 = C.off, BorderSizePixel = 0, Position = UDim2.new(0, 12, 0, 44), Size = UDim2.new(1, -24, 0, 6)}, r)
                 corner(bar, 6)
                 local fill = make("Frame", {BackgroundColor3 = C.blue, BorderSizePixel = 0, Size = UDim2.new(ratio0, 0, 1, 0)}, bar)
                 corner(fill, 6)
@@ -3061,7 +3073,7 @@ function Nexora.CreateMain(config)
         local card = make("Frame", {Name = "Notif", BackgroundColor3 = C.panel, BorderSizePixel = 0, Size = UDim2.new(0, 310, 0, 72), ClipsDescendants = true}, container)
         corner(card, 16)
         local border = stroke(card, C.blue, 0.2, 1.2)
-        gradient(card, Color3.fromRGB(12, 22, 38), Color3.fromRGB(6, 11, 20), 90)
+        gradient(card, Color3.fromRGB(34, 34, 40), Color3.fromRGB(22, 22, 26), 90)
         local sideBar = make("Frame", {Name = "SideBar", BackgroundColor3 = C.blue, BorderSizePixel = 0, Size = UDim2.new(0, 3, 1, 0)}, card)
         corner(sideBar, 2)
         local iconBg = make("Frame", {BackgroundColor3 = C.panel2, BorderSizePixel = 0, Size = UDim2.new(0, 40, 0, 40), Position = UDim2.new(0, 14, 0, 10)}, card)
@@ -6617,6 +6629,32 @@ spawn(function()
 	end
 	if game.PlaceId == getgenv().CheckPlaceId then
 		Q["Temple Clock"] = Vector3.new(28282.5703125, 14896.8505859375, 105.1042709350586)
+		-- Skypea (Sky Area 1 / 2 / 3): portais usados pelo toTarget quando o alvo esta longe (>=3000).
+		-- Se um portal nao mover o personagem, o toTarget ja o marca como ruim por 90s e faz o tween direto.
+		Q["Sky Area 1"] = Vector3.new(-4607.82, 872.54, -1667.56)
+		Q["Sky Area 3"] = Vector3.new(-7894.62, 5545.49, -380.25)
+		task.spawn(function()
+			-- Area 1 e Area 2 pegam a posicao real do mapa quando ele carregar (streaming)
+			while task.wait(5) do
+				pcall(function()
+					local map = workspace:FindFirstChild("Map")
+					if not map then
+						return
+					end
+					local function pos(a, b, c)
+						local n = map:FindFirstChild(a)
+						n = n and (n:FindFirstChild(b) or n:FindFirstChild(b, true))
+						n = n and (n:FindFirstChild(c) or n:FindFirstChild(c, true))
+						if not n then
+							return nil
+						end
+						return n:IsA("BasePart") and n.Position or n:GetPivot().Position
+					end
+					Q["Sky Area 1"] = pos("SkyArea1", "PathwayTemple", "ExitPoint") or Q["Sky Area 1"]
+					Q["Sky Area 2"] = pos("SkyArea2", "PathwayHouse", "EntrancePoint") or Q["Sky Area 2"]
+				end)
+			end
+		end)
 	end
 	if game.PlaceId == getgenv().CheckPlaceId2 then
 		Q["122"] = Vector3.new(923.21252441406, 126.9760055542, 32852.83203125)
@@ -7399,10 +7437,16 @@ function toTarget(P, e)
 		end
 
 		local l, d, _
+		-- portais que nao levaram a lugar nenhum ficam 90s de fora (antes o script ficava preso pedindo o portal e nunca fazia o tween)
+		local portalBad = getgenv().__NxPortalBad
+		if not portalBad then
+			portalBad = {}
+			getgenv().__NxPortalBad = portalBad
+		end
 		if Y >= 3000 then
 			for o, y in pairs(Q) do
 				local Q = (P.Position - y).Magnitude
-				if Q <= 3000 and (not _ or Q < _) then
+				if Q <= 3000 and (not _ or Q < _) and tick() - (portalBad[o] or -1e9) > 90 then
 					_, l, d = Q, o, y
 				end
 			end
@@ -7413,9 +7457,18 @@ function toTarget(P, e)
 				BorrowTempleOfTime()
 			end
 			I()
+			local before = H.Position
 			game.ReplicatedStorage.Remotes.CommF_:InvokeServer("requestEntrance", d)
 			task.wait(0.1)
-			return
+			if (H.Position - before).Magnitude > 300 then
+				return
+			end
+			task.wait(0.5)
+			if (H.Position - before).Magnitude > 300 then
+				return
+			end
+			-- o portal nao funcionou: marca e segue para o tween direto ate o destino
+			portalBad[l] = tick()
 		end
 		local Q, I, o, y = N(H.Position), N(P.Position), V(P.Position), V(H.Position)
 		if I and I.Name == "Celestial Domain" and (not Q or Q.Name ~= "Celestial Domain") then
@@ -12609,12 +12662,101 @@ local FarmotherMain = NXSQPage
 		end
 		return true
 	end
-	HiddenGoTo = function(arg, arg2)
-		if localPlayer:DistanceFromCharacter(arg) <= (arg2 or 8) then
+	getgenv().NxSkyPortalAssist = HiddenEvent.SkyPortalAssist
+	-- ===== Tween de longa distancia ate o Skypea (Sky Area 1 / 2 / 3), mesmo de muito longe =====
+	-- O tween normal (limite 220, reinicia a cada 1s, aborta se achar "rubberband") nao aguenta essas distancias.
+	-- Este anda a velocidade constante, sempre a partir da posicao REAL do personagem (se o servidor puxar de volta, ele continua dali).
+	HiddenEvent.FarRun = nil
+	HiddenEvent.FarStop = function()
+		local run = HiddenEvent.FarRun
+		if run then
+			run.alive = false
+		end
+		HiddenEvent.FarRun = nil
+	end
+	HiddenEvent.FarTween = function(target)
+		local run = HiddenEvent.FarRun
+		if run and run.alive and (run.goal - target).Magnitude < 5 then
 			return true
 		end
-		if Settings["Auto Secret Quest"] and HiddenEvent.SkyPortalAssist(arg) then
-			return false
+		if run then
+			run.alive = false
+		end
+		run = { alive = true, goal = target, t0 = tick(), lastProg = tick() }
+		do
+			local r0 = localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart")
+			run.best = r0 and (target - r0.Position).Magnitude or math.huge
+		end
+		HiddenEvent.FarRun = run
+		task.spawn(function()
+			local rs = game:GetService("RunService")
+			while run.alive do
+				local dt = rs.Heartbeat:Wait()
+				local ch = localPlayer.Character
+				local r = ch and ch:FindFirstChild("HumanoidRootPart")
+				local h = ch and ch:FindFirstChildOfClass("Humanoid")
+				if not r or not h or h.Health <= 0 or r.Anchored or not Settings["Auto Secret Quest"] then
+					break
+				end
+				local pos = r.Position
+				local diff = run.goal - pos
+				local dist = diff.Magnitude
+				if dist <= 6 then
+					r.CFrame = CFrame.new(run.goal)
+					break
+				end
+				-- sem progresso por 4s = travou (o HiddenGoTo entao tenta o portal e recomeca)
+				if dist < run.best - 5 then
+					run.best = dist
+					run.lastProg = tick()
+				end
+				if tick() - run.lastProg > 4 then
+					run.stuck = true
+					break
+				end
+				if not r:FindFirstChild("FloatForce") then
+					local bv = Instance.new("BodyVelocity")
+					bv.Name = "FloatForce"
+					bv.Velocity = Vector3.new(0, 0, 0)
+					bv.MaxForce = Vector3.new(100000, 100000, 100000)
+					bv.P = 10000
+					bv.Parent = r
+				end
+				getgenv().noclip = true
+				local speed = tonumber(getgenv().SkyTweenSpeed) or 320
+				local step = math.min(speed * dt, 30, dist)
+				r.CFrame = r.CFrame + diff.Unit * step
+				r.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+				r.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+			end
+			run.alive = false
+		end)
+		return true
+	end
+	HiddenGoTo = function(arg, arg2)
+		if localPlayer:DistanceFromCharacter(arg) <= (arg2 or 8) then
+			HiddenEvent.FarStop()
+			return true
+		end
+		if Settings["Auto Secret Quest"] then
+			local root = localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart")
+			-- so no Sea 1 e so quando origem ou destino esta no Skypea (altura > 600): nao mexe nas outras viagens
+			if root and GetCurrentSea() == 1 and (arg.Y > 600 or root.Position.Y > 600) then
+				if (arg - root.Position).Magnitude > 1500 then
+					local run = HiddenEvent.FarRun
+					if run and run.stuck then
+						-- o tween travou: tenta o portal do Skypea e recomeca o tween
+						HiddenEvent.FarRun = nil
+						if HiddenEvent.SkyPortalAssist(arg) then
+							return false
+						end
+					end
+					SetHiddenStep("Tween to Skypea")
+					HiddenEvent.FarTween(arg)
+					return false
+				end
+				HiddenEvent.FarStop()
+			end
 		end
 		HiddenMove(CFrame.new(arg))
 		return false
@@ -21917,7 +22059,10 @@ BerrySection.CreateToggle(
 		local loopId = env.__NxBerryLoop
 		task.spawn(function()
 			local CS = game:GetService("CollectionService")
-			local lastNoti = 0
+			local RS = game:GetService("RunService")
+			local lastNoti, lastScan, lastStream = 0, 0, 0
+			local known = {} -- [arbusto] = { cf = CFrame, t = ultima vez visto com berry }
+			local visited, dwellUntil, patrolTarget = {}, 0, nil
 			local function PivotOf(o)
 				if typeof(o) == "CFrame" then
 					return o
@@ -21944,49 +22089,140 @@ BerrySection.CreateToggle(
 				end
 				return PivotOf(parent) or PivotOf(bush)
 			end
-			-- arbusto COM berry mais PERTO (antes pegava sempre o primeiro da lista)
-			local function NearestBush(root)
-				local best, bestD
+			-- guarda a posicao dos arbustos com berry; o jogo descarrega o mapa longe, entao lembramos onde estavam
+			local function Scan()
 				for _, bush in ipairs(CS:GetTagged("BerryBush")) do
 					if bush.Parent and not bush.Parent:FindFirstChild("IgnoredBerry") and DetectBerryCFrame(bush:GetAttributes()) then
 						local cf = BushCFrame(bush)
 						if cf then
-							local d = (cf.Position - root.Position).Magnitude
-							if not bestD or d < bestD then
-								best, bestD = bush, d
-							end
+							known[bush] = { cf = cf, t = tick() }
+						end
+					elseif known[bush] and bush.Parent then
+						known[bush] = nil -- carregado e sem berry: ja foi coletada
+					end
+				end
+				for bush, info in pairs(known) do
+					if tick() - info.t > 180 then
+						known[bush] = nil
+					end
+				end
+			end
+			local function NearestKnown(root)
+				local best, bestCf, bestD
+				for bush, info in pairs(known) do
+					local d = (info.cf.Position - root.Position).Magnitude
+					if not bestD or d < bestD then
+						best, bestCf, bestD = bush, info.cf, d
+					end
+				end
+				return best, bestCf
+			end
+			local function Stream(pos)
+				if tick() - lastStream > 3 then
+					lastStream = tick()
+					pcall(function()
+						t:RequestStreamAroundAsync(pos)
+					end)
+				end
+			end
+			-- voo proprio (nao depende do toTarget): anda em linha reta ate o alvo, com noclip e sem cair
+			local function Step(root, targetPos, dt)
+				local dir = targetPos - root.Position
+				local dist = dir.Magnitude
+				if dist < 0.5 then
+					return
+				end
+				local speed = math.clamp(tonumber(Settings["Speed Tween "]) or 220, 50, 220)
+				pcall(function()
+					TweenManager.CancelTweenOnly()
+				end)
+				if not root:FindFirstChild("FloatForce") then
+					local bv = Instance.new("BodyVelocity")
+					bv.Name = "FloatForce"
+					bv.Velocity = Vector3.zero
+					bv.MaxForce = Vector3.new(100000, 100000, 100000)
+					bv.P = 10000
+					bv.Parent = root
+				end
+				getgenv().noclip = true
+				root.CFrame = CFrame.new(root.Position + dir.Unit * math.min(dist, speed * dt))
+				root.AssemblyLinearVelocity = Vector3.zero
+				root.AssemblyAngularVelocity = Vector3.zero
+			end
+			-- pontos de patrulha: as ilhas do mapa (sempre carregadas), da mais perto para a mais longe
+			local function PatrolPoint(root)
+				local locs = workspace:FindFirstChild("_WorldOrigin") and workspace._WorldOrigin:FindFirstChild("Locations")
+				local best, bestD
+				for _, p in ipairs(locs and locs:GetChildren() or {}) do
+					if p:IsA("BasePart") and not visited[p] then
+						local d = (p.Position - root.Position).Magnitude
+						if not bestD or d < bestD then
+							best, bestD = p, d
 						end
 					end
 				end
 				return best
 			end
-			while Settings["Auto Collect Berry"] and env.__NxBerryLoop == loopId and task.wait(0.1) do
+			while Settings["Auto Collect Berry"] and env.__NxBerryLoop == loopId do
+				local dt = RS.Heartbeat:Wait()
 				pcall(function()
 					local char = t.Character
 					local root = char and char:FindFirstChild("HumanoidRootPart")
-					if not root then
+					local hum = char and char:FindFirstChildOfClass("Humanoid")
+					if not root or not hum or hum.Health <= 0 then
 						return
 					end
-					local bush = NearestBush(root)
+					if tick() - lastScan > 0.25 then
+						lastScan = tick()
+						Scan()
+					end
+					local bush, cf = NearestKnown(root)
 					if bush then
-						local berry = bush:GetChildren()[1]
-						local cf = (berry and PivotOf(berry)) or BushCFrame(bush)
-						if not cf then
+						patrolTarget = nil
+						-- arbusto carregado: mira na berry em si
+						if bush.Parent then
+							local berry = bush:GetChildren()[1]
+							cf = (berry and PivotOf(berry)) or cf
+							local dist = (cf.Position - root.Position).Magnitude
+							if dist <= 10 then
+								local prompt = berry and berry:FindFirstChildWhichIsA("ProximityPrompt", true)
+								if prompt then
+									pcall(function()
+										prompt.HoldDuration = 0
+									end)
+									fireproximityprompt(prompt)
+									task.wait(0.3)
+								end
+								return
+							end
+						elseif (cf.Position - root.Position).Magnitude <= 10 then
+							known[bush] = nil -- chegou e o arbusto nao existe mais
 							return
 						end
-						if (cf.Position - root.Position).Magnitude > 10 then
-							toTarget(cf)
-						elseif berry then
-							local prompt = berry:FindFirstChildWhichIsA("ProximityPrompt", true)
-							if prompt then
-								pcall(function()
-									prompt.HoldDuration = 0
-								end)
-								fireproximityprompt(prompt)
-								task.wait(0.3)
-							end
+						Stream(cf.Position)
+						Step(root, cf.Position, dt)
+						return
+					end
+					-- nenhuma berry conhecida: patrulha as ilhas (o mapa so carrega perto) e depois troca de servidor
+					if tick() < dwellUntil then
+						return
+					end
+					if patrolTarget and patrolTarget.Parent then
+						local target = patrolTarget.Position + Vector3.new(0, 120, 0)
+						if (target - root.Position).Magnitude <= 40 then
+							Stream(patrolTarget.Position)
+							visited[patrolTarget] = true
+							patrolTarget = nil
+							dwellUntil = tick() + 2.5
+							return
 						end
-					else
+						Stream(target)
+						Step(root, target, dt)
+						return
+					end
+					patrolTarget = PatrolPoint(root)
+					if not patrolTarget then
+						visited = {}
 						if tick() - lastNoti > 10 then
 							lastNoti = tick()
 							pcall(function()
@@ -21996,7 +22232,7 @@ BerrySection.CreateToggle(
 						if Settings["Hop Find Berry"] then
 							pcall(HopServer)
 						end
-						task.wait(5)
+						dwellUntil = tick() + 5
 					end
 				end)
 			end
