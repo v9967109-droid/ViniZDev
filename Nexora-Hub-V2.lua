@@ -2326,16 +2326,17 @@ function Nexora.CreateMain(config)
     stroke(glow, C.blue2, 0.72, 3)
 
     local userScale = 1   -- tamanho escolhido na aba "Resize UI"
-    -- Resize: a janela mantem SEMPRE a proporcao original (nunca achata nem estreita). Em 100% ocupa ~66% da
-    -- largura da tela, limitada a 92% da altura. O slider reduz a janela inteira de forma suave (no minimo ~70%).
-    local FIT_MARGIN, SLIDER_MIN = 0.656, 0.70
+    -- Resize: a LARGURA fica em ~66% da tela e a ALTURA acompanha a tela (~88%), entao a janela nao fica so larga.
+    -- O slider reduz a janela inteira de forma suave (no minimo ~70%), sempre na mesma proporcao.
+    local FIT_MARGIN, SLIDER_MIN, HEIGHT_FILL = 0.656, 0.70, 0.88
     local function fitScale()
         local cam = workspace.CurrentCamera
         local vx, vy = 1280, 720
         if cam then vx, vy = cam.ViewportSize.X, cam.ViewportSize.Y end
-        local base = math.min(FIT_MARGIN * vx / W, 0.92 * vy / H, 1)
-        local sc = math.clamp(base * (SLIDER_MIN + (1 - SLIDER_MIN) * userScale), .15, 1)
-        pcall(function() shell.Size = UDim2.fromOffset(W, H) end)
+        local full = math.min(FIT_MARGIN * vx / W, 0.92 * vy / H, 1)
+        local hFull = math.clamp(HEIGHT_FILL * vy / full, H, H * 1.35)
+        local sc = math.clamp(full * (SLIDER_MIN + (1 - SLIDER_MIN) * userScale), .15, 1)
+        pcall(function() shell.Size = UDim2.fromOffset(W, math.floor(hFull)) end)
         return sc
     end
     scale.Scale = fitScale()
@@ -3583,16 +3584,17 @@ function Nexora.CreateMain(config)
     stroke(glow, C.blue2, 0.72, 3)
 
     local userScale = 1   -- tamanho escolhido na aba "Resize UI"
-    -- Resize: a janela mantem SEMPRE a proporcao original (nunca achata nem estreita). Em 100% ocupa ~66% da
-    -- largura da tela, limitada a 92% da altura. O slider reduz a janela inteira de forma suave (no minimo ~70%).
-    local FIT_MARGIN, SLIDER_MIN = 0.656, 0.70
+    -- Resize: a LARGURA fica em ~66% da tela e a ALTURA acompanha a tela (~88%), entao a janela nao fica so larga.
+    -- O slider reduz a janela inteira de forma suave (no minimo ~70%), sempre na mesma proporcao.
+    local FIT_MARGIN, SLIDER_MIN, HEIGHT_FILL = 0.656, 0.70, 0.88
     local function fitScale()
         local cam = workspace.CurrentCamera
         local vx, vy = 1280, 720
         if cam then vx, vy = cam.ViewportSize.X, cam.ViewportSize.Y end
-        local base = math.min(FIT_MARGIN * vx / W, 0.92 * vy / H, 1)
-        local sc = math.clamp(base * (SLIDER_MIN + (1 - SLIDER_MIN) * userScale), .15, 1)
-        pcall(function() shell.Size = UDim2.fromOffset(W, H) end)
+        local full = math.min(FIT_MARGIN * vx / W, 0.92 * vy / H, 1)
+        local hFull = math.clamp(HEIGHT_FILL * vy / full, H, H * 1.35)
+        local sc = math.clamp(full * (SLIDER_MIN + (1 - SLIDER_MIN) * userScale), .15, 1)
+        pcall(function() shell.Size = UDim2.fromOffset(W, math.floor(hFull)) end)
         return sc
     end
     scale.Scale = fitScale()
@@ -36810,12 +36812,14 @@ SizeUITab = Main.CreatePage({
 	Page_Title = "Resize UI",
 })
 SizeUISection = SizeUITab.CreateSection("Resize UI")
+local compactPct = ((Settings["UI Scale"] or 100) < 100) and Settings["UI Scale"] or 80
 SizeUISlider = SizeUISection.CreateSlider({
 	Title = "UI Size (%)",
 	Min = 40,
 	Max = 100,
 	Default = Settings["UI Scale"] or 100,
 }, function(v)
+	if (tonumber(v) or 100) < 100 then compactPct = v end
 	pcall(SaveSettings, "UI Scale", v)
 	-- aplica so depois de soltar o slider (mudar o tamanho com o dedo em cima faria a barra pular)
 	local env = getgenv()
@@ -36827,8 +36831,8 @@ SizeUISlider = SizeUISection.CreateSlider({
 		end
 	end)
 end)
-SizeUISection.CreateToggle({ Title = "Compact UI (60%)", Desc = nil, Default = (Settings["UI Scale"] or 100) <= 60 }, function(on)
-	local pct = on and 60 or 100
+SizeUISection.CreateToggle({ Title = "Compact UI", Desc = nil, Default = (Settings["UI Scale"] or 100) < 100 }, function(on)
+	local pct = on and compactPct or 100
 	pcall(function()
 		SizeUISlider._setValue(pct)
 	end)
