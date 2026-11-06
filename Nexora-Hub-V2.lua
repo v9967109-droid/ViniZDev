@@ -2327,21 +2327,21 @@ function Nexora.CreateMain(config)
 
     local userScale = 1   -- tamanho escolhido na aba "Resize UI"
     -- Resize: o UI Size muda o TAMANHO DA JANELA (largura e altura logicas), e o texto/abas quase nao encolhem
-    -- (UIScale so cai ate ~80%). O 100% usa so ~82% da tela para nao sair dela. A altura encolhe menos que a
+    -- (UIScale so cai ate ~80%). O 100% ocupa ~66% da LARGURA da tela e a altura e limitada a 90% dela. A altura encolhe menos que a
     -- largura para a janela nao ficar achatada.
-    local FIT_MARGIN, TEXT_MIN, MIN_WIN_W, MIN_WIN_H = 0.82, 0.80, 560, 340
+    local FIT_MARGIN, TEXT_MIN, MIN_WIN_W, MIN_WIN_H = 0.656, 0.80, 560, 340
     local function fitScale()
         local cam = workspace.CurrentCamera
         local u = userScale
         local vx, vy = 1280, 720
         if cam then vx, vy = cam.ViewportSize.X, cam.ViewportSize.Y end
-        local base = math.min((vx - 16) / W, (vy - 16) / H, 1) * FIT_MARGIN
+        local base = math.min(FIT_MARGIN * vx / W, 1)
         local sc = math.clamp(base * (TEXT_MIN + (1 - TEXT_MIN) * u), .15, 1)
         local f = math.clamp(u / (TEXT_MIN + (1 - TEXT_MIN) * u), .5, 1)
         local w2 = math.max(MIN_WIN_W, W * f)
         local h2 = math.max(MIN_WIN_H, H * (f ^ 0.4))
         w2 = math.min(w2, math.max(MIN_WIN_W, (vx - 16) / math.max(sc, .05)))
-        h2 = math.min(h2, math.max(MIN_WIN_H, (vy - 16) / math.max(sc, .05)))
+        h2 = math.min(h2, math.max(MIN_WIN_H, (vy * 0.9) / math.max(sc, .05)))
         pcall(function() shell.Size = UDim2.fromOffset(math.floor(w2), math.floor(h2)) end)
         return sc
     end
@@ -3591,21 +3591,21 @@ function Nexora.CreateMain(config)
 
     local userScale = 1   -- tamanho escolhido na aba "Resize UI"
     -- Resize: o UI Size muda o TAMANHO DA JANELA (largura e altura logicas), e o texto/abas quase nao encolhem
-    -- (UIScale so cai ate ~80%). O 100% usa so ~82% da tela para nao sair dela. A altura encolhe menos que a
+    -- (UIScale so cai ate ~80%). O 100% ocupa ~66% da LARGURA da tela e a altura e limitada a 90% dela. A altura encolhe menos que a
     -- largura para a janela nao ficar achatada.
-    local FIT_MARGIN, TEXT_MIN, MIN_WIN_W, MIN_WIN_H = 0.82, 0.80, 560, 340
+    local FIT_MARGIN, TEXT_MIN, MIN_WIN_W, MIN_WIN_H = 0.656, 0.80, 560, 340
     local function fitScale()
         local cam = workspace.CurrentCamera
         local u = userScale
         local vx, vy = 1280, 720
         if cam then vx, vy = cam.ViewportSize.X, cam.ViewportSize.Y end
-        local base = math.min((vx - 16) / W, (vy - 16) / H, 1) * FIT_MARGIN
+        local base = math.min(FIT_MARGIN * vx / W, 1)
         local sc = math.clamp(base * (TEXT_MIN + (1 - TEXT_MIN) * u), .15, 1)
         local f = math.clamp(u / (TEXT_MIN + (1 - TEXT_MIN) * u), .5, 1)
         local w2 = math.max(MIN_WIN_W, W * f)
         local h2 = math.max(MIN_WIN_H, H * (f ^ 0.4))
         w2 = math.min(w2, math.max(MIN_WIN_W, (vx - 16) / math.max(sc, .05)))
-        h2 = math.min(h2, math.max(MIN_WIN_H, (vy - 16) / math.max(sc, .05)))
+        h2 = math.min(h2, math.max(MIN_WIN_H, (vy * 0.9) / math.max(sc, .05)))
         pcall(function() shell.Size = UDim2.fromOffset(math.floor(w2), math.floor(h2)) end)
         return sc
     end
