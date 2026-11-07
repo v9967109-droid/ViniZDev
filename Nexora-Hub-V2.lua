@@ -26958,6 +26958,38 @@ ToggleLeavingCowdalm = FarmingSeaEventSection.CreateToggle(
 			getgenv().LeavingCowdalmRunId = runId
 			getgenv().LeavingCowdalmAll = true
 			getgenv().StopBoatSeaEvent = true
+			-- detecta a saida do Cowdalm pelo status do Leviathan (Status and Server):
+			-- "I DONT KNOW" = ainda no Cowdalm; "Buy Find leviathan" = ja saiu -> reseta o personagem e avisa
+			task.spawn(function()
+				local armed = false
+				while getgenv().LeavingCowdalmRunId == runId and getgenv().LeavingCowdalmAll do
+					local okS, status = pcall(StatusCheckLeviathan)
+					if okS then
+						if status == "I DONT KNOW" then
+							armed = true
+						elseif armed and (status == "Buy Find leviathan" or status == "You can find leviathan now") then
+							LeavingCowdalmStop()
+							pcall(function()
+								ToggleLeavingCowdalm:SetStage(false)
+							end)
+							pcall(function()
+								Main.CreateNoti("Voce ja saiu do Cowdalm! Resetando o personagem...", 6)
+							end)
+							local char = game:GetService("Players").LocalPlayer.Character
+							local hum = char and char:FindFirstChildOfClass("Humanoid")
+							if hum then
+								hum.Health = 0
+							elseif char then
+								pcall(function()
+									char:BreakJoints()
+								end)
+							end
+							break
+						end
+					end
+					task.wait(1)
+				end
+			end)
 			-- se o Auto Sea Event normal ja estiver ligado, reaproveita o loop dele
 			getgenv().LeavingCowdalmOwnsAuto = not Settings["Auto Sea Event"]
 			if getgenv().LeavingCowdalmOwnsAuto then
