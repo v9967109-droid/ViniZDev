@@ -27071,6 +27071,25 @@ ToggleLeavingCowdalm = FarmingSeaEventSection.CreateToggle(
 	},
 	function(_)
 		if _ then
+			-- so funciona quando o status do Leviathan estiver em "I DONT KNOW" (ainda no Cowdalm)
+			local okS0, status0 = pcall(StatusCheckLeviathan)
+			if not okS0 or status0 ~= "I DONT KNOW" then
+				local msg
+				if okS0 and (status0 == "Buy Find leviathan" or status0 == "You can find leviathan now") then
+					msg = "You are out of Cowdalm."
+				else
+					msg = "Nao foi possivel confirmar o Cowdalm (status: " .. tostring(okS0 and status0 or "erro") .. "). So funciona no Sea 3 com status I DONT KNOW."
+				end
+				pcall(function()
+					Main.CreateNoti(msg, 6)
+				end)
+				task.defer(function()
+					pcall(function()
+						ToggleLeavingCowdalm:SetStage(false)
+					end)
+				end)
+				return
+			end
 			local runId = tick()
 			getgenv().LeavingCowdalmRunId = runId
 			getgenv().LeavingCowdalmAll = true
@@ -27078,7 +27097,7 @@ ToggleLeavingCowdalm = FarmingSeaEventSection.CreateToggle(
 			-- detecta a saida do Cowdalm pelo status do Leviathan (Status and Server):
 			-- "I DONT KNOW" = ainda no Cowdalm; "Buy Find leviathan" = ja saiu -> reseta o personagem e avisa
 			task.spawn(function()
-				local armed = false
+				local armed = true -- ja confirmado "I DONT KNOW" ao ativar
 				while getgenv().LeavingCowdalmRunId == runId and getgenv().LeavingCowdalmAll do
 					local okS, status = pcall(StatusCheckLeviathan)
 					if okS then
