@@ -20489,11 +20489,19 @@ do
 								trick.warned = true
 								notify("Nenhuma porta disponivel agora. O evento roda de :00 a :10 de cada hora; fico procurando.")
 							end
+							-- se todas as portas ficaram "bloqueadas" por ja terem sido visitadas, libera tudo e tenta de novo
+							if not trick.idleSince then
+								trick.idleSince = tick()
+							elseif tick() - trick.idleSince > 8 then
+								trick.visited = {}
+								trick.idleSince = nil
+							end
 							scanDoors(6)
 							task.wait(1.5)
 							return
 						end
 						trick.warned = false
+						trick.idleSince = nil
 
 						local part = best.part
 						local dpos = doorPos(best)
@@ -20569,7 +20577,7 @@ do
 						end
 						held = false
 						if not talked then
-							trick.visited[best.inst] = tick() + (empty and 300 or 30)
+							trick.visited[best.inst] = empty and tick() or (tick() - 30)
 							pcall(function()
 								local i = best.inst
 								local info = (best.big and "[GRANDE] " or "[normal] ") .. i.Parent.Name .. "/" .. (i.Parent.Parent and i.Parent.Parent.Name or "?")
@@ -20860,6 +20868,9 @@ do
 				end)
 				return
 			end
+			if inst:IsA("ProximityPrompt") and not door.allowKnock and hasAny(objText(inst), { "knock", "trick", "treat", "halloweendoor" }) then
+				return -- porta de Trick or Treat: bater gasta token
+			end
 			pcall(function()
 				if inst:IsA("ProximityPrompt") and fireproximityprompt then
 					local old = inst.HoldDuration
@@ -20938,6 +20949,69 @@ do
 				end
 			end)
 		end
+		-- portal sem prompt (Werewolf): atravessa de verdade a zona do portal. Teleporta pelo centro e por todas as partes
+		-- encostaveis perto dele (hitbox do portal) e dispara o toque; nunca mexe em portas de Trick or Treat
+		local portalSweep = function(door, iter)
+			local char = plr.Character
+			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+			if not hrp or not door.part or not door.part.Parent then
+				return
+			end
+			pcall(function()
+				local center = door.part.Position
+				local look = door.part.CFrame.LookVector
+				local offs = { 0, 3, -3, 6, -6 }
+				local off = offs[((iter - 1) % #offs) + 1]
+				hrp.CFrame = CFrame.new(center + look * off)
+				hrp.AssemblyLinearVelocity = Vector3.zero
+				local params = OverlapParams.new()
+				params.FilterType = Enum.RaycastFilterType.Exclude
+				params.FilterDescendantsInstances = { char }
+				local parts = workspace:GetPartBoundsInRadius(center, 30, params)
+				local list = {}
+				for _, pt in ipairs(parts) do
+					local full = lower(pt:GetFullName())
+					if not pt:FindFirstAncestor("Enemies") and not hasAny(full, { "halloweendoor", "knock", "trick", "treat" }) then
+						local mdl = pt:FindFirstAncestorOfClass("Model")
+						if not (mdl and mdl:FindFirstChildOfClass("Humanoid")) then
+							table.insert(list, { p = pt, t = pt:FindFirstChildOfClass("TouchTransmitter") ~= nil, d = (pt.Position - center).Magnitude })
+						end
+					end
+				end
+				table.sort(list, function(x, y)
+					if x.t ~= y.t then
+						return x.t
+					end
+					return x.d < y.d
+				end)
+				local n = 0
+				for _, e in ipairs(list) do
+					n = n + 1
+					if n > 30 then
+						break
+					end
+					if e.t and n <= 6 then
+						hrp.CFrame = e.p.CFrame
+					end
+					if firetouchinterest then
+						firetouchinterest(hrp, e.p, 0)
+						firetouchinterest(hrp, e.p, 1)
+					end
+					-- prompt/clique de entrada (que nao seja de bater na porta)
+					for _, c in ipairs(e.p:GetChildren()) do
+						if c:IsA("ProximityPrompt") and c.Enabled and not hasAny(lower(c.ActionText .. " " .. c.ObjectText), knockWords) then
+							triggerObj({ inst = c, part = e.p })
+						elseif c:IsA("ClickDetector") then
+							triggerObj({ inst = c, part = e.p })
+						end
+					end
+				end
+				if hum then
+					hum:MoveTo(center + look * (off + 4))
+				end
+			end)
+		end
 		-- vai ate a porta com toTarget, entra nela e confirma que foi teleportado (>50 studs DEPOIS de chegar na porta)
 		local passDoor = function(door)
 			local char = plr.Character
@@ -20967,15 +21041,18 @@ do
 					walkIn(door)
 					if door.inst then
 						local isKnock = hasAny(objText(door.inst), knockWords)
-						if not isKnock or (i >= 4 and knocks < 1) then
-							if isKnock then
-								knocks = knocks + 1
-							end
+						if not isKnock then
 							triggerObj(door)
+						elseif i >= 4 and knocks < 1 then
+							knocks = knocks + 1
+							door.allowKnock = true
+							triggerObj(door)
+							door.allowKnock = false
 						end
 					end
 				else
 					triggerObj(door)
+					portalSweep(door, i)
 				end
 				local waited = 0
 				while waited < 1.2 do
@@ -20988,6 +21065,9 @@ do
 				end
 				pcall(toTarget, door.part.CFrame)
 			end
+			-- marca candidato que nao entrou para nao ficar voltando nele (nem ir para outro "Portal" aleatorio do mapa)
+			boss.badPortal = boss.badPortal or {}
+			boss.badPortal[door.part] = (boss.badPortal[door.part] or 0) + 1
 			return false
 		end
 		local entryWords = { "hellfire", "helldoor", "hell door", "hell portal" }
@@ -21128,7 +21208,6 @@ do
 					if (not hasAny(full, PURPLE_SKIP) or string.find(full, "werewolf", 1, true)) and (score == 2 or part.Size.Magnitude >= 5) then
 						seen[part] = true
 						local interact = part:FindFirstChildWhichIsA("ProximityPrompt", true)
-							or (part.Parent and part.Parent:FindFirstChildWhichIsA("ProximityPrompt", true))
 							or part:FindFirstChildWhichIsA("ClickDetector", true)
 							or part:FindFirstChildWhichIsA("TouchTransmitter")
 						table.insert(out, { inst = interact, part = part, dist = (part.Position - hrp.Position).Magnitude, score = score })
@@ -21162,7 +21241,7 @@ do
 				for i = #boss.fresh, 1, -1 do
 					local f = boss.fresh[i]
 					local inst = f.inst
-					if tick() - f.at > 120 or not inst or not inst.Parent then
+					if tick() - f.at > 900 or not inst or not inst.Parent then
 						table.remove(boss.fresh, i)
 					else
 						local part
@@ -21227,7 +21306,13 @@ do
 			if #out == 0 then
 				out = findWolfPortals("loose")
 			end
-			return out
+			local bad, good = boss.badPortal or {}, {}
+			for _, d in ipairs(out) do
+				if (bad[d.part] or 0) < 2 then
+					table.insert(good, d)
+				end
+			end
+			return good
 		end
 		local exitArena = function()
 			local list = findInteractables(exitWords, 600, entrySkip)
@@ -21749,7 +21834,7 @@ do
 			boss.inArena, boss.arenaSeen, boss.arenaAt = false, false, 0
 			boss.arenaCenter = nil
 			boss.summonAt, boss.summonWait, boss.pumpAt = 0, 0, 0
-			boss.fresh, boss.entryPos = {}, nil
+			boss.fresh, boss.entryPos, boss.badPortal = {}, nil, {}
 			if boss.added then
 				boss.added:Disconnect()
 			end
