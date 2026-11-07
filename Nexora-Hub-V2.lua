@@ -1,2297 +1,2480 @@
 -- ez crack skid night hub 😂
--- Deobfuscated by DevAurora Code
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local v = workspace
+local Workspace = game:GetService("Workspace")
 local localPlayer = Players.LocalPlayer
-local genv = type(getgenv) == "function" and getgenv() or _G
 
-if genv.NightPvp and genv.NightPvp.Unload then
-	pcall(genv.NightPvp.Unload)
-	task.wait(0.25)
+if _G.NightDungeon and _G.NightDungeon.Stop then
+	pcall(_G.NightDungeon.Stop)
+	task.wait(0.35)
 end
 
-local tbl = { Name = "Night Hub", Game = "Blox Fruits PvP", Build = "1.0" }
-local flag = true
-local tbl2 = {}
-local tbl3 = {}
-local currentCamera = v.CurrentCamera
-local mouse = localPlayer:GetMouse()
-local gethui_ = rawget(genv, "gethui")
-local v2 = nil
-local v3 = nil
-local n = nil
-local unit = nil
-local v4 = nil
-local position = nil
-local position2 = nil
-local unit2 = nil
-local flag2 = false
-local flag3 = false
-local flag4 = false
+local nightDungeonConfig = _G.NightDungeonConfig or {}
+_G.NightDungeonConfig = nightDungeonConfig
 
-local tbl4 = {
-	pickMode = "Smart",
-	smartHp = 50,
-	part = "Head",
-	useFov = true,
-	fov = 160,
-	maxDist = 1500,
-	pred = 0.1,
-	speed = false,
-	speedValue = 80,
-	jumpOn = false,
-	jumpValue = 80,
-	noclip = false,
-	noStun = false,
-	moverFilter = "Smart",
-	fly = false,
-	flyKey = "None",
-	flyMode = "Smart",
-	engageDist = 8,
-	engageEdge = 10,
-	retreatHp = 40,
-	gankRange = 60,
-	autoSkill = false,
-	skillKeys = { Z = true, X = true, C = true, V = true },
-	skillRange = 60,
-	skillHold = 0.1,
-	skillGap = 0.35,
-	flySpeed = 200,
-	flySafe = 180,
-	flyDist = 10,
-	flyUp = 8,
-	kiteDist = 25,
-	kiteSway = 6,
-	antiAim = false,
-	antiAimPower = 200,
-	dodge = false,
-	dodgeRange = 25,
-	dodgeDist = 14,
-	dodgeCd = 1.5,
-	orbitRadius = 12,
-	orbitSpeed = 2.5,
-	flyNoclip = true,
-	hitbox = false,
-	hitboxSize = 12,
-	hitboxShow = true,
-	autoGun = false,
-	gunPick = "Dragonstorm",
-	gunRange = 150,
-	gunRate = 0.35,
-	gunSkills = false,
-	gunBack = true,
-	escape = false,
-	escapeHp = 25,
-	escapeUp = 250,
-	killNote = true,
-	teamCheck = true,
-	wallCheck = false,
-	skipFriends = false,
-	lockKey = "T",
-	aimbot = false,
-	aimTrigger = "Hold right mouse",
-	aimKey = "Q",
-	smooth = 0.25,
-	silent = false,
-	chance = 100,
-	aura = false,
-	auraAll = true,
-	auraRange = 55,
-	auraRate = 0.12,
-	auraWeapon = "Keep current",
-	buso = false,
-	ken = false,
-	race = false,
-	stick = false,
-	stickUp = 6,
-	stickBack = 3,
-	stickRange = 150,
-	spectate = false,
-	infJump = false,
-	antiAfk = true,
-	esp = false,
-	box = true,
-	name = true,
-	info = true,
-	bar = true,
-	hpText = true,
-	chams = false,
-	tracer = false,
-	tracerFrom = "Bottom",
-	espDist = 3000,
-	espColor = "White",
-	teamColor = false,
-	showFov = true,
-	tgtLine = true,
-	lineFrom = "Character",
-	tgtMark = true,
-	tgtColor = "Red",
+local function fn(arg, arg2)
+	if nightDungeonConfig[arg] == nil then
+		nightDungeonConfig[arg] = arg2
+	end
+end
+
+fn("Difficulty", "Hard")
+fn("Weapon", "Melee")
+fn("HoverHeight", 250)
+fn("KillHeight", 82)
+fn("BossKillHeight", 88)
+fn("TweenSpeed", 180)
+fn("ArriveDistance", 14)
+fn("JumpThreshold", 400)
+fn("RescueSpeed", 6000)
+fn("HitRadius", 100)
+fn("AttackDelay", 0.07)
+fn("BuffDelay", 0.45)
+fn("FloorHeight", 90)
+fn("DoorTouch", 30)
+fn("PropMaxHP", 5000)
+fn("PropRadius", 700)
+fn("StallTime", 5)
+fn("EnergyCost", 10)
+fn("EnergyMax", 50)
+fn("OutOnEmpty", true)
+fn("OutDelay", 10)
+fn("Kaitun", true)
+local nightDungeonAll = _G.NightDungeonAll
+
+if type(nightDungeonAll) ~= "table" then
+	nightDungeonAll = {}
+	_G.NightDungeonAll = nightDungeonAll
+end
+
+local n = 0
+
+for i = #nightDungeonAll, 1, -1 do
+	local v = nightDungeonAll[i]
+	nightDungeonAll[i] = nil
+
+	if type(v) == "table" and type(v.Stop) == "function" then
+		n += 1
+		pcall(v.Stop)
+	end
+end
+
+if n > 0 then
+	print("[NightDungeon] da dep " .. n .. " ban cu")
+end
+
+local flag = false
+local nightDungeon = {}
+_G.NightDungeon = nightDungeon
+nightDungeonAll[#nightDungeonAll + 1] = nightDungeon
+local flag2 = nightDungeonConfig.Kaitun ~= false
+
+local state = {
+	Farm = flag2,
+	AutoStart = flag2,
+	AutoBuff = flag2,
+	FastAttack = flag2,
+	Safe = false,
+	Target = "-",
+	Dist = -1,
+	Stage = "Idle",
+	Floor = 0,
+	Here = -1,
+	MaxFloor = 0,
+	Dead = 0,
+	Total = 0,
+	TimeLeft = 0,
+	Runs = 0,
+	Kills = 0,
+	Energy = 0,
+	EnergyMax = 0,
+	EnergyNeed = 0,
+	Buffs = {},
+	Started = os.clock(),
 }
 
-local tbl5 = {
-	White = Color3.fromRGB(240, 240, 240),
-	Red = Color3.fromRGB(255, 70, 70),
-	Green = Color3.fromRGB(80, 230, 120),
-	Blue = Color3.fromRGB(80, 160, 255),
-	Yellow = Color3.fromRGB(255, 215, 70),
-	Purple = Color3.fromRGB(180, 110, 255),
-	Cyan = Color3.fromRGB(70, 220, 230),
+local tbl = {
+	"AttackSpeedMultiplier",
+	"Overflow",
+	"Lifesteal",
+	"AllCooldown",
+	"Unbreakable",
+	"Fortress",
+	"Shadow",
+	"FruitTAPCooldown",
+	"Armor",
+	"Defense",
+	"Skyjumps",
+	"RageGain",
+	"RaceEnergy",
+	"Sniper",
+	"Size",
 }
 
-local tbl6 = { "White", "Red", "Green", "Blue", "Yellow", "Purple", "Cyan" }
-Aura = { swings = 0, note = "Off" }
-Move = { on = false, clip = {} }
-Gun = { shots = 0, note = "Off", aimUntil = 0 }
-Fly = { note = "Off", slowUntil = 0, rubber = 0, angle = 0, step = 0 }
-Hit = { orig = {} }
-Esp = { pool = {} }
-UI = {}
-
-bind = function(arg)
-	tbl2[#tbl2 + 1] = arg
-	return arg
-end
-
-spin = function(arg, arg2, arg3)
-	task.spawn(function()
-		local v5 = nil
-
-		while flag do
-			local ok, result, result2 = pcall(arg3)
-			local flag5 = not ok and result or result == false and result2 or nil
-
-			if flag5 and flag5 ~= v5 then
-				local v6 = warn
-				local str = ("! %*: %*"):format(arg, flag5)
-				v6(str)
-			end
-
-			task.wait(type(arg2) == "function" and arg2() or arg2)
-			v5 = flag5
-		end
-	end)
-end
-
-alive = function(arg)
-	arg = arg and arg.Character
-	local humanoid = arg and arg:FindFirstChildOfClass("Humanoid")
-	local humanoidRootPart = arg and arg:FindFirstChild("HumanoidRootPart")
-	if not humanoid or not humanoidRootPart or humanoid.Health <= 0 then
-		return
-	end
-	return arg, humanoid, humanoidRootPart
-end
-
-friendly = function(arg)
-	if tbl4.teamCheck and localPlayer.Team and arg.Team == localPlayer.Team and localPlayer.Team.Name == "Marines" then
-		return true
-	end
-	return tbl4.skipFriends and tbl3[arg.UserId] == true
-end
-
-foe = function(arg)
-	if arg == localPlayer or friendly(arg) then
-		return
-	end
-	return alive(arg)
-end
-
-befriend = function(arg)
-	if arg == localPlayer then
-		return
-	end
-
-	task.spawn(function()
-		local ok, result = pcall(localPlayer.IsFriendsWith, localPlayer, arg.UserId)
-		tbl3[arg.UserId] = ok and result or nil
-	end)
-end
-
-keyName = function(arg)
-	return typeof(arg) == "EnumItem" and arg.Name or tostring(arg)
-end
-
-keyDown = function(arg)
-	local ok, result = pcall(function()
-		return Enum.KeyCode[arg]
-	end)
-
-	return ok and UserInputService:IsKeyDown(result)
-end
-
-local raycastParams = RaycastParams.new()
-raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-
-seen = function(arg, arg2)
-	raycastParams.FilterDescendantsInstances = { localPlayer.Character, arg }
-	local position3 = currentCamera.CFrame.Position
-	return v:Raycast(position3, arg2.Position - position3, raycastParams) == nil
-end
-
-pick = function()
-	local v5, v6, v7 = alive(localPlayer)
-	if not v7 then
-		return
-	end
-
-	if v4 then
-		local v8, v9, v10 = foe(v4)
-		if v8 then
-			return v4, v8:FindFirstChild(tbl4.part) or v10
-		end
-		v4 = nil
-	end
-
-	local mouseLocation = UserInputService:GetMouseLocation()
-	local v8 = nil
-	local v9 = nil
-	local v10 = nil
-	local v11 = nil
-
-	for _, player in ipairs(Players:GetPlayers()) do
-		local v12, v13, v14 = foe(player)
-
-		if v12 then
-			local v15 = v12:FindFirstChild(tbl4.part) or v14
-			local magnitude = (v14.Position - v7.Position).Magnitude
-			local v16, magnitude2 = currentCamera:WorldToViewportPoint(v15.Position)
-			magnitude2 = magnitude2 and (Vector2.new(v16.X, v16.Y) - mouseLocation).Magnitude or math.huge
-			local flag5 = magnitude <= tbl4.maxDist and (not tbl4.useFov or magnitude2 <= tbl4.fov or tbl4.fly and player == v2)
-			local health
-
-			if tbl4.pickMode == "Smart" then
-				health = smart(magnitude, v13, magnitude2)
-			else
-				health = tbl4.pickMode == "Nearest cursor" and magnitude2 or tbl4.pickMode == "Lowest health" and v13.Health or magnitude
-				flag5 = flag5 and health < math.huge
-			end
-
-			if flag5 and (not tbl4.wallCheck or seen(v12, v15)) then
-				if player == v2 then
-					v8 = health
-				end
-
-				if not v9 or health < v9 then
-					v9 = health
-					v10 = player
-					v11 = v15
-				end
-			end
-		end
-	end
-
-	if tbl4.pickMode == "Smart" and v8 and v10 ~= v2 and v9 > v8 - 0.08 then
-		local v12, v13, v14 = alive(v2)
-		return v2, v12:FindFirstChild(tbl4.part) or v14
-	end
-	return v10, v11
-end
-
-smart = function(arg, arg2, arg3)
-	local n2 = tbl4.smartHp / 100 * 0.85
-	local n3 = 0.85 - n2
-	local n4 = arg2.MaxHealth > 0 and arg2.Health / arg2.MaxHealth or 1
-	local n5 = arg3 == math.huge and 1
-
-	if not n5 then
-		n5 = math.clamp(arg3 / (tbl4.useFov and tbl4.fov or 800), 0, 1)
-	end
-
-	local n6 = n3 * math.clamp(arg / tbl4.maxDist, 0, 1) + n2 * n4 + 0.15 * n5
-
-	if n4 <= 0.25 then
-		n6 -= 0.2
-	end
-
-	return n6
-end
-
-triggered = function()
-	if tbl4.aimTrigger == "Always" then
-		return true
-	end
-
-	if tbl4.aimTrigger == "Hold key" then
-		return keyDown(tbl4.aimKey)
-	end
-	return UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
-end
-
-dot = function(arg, arg2)
-	return arg.X * arg2.X + arg.Y * arg2.Y + arg.Z * arg2.Z
-end
-
-bend = function(arg)
-	local kind = typeof(arg)
-
-	if kind == "Vector3" then
-		if (arg - position2).Magnitude <= 12 then
-			return n
-		end
-
-		if math.abs(arg.Magnitude - 1) < 0.01 and dot(arg, unit2) > 0.98 then
-			return unit
-		end
-	elseif kind == "CFrame" then
-		local position3 = arg.Position
-		if (position3 - position2).Magnitude <= 12 then
-			return CFrame.new(n)
-		end
-
-		if (position3 - position).Magnitude < 15 and dot(arg.LookVector, unit2) > 0.98 then
-			return CFrame.lookAt(position3, n)
-		end
-	end
-
-	return arg
-end
-
-hook = function()
-	if flag3 then
-		return true
-	end
-
-	if type(hookmetamethod) ~= "function" or type(getnamecallmethod) ~= "function" then
-		return false, "No hookmetamethod"
-	end
-
-	local fn = type(newcclosure) == "function" and newcclosure or function(arg)
-		return arg
-	end
-
-	local v5 = nil
-	local v6 = nil
-
-	local function fn2(d, ...)
-		if flag2 and not checkcaller() then
-		  local j = getnamecallmethod();
-
-		  if(j == "FireServer" or j == "InvokeServer") and math.random(100) <= tbl4.chance then
-		    local u = table.pack(...);
-
-		    for Z = 1, u.n, 1 do
-		      u[Z] = bend(u[Z]);
-		    end;
-
-		    if setnamecallmethod then
-		      setnamecallmethod(j);
-		    end;
-
-		    return v5(d, table.unpack(u, 1, u.n));
-		  end;
-		end;
-
-		return v5(d, ...);
-	end
-
-	v5 = hookmetamethod(game, "__namecall", fn(fn2))
-
-	v6 = hookmetamethod(game, "__index", fn(function(d, j)
-		if flag2 and rawequal(d, mouse) and not checkcaller() then
-		  if j == "Hit" then
-		    return CFrame.new(n);
-		  end;
-
-		  if j == "Target" then
-		    return v3;
-		  end;
-		end;
-
-		if Move.on and(rawequal(d, Move.hum)) and not checkcaller() then
-		  local u = Move.real[j];
-		  if u ~= nil then
-		    return u;
-		  end;
-		end;
-
-		return v6(d, j);
-	end))
-
-	local v7 = nil
-
-	local function fn3(d, j, u)
-		if Move.watch and not checkcaller() then
-		  if rawequal(d, Move.hum) then
-		    local Z = Move.forced[j];
-		    if Z ~= nil then
-		      Move.real[j] = u;
-		      return v7(d, j, Z);
-		    end;
-
-		    if tbl4.noStun and(stunWrite(j, u)) then
-		      return;
-		    end;
-		  elseif tbl4.noStun and(rawequal(d, Move.root)) and j == "Anchored" and u == true then
-		    return;
-		  end;
-		end;
-
-		return v7(d, j, u);
-	end
-
-	v7 = hookmetamethod(game, "__newindex", fn(fn3))
-	flag3 = true
-	return true
-end
-
-jumpHeight = function(arg)
-	return arg * arg / 2 * v.Gravity
-end
-
-local tbl7 = {
-	Enum.HumanoidStateType.Ragdoll,
-	Enum.HumanoidStateType.FallingDown,
-	Enum.HumanoidStateType.PlatformStanding,
+local tbl2 = {
+	Melee = { "Melee", "MeleeCooldown", "MeleeZCooldown", "MeleeXCooldown", "MeleeCCooldown" },
+	Sword = { "Sword", "SwordCooldown", "SwordZCooldown", "SwordXCooldown" },
+	["Blox Fruit"] = {
+		"Fruit",
+		"FruitCooldown",
+		"FruitZCooldown",
+		"FruitXCooldown",
+		"FruitVCooldown",
+		"FruitCCooldown",
+	},
+	Gun = { "Gun", "GunCooldown", "GunZCooldown", "GunXCooldown" },
 }
 
-stunWrite = function(arg, arg2)
-	if arg == "WalkSpeed" or arg == "JumpPower" or arg == "JumpHeight" then
-		return type(arg2) == "number" and arg2 <= 1
+local net = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
+local reRegisterAttack = net:WaitForChild("RE/RegisterAttack")
+local reRegisterHit = net:WaitForChild("RE/RegisterHit")
+local commF = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_")
+local dungeonShared = ReplicatedStorage:WaitForChild("DungeonShared")
+local log = {}
+
+local function fn2(arg)
+	log[#log + 1] = arg
+
+	if #log > 40 then
+		table.remove(log, 1)
 	end
 
-	if arg == "PlatformStand" then
-		return arg2 == true
-	end
-
-	if arg == "AutoRotate" then
-		return arg2 == false
-	end
-	return false
+	print("[NightDungeon] " .. arg)
 end
 
-unstun = function(arg, stunHum, arg2)
-	local flag5 = tbl4.noStun and stunHum ~= nil
-
-	if flag5 and (not Move.stunOff or stunHum ~= Move.stunHum) then
-		Move.stunSaved = {}
-
-		for _, v5 in ipairs(tbl7) do
-			Move.stunSaved[v5] = stunHum:GetStateEnabled(v5)
-			stunHum:SetStateEnabled(v5, false)
-		end
-
-		local v5 = Move
-		Move.stunOff = true
-		v5.stunHum = stunHum
-	elseif not flag5 and Move.stunOff then
-		local stunHum2 = Move.stunHum
-
-		if stunHum2 and stunHum2.Parent then
-			local v5 = pairs
-			local stunSaved = Move.stunSaved or {}
-
-			for k, v6 in v5(stunSaved) do
-				stunHum2:SetStateEnabled(k, v6)
-			end
-		end
-
-		local v5 = Move
-		Move.stunOff = false
-		v5.stunHum = nil
-	end
-
-	if not flag5 then
-		return
-	end
-
-	if stunHum.PlatformStand then
-		stunHum.PlatformStand = false
-	end
-
-	if not stunHum.AutoRotate then
-		stunHum.AutoRotate = true
-	end
-
-	if arg2.Anchored then
-		arg2.Anchored = false
-	end
-
-	local stun = arg:FindFirstChild("Stun")
-
-	if stun and stun:IsA("ValueBase") and type(stun.Value) == "number" and stun.Value ~= 0 then
-		stun.Value = 0
-	end
-
-	local busy = arg:FindFirstChild("Busy")
-
-	if busy and busy:IsA("BoolValue") and busy.Value then
-		busy.Value = false
+local function fn3(stage)
+	if state.Stage ~= stage then
+		state.Stage = stage
 	end
 end
 
-movement = function()
-	local v5, v6, v7 = alive(localPlayer)
-	Move.root = v7
-	pcall(unstun, v5, v6, v7)
-	Move.watch = tbl4.noStun or Move.on
-
-	if v6 ~= Move.hum then
-		Move.hum = v6
-		local v8 = Move
-		Move.real = {}
-		v8.forced = {}
-	end
-
-	Move.real = Move.real or {}
-	Move.forced = Move.forced or {}
-	if not v6 then
-		Move.on = false
-		return
-	end
-	local forced = {}
-
-	if tbl4.speed then
-		forced.WalkSpeed = tbl4.speedValue
-	end
-
-	if tbl4.jumpOn then
-		forced.JumpPower = tbl4.jumpValue
-		forced.JumpHeight = jumpHeight(tbl4.jumpValue)
-	end
-
-	for k, v8 in pairs(Move.real) do
-		if forced[k] == nil then
-			v6[k] = v8
-			Move.real[k] = nil
-		end
-	end
-
-	for k, v8 in pairs(forced) do
-		if Move.real[k] == nil then
-			Move.real[k] = v6[k]
-		end
-
-		if v6[k] ~= v8 then
-			v6[k] = v8
-		end
-	end
-
-	Move.forced = forced
-	Move.on = next(forced) ~= nil
-	Move.watch = tbl4.noStun or Move.on
-end
-
-noclip = function()
+local function fn4()
 	local character = localPlayer.Character
-	if not character then
-		return
+	if character and character.Parent and character:FindFirstChild("HumanoidRootPart") then
+		return character
 	end
-	local noclip_ = tbl4.noclip or tbl4.fly and tbl4.flyNoclip and v2 ~= nil
-
-	for _, descendant in ipairs(character:GetDescendants()) do
-		if descendant:IsA("BasePart") then
-			if noclip_ then
-				if Move.clip[descendant] == nil then
-					Move.clip[descendant] = descendant.CanCollide
-				end
-
-				descendant.CanCollide = false
-			elseif Move.clip[descendant] ~= nil then
-				descendant.CanCollide = Move.clip[descendant]
-				Move.clip[descendant] = nil
-			end
-		end
-	end
-
-	if not noclip_ then
-		table.clear(Move.clip)
-	end
+	return nil
 end
 
-escape = function()
-	local v5, v6, v7 = alive(localPlayer)
-	if not tbl4.escape or not v6 then
-		return
-	end
-	local n2 = v6.MaxHealth > 0 and v6.Health / v6.MaxHealth * 100 or 100
-	if tbl4.escapeHp < n2 then
-		Move.fled = false
-		return
-	end
-
-	if Move.fled then
-		return
-	end
-	Move.fled = true
-	v7.CFrame = v7.CFrame + Vector3.new(0, tbl4.escapeUp, 0)
-	v7.AssemblyLinearVelocity = Vector3.zero
-
-	if UI.note then
-		local escapeUp = tbl4.escapeUp
-		UI.note(("HP %*%%, escaped %* studs up"):format(math.floor(n2), escapeUp), "warn")
-	end
+local function fn5()
+	local v = fn4()
+	return v and v:FindFirstChild("HumanoidRootPart") or nil
 end
 
-findGun = function(arg)
-	local flag5 = tbl4.gunPick == "Any gun"
+local function fn6()
+	local v = fn4()
+	return v and v:FindFirstChildOfClass("Humanoid") or nil
+end
 
-	local function fn(arg2)
-		if not arg2:IsA("Tool") then
-			return false
-		end
+local function fn7()
+	return localPlayer:FindFirstChildOfClass("Backpack")
+end
 
-		if flag5 then
-			return arg2.ToolTip == "Gun"
-		end
-		return string.find(string.lower(string.gsub(arg2.Name, "%s", "")), "dragonstorm", 1, true) ~= nil
-	end
+local function fn8()
+	return Workspace:GetAttribute("IsDungeonHub") == true
+end
 
+local function fn9()
+	return Workspace:GetAttribute("IsDungeonInstance") == true or localPlayer:GetAttribute("ExplorerGUID") ~= nil
+end
+
+local v = nil
+local n2 = 0
+
+local tbl3 = {
+	Map = true,
+	Camera = true,
+	Terrain = true,
+	Enemies = true,
+	Characters = true,
+	Debris = true,
+	Effect = true,
+	Sounds = true,
+	Particles = true,
+	Projectiles = true,
+}
+
+local fn10 = nil
+
+fn10 = function(arg, arg2)
 	for _, child in ipairs(arg:GetChildren()) do
-		if fn(child) then
-			return child, true
-		end
-	end
-
-	for _, child in ipairs(localPlayer.Backpack:GetChildren()) do
-		if fn(child) then
-			return child, false
-		end
-	end
-end
-
-press = function(arg)
-	local ok, result = pcall(game.GetService, game, "VirtualInputManager")
-	if not ok or not result then
-		return
-	end
-
-	pcall(function()
-		result:SendKeyEvent(true, Enum.KeyCode[arg], false, game)
-		task.wait(0.06)
-		result:SendKeyEvent(false, Enum.KeyCode[arg], false, game)
-	end)
-end
-
-shoot = function()
-	local v5, v6, v7 = alive(localPlayer)
-	if not v5 then
-		return false, "No character"
-	end
-	local v8, v9, v10 = alive(v2)
-	if not v10 then
-		return false, "No target"
-	end
-
-	if tbl4.gunRange < (v10.Position - v7.Position).Magnitude then
-		return false, "Target out of range"
-	end
-	local v11, v12 = findGun(v5)
-	if not v11 then
-		return false, tbl4.gunPick == "Any gun" and "No gun in backpack" or "No Dragonstorm in backpack"
-	end
-	local v13, v14 = hook()
-	if not v13 then
-		return false, v14
-	end
-	local tool = v5:FindFirstChildOfClass("Tool")
-
-	if not v12 then
-		v6:EquipTool(v11)
-		task.wait(0.12)
-	end
-
-	Gun.aimUntil = os.clock() + (tbl4.gunSkills and 0.9 or 0.4)
-	v11:Activate()
-
-	if tbl4.gunSkills then
-		press("Z")
-		press("X")
-	end
-
-	local v15 = Gun
-	v15.shots = v15.shots + 1
-
-	if tbl4.gunBack and tool and tool ~= v11 then
-		task.delay(0.3, function()
-			if tool.Parent == localPlayer.Backpack and alive(localPlayer) then
-				v6:EquipTool(tool)
-			end
-		end)
-	end
-
-	return true, (("Shots %*"):format(Gun.shots))
-end
-
-net = function()
-	local modules = ReplicatedStorage:FindFirstChild("Modules")
-	modules = modules and modules:FindFirstChild("Net")
-	return modules and modules:FindFirstChild("RE/RegisterAttack"), modules and modules:FindFirstChild("RE/RegisterHit")
-end
-
-remote = function(arg)
-	local remotes = ReplicatedStorage:FindFirstChild("Remotes")
-	return remotes and remotes:FindFirstChild(arg)
-end
-
-local tbl8 = { Melee = true, Sword = true }
-
-arm = function(arg, arg2)
-	local tool = arg:FindFirstChildOfClass("Tool")
-
-	if tbl4.auraWeapon == "Keep current" then
-		if tool and tbl8[tool.ToolTip] then
-			return tool
-		end
-		return nil, "Hold a melee or sword"
-	end
-
-	if tool and tool.ToolTip == tbl4.auraWeapon then
-		return tool
-	end
-
-	for _, child in ipairs(localPlayer.Backpack:GetChildren()) do
-		if child:IsA("Tool") and child.ToolTip == tbl4.auraWeapon then
-			arg2:EquipTool(child)
+		if child:GetAttribute("CurrentExploredLevel") ~= nil then
 			return child
 		end
 	end
 
-	return nil, (("No %* in backpack"):format(tbl4.auraWeapon))
-end
-
-swing = function()
-	local v5, v6, v7 = alive(localPlayer)
-	if not v5 then
-		return false, "No character"
+	if arg2 <= 0 then
+		return nil
 	end
-	local v8, v9 = net()
-	if not v8 or not v9 then
-		return false, "No combat api"
-	end
-	local tbl9 = {}
 
-	for _, player in ipairs(Players:GetPlayers()) do
-		local v10, v11, v12 = foe(player)
-
-		if v10 and (tbl4.auraAll or player == v2) and (v12.Position - v7.Position).Magnitude <= tbl4.auraRange then
-			local n2 = #tbl9 + 1
-			local tbl10 = {}
-			local head = v10:FindFirstChild("Head") or v12
-			tbl10[1] = v10
-			tbl10[2] = head
-			tbl9[n2] = tbl10
+	for _, child in ipairs(arg:GetChildren()) do
+		if (child:IsA("Folder") or child:IsA("Configuration")) and not tbl3[child.Name] then
+			local v2 = fn10(child, arg2 - 1)
+			if v2 then
+				return v2
+			end
 		end
 	end
 
-	if #tbl9 == 0 then
-		return false, "No one in range"
-	end
-	local v10, v11 = arm(v5, v6)
-	if v11 then
-		return false, v11
-	end
-	v8:FireServer(0)
-	v9:FireServer(tbl9[1][2], tbl9)
-	local v12 = Aura
-	v12.swings = v12.swings + 1
-	return true, (("Hit %*"):format(#tbl9))
+	return nil
 end
 
-buso = function()
-	local v5 = alive(localPlayer)
-	if not v5 or v5:FindFirstChild("HasBuso") then
+local function fn11()
+	if v and v.Parent and v:GetAttribute("CurrentExploredLevel") ~= nil then
+		return v
+	end
+	v = nil
+	if not fn9() then
+		return nil
+	end
+
+	if os.clock() - n2 < 3 then
+		return nil
+	end
+	n2 = os.clock()
+	v = fn10(Workspace, 2) or fn10(ReplicatedStorage, 2)
+	return v
+end
+
+local function fn12()
+	local map = Workspace:FindFirstChild("Map")
+	return map and map:FindFirstChild("Dungeon") or nil
+end
+
+local function fn13(arg)
+	local v2 = fn12()
+	if not v2 or not arg then
+		return nil
+	end
+	return v2:FindFirstChild(tostring(arg))
+end
+
+local function fn14(arg)
+	if not arg then
+		return nil
+	end
+	local attribute = arg:GetAttribute("BoundingCF")
+	attribute = attribute and attribute.Position
+
+	if not attribute then
+		local ok
+
+		ok, attribute = pcall(function()
+			return arg:GetPivot().Position
+		end)
+
+		if not ok then
+			return nil
+		end
+	end
+
+	return CFrame.new(attribute.X, attribute.Y + nightDungeonConfig.FloorHeight, attribute.Z)
+end
+
+local function fn15()
+	local v2 = fn12()
+	if not v2 then
+		return nil
+	end
+	local v3 = nil
+
+	for _, child in ipairs(v2:GetChildren()) do
+		local num = tonumber(child.Name)
+
+		if num and (not v3 or num > v3) then
+			v3 = num
+		end
+	end
+
+	return v3
+end
+
+local function fn16(arg, arg2)
+	local attribute = arg:GetAttribute("BoundingCF")
+	local attribute2 = arg:GetAttribute("BoundingSize")
+	if not attribute or not attribute2 then
+		return false
+	end
+	local v2 = attribute:PointToObjectSpace(arg2)
+	local n3 = attribute2.X * 0.5
+	local flag3 = math.abs(v2.X) <= n3
+
+	if flag3 then
+		local n4 = attribute2.Y * 0.5
+		flag3 = math.abs(v2.Y) <= n4
+	end
+
+	if flag3 then
+		local n4 = attribute2.Z * 0.5
+		flag3 = math.abs(v2.Z) <= n4
+	end
+
+	return flag3
+end
+
+local function fn17()
+	local v2 = fn5()
+	local v3 = fn12()
+	if not v2 or not v3 then
+		return nil
+	end
+	local position = v2.Position
+	local v4, v5, v6 = ipairs(v3:GetChildren())
+	local v7 = nil
+	local v8 = nil
+
+	for _, v9 in v4, v5, v6 do
+		local num = tonumber(v9.Name)
+
+		if num then
+			if fn16(v9, position) then
+				return num
+			end
+			local attribute = v9:GetAttribute("BoundingCF")
+
+			if attribute then
+				local magnitude = (attribute.Position - position).Magnitude
+
+				if not v7 or magnitude < v7 then
+					v7 = magnitude
+					v8 = num
+				end
+			end
+		end
+	end
+
+	return v8
+end
+
+local function fn18(arg, arg2)
+	local v2 = fn13(arg)
+	v2 = v2 and v2:FindFirstChild(arg2)
+	return v2 and v2:FindFirstChild("Root") or nil
+end
+
+local function fn19(arg)
+	return arg ~= nil and arg.Parent ~= nil and arg:FindFirstChild("TouchInterest") ~= nil
+end
+
+local n3 = 0
+
+local function fn20(arg)
+	if os.clock() - n3 < 0.6 then
 		return
 	end
-	local CommF_ = remote("CommF_")
-	if not CommF_ then
-		return false, "No CommF_"
-	end
-	CommF_:InvokeServer("Buso")
-end
-
-ken = function()
-	if not alive(localPlayer) then
+	n3 = os.clock()
+	local v2 = fn5()
+	if not v2 or not arg or type(firetouchinterest) ~= "function" then
 		return
 	end
-	local CommE = remote("CommE")
-	if not CommE then
-		return false, "No CommE"
-	end
-	CommE:FireServer("Ken", true)
+	pcall(firetouchinterest, v2, arg, 0)
+	task.wait()
+	pcall(firetouchinterest, v2, arg, 1)
 end
 
-race = function()
-	if not alive(localPlayer) then
-		return false, "No character"
+local function fn21()
+	local ok, result = pcall(function()
+		return require(ReplicatedStorage.DungeonClient.ReplicatedPlayerData).get()
+	end)
+
+	if ok and type(result) == "table" then
+		return result
 	end
-	local CommE = remote("CommE")
-	if not CommE then
-		return false, "No CommE"
-	end
-	CommE:FireServer("ActivateAbility")
-	return true
+	return nil
 end
 
-local tbl9 = {
-	BodyVelocity = true,
-	BodyPosition = true,
-	BodyGyro = true,
-	BodyForce = true,
-	BodyAngularVelocity = true,
-	BodyThrust = true,
-	RocketPropulsion = true,
-	LinearVelocity = true,
-	AlignPosition = true,
-	AlignOrientation = true,
-	VectorForce = true,
-	AngularVelocity = true,
-}
+local function fn22()
+	state.EnergyMax = tonumber(nightDungeonConfig.EnergyMax) or 50
+	local v2 = fn21()
+	if not v2 then
+		return 0
+	end
+	return math.floor(tonumber(v2.CurrentEnergy) or 0)
+end
 
-stunMover = function(arg, arg2)
-	if not tbl9[arg.ClassName] or arg:GetAttribute("NightPvp") then
+local flag3 = false
+
+local function fn23()
+	for _, v2 in ipairs({
+		function()
+			game:Shutdown()
+		end,
+		function()
+			localPlayer:Kick("Night Hub: het energy")
+		end,
+		function()
+			game:GetService("TeleportService"):Teleport(0, localPlayer)
+		end,
+	}) do
+		if pcall(v2) then
+			return true
+		end
+	end
+
+	return false
+end
+
+local function fn24(arg, arg2)
+	if flag3 then
+		return
+	end
+	flag3 = true
+	fn2("KHONG DU ENERGY (" .. arg .. "/" .. arg2 .. ") - out game sau " .. nightDungeonConfig.OutDelay .. "s")
+
+	task.spawn(function()
+		for i = nightDungeonConfig.OutDelay, 1, -1 do
+			fn3("HET ENERGY " .. arg .. "/" .. arg2 .. " - out sau " .. i .. "s")
+			task.wait(1)
+		end
+
+		fn23()
+	end)
+end
+
+local cframe = nil
+local connection = nil
+local connection2 = nil
+local tween = nil
+
+local function fn25()
+	if tween then
+		pcall(function()
+			tween:Cancel()
+		end)
+
+		tween = nil
+	end
+end
+
+local tbl4 = {}
+local v2 = nil
+local n4 = 0
+
+local function fn26(arg)
+	if arg then
+		if connection2 then
+			return
+		end
+		tbl4 = {}
+		v2 = nil
+
+		connection2 = RunService.Stepped:Connect(function()
+			local v3 = fn4()
+
+			if not v3 then
+				tbl4 = {}
+				v2 = nil
+				return
+			end
+
+			if v3 ~= v2 or os.clock() - n4 > 3 then
+				v2 = v3
+				n4 = os.clock()
+				local tbl5 = {}
+
+				for _, descendant in ipairs(v3:GetDescendants()) do
+					if descendant:IsA("BasePart") then
+						tbl5[#tbl5 + 1] = descendant
+					end
+				end
+
+				tbl4 = tbl5
+			end
+
+			for _, v4 in ipairs(tbl4) do
+				if v4.CanCollide then
+					v4.CanCollide = false
+				end
+			end
+		end)
+	elseif connection2 then
+		connection2:Disconnect()
+		connection2 = nil
+		tbl4 = {}
+		v2 = nil
+	end
+end
+
+local function fn27(arg)
+	local v3 = fn4()
+	if not v3 then
+		return
+	end
+	local head = v3:FindFirstChild("Head") or v3:FindFirstChild("HumanoidRootPart")
+	if not head then
+		return
+	end
+	local nightVelocity = head:FindFirstChild("NightVelocity")
+
+	if arg then
+		if not nightVelocity then
+			local bodyVelocity = Instance.new("BodyVelocity")
+			bodyVelocity.Name = "NightVelocity"
+			bodyVelocity.MaxForce = Vector3.new(40000, 40000, 40000)
+			bodyVelocity.Velocity = Vector3.zero
+			bodyVelocity.P = 1500
+			bodyVelocity.Parent = head
+		end
+	elseif nightVelocity then
+		nightVelocity:Destroy()
+	end
+end
+
+local v3 = nil
+local n5 = 0
+
+local function fn28(arg)
+	local v4 = fn5()
+	if not v4 then
+		return false
+	end
+	local v5 = fn6()
+	if not v5 or v5.Health <= 0 then
+		fn25()
 		return false
 	end
 
-	if tbl4.moverFilter == "Remove all" or not arg2 then
+	if v5.Sit then
+		v5.Sit = false
+	end
+
+	local magnitude = (arg.Position - v4.Position).Magnitude
+	if magnitude <= nightDungeonConfig.ArriveDistance then
+		fn25()
 		return true
 	end
-	local lookVector = arg2.CFrame.LookVector
-	local velocity = arg:IsA("BodyVelocity") and arg.Velocity or arg:IsA("LinearVelocity") and arg.VectorVelocity or nil
 
-	if velocity then
-		if velocity.Magnitude < 1 then
-			return true
-		end
-		return velocity.Unit:Dot(lookVector) < 0.3
+	if tween and v3 and (v3.Position - arg.Position).Magnitude < 6 and tween.PlaybackState == Enum.PlaybackState.Playing then
+		return false
+	end
+	local tweenSpeed = nightDungeonConfig.TweenSpeed
+
+	if os.clock() < n5 then
+		tweenSpeed = nightDungeonConfig.RescueSpeed
 	end
 
-	local position3 = arg:IsA("BodyPosition") and arg.Position or arg:IsA("AlignPosition") and arg.Position or nil
-	if position3 then
-		local n2 = position3 - arg2.Position
-		return n2.Magnitude < 4 or n2.Unit:Dot(lookVector) < 0.3
-	end
-	return true
+	fn25()
+	v3 = arg
+	tween = TweenService:Create(v4, TweenInfo.new(math.max(magnitude / tweenSpeed, 0.05), Enum.EasingStyle.Linear), { CFrame = arg })
+	tween:Play()
+	return false
 end
 
-watchMovers = function(arg)
-	if Move.moverBond then
-		Move.moverBond:Disconnect()
-	end
+local v4 = nil
+local n6 = 0
+local physics = Enum.HumanoidStateType.Physics
 
-	if not arg then
-		return
-	end
-
-	Move.moverBond = bind(arg.DescendantAdded:Connect(function(descendant)
-		if not tbl4.noStun or not tbl9[descendant.ClassName] then
+local function fn29(arg)
+	if arg then
+		if connection then
 			return
 		end
+		v4 = nil
+		n6 = 0
 
-		task.defer(function()
-			if descendant.Parent and stunMover(descendant, arg:FindFirstChild("HumanoidRootPart")) then
-				descendant:Destroy()
+		connection = RunService.Heartbeat:Connect(function()
+			if not cframe then
+				return
 			end
+			local v5 = fn5()
+			if not v5 then
+				v4 = nil
+				return
+			end
+			local v6 = fn6()
+			if not v6 or v6.Health <= 0 then
+				v4 = nil
+				return
+			end
+			local position = v5.Position
+
+			if v4 and (position - v4).Magnitude > nightDungeonConfig.JumpThreshold then
+				fn25()
+				cframe = CFrame.new(position.X, position.Y + nightDungeonConfig.HoverHeight, position.Z)
+				v4 = position
+				return
+			end
+
+			v4 = position
+
+			if v5.AssemblyAngularVelocity.Magnitude > 0.05 then
+				v5.AssemblyAngularVelocity = Vector3.zero
+			end
+
+			if v6:GetState() ~= physics then
+				v6:ChangeState(physics)
+			end
+
+			local now = os.clock()
+			if now - n6 < 0.1 then
+				return
+			end
+			n6 = now
+
+			if v6.PlatformStand then
+				v6.PlatformStand = false
+			end
+
+			local head = v5.Parent and (v5.Parent:FindFirstChild("Head") or v5)
+
+			if head and not head:FindFirstChild("NightVelocity") then
+				fn27(true)
+			end
+
+			fn28(cframe)
 		end)
-	end))
+	elseif connection then
+		connection:Disconnect()
+		connection = nil
+		fn25()
+		v4 = nil
+	end
 end
 
-sweepMovers = function()
-	if not tbl4.noStun then
+local flag4 = false
+local position = nil
+local n7 = -100
+
+local function fn30()
+	local v5 = fn5()
+
+	if v5 and v5.Position.Y > n7 then
+		position = v5.Position
+	end
+end
+
+local function fn31()
+	local map = Workspace:FindFirstChild("Map")
+	map = map and map:FindFirstChild("Simulation Hub")
+	map = map and map:FindFirstChild("Pads")
+
+	if map then
+		for _, child in ipairs(map:GetChildren()) do
+			local pad = child:FindFirstChild("Pad")
+			if pad and pad:IsA("BasePart") then
+				return pad.Position
+			end
+		end
+	end
+
+	local spawnLocation = Workspace:FindFirstChild("SpawnLocation", true)
+	if spawnLocation and spawnLocation:IsA("BasePart") then
+		return spawnLocation.Position
+	end
+
+	for _, child in ipairs(Workspace:GetChildren()) do
+		if child:IsA("BasePart") and child.Anchored and child.Position.Y > n7 then
+			return child.Position
+		end
+	end
+
+	return nil
+end
+
+local function fn32(arg)
+	local v5 = fn5()
+	if not v5 then
 		return
 	end
-	local character = localPlayer.Character
-	local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
+
+	if flag4 and cframe and connection and not arg then
+		fn26(true)
+		fn27(true)
+		return
+	end
+
+	fn25()
+	local position2 = v5.Position
+
+	if position2.Y < n7 then
+		position2 = position or fn31() or position2
+	end
+
+	cframe = CFrame.new(position2.X, position2.Y + nightDungeonConfig.HoverHeight, position2.Z)
+	fn27(true)
+	fn29(true)
+	fn26(true)
+	flag4 = true
+	fn3("Treo cao")
+end
+
+local function fn33(arg)
+	local kind = typeof(arg)
+	if kind == "CFrame" then
+		return arg
+	end
+
+	if kind == "Vector3" then
+		return CFrame.new(arg)
+	end
+
+	if kind == "Instance" then
+		if arg:IsA("BasePart") then
+			return arg.CFrame
+		end
+
+		if arg:IsA("Model") then
+			return arg:GetPivot()
+		end
+	end
+
+	return nil
+end
+
+local function fn34(arg)
+	local v5 = fn33(arg)
+	if not v5 then
+		return false
+	end
+	local v6 = fn5()
+	local v7 = fn6()
+	if not v6 or not v7 or v7.Health <= 0 then
+		fn25()
+		return false
+	end
+
+	if v7.Sit then
+		v7.Sit = false
+	end
+
+	fn26(true)
+	fn27(true)
+	flag4 = false
+
+	if not cframe or (cframe.Position - v5.Position).Magnitude > 1 then
+		cframe = v5
+	end
+
+	fn29(true)
+	return (v5.Position - v6.Position).Magnitude <= nightDungeonConfig.ArriveDistance
+end
+
+local tbl5 = { "Melee", "Sword", "Blox Fruit", "Gun" }
+
+local function fn35(arg)
+	local v5 = fn4()
+	local v6 = fn7()
+
+	local function fn36(arg2)
+		for _, v7 in ipairs(arg2) do
+			if v7:IsA("Tool") and v7.ToolTip == arg then
+				return v7.Name
+			end
+		end
+
+		return nil
+	end
+
+	if v6 then
+		local v7 = fn36(v6:GetChildren())
+		if v7 then
+			return v7
+		end
+	end
+
+	if v5 then
+		return (fn36(v5:GetChildren()))
+	end
+	return nil
+end
+
+local function fn36()
+	local v5 = fn35(nightDungeonConfig.Weapon)
+	if v5 then
+		return v5, nightDungeonConfig.Weapon
+	end
+
+	for _, v6 in ipairs(tbl5) do
+		local v7 = fn35(v6)
+		if v7 then
+			return v7, v6
+		end
+	end
+
+	return nil, nil
+end
+
+local function fn37()
+	local v5 = fn4()
+	local humanoid = v5 and v5:FindFirstChildOfClass("Humanoid")
+	if not humanoid then
+		return
+	end
+	local v6 = fn36()
+	if not v6 then
+		return
+	end
+	local tool = v5:FindFirstChildOfClass("Tool")
+	if tool and tool.Name == v6 then
+		return
+	end
+	local v7 = fn7()
+	v7 = v7 and v7:FindFirstChild(v6)
+
+	if v7 then
+		humanoid:EquipTool(v7)
+	end
+end
+
+local n8 = 0
+
+local function fn38()
+	local v5 = fn4()
+	if not v5 or v5:FindFirstChild("HasBuso") then
+		return
+	end
+
+	if os.clock() - n8 < 4 then
+		return
+	end
+	n8 = os.clock()
+
+	pcall(function()
+		commF:InvokeServer("Buso")
+	end)
+end
+
+local tbl6 = {}
+local n9 = 0
+local n10 = 0
+
+local function fn39()
+	n9 = 0
+	n10 = 0
+end
+
+local function fn40()
+	if os.clock() - n9 < 3 and #tbl6 > 0 then
+		return
+	end
+	n9 = os.clock()
+	local tbl7 = {}
+	local tbl8 = {}
+
+	local function fn41(arg)
+		if arg and arg.Parent and not tbl8[arg] then
+			tbl8[arg] = true
+			tbl7[#tbl7 + 1] = arg
+		end
+	end
+
+	fn41(Workspace:FindFirstChild("Enemies"))
+	fn41(Workspace:FindFirstChild("Characters"))
+
+	for _, child in ipairs(Workspace:GetChildren()) do
+		if child:IsA("Folder") or child:IsA("Model") then
+			local name = child.Name
+
+			if name:find("Enem") or name:find("Mob") or name:find("Monster") or name:find("Spawn") then
+				fn41(child)
+			end
+		end
+	end
+
+	for _, v5 in ipairs(tbl6) do
+		fn41(v5)
+	end
+
+	if os.clock() - n10 > 12 then
+		n10 = os.clock()
+		local v5 = fn12()
+
+		if v5 then
+			for _, child in ipairs(v5:GetChildren()) do
+				for _, descendant in ipairs(child:GetDescendants()) do
+					if descendant:IsA("Humanoid") then
+						local parent = descendant.Parent
+
+						if parent and parent:IsA("Model") then
+							fn41(parent.Parent)
+						end
+					end
+				end
+			end
+		end
+	end
+
+	tbl6 = tbl7
+end
+
+local function fn41(arg)
+	if not arg or not arg.Parent then
+		return false
+	end
+
+	if arg:FindFirstChild("VehicleSeat") then
+		return false
+	end
+	local humanoid = arg:FindFirstChild("Humanoid")
+	if not humanoid or humanoid.Health <= 0 then
+		return false
+	end
+	return arg:FindFirstChild("HumanoidRootPart") ~= nil
+end
+
+local tbl7 = {}
+local n11 = 0
+
+local function fn42()
+	if os.clock() - n11 < 0.3 then
+		return tbl7
+	end
+	n11 = os.clock()
+	fn40()
+	local tbl8 = {}
+	local tbl9 = {}
+
+	for _, v5 in ipairs(tbl6) do
+		if v5.Parent then
+			for _, child in ipairs(v5:GetChildren()) do
+				if child:IsA("Model") and not tbl9[child] and fn41(child) and not Players:GetPlayerFromCharacter(child) then
+					tbl9[child] = true
+					tbl8[#tbl8 + 1] = child
+				end
+			end
+		end
+	end
+
+	tbl7 = tbl8
+	return tbl8
+end
+
+local function fn43(arg)
+	if arg:GetAttribute("IsBoss") or arg:GetAttribute("Boss") then
+		return true
+	end
+
+	if arg.Name:find("Boss") or arg.Name:find("Zero") then
+		return true
+	end
+	local humanoid = arg:FindFirstChild("Humanoid")
+	return humanoid ~= nil and humanoid.MaxHealth >= 250000
+end
+
+local function fn44(arg)
+	if arg.Name == "PropHitboxPlaceholder" then
+		return true
+	end
+	local head = arg:FindFirstChild("Head")
+	local humanoidRootPart = arg:FindFirstChild("HumanoidRootPart")
+	if head and humanoidRootPart and head:IsA("BasePart") and humanoidRootPart:IsA("BasePart") and head.Size.Y <= 0.5 and humanoidRootPart.Size.X >= 6 then
+		local humanoid = arg:FindFirstChild("Humanoid")
+		return humanoid ~= nil and humanoid.MaxHealth > 0 and humanoid.MaxHealth <= nightDungeonConfig.PropMaxHP
+	end
+	return false
+end
+
+local v5 = nil
+local n12 = 0
+local n13 = 0
+
+local function fn45(arg)
+	local humanoid = arg and arg.Parent and arg:FindFirstChild("Humanoid")
+	if not humanoid then
+		v5 = nil
+		return false
+	end
+
+	if arg ~= v5 then
+		v5 = arg
+		n12 = humanoid.Health
+		n13 = os.clock()
+		return false
+	end
+
+	if humanoid.Health < n12 - 1 then
+		n12 = humanoid.Health
+		n13 = os.clock()
+		return false
+	end
+
+	local stallTime = nightDungeonConfig.StallTime
+	return os.clock() - n13 > stallTime
+end
+
+local function fn46()
+	local v6 = fn5()
+	if not v6 then
+		return nil
+	end
+	local v7 = fn42()
+	if #v7 == 0 then
+		return nil
+	end
+	local huge = math.huge
+	local v8 = nil
+	local huge2 = math.huge
+	local v9 = nil
+	local huge3 = math.huge
+	local v10 = nil
+
+	for _, v11 in ipairs(v7) do
+		local humanoidRootPart = v11.Parent and v11:FindFirstChild("HumanoidRootPart")
+
+		if humanoidRootPart then
+			local magnitude = (humanoidRootPart.Position - v6.Position).Magnitude
+
+			if fn44(v11) then
+				if magnitude < huge then
+					huge = magnitude
+					v8 = v11
+				end
+			elseif fn43(v11) then
+				if magnitude < huge2 then
+					huge2 = magnitude
+					v9 = v11
+				end
+			elseif magnitude < huge3 then
+				huge3 = magnitude
+				v10 = v11
+			end
+		end
+	end
+
+	local flag5 = v10 and huge3 <= nightDungeonConfig.HitRadius
+	local flag6 = false
+
+	if not flag5 then
+		if v9 then
+			flag6 = true
+			v10 = v9
+		end
+	end
+
+	if v8 and huge <= nightDungeonConfig.PropRadius then
+		if v10 == nil or fn45(v10) then
+			return v8, false, true
+		end
+	else
+		fn45(v10)
+	end
+
+	return v10, flag6, false
+end
+
+local flag5 = false
+local n14 = 0
+
+local function fn47()
+	local v6 = fn4()
+	if not v6 then
+		return
+	end
+	local tool = v6:FindFirstChildOfClass("Tool")
+	if not tool then
+		return
+	end
+	local humanoidRootPart = v6:FindFirstChild("HumanoidRootPart")
 	if not humanoidRootPart then
 		return
 	end
+	local tbl8 = {}
+	local hitRadius = nightDungeonConfig.HitRadius
 
-	for _, descendant in ipairs(character:GetDescendants()) do
-		if tbl9[descendant.ClassName] and stunMover(descendant, humanoidRootPart) then
-			descendant:Destroy()
+	for _, v7 in ipairs(fn42()) do
+		local humanoidRootPart2 = v7.Parent and v7:FindFirstChild("HumanoidRootPart")
+
+		if humanoidRootPart2 and (humanoidRootPart2.Position - humanoidRootPart.Position).Magnitude <= hitRadius then
+			tbl8[#tbl8 + 1] = { v7, humanoidRootPart2 }
 		end
 	end
-end
 
-flyGoal = function(arg, arg2)
-	local vector = Vector3.new(0, tbl4.flyUp, 0)
+	if #tbl8 == 0 then
+		return
+	end
+	local toolTip = tool.ToolTip
 
-	if tbl4.flyMode == "Smart" then
-		local v5, v6 = alive(localPlayer)
-		local v7, v8 = alive(v2)
-		local n2 = v6 and v6.MaxHealth > 0 and v6.Health / v6.MaxHealth or 1
-		local n3 = v8 and v8.MaxHealth > 0 and v8.Health / v8.MaxHealth or 1
-		local v9 = Fly
-		local flag5 = n2 * 100 >= tbl4.retreatHp
+	if toolTip == "Blox Fruit" then
+		local leftClickRemote = tool:FindFirstChild("LeftClickRemote")
 
-		if flag5 then
-			flag5 = (Fly.crowd or 0) <= 1
+		if leftClickRemote and leftClickRemote:IsA("RemoteEvent") then
+			leftClickRemote:FireServer(Vector3.new(0, -500, 0), math.random(1, 4), true)
+			task.wait(0.01)
+			leftClickRemote:FireServer(false)
 		end
 
-		v9.push = flag5 and (n2 - n3) * 100 >= -tbl4.engageEdge
-		local v10 = Fly
-		v10.angle = v10.angle + arg2
-		local n4 = -arg.CFrame.LookVector
-		local vector2 = Vector3.new(n4.X, 0, n4.Z)
-		local unit3 = vector2.Magnitude > 0.1 and vector2.Unit or Vector3.new(0, 0, 1)
-		local vector3 = Vector3.new(-unit3.Z, 0, unit3.X)
-		if Fly.push then
-			return arg.Position + unit3 * tbl4.engageDist + Vector3.new(0, 2, 0)
-		end
-		local kiteSway = tbl4.kiteSway
-		return arg.Position + unit3 * tbl4.kiteDist + vector3 * math.sin(Fly.angle * 2) * kiteSway + vector
-	end
-
-	if tbl4.flyMode == "Kite" then
-		local v5 = Fly
-		v5.angle = v5.angle + arg2
-		local n2 = -arg.CFrame.LookVector
-		local vector2 = Vector3.new(n2.X, 0, n2.Z)
-		local unit3 = vector2.Magnitude > 0.1 and vector2.Unit or Vector3.new(0, 0, 1)
-		local kiteSway = tbl4.kiteSway
-		return arg.Position + unit3 * tbl4.kiteDist + Vector3.new(-unit3.Z, 0, unit3.X) * math.sin(Fly.angle * 2) * kiteSway + vector
-	end
-
-	if tbl4.flyMode == "Orbit" then
-		local v5 = Fly
-		v5.angle = v5.angle + tbl4.orbitSpeed * arg2
-		local sin = math.sin
-		local angle = Fly.angle
-		local orbitRadius = tbl4.orbitRadius
-		return arg.Position + Vector3.new(math.cos(Fly.angle), 0, sin(angle)) * orbitRadius + vector
-	end
-
-	local assemblyLinearVelocity = arg.AssemblyLinearVelocity
-	local vector2 = Vector3.new(assemblyLinearVelocity.X, 0, assemblyLinearVelocity.Z)
-	if vector2.Magnitude > 2 then
-		return arg.Position + vector2.Unit * tbl4.flyDist + vector
-	end
-	return arg.Position - arg.CFrame.LookVector * tbl4.flyDist + vector
-end
-
-fly = function(arg)
-	if not tbl4.fly then
-		local v5 = Fly
-		Fly.expect = nil
-		v5.note = "Off"
 		return
 	end
 
-	local v5, v6, note = alive(localPlayer)
-	local v7, v8, v9 = alive(v2)
-
-	if not note or not v9 then
-		Fly.expect = nil
-		local v10 = Fly
-		note = note and "No target" or "No character"
-		v10.note = note
-		return
+	if toolTip == "Melee" or toolTip == "Sword" then
+		reRegisterAttack:FireServer(0)
+		reRegisterHit:FireServer(tbl8[1][2], tbl8)
 	end
-
-	if Fly.expect and (note.Position - Fly.expect).Magnitude > math.max(8, Fly.step * 3) then
-		Fly.slowUntil = os.clock() + 6
-		local v10 = Fly
-		v10.rubber = v10.rubber + 1
-	end
-
-	local slowUntil = Fly.slowUntil
-	local flySafe = os.clock() < slowUntil and tbl4.flySafe or tbl4.flySpeed
-	local position3 = note.Position
-	local n2 = flyGoal(v9, arg) - position3
-	local step = math.min(n2.Magnitude, flySafe * arg)
-	local position4 = n2.Magnitude > 0.05 and note.Position + n2.Unit * step or note.Position
-	note.CFrame = CFrame.lookAt(position4, Vector3.new(v9.Position.X, position4.Y, v9.Position.Z))
-	note.AssemblyLinearVelocity = Vector3.zero
-	note.AssemblyAngularVelocity = Vector3.zero
-	local v10 = Fly
-	Fly.expect = position4
-	v10.step = step
-	local str = tbl4.flyMode == "Smart" and (Fly.push and "ATTACK  |  " or "KITE  |  ") or ""
-	local rubber = Fly.rubber
-	Fly.note = ("%*%* studs/s  |  %* away  |  pulled back %*x"):format(str, flySafe, math.floor(n2.Magnitude), rubber)
 end
 
-antiAimBeat = function()
-	if not tbl4.antiAim then
+task.spawn(function()
+	while not flag do
+		if flag5 and state.FastAttack then
+			if os.clock() - n14 > 1.2 then
+				flag5 = false
+				task.wait(0.25)
+			else
+				pcall(fn47)
+				task.wait(nightDungeonConfig.AttackDelay)
+			end
+		else
+			task.wait(0.25)
+		end
+	end
+end)
+
+local obj = setmetatable({}, { __mode = "k" })
+
+local function fn48(arg)
+	if obj[arg] then
 		return
 	end
-	local v5, v6, v7 = alive(localPlayer)
+	obj[arg] = true
+	local humanoid = arg:FindFirstChild("Humanoid")
+	if not humanoid then
+		return
+	end
+	local connection3 = nil
+
+	connection3 = humanoid.Died:Connect(function()
+		state.Kills = state.Kills + 1
+		connection3:Disconnect()
+	end)
+end
+
+local function fn49(arg, arg2)
+	if not fn41(arg) then
+		return false
+	end
+	fn48(arg)
+	local v6 = fn6()
+	if not v6 then
+		return false
+	end
+
+	if v6.Sit then
+		v6.Sit = false
+	end
+
+	arg2 = arg2 and nightDungeonConfig.BossKillHeight or nightDungeonConfig.KillHeight
+	local tool = fn4() and fn4():FindFirstChildOfClass("Tool")
+
+	if tool and tool.ToolTip == "Blox Fruit" then
+		arg2 = 15
+	end
+
+	fn34(arg.HumanoidRootPart.CFrame * CFrame.new(-3, arg2, 0))
+	fn37()
+	fn38()
+	flag5 = true
+	n14 = os.clock()
+	return true
+end
+
+local n15 = 0
+
+local function fn50()
+	local v6
+	v6, v6 = fn36()
+	return tbl2[v6 or nightDungeonConfig.Weapon] or {}
+end
+
+local function fn51(arg)
+	for i, v6 in ipairs(tbl) do
+		if v6 == arg then
+			return i
+		end
+	end
+
+	local v6 = fn50()
+
+	for i, v7 in ipairs(v6) do
+		if v7 == arg then
+			return #tbl + i
+		end
+	end
+
+	return 999
+end
+
+local function fn52(arg)
+	local huge = math.huge
+	local buffName = nil
+
+	for _, v6 in ipairs(arg) do
+		local buffName2 = type(v6) == "table" and v6.buffName or nil
+
+		if buffName2 then
+			local v7 = fn51(buffName2)
+
+			if v7 < huge then
+				huge = v7
+				buffName = buffName2
+			end
+		end
+	end
+
+	if not buffName and arg[1] then
+		buffName = arg[1].buffName
+	end
+
+	return buffName
+end
+
+local function fn53()
+	if os.clock() - n15 < 1 then
+		return
+	end
+	n15 = os.clock()
+	local buffSelector = dungeonShared:FindFirstChild("BuffSelector")
+	if not buffSelector or not buffSelector:IsA("RemoteFunction") then
+		return
+	end
+
+	buffSelector.OnClientInvoke = function(arg)
+		if not state.AutoBuff or type(arg) ~= "table" then
+			return nil
+		end
+		local chonThe = fn52(arg)
+		if not chonThe then
+			return nil
+		end
+		fn2("chon the: " .. chonThe)
+		task.wait(nightDungeonConfig.BuffDelay)
+		return chonThe
+	end
+end
+
+local connection3 = nil
+
+local function fn54()
+	if connection3 then
+		return
+	end
+	local buffReplicator = dungeonShared:FindFirstChild("BuffReplicator")
+	if not buffReplicator or not buffReplicator:IsA("RemoteEvent") then
+		return
+	end
+
+	connection3 = buffReplicator.OnClientEvent:Connect(function(buffs)
+		if type(buffs) == "table" then
+			state.Buffs = buffs
+		end
+	end)
+end
+
+local function fn55()
+	return 1 + (tonumber(state.Buffs.AttackSpeedMultiplier) or 0)
+end
+
+local function fn56()
+	local lifesteal = state.Buffs.Lifesteal
+	local n16 = 0
+
+	for k in pairs(state.Buffs) do
+		n16 += 1
+	end
+
+	return string.format("%d the | Leech %.0f%%", n16, (tonumber(lifesteal) or 0) * 100)
+end
+
+local function fn57()
+	local map = Workspace:FindFirstChild("Map")
+	map = map and map:FindFirstChild("Simulation Hub")
+	map = map and map:FindFirstChild("Pads")
+	if not map then
+		return {}
+	end
+	local tbl8 = {}
+
+	for _, child in ipairs(map:GetChildren()) do
+		if child:FindFirstChild("DungeonSettingsChanged") and child:FindFirstChild("Pad") then
+			tbl8[#tbl8 + 1] = child
+		end
+	end
+
+	table.sort(tbl8, function(arg, arg2)
+		return arg.Name < arg2.Name
+	end)
+
+	return tbl8
+end
+
+local function fn58(arg)
+	return arg:GetAttribute("NumPlayersOnPad") or 0, arg:GetAttribute("MaxPlayers") or 4, arg:GetAttribute("Initiator")
+end
+
+local v6 = nil
+local n16 = 0
+
+local function fn59()
+	local v7 = fn57()
+	if #v7 == 0 then
+		v6 = nil
+		return nil
+	end
+	local n17 = -1
+	local n18 = 0
+	local v8 = nil
+
+	for _, v9 in ipairs(v7) do
+		local v10, v11, v12 = fn58(v9)
+
+		if v10 < v11 then
+			local n19 = v10 * 4
+
+			if v12 == localPlayer.UserId then
+				n19 += 2
+			elseif v12 == nil then
+				n19 += 1
+			end
+
+			if n17 < n19 then
+				n17 = n19
+				n18 = v10
+				v8 = v9
+			end
+		end
+	end
+
+	if v6 and v6.Parent then
+		local v9, v10 = fn58(v6)
+		if v9 < v10 and (os.clock() < n16 or n18 <= v9 + 1) then
+			return v6
+		end
+	end
+
+	if v8 then
+		if v8 ~= v6 then
+			n16 = os.clock() + 6
+		end
+
+		v6 = v8
+	end
+
+	return v6 or v7[1]
+end
+
+local n17 = 0
+local n18 = 0
+
+local function fn60()
+	return math.max(0, tonumber(nightDungeonConfig.EnergyCost) or 0)
+end
+
+local function fn61()
+	local v7 = fn59()
 	if not v7 then
+		fn3("Khong thay pad")
 		return
 	end
-	Fly.realVel = v7.AssemblyLinearVelocity
-	local antiAimPower = tbl4.antiAimPower
-	local random = math.random
-	v7.AssemblyLinearVelocity = Vector3.new(math.random(-antiAimPower, antiAimPower), math.random(-antiAimPower, antiAimPower) * 0.3, random(-antiAimPower, antiAimPower))
+	local pad = v7:FindFirstChild("Pad")
+	if not pad then
+		return
+	end
+
+	if not fn5() then
+		return
+	end
+
+	if not localPlayer:FindFirstChild("TeleporterPadObjectReference") then
+		local v8, v9 = fn58(v7)
+		fn3("Di den pad " .. v7.Name .. " (" .. v8 .. "/" .. v9 .. ")")
+		fn34(pad.CFrame * CFrame.new(0, 4, 0))
+		return
+	end
+
+	if localPlayer:GetAttribute("IsTeleporting") or v7:GetAttribute("PreparingToTeleport") then
+		fn3("Dang vao dungeon...")
+		return
+	end
+	local dungeonSettingsChanged = v7:FindFirstChild("DungeonSettingsChanged")
+	local userId = localPlayer.UserId
+	local flag6 = v7:GetAttribute("Initiator") == userId
+
+	if flag6 then
+		local difficulty = nightDungeonConfig.Difficulty
+		flag6 = v7:GetAttribute("Difficulty") ~= difficulty
+	end
+
+	if flag6 then
+		if os.clock() - n17 > 2 then
+			n17 = os.clock()
+			dungeonSettingsChanged:FireServer("Difficulty", nightDungeonConfig.Difficulty)
+			fn2("dat difficulty " .. nightDungeonConfig.Difficulty)
+		end
+
+		return
+	end
+
+	local attribute = v7:GetAttribute("NumPlayersOnPad") or 0
+	local attribute2 = v7:GetAttribute("MinPlayers") or 1
+	if attribute < attribute2 then
+		fn3(string.format("Cho nguoi %d/%d", attribute, attribute2))
+		return
+	end
+	local v8 = fn60()
+	if v8 > 0 and state.Energy < v8 then
+		fn3("Het energy " .. state.Energy .. "/" .. v8)
+		return
+	end
+
+	if os.clock() - n18 > 4 then
+		n18 = os.clock()
+		fn3("Bam Start")
+		dungeonSettingsChanged:FireServer("Start")
+		fn2("fire Start tren " .. v7.Name)
+	end
 end
 
-antiAimStep = function()
-	if not Fly.realVel then
-		return
-	end
-	local v5, v6, v7 = alive(localPlayer)
+local function fn62()
+	local v7 = fn11()
 
-	if v7 then
-		v7.AssemblyLinearVelocity = Fly.realVel
-	end
-
-	Fly.realVel = nil
-end
-
-dodge = function()
-	local flag5 = not tbl4.dodge
-
-	if not flag5 then
-		flag5 = os.clock() < (Move.dodgeAt or 0)
-	end
-
-	if flag5 then
-		return
-	end
-	local v5, v6, v7 = alive(localPlayer)
 	if not v7 then
+		state.Floor = 0
+		state.Total = 0
+		state.Dead = 0
+		state.TimeLeft = 0
+		return nil
+	end
+
+	local attribute = v7:GetAttribute("CurrentExploredLevel") or 0
+
+	if attribute ~= state.Floor then
+		fn39()
+	end
+
+	state.Floor = attribute
+	state.Dead = v7:GetAttribute("DeadEnemies") or 0
+	state.Total = v7:GetAttribute("TotalEnemies") or 0
+	state.TimeLeft = v7:GetAttribute("TimeLeft") or 0
+	local floors = v7:FindFirstChild("Floors")
+
+	if floors then
+		local maxFloor = 0
+
+		for _, child in ipairs(floors:GetChildren()) do
+			local num = tonumber(child.Name)
+
+			if num and num > maxFloor then
+				maxFloor = num
+			end
+		end
+
+		state.MaxFloor = maxFloor
+	end
+
+	return v7
+end
+
+local function fn63(arg)
+	if not arg then
+		return false
+	end
+	local floors = arg:FindFirstChild("Floors")
+	if not floors then
+		return arg:GetAttribute("HasBoss") == true
+	end
+	local v7 = floors:FindFirstChild(tostring(state.Floor))
+	return v7 ~= nil and v7:GetAttribute("HasBoss") == true
+end
+
+local flag6 = false
+local tbl8 = {}
+
+local function fn64()
+	for _, v7 in ipairs({ "ResultsScreen", "ReturnToHub" }) do
+		if not tbl8[v7] then
+			local v8 = dungeonShared:FindFirstChild(v7)
+
+			if v8 and v8:IsA("RemoteEvent") then
+				tbl8[v7] = v8.OnClientEvent:Connect(function()
+					flag6 = true
+					flag5 = false
+					fn2("dungeon ket thuc (" .. v7 .. ")")
+				end)
+			end
+		end
+	end
+end
+
+local function fn65()
+	local v7 = fn62()
+	fn53()
+	fn54()
+	fn64()
+
+	if flag6 then
+		fn3("Xong, cho ve hub")
+		fn32()
 		return
 	end
 
-	for _, player in ipairs(Players:GetPlayers()) do
-		local v8, v9, v10 = foe(player)
+	local v8 = fn6()
+	if not v8 or v8.Health <= 0 then
+		fn3("Cho hoi sinh")
+		return
+	end
+	local v9, v10, v11 = fn46()
 
-		if v8 then
-			local n2 = v7.Position - v10.Position
-			local magnitude = n2.Magnitude
+	if v9 then
+		local v12 = fn5()
+		local humanoidRootPart = v9:FindFirstChild("HumanoidRootPart") or v9.PrimaryPart
+		state.Target = (v11 and "PART " or v10 and "BOSS " or "") .. v9.Name
+		state.Dist = v12 and humanoidRootPart and math.floor((humanoidRootPart.Position - v12.Position).Magnitude) or -1
 
-			if magnitude > 0.1 and magnitude < tbl4.dodgeRange and v10.CFrame.LookVector:Dot(n2.Unit) > 0.85 then
-				local vector = Vector3.new(n2.X, 0, n2.Z)
-				local unit3 = vector.Magnitude > 0.1 and Vector3.new(-vector.Z, 0, vector.X).Unit or Vector3.new(1, 0, 0)
+		if v11 then
+			fn3("Pha part chan duong (" .. state.Dist .. "m)")
+		else
+			fn3(v10 and "Danh BOSS " .. v9.Name or "Danh " .. v9.Name)
+		end
 
-				if math.random() < 0.5 then
-					unit3 = -unit3
-				end
+		fn49(v9, v10)
+		return
+	end
 
-				v7.CFrame = v7.CFrame + unit3 * tbl4.dodgeDist
-				Fly.expect = nil
-				local dodgeCd = tbl4.dodgeCd
-				Move.dodgeAt = os.clock() + dodgeCd
+	flag5 = false
+	state.Target = "-"
+	state.Dist = -1
+	local floor = state.Floor
+	local v12 = fn17()
+	state.Here = v12 or -1
+
+	if v12 then
+		local exitTeleporter = fn18(v12, "ExitTeleporter")
+
+		if fn19(exitTeleporter) then
+			local magnitude = fn5()
+			magnitude = magnitude and (exitTeleporter.Position - magnitude.Position).Magnitude or 9999
+			fn3("Vao cua tang " .. v12 .. " -> " .. v12 + 1 .. " " .. math.floor(magnitude) .. "m")
+
+			if magnitude <= nightDungeonConfig.DoorTouch then
+				fn20(exitTeleporter)
+			end
+
+			fn34(exitTeleporter.CFrame)
+			return
+		end
+
+		if floor and floor > v12 then
+			local entranceTeleporter = fn18(v12 + 1, "EntranceTeleporter")
+
+			if entranceTeleporter then
+				fn3("Theo cua sang tang " .. v12 + 1)
+				fn34(entranceTeleporter.CFrame * CFrame.new(0, 10, 0))
 				return
 			end
 		end
 	end
-end
 
-crowd = function()
-	local v5, v6, v7 = alive(localPlayer)
-	if not v7 then
-		Fly.crowd = 0
-		return
-	end
-	local crowd_ = 0
+	local v13 = fn13(v12) or fn13(floor) or fn13(fn15())
 
-	for _, player in ipairs(Players:GetPlayers()) do
-		local v8, v9, v10 = foe(player)
+	if v13 then
+		local v14 = fn14(v13)
 
-		if v8 and (v10.Position - v7.Position).Magnitude <= tbl4.gankRange then
-			crowd_ += 1
-		end
-	end
+		if v14 then
+			local attribute = v13:GetAttribute("DisplayName") or v13.Name
+			local magnitude = fn5()
+			magnitude = magnitude and (v14.Position - magnitude.Position).Magnitude or 0
 
-	local flag5 = crowd_ >= 2
-
-	if flag5 then
-		flag5 = (Fly.crowd or 0) < 2
-	end
-
-	if flag5 and UI.note then
-		UI.note(("%* enemies around you, backing off"):format(crowd_), "warn")
-	end
-
-	Fly.crowd = crowd_
-end
-
-hold = function(arg, arg2)
-	local ok, result = pcall(game.GetService, game, "VirtualInputManager")
-	if not ok or not result then
-		return
-	end
-
-	pcall(function()
-		result:SendKeyEvent(true, Enum.KeyCode[arg], false, game)
-		task.wait(math.max(arg2, 0.03))
-		result:SendKeyEvent(false, Enum.KeyCode[arg], false, game)
-	end)
-end
-
-skills = function()
-	local v5, v6, v7 = alive(localPlayer)
-	if not v5 then
-		return false, "No character"
-	end
-	local v8, v9, v10 = alive(v2)
-	if not v10 then
-		return false, "No target"
-	end
-
-	if tbl4.skillRange < (v10.Position - v7.Position).Magnitude then
-		return false, "Target out of range"
-	end
-	local v11, v12 = hook()
-	if not v11 then
-		return false, v12
-	end
-
-	for _, v13 in ipairs({ "Z", "X", "C", "V", "F" }) do
-		if not (not tbl4.autoSkill or not alive(v2)) then
-			if tbl4.skillKeys[v13] then
-				local skillHold = tbl4.skillHold
-				Gun.aimUntil = os.clock() + skillHold + 0.5
-				hold(v13, tbl4.skillHold)
-				task.wait(tbl4.skillGap)
-			end
-
-			continue
-		end
-
-		break
-	end
-end
-
-hitboxes = function()
-	for _, player in ipairs(Players:GetPlayers()) do
-		local humanoidRootPart = player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-
-		if humanoidRootPart then
-			local v5 = Hit.orig[humanoidRootPart]
-
-			if tbl4.hitbox and foe(player) then
-				if not v5 then
-					Hit.orig[humanoidRootPart] = { humanoidRootPart.Size, humanoidRootPart.Transparency, humanoidRootPart.CanCollide }
-				end
-
-				local size = Vector3.one * tbl4.hitboxSize
-
-				if humanoidRootPart.Size ~= size then
-					humanoidRootPart.Size = size
-				end
-
-				humanoidRootPart.Transparency = tbl4.hitboxShow and 0.8 or 1
-				humanoidRootPart.CanCollide = false
-			elseif v5 then
-				local v6 = v5[1]
-				local v7 = v5[2]
-				local v8 = v5[3]
-				humanoidRootPart.Size = v6
-				humanoidRootPart.Transparency = v7
-				humanoidRootPart.CanCollide = v8
-				Hit.orig[humanoidRootPart] = nil
-			end
-		end
-	end
-
-	for k in pairs(Hit.orig) do
-		if not k.Parent then
-			Hit.orig[k] = nil
-		end
-	end
-end
-
-stick = function()
-	if not tbl4.stick or not v2 or tbl4.fly then
-		return
-	end
-	local v5, v6, v7 = alive(localPlayer)
-	local v8, v9, v10 = alive(v2)
-	if not v7 or not v10 or (v10.Position - v7.Position).Magnitude > tbl4.stickRange then
-		return
-	end
-	local n2 = v10.Position - v10.CFrame.LookVector * tbl4.stickBack + Vector3.new(0, tbl4.stickUp, 0)
-	v7.CFrame = CFrame.lookAt(n2, Vector3.new(v10.Position.X, n2.Y, v10.Position.Z))
-	v7.AssemblyLinearVelocity = Vector3.zero
-end
-
-antiAfk = function()
-	if type(getconnections) ~= "function" then
-		return false, "No getconnections"
-	end
-
-	for _, v5 in ipairs(getconnections(localPlayer.Idled)) do
-		pcall(function()
-			if tbl4.antiAfk then
-				v5:Disable()
+			if fn63(v7) then
+				local v15 = fn3
+				local v16 = tostring
+				v12 = v12 or floor
+				v15("Quet tang boss " .. v16(v12) .. " (" .. tostring(attribute) .. ")")
 			else
-				v5:Enable()
+				fn3("Quet tang " .. tostring(v12 or floor) .. " (" .. tostring(attribute) .. ") " .. math.floor(magnitude) .. "m")
 			end
-		end)
-	end
 
-	return true
-end
-
-local flag5 = type(Drawing) == "table" and type(Drawing.new) == "function"
-
-draw = function(arg, arg2)
-	local v5 = Drawing.new(arg)
-
-	for k, v6 in pairs(arg2) do
-		v5[k] = v6
-	end
-
-	return v5
-end
-
-kit = function(arg)
-	local v5 = Esp.pool[arg]
-	if v5 then
-		return v5
-	end
-
-	local tbl10 = {
-		edge = draw("Square", { Thickness = 3, Filled = false, Color = Color3.new(), Visible = false }),
-		box = draw("Square", { Thickness = 1, Filled = false, Visible = false }),
-		name = draw("Text", { Size = 14, Center = true, Outline = true, Visible = false }),
-		info = draw("Text", {
-			Size = 13,
-			Center = true,
-			Outline = true,
-			Color = Color3.fromRGB(210, 210, 210),
-			Visible = false,
-		}),
-		back = draw("Square", { Filled = true, Color = Color3.new(), Visible = false }),
-		fill = draw("Square", { Filled = true, Visible = false }),
-		hp = draw("Text", { Size = 12, Outline = true, Visible = false }),
-		line = draw("Line", { Thickness = 1, Visible = false }),
-	}
-
-	Esp.pool[arg] = tbl10
-	return tbl10
-end
-
-blank = function(arg)
-	for k, v5 in pairs(arg) do
-		if k ~= "cham" then
-			v5.Visible = false
+			fn34(v14)
+			return
 		end
 	end
+
+	fn3("Cho tang moi load")
+	fn32()
 end
 
-hide = function(arg)
-	blank(arg)
+local flag7 = false
 
-	if arg.cham then
-		arg.cham.Enabled = false
-	end
-end
+local function fn66()
+	state.Energy = fn22()
+	fn30()
+	local v7 = fn5()
 
-drop = function(arg)
-	local v5 = Esp.pool[arg]
-	if not v5 then
+	if v7 and v7.Position.Y < n7 and state.Farm then
+		n5 = os.clock() + 3
+		fn32(true)
+		fn2("roi khoi map, keo len lai")
 		return
 	end
 
-	for _, v6 in pairs(v5) do
-		pcall(function()
-			v6:Destroy()
-		end)
-	end
-
-	Esp.pool[arg] = nil
-end
-
-tintOf = function(arg)
-	if arg == v2 and tbl4.tgtMark then
-		return tbl5[tbl4.tgtColor]
-	end
-
-	if tbl4.teamColor and arg.Team then
-		return arg.TeamColor.Color
-	end
-	return tbl5[tbl4.espColor]
-end
-
-lore = function(arg, arg2)
-	local data = arg:FindFirstChild("Data")
-	local level = data and data:FindFirstChild("Level")
-	data = data and data:FindFirstChild("DevilFruit")
-	local tbl10 = { (("%*m"):format(math.floor(arg2))) }
-
-	if level then
-		local insert = table.insert
-		local str = ("Lv %*"):format(level.Value)
-		insert(tbl10, 1, str)
-	end
-
-	if data and data.Value ~= "" then
-		tbl10[#tbl10 + 1] = data.Value
-	end
-
-	return table.concat(tbl10, " | ")
-end
-
-cham = function(arg, parent, fillColor)
-	if not tbl4.chams then
-		if arg.cham then
-			arg.cham.Enabled = false
-		end
-
-		return
-	end
-
-	if not arg.cham or arg.cham.Parent ~= parent then
-		if arg.cham then
-			arg.cham:Destroy()
-		end
-
-		local highlight = Instance.new("Highlight")
-		highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-		highlight.FillTransparency = 0.6
-		highlight.Parent = parent
-		arg.cham = highlight
-	end
-
-	arg.cham.Enabled = true
-	local cham_ = arg.cham
-	arg.cham.FillColor = fillColor
-	cham_.OutlineColor = fillColor
-end
-
-paint = function(arg, arg2, arg3, arg4)
-	local v5 = Esp.pool[arg]
-
-	if not tbl4.esp then
-		if v5 then
-			hide(v5)
-		end
-
-		return
-	end
-
-	local v6 = kit(arg)
-	local v7, v8, v9 = alive(arg)
-	local magnitude = v7 and (v9.Position - arg2).Magnitude or math.huge
-	if tbl4.espDist < magnitude then
-		return hide(v6)
-	end
-	local v10 = tintOf(arg)
-	cham(v6, v7, v10)
-	local v11, v12 = currentCamera:WorldToViewportPoint(v9.Position + Vector3.new(0, 3, 0))
-	local v13, v14 = currentCamera:WorldToViewportPoint(v9.Position - Vector3.new(0, 3.5, 0))
-	local flag6 = v11.Z <= 0
-
-	if not flag6 then
-		flag6 = not (v12 or v14)
-	end
-
-	if flag6 then
-		return blank(v6)
-	end
-	local n2 = math.max(v13.Y - v11.Y, 6)
-	local n3 = n2 * 0.6
-	local n4 = v11.X - n3 / 2
-	local y = v11.Y
-	local edge = v6.edge
-	local box = tbl4.box
-	v6.box.Visible = tbl4.box
-	edge.Visible = box
-	local box2 = v6.box
-	local box3 = v6.box
-	local box4 = v6.box
-	local vector2 = Vector2.new(n3, n2)
-	local vector22 = Vector2.new(n4, y)
-	box2.Size = vector2
-	box3.Position = vector22
-	box4.Color = v10
-	local edge2 = v6.edge
-	local position3 = v6.box.Position
-	v6.edge.Size = v6.box.Size
-	edge2.Position = position3
-	v6.name.Visible = tbl4.name
-	v6.name.Text = arg == v2 and ("[ %* ]"):format(arg.DisplayName) or arg.DisplayName
-	local name = v6.name
-	v6.name.Position = Vector2.new(v11.X, y - 17)
-	name.Color = v10
-	v6.info.Visible = tbl4.info
-	v6.info.Text = lore(arg, magnitude)
-	v6.info.Position = Vector2.new(v11.X, y + n2 + 2)
-	local n5 = math.clamp(v8.Health / math.max(v8.MaxHealth, 1), 0, 1)
-	local v15 = Color3.fromRGB(255, 60, 60):Lerp(Color3.fromRGB(80, 230, 120), n5)
-	local fill = v6.fill
-	local bar = tbl4.bar
-	v6.back.Visible = tbl4.bar
-	fill.Visible = bar
-	local back = v6.back
-	local back2 = v6.back
-	local vector23 = Vector2.new(n4 - 6, y - 1)
-	local vector24 = Vector2.new(4, n2 + 2)
-	back.Position = vector23
-	back2.Size = vector24
-	local fill2 = v6.fill
-	local fill3 = v6.fill
-	local fill4 = v6.fill
-	local vector25 = Vector2.new(n4 - 5, y + n2 * (1 - n5))
-	local vector26 = Vector2.new(2, n2 * n5)
-	fill2.Position = vector25
-	fill3.Size = vector26
-	fill4.Color = v15
-	v6.hp.Visible = tbl4.hpText
-	v6.hp.Text = ("%*"):format(math.floor(v8.Health))
-	local hp = v6.hp
-	v6.hp.Position = Vector2.new(n4 - 10 - v6.hp.TextBounds.X, y + n2 * (1 - n5) - 6)
-	hp.Color = v15
-	v6.line.Visible = tbl4.tracer
-	v6.line.From = tbl4.tracerFrom == "Center" and arg3 / 2 or tbl4.tracerFrom == "Mouse" and arg4 or Vector2.new(arg3.X / 2, arg3.Y)
-	local line = v6.line
-	v6.line.To = Vector2.new(v11.X, v13.Y)
-	line.Color = v10
-end
-
-aimLine = function(arg, arg2, from)
-	local tl = Esp.tl
-	local mark = Esp.mark
-	tl.Visible = false
-	mark.Visible = false
-	local flag6 = not v3
-
-	if not flag6 then
-		flag6 = not (tbl4.esp or tbl4.aimbot or tbl4.silent or tbl4.aura or v4)
-	end
-
-	if flag6 then
-		return
-	end
-	local v5, v6 = currentCamera:WorldToViewportPoint(v3.Position)
-	if not v6 then
-		return
-	end
-	local vector2 = Vector2.new(v5.X, v5.Y)
-
-	if tbl4.lineFrom == "Character" and arg then
-		local v7 = currentCamera:WorldToViewportPoint(arg.Position)
-		from = Vector2.new(v7.X, v7.Y)
-	elseif tbl4.lineFrom == "Bottom" then
-		from = Vector2.new(arg2.X / 2, arg2.Y)
-	end
-
-	local v7 = tbl5[tbl4.tgtColor]
-	tl.Visible = tbl4.tgtLine
-	tl.From = from
-	tl.To = vector2
-	tl.Color = v7
-	local v8 = tbl5[tbl4.tgtColor]
-	mark.Visible = tbl4.tgtMark
-	mark.Position = vector2
-	mark.Color = v8
-end
-
-Esp.step = function()
-	if not flag5 then
-		return
-	end
-	local viewportSize = currentCamera.ViewportSize
-	local mouseLocation = UserInputService:GetMouseLocation()
-	local v5, v6, v7 = alive(localPlayer)
-	local position3 = v7 and v7.Position or currentCamera.CFrame.Position
-
-	for _, player in ipairs(Players:GetPlayers()) do
-		if player ~= localPlayer then
-			paint(player, position3, viewportSize, mouseLocation)
-		end
-	end
-
-	Esp.fov.Visible = tbl4.showFov and tbl4.useFov and (tbl4.aimbot or tbl4.silent)
-	local fov = Esp.fov
-	local fov2 = tbl4.fov
-	Esp.fov.Position = mouseLocation
-	fov.Radius = fov2
-	aimLine(v7, viewportSize, mouseLocation)
-end
-
-Esp.clear = function()
-	for k in pairs(Esp.pool) do
-		drop(k)
-	end
-
-	for _, v5 in ipairs({ "fov", "tl", "mark" }) do
-		if Esp[v5] then
-			pcall(function()
-				Esp[v5]:Destroy()
-			end)
-		end
-
-		Esp[v5] = nil
-	end
-end
-
-if flag5 then
-	Esp.fov = draw("Circle", {
-		Thickness = 1,
-		NumSides = 64,
-		Filled = false,
-		Transparency = 0.7,
-		Color = Color3.new(1, 1, 1),
-		Visible = false,
-	})
-
-	Esp.tl = draw("Line", { Thickness = 2, Visible = false })
-	Esp.mark = draw("Circle", { Thickness = 2, NumSides = 24, Radius = 8, Filled = false, Visible = false })
-end
-
-frame = function(arg)
-	currentCamera = v.CurrentCamera
-	local v5, v6, v7 = alive(localPlayer)
-	position = v7 and v7.Position
-	position2 = mouse.Hit.Position
-	unit2 = position and (position2 - position).Unit
-	local v8, v9 = pick()
-	v2 = v8
-	v3 = v9
-	flag2 = false
-	n = v3 and v3.Position + v3.AssemblyLinearVelocity * tbl4.pred
-	unit = n and position and (n - position).Unit
-	local silent = tbl4.silent
-
-	if not silent then
-		local aimUntil = Gun.aimUntil
-		silent = os.clock() < aimUntil
-	end
-
-	flag2 = silent and flag3 and unit ~= nil
-
-	if v2 ~= Move.lastTgt then
-		local lastTgt = Move.lastTgt
-		Move.lastTgt = v2
-		local character = lastTgt and lastTgt.Character
-		character = character and character:FindFirstChildOfClass("Humanoid")
-
-		if tbl4.killNote and character and character.Health <= 0 and UI.note then
-			UI.note(("Killed %*"):format(lastTgt.DisplayName), "good")
-		end
-	end
-
-	if tbl4.aimbot and n and triggered() then
-		local n2 = 1 - tbl4.smooth ^ (arg * 60)
-		currentCamera.CFrame = currentCamera.CFrame:Lerp(CFrame.lookAt(currentCamera.CFrame.Position, n), n2)
-	end
-
-	local v10, v11 = alive(v2)
-
-	if tbl4.spectate and v11 then
-		if currentCamera.CameraSubject ~= v11 then
-			currentCamera.CameraSubject = v11
-		end
-
-		flag4 = true
-	elseif flag4 and v6 then
-		currentCamera.CameraSubject = v6
+	if not state.Farm then
+		flag5 = false
+		fn29(false)
+		fn26(false)
+		fn27(false)
 		flag4 = false
+		fn3("Idle")
+		return
 	end
 
-	Esp.step()
+	if fn9() then
+		if not flag7 then
+			flag7 = true
+			state.Runs = state.Runs + 1
+			state.Dead = 0
+			flag6 = false
+			n15 = 0
+			fn2("vao dungeon, luot #" .. state.Runs)
+		end
+
+		fn65()
+		return
+	end
+
+	if flag7 then
+		flag7 = false
+		flag6 = false
+
+		if connection3 then
+			connection3:Disconnect()
+			connection3 = nil
+		end
+
+		for k, v8 in pairs(tbl8) do
+			v8:Disconnect()
+			tbl8[k] = nil
+		end
+
+		state.Buffs = {}
+	end
+
+	if fn8() then
+		local v8 = fn60()
+		state.EnergyNeed = v8
+
+		if nightDungeonConfig.OutOnEmpty and v8 > 0 and state.Energy < v8 then
+			fn32()
+			fn24(state.Energy, v8)
+			return
+		end
+
+		if state.AutoStart then
+			fn61()
+		else
+			fn32()
+			fn3("Trong sanh")
+		end
+
+		return
+	end
+
+	fn32()
+	fn3("Khong phai map Dungeons")
 end
 
-tgtText = function()
-	if not v2 then
-		return "No target"
+task.spawn(function()
+	while not flag do
+		local ok, result = pcall(fn66)
+
+		if not ok then
+			fn2("loi tick: " .. tostring(result))
+		end
+
+		task.wait(0.25)
 	end
-	local v5, v6, v7 = alive(v2)
-	if not v5 then
-		return (("%* dead"):format(v2.DisplayName))
+end)
+
+local connection4 = localPlayer.CharacterAdded:Connect(function(character)
+	character:WaitForChild("HumanoidRootPart", 10)
+	task.wait(1)
+	flag5 = false
+
+	if state.Farm then
+		fn32()
 	end
-	local magnitude = position and (v7.Position - position).Magnitude or 0
-	local concat = table.concat
-	local tbl10 = {}
-	local str = ("%* (@%*)%*"):format(v2.DisplayName, v2.Name, v4 == v2 and "  LOCKED" or "")
-	local v8 = lore
-	local str2 = ("HP %*/%*  |  %*"):format(math.floor(v6.Health), math.floor(v6.MaxHealth), v8(v2, magnitude))
-	local str3 = ("Team %*"):format(v2.Team and v2.Team.Name or "None")
-	tbl10[1] = str
-	tbl10[2] = str2
-	tbl10[3] = str3
-	return concat(tbl10, "\n")
+
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+
+	if humanoid then
+		humanoid.Died:Connect(function()
+			flag5 = false
+			fn2("chet, cho respawn")
+		end)
+	end
+end)
+
+local v7 = fn6()
+
+if v7 then
+	v7.Died:Connect(function()
+		flag5 = false
+		fn2("chet, cho respawn")
+	end)
 end
 
-sweep = function()
-	local tbl10 = { localPlayer:FindFirstChildOfClass("PlayerGui") }
+local tbl9 = {
+	Shell = Color3.fromRGB(13, 14, 22),
+	Panel = Color3.fromRGB(21, 23, 35),
+	Card = Color3.fromRGB(27, 30, 46),
+	Head = Color3.fromRGB(17, 18, 28),
+	Line = Color3.fromRGB(52, 58, 84),
+	Gold = Color3.fromRGB(167, 139, 250),
+	Violet = Color3.fromRGB(139, 124, 255),
+	Cyan = Color3.fromRGB(94, 234, 212),
+	Pink = Color3.fromRGB(244, 114, 182),
+	Text = Color3.fromRGB(234, 238, 248),
+	Sub = Color3.fromRGB(132, 141, 168),
+	On = Color3.fromRGB(52, 211, 153),
+	Off = Color3.fromRGB(248, 113, 113),
+	Warn = Color3.fromRGB(251, 191, 36),
+	Btn = Color3.fromRGB(46, 52, 78),
+	BtnAlt = Color3.fromRGB(35, 40, 60),
+}
 
+local tbl10 = { Shell = 0.08, Panel = 0.1, Head = 0.07 }
+
+local function fn67(arg, arg2, arg3)
+	local instance = Instance.new(arg)
+	local v8 = pairs
+	local tbl11 = arg2 or {}
+
+	for k, v9 in v8(tbl11) do
+		if k ~= "Parent" then
+			instance[k] = v9
+		end
+	end
+
+	local v9 = ipairs
+	arg3 = arg3 or {}
+
+	for _, v10 in v9(arg3) do
+		v10.Parent = instance
+	end
+
+	if arg2 and arg2.Parent then
+		instance.Parent = arg2.Parent
+	end
+
+	return instance
+end
+
+local function fn68(arg)
+	return fn67("UICorner", { CornerRadius = UDim.new(0, arg) })
+end
+
+local function fn69(arg, arg2, arg3)
+	return fn67("UIStroke", {
+		Color = arg,
+		Thickness = arg2 or 1,
+		Transparency = arg3 or 0,
+		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+	})
+end
+
+local quart = Enum.EasingStyle.Quart
+local back = Enum.EasingStyle.Back
+
+local function fn70(arg, arg2, arg3, arg4, arg5)
+	local tween2 = TweenService:Create(arg, TweenInfo.new(arg2, arg4 or quart, arg5 or Enum.EasingDirection.Out), arg3)
+	tween2:Play()
+	return tween2
+end
+
+local function fn71(arg, arg2, arg3, arg4, arg5)
+	local tween2 = TweenService:Create(arg, TweenInfo.new(arg2, arg5 or Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, arg4 and true or false), arg3)
+	tween2:Play()
+	return tween2
+end
+
+local function fn72(arg, arg2, arg3, arg4)
+	local tbl11
+
+	if arg4 then
+		tbl11 = {}
+		local v8 = ColorSequenceKeypoint.new(0, arg2)
+		local v9 = ColorSequenceKeypoint.new(0.5, arg3)
+		tbl11[1] = v8
+		tbl11[2] = v9
+
+		do
+			local values = table.pack(ColorSequenceKeypoint.new(1, arg4))
+			table.move(values, 1, values.n, 3, tbl11)
+		end
+	else
+		tbl11 = arg4
+	end
+
+	if not tbl11 then
+		local new = ColorSequenceKeypoint.new
+		tbl11 = { ColorSequenceKeypoint.new(0, arg2), new(1, arg3) }
+	end
+
+	return fn67("UIGradient", { Color = ColorSequence.new(tbl11), Rotation = arg or 0 })
+end
+
+local tbl11 = {}
+
+local function fn73()
 	local ok, result = pcall(function()
-		return gethui and gethui()
+		return gethui()
 	end)
 
-	if ok and typeof(result) == "Instance" then
-		tbl10[#tbl10 + 1] = result
+	if not (ok and typeof(result) == "Instance") then
+		result = localPlayer:WaitForChild("PlayerGui")
 	end
 
-	local ok2, result2 = pcall(function()
-		return game:GetService("CoreGui")
-	end)
-
-	if ok2 and result2 then
-		tbl10[#tbl10 + 1] = result2
-	end
-
-	for _, v5 in ipairs(tbl10) do
-		pcall(function()
-			for _, child in ipairs(v5:GetChildren()) do
-				if child.Name == "NightHub" then
-					child:Destroy()
-				end
-			end
-		end)
-	end
-end
-
-buildUI = function()
-	sweep()
-
-	local ok, night = pcall(function()
-		return loadstring(game:HttpGet("https://raw.githubusercontent.com/WhiteX1208/Scripts/refs/heads/main/Ui-Library/V2Loader.luau"))()
-	end)
-
-	if (not ok or type(night) ~= "table") and type(isfile) == "function" and type(readfile) == "function" and isfile("NightGlass.lua") then
-		ok, night = pcall(function()
-			return loadstring(readfile("NightGlass.lua"))()
-		end)
-	end
-
-	if not ok or type(night) ~= "table" then
-		genv.gethui = gethui_
-		return false, night
-	end
-
-	local v5 = night:CreateWindow({
-		Title = tbl.Name,
-		SubTitle = tbl.Game,
-		Size = UDim2.fromOffset(680, 480),
-		TabWidth = 142,
-		Key = Enum.KeyCode.RightControl,
-		MinimizeKey = Enum.KeyCode.RightControl,
-		Glass = false,
-		Settings = { Save = true, Main = tbl.Name, Folder = tbl.Name, Game = "BloxFruitsPvp" },
+	local ScreenGui = fn67("ScreenGui", {
+		Name = "NightDungeonUI",
+		ResetOnSpawn = false,
+		IgnoreGuiInset = true,
+		DisplayOrder = 999,
+		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+		Parent = result,
 	})
 
-	local tbl10 = {
-		fight = v5:AddTab({ Title = "Combat", Icon = "crosshair" }),
-		aura = v5:AddTab({ Title = "Kill Aura", Icon = "swords" }),
-		eye = v5:AddTab({ Title = "Visuals", Icon = "eye" }),
-		body = v5:AddTab({ Title = "Player", Icon = "user" }),
-		conf = v5:AddTab({ Title = "Settings", Icon = "settings" }),
-	}
+	tbl11.Screen = ScreenGui
+	local n19 = 528
+	local n20 = 328
 
-	genv.gethui = gethui_
-	local tbl11 = {}
+	local function fn74(arg, arg2, arg3, arg4)
+		local v8 = fn67
+
+		local tbl12 = {
+			Name = "Shadow",
+			BackgroundTransparency = 1,
+			Image = "rbxassetid://6014261993",
+			ImageColor3 = arg4 or Color3.new(0, 0, 0),
+			ImageTransparency = 1,
+			ScaleType = Enum.ScaleType.Slice,
+			SliceCenter = Rect.new(49, 49, 450, 450),
+			Size = UDim2.new(0, n19 + arg, 0, n20 + arg),
+			Position = UDim2.new(0.5, 0, 0.5, arg2),
+		}
+
+		tbl12.AnchorPoint = Vector2.new(0.5, 0.5)
+		tbl12.ZIndex = 0
+		tbl12.Parent = ScreenGui
+		return v8("ImageLabel", tbl12), arg3
+	end
+
+	local v8, v9 = fn74(150, 20, 0.72)
+	local v10, v11 = fn74(70, 10, 0.34)
+	local v12, v13 = fn74(108, 0, 0.88, tbl9.Violet)
+	local shadows = { { v8, v9 }, { v10, v11 }, { v12, v13 } }
+	tbl11.Shadows = shadows
+
+	local Frame = fn67("Frame", {
+		Name = "Root",
+		BackgroundColor3 = tbl9.Shell,
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Size = UDim2.new(0, 528, 0, 328),
+		Position = UDim2.new(0.5, 0, 0.5, 0),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Parent = ScreenGui,
+	}, { fn68(18) })
+
+	tbl11.Root = Frame
+	local UIScale = fn67("UIScale", { Scale = 0.92, Parent = Frame })
+	tbl11.Scale = UIScale
+
+	local UIStroke = fn67("UIStroke", {
+		Color = tbl9.Line,
+		Thickness = 1.4,
+		Transparency = 1,
+		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+		Parent = Frame,
+	})
+
+	fn72(90, tbl9.Violet, tbl9.Line, tbl9.Cyan).Parent = UIStroke
+	tbl11.Edge = UIStroke
+
+	Frame:GetPropertyChangedSignal("Position"):Connect(function()
+		for _, shadow in ipairs(shadows) do
+			shadow[1].Position = UDim2.new(Frame.Position.X.Scale, Frame.Position.X.Offset, Frame.Position.Y.Scale, Frame.Position.Y.Offset + (shadow[1] == v8 and 20 or shadow[1] == v10 and 10 or 0))
+		end
+	end)
+
+	local Frame2 = fn67("Frame", {
+		Name = "Header",
+		BackgroundColor3 = tbl9.Head,
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Size = UDim2.new(1, 0, 0, 48),
+		Parent = Frame,
+	}, { fn68(18) })
+
+	tbl11.Header = Frame2
+
+	local Frame3 = fn67("Frame", {
+		BackgroundColor3 = tbl9.Head,
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Size = UDim2.new(1, 0, 0, 18),
+		Position = UDim2.new(0, 0, 1, -18),
+		Parent = Frame2,
+	})
+
+	local Frame4 = fn67("Frame", {
+		BackgroundColor3 = tbl9.Violet,
+		BackgroundTransparency = 0.94,
+		BorderSizePixel = 0,
+		Size = UDim2.new(1, 0, 1, 0),
+		Parent = Frame2,
+	}, { fn68(18) })
+
+	local v14 = fn72(0, tbl9.Head, tbl9.Violet, tbl9.Head)
+	local numberSequence = NumberSequence.new
 	local tbl12 = {}
+	local v15 = NumberSequenceKeypoint.new(0, 1)
+	local v16 = NumberSequenceKeypoint.new(0.5, 0.55)
+	tbl12[1] = v15
+	tbl12[2] = v16
 
-	local function note(arg, arg2)
-		pcall(function()
-			night:Notify({ Kind = arg2 or "info", Title = tbl.Name, Content = arg, Duration = 4 })
+	do
+		local values = table.pack(NumberSequenceKeypoint.new(1, 1))
+		table.move(values, 1, values.n, 3, tbl12)
+	end
+
+	v14.Transparency = numberSequence(tbl12)
+	v14.Offset = Vector2.new(-1.2000000476837158, 0)
+	v14.Parent = Frame4
+	TweenService:Create(v14, TweenInfo.new(4.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1, false, 2.5), { Offset = Vector2.new(1.2000000476837158, 0) }):Play()
+
+	local Frame5 = fn67("Frame", {
+		BackgroundColor3 = tbl9.Violet,
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Size = UDim2.new(1, -28, 0, 2),
+		Position = UDim2.new(0, 14, 1, -1),
+		Parent = Frame2,
+	}, { fn68(2) })
+
+	local v17 = fn72(0, tbl9.Violet, tbl9.Cyan, tbl9.Pink)
+	v17.Parent = Frame5
+	fn71(v17, 6, { Offset = Vector2.new(0.60000002384185791, 0) }, true)
+	tbl11.AccentBar = Frame5
+
+	local TextLabel = fn67("TextLabel", {
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -120, 0, 22),
+		Position = UDim2.new(0, 15, 0, 5),
+		Font = Enum.Font.GothamBold,
+		Text = "Night Hub  ·  Kaitun Dungeon",
+		TextColor3 = Color3.fromRGB(255, 255, 255),
+		TextSize = 15,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Parent = Frame2,
+	})
+
+	local v18 = fn72(0, tbl9.Violet, tbl9.Cyan, tbl9.Pink)
+	v18.Parent = TextLabel
+	fn71(v18, 5, { Offset = Vector2.new(0.34999999403953552, 0) }, true)
+	tbl11.Title = TextLabel
+
+	local TextLabel2 = fn67("TextLabel", {
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -120, 0, 15),
+		Position = UDim2.new(0, 15, 0, 26),
+		Font = Enum.Font.Gotham,
+		Text = "Idle",
+		TextColor3 = tbl9.Sub,
+		TextSize = 11,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		Parent = Frame2,
+	})
+
+	tbl11.Sub = TextLabel2
+
+	TextLabel2:GetPropertyChangedSignal("Text"):Connect(function()
+		TextLabel2.TextTransparency = 0.7
+		fn70(TextLabel2, 0.3, { TextTransparency = 0 })
+	end)
+
+	local function fn75(arg, arg2, arg3, arg4)
+		local TextButton = fn67("TextButton", {
+			BackgroundColor3 = arg3,
+			BackgroundTransparency = 0.25,
+			BorderSizePixel = 0,
+			AutoButtonColor = false,
+			Size = UDim2.new(0, 28, 0, 24),
+			Position = UDim2.new(1, arg2, 0, 12),
+			Font = Enum.Font.GothamBold,
+			Text = arg,
+			TextColor3 = tbl9.Sub,
+			TextSize = 13,
+			Parent = Frame2,
+		}, { fn68(9) })
+
+		TextButton.MouseEnter:Connect(function()
+			fn70(TextButton, 0.16, { BackgroundTransparency = 0, TextColor3 = tbl9.Text, Size = UDim2.new(0, 30, 0, 26) })
 		end)
-	end
 
-	local function fn(arg, arg2, arg3, arg4)
-		tbl11[arg2] = arg:AddParagraph({ Title = arg3, Content = "...", Icon = arg4 })
-	end
-
-	local function post(arg, arg2)
-		local v6 = tbl11[arg]
-
-		if v6 then
-			pcall(function()
-				v6:SetContent(arg2)
-			end)
-		end
-	end
-
-	local function mirror(arg, arg2)
-		local v6 = tbl12[arg]
-
-		if v6 then
-			pcall(function()
-				v6:SetValue(arg2, true)
-			end)
-		end
-	end
-
-	local function fn2(arg, arg2, arg3, arg4)
-		local v6 = arg:AddSection(arg2, arg4)
-
-		pcall(function()
-			v6:SetIcon(arg3)
+		TextButton.MouseLeave:Connect(function()
+			fn70(TextButton, 0.22, { BackgroundTransparency = 0.25, TextColor3 = tbl9.Sub, Size = UDim2.new(0, 28, 0, 24) })
 		end)
 
-		return v6
+		TextButton.MouseButton1Down:Connect(function()
+			fn70(TextButton, 0.08, { Size = UDim2.new(0, 25, 0, 21) })
+		end)
+
+		TextButton.MouseButton1Click:Connect(function()
+			fn70(TextButton, 0.18, { Size = UDim2.new(0, 30, 0, 26) }, back)
+			arg4()
+		end)
+
+		return TextButton
 	end
 
-	local function fn3(arg, arg2, arg3, arg4, arg5, arg6)
-		tbl12[arg2] = arg:AddToggle(arg2, {
-			Title = arg3,
-			Description = arg4,
-			Icon = arg5,
-			Default = tbl4[arg2],
-			Callback = function(arg7)
-				tbl4[arg2] = arg7
+	local Frame6 = fn67("Frame", {
+		Name = "Body",
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -24, 1, -106),
+		Position = UDim2.new(0, 12, 0, 56),
+		Parent = Frame,
+	})
 
-				if arg6 then
-					arg6(arg7)
+	tbl11.Body = Frame6
+	local UIScale2 = fn67("UIScale", { Scale = 1, Parent = Frame6 })
+	local flag8 = false
+
+	fn75("X", -38, tbl9.Off, function()
+		nightDungeon.Stop()
+	end)
+
+	fn75("–", -72, tbl9.Btn, function()
+		flag8 = not flag8
+		local n21 = flag8 and 48 or 328
+
+		if flag8 then
+			fn70(UIScale2, 0.16, { Scale = 0.94 })
+			fn70(tbl11.Footer, 0.16, { Position = UDim2.new(0, 12, 1, -30) })
+
+			task.delay(0.14, function()
+				if flag8 then
+					Frame6.Visible = false
+					tbl11.Footer.Visible = false
 				end
-			end,
+			end)
+		else
+			Frame6.Visible = true
+			tbl11.Footer.Visible = true
+			UIScale2.Scale = 0.94
+			fn70(UIScale2, 0.3, { Scale = 1 }, back)
+			fn70(tbl11.Footer, 0.3, { Position = UDim2.new(0, 12, 1, -44) })
+		end
+
+		fn70(Frame, 0.32, { Size = UDim2.new(0, 528, 0, n21) })
+
+		for _, shadow in ipairs(shadows) do
+			local n22 = shadow[1].Size.X.Offset - n19
+			fn70(shadow[1], 0.32, { Size = UDim2.new(0, n19 + n22, 0, n21 + n22) })
+		end
+	end)
+
+	local function fn76(arg, arg2, arg3, arg4)
+		local line = tbl9.Line
+
+		local Frame7 = fn67("Frame", {
+			BackgroundColor3 = tbl9.Panel,
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			Size = UDim2.new(0, arg2, 1, 0),
+			Position = UDim2.new(0, arg, 0, 0),
+			Parent = Frame6,
+		}, { fn68(14), fn69(line, 1, 0.55) })
+
+		fn70(Frame7, 0.45, { BackgroundTransparency = tbl10.Panel })
+
+		fn67("Frame", {
+			BackgroundColor3 = arg4,
+			BorderSizePixel = 0,
+			Size = UDim2.new(0, 3, 0, 14),
+			Position = UDim2.new(0, 10, 0, 9),
+			Parent = Frame7,
+		}, { fn68(2) })
+
+		fn67("TextLabel", {
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1, -28, 0, 20),
+			Position = UDim2.new(0, 20, 0, 6),
+			Font = Enum.Font.GothamBold,
+			Text = arg3,
+			TextColor3 = arg4,
+			TextSize = 12,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Parent = Frame7,
 		})
+
+		local Frame8 = fn67("Frame", {
+			BackgroundColor3 = tbl9.Line,
+			BorderSizePixel = 0,
+			BackgroundTransparency = 0.3,
+			Size = UDim2.new(1, -20, 0, 1),
+			Position = UDim2.new(0, 10, 0, 28),
+			Parent = Frame7,
+		})
+
+		local v19 = fn72(0, arg4, tbl9.Line)
+		local new = NumberSequenceKeypoint.new
+		v19.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), new(1, 0.85) })
+		v19.Parent = Frame8
+
+		return Frame7, (fn67("Frame", {
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1, -20, 1, -40),
+			Position = UDim2.new(0, 10, 0, 34),
+			Parent = Frame7,
+		}, {
+			fn67("UIListLayout", {
+				FillDirection = Enum.FillDirection.Vertical,
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				Padding = UDim.new(0, 3),
+			}),
+		}))
 	end
 
-	local function fn4(arg, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
-		arg:AddSlider(arg2, {
-			Title = arg3,
-			Description = arg4,
-			Icon = arg5,
-			Min = arg6,
-			Max = arg7,
-			Default = tbl4[arg2],
-			Rounding = arg8 or 0,
-			Callback = function(arg9)
-				tbl4[arg2] = arg9
-			end,
+	local dungeon, v19 = fn76(0, 246, "Dungeon", tbl9.Violet)
+	local kaitun, v20 = fn76(256, 246, "Kaitun", tbl9.Cyan)
+	local rows = {}
+
+	local function fn77(arg, arg2, arg3, arg4)
+		local Frame7 = fn67("Frame", {
+			BackgroundColor3 = tbl9.Violet,
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			Size = UDim2.new(1, 0, 0, 19),
+			Parent = arg,
+		}, { fn68(6) })
+
+		fn67("TextLabel", {
+			BackgroundTransparency = 1,
+			Size = UDim2.new(0.46, 0, 1, 0),
+			Font = Enum.Font.Gotham,
+			Text = arg3,
+			TextColor3 = tbl9.Sub,
+			TextSize = 12,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Parent = Frame7,
 		})
-	end
 
-	local function fn5(arg, arg2, arg3, arg4, arg5, arg6)
-		arg:AddDropdown(arg2, {
-			Title = arg3,
-			Description = arg4,
-			Icon = arg5,
-			Values = arg6,
-			Default = tbl4[arg2],
-			Callback = function(arg7)
-				tbl4[arg2] = arg7
-			end,
+		local TextLabel3 = fn67("TextLabel", {
+			BackgroundTransparency = 1,
+			Size = UDim2.new(0.54, 0, 1, 0),
+			Position = UDim2.new(0.46, 0, 0, 0),
+			Font = Enum.Font.GothamMedium,
+			Text = "-",
+			TextColor3 = tbl9.Text,
+			TextSize = 12,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			TextTruncate = Enum.TextTruncate.AtEnd,
+			Parent = Frame7,
 		})
-	end
 
-	local function fn6(arg, arg2, arg3, arg4, arg5)
-		arg:AddKeybind(arg2, { Title = arg3, Description = arg4, Icon = arg5, Default = tbl4[arg2], Mode = "Toggle" })
-		local options = night.Options and night.Options[arg2]
+		rows[arg2] = TextLabel3
 
-		if options and options.OnChanged then
-			options:OnChanged(function(arg6)
-				tbl4[arg2] = keyName(arg6)
+		if arg4 then
+			TextLabel3:GetPropertyChangedSignal("Text"):Connect(function()
+				Frame7.BackgroundTransparency = 0.86
+				fn70(Frame7, 0.7, { BackgroundTransparency = 1 })
 			end)
 		end
 	end
 
-	local targeting = fn2(tbl10.fight, "Targeting", "target", "shared by aimbot, silent aim, kill aura and visuals")
-	fn5(targeting, "pickMode", "Pick target by", "Smart scores distance, health and cursor together, finishes anyone under 25% first and only swaps target when a clearly better one shows up. The others use a single rule.", "list-filter", { "Smart", "Nearest cursor", "Nearest distance", "Lowest health" })
-	fn4(targeting, "smartHp", "Smart: health vs distance", "0 picks purely the closest, 100 purely the weakest. Only used by Smart.", "scale", 0, 100, 0)
-	fn3(targeting, "killNote", "Kill Notify", "Shows a notification when your target dies.", "skull")
-	fn5(targeting, "part", "Aim part", "Falls back to HumanoidRootPart when the part is missing.", "scan", { "Head", "HumanoidRootPart" })
-	fn3(targeting, "useFov", "Limit To FOV", "Only players inside the circle around your cursor can be picked.", "circle-dashed")
-	fn4(targeting, "fov", "FOV radius", "In screen pixels.", "circle", 30, 600, 0)
-	fn4(targeting, "maxDist", "Max distance", "Studs from your character.", "ruler", 50, 5000, 0)
-	fn4(targeting, "pred", "Prediction", "Leads the aim point by the target's velocity times this many seconds. Raise it for slow projectiles.", "trending-up", 0, 0.5, 2)
-	fn3(targeting, "teamCheck", "Team Check", "Skips other Marines while you are a Marine, the game blocks that damage anyway.", "shield")
-	fn3(targeting, "wallCheck", "Wall Check", "Ignores anyone behind a wall from the camera's point of view.", "brick-wall")
-	fn3(targeting, "skipFriends", "Ignore Friends", "Never picks a Roblox friend.", "heart")
-	fn6(targeting, "lockKey", "Lock target key", "Press once to stick to the current target until it dies or you press again.", "lock")
-	fn(targeting, "target", "Current target", "user")
-	local aimbot = fn2(tbl10.fight, "Aimbot", "crosshair")
-	fn3(aimbot, "aimbot", "Aimbot", "Turns the camera onto the target.", "crosshair")
-	fn5(aimbot, "aimTrigger", "Trigger", "When the camera is allowed to lock on.", "mouse-pointer", { "Hold right mouse", "Hold key", "Always" })
-	fn6(aimbot, "aimKey", "Aim key", "Only used while Trigger is Hold key.", "keyboard")
-	fn4(aimbot, "smooth", "Smoothness", "0 snaps instantly, higher values glide onto the target.", "wind", 0, 0.95, 2)
-	local silentAim = fn2(tbl10.fight, "Silent Aim", "scan-eye")
+	fn77(v19, "place", "Vi tri")
+	fn77(v19, "floor", "Tang", true)
+	fn77(v19, "mobs", "Quai", true)
+	fn77(v19, "boss", "Boss")
+	fn77(v19, "time", "Con lai")
+	fn77(v19, "hp", "HP")
+	fn77(v19, "energy", "Energy", true)
+	fn77(v19, "target", "Muc tieu", true)
+	fn77(v19, "dist", "Khoang cach")
+	fn77(v20, "mode", "Che do")
+	fn77(v20, "weapon", "Vu khi")
+	fn77(v20, "diff", "Difficulty")
+	fn77(v20, "attack", "Fast attack")
+	fn77(v20, "hyper", "HYPER", true)
+	fn77(v20, "buff", "The bai", true)
+	fn77(v20, "runs", "Luot / Kill", true)
+	fn77(v20, "alt", "Do cao")
+	fn77(v20, "uptime", "Uptime")
 
-	fn3(silentAim, "silent", "Silent Aim", "Skills, fruit clicks and guns fly at the target while your camera stays free. Every position or direction the game sends that matches where your mouse points gets swapped for the target's predicted position.", "scan-eye", function(arg)
-		if not arg then
-			return
-		end
-		local v6, v7 = hook()
-		if v6 then
-			return
-		end
-		tbl4.silent = false
-		mirror("silent", false)
-		note(("Silent aim: %*"):format(v7), "warn")
+	local Frame7 = fn67("Frame", {
+		Name = "Footer",
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -24, 0, 38),
+		Position = UDim2.new(0, 12, 1, -44),
+		Parent = Frame,
+	})
+
+	tbl11.Footer = Frame7
+
+	local Frame8 = fn67("Frame", {
+		BackgroundColor3 = tbl9.On,
+		BackgroundTransparency = 0.6,
+		BorderSizePixel = 0,
+		Size = UDim2.new(0, 9, 0, 9),
+		Position = UDim2.new(0, 3, 0.5, 0),
+		AnchorPoint = Vector2.new(0, 0.5),
+		Parent = Frame7,
+	}, { fn68(20) })
+
+	fn71(Frame8, 1.1, { Size = UDim2.new(0, 20, 0, 20), BackgroundTransparency = 1 }, false)
+	tbl11.PipHalo = Frame8
+
+	tbl11.Pip = fn67("Frame", {
+		BackgroundColor3 = tbl9.On,
+		BorderSizePixel = 0,
+		Size = UDim2.new(0, 9, 0, 9),
+		Position = UDim2.new(0, 3, 0.5, 0),
+		AnchorPoint = Vector2.new(0, 0.5),
+		Parent = Frame7,
+	}, { fn68(20) })
+
+	local TextLabel3 = fn67("TextLabel", {
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -22, 1, 0),
+		Position = UDim2.new(0, 20, 0, 0),
+		Font = Enum.Font.Gotham,
+		Text = "san sang",
+		TextColor3 = tbl9.Sub,
+		TextSize = 11,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		Parent = Frame7,
+	})
+
+	tbl11.Foot = TextLabel3
+
+	TextLabel3:GetPropertyChangedSignal("Text"):Connect(function()
+		TextLabel3.TextTransparency = 0.75
+		TextLabel3.Position = UDim2.new(0, 20, 0, 3)
+		fn70(TextLabel3, 0.35, { TextTransparency = 0, Position = UDim2.new(0, 20, 0, 0) })
 	end)
 
-	fn4(silentAim, "chance", "Hit chance", "Percent of shots that get redirected.", "percent", 1, 100, 0)
-	local pvPMode = fn2(tbl10.fight, "PvP Mode", "flame")
+	local flag9 = false
+	local position2 = nil
+	local position3 = nil
 
-	pvPMode:AddButton({
-		Title = "PvP Mode",
-		Description = "Turns on Smart target, silent aim, Smart fly, auto skills, no stun, anti aim, auto dodge, hitbox, auto haki and ESP in one go.",
-		Icon = "flame",
-		Label = "Enable",
-		Callback = function()
-			local options = night.Options or {}
+	Frame2.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			flag9 = true
+			position2 = input.Position
+			position3 = Frame.Position
+			fn70(UIScale, 0.18, { Scale = 1.012 })
+			fn70(v8, 0.18, { ImageTransparency = 0.58 })
+			fn70(v10, 0.18, { ImageTransparency = 0.2 })
+			fn70(v12, 0.18, { ImageTransparency = 0.8 })
+		end
+	end)
 
-			for k, v6 in pairs({
-				pickMode = "Smart",
-				silent = true,
-				fly = true,
-				flyMode = "Smart",
-				autoSkill = true,
-				noStun = true,
-				antiAim = true,
-				dodge = true,
-				hitbox = true,
-				buso = true,
-				ken = true,
-				esp = true,
-				killNote = true,
-			}) do
-				local v7 = options[k]
-
-				if v7 and v7.SetValue then
-					pcall(function()
-						v7:SetValue(v6)
-					end)
-				else
-					tbl4[k] = v6
-				end
+	Frame2.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			if not flag9 then
+				return
 			end
-
-			note("PvP Mode on", "good")
-		end,
-	})
-
-	fn3(pvPMode, "autoSkill", "Auto Skills", "Presses the chosen skill keys while the target is in range. Each press forces silent aim so the skill flies at the target.", "flame", function(arg)
-		if not arg then
-			return
-		end
-		local v6, v7 = hook()
-		if v6 then
-			return
-		end
-		tbl4.autoSkill = false
-		mirror("autoSkill", false)
-		note(("Auto skills: %*"):format(v7), "warn")
-	end)
-
-	pvPMode:AddDropdown("skillKeys", {
-		Title = "Skill keys",
-		Description = "Pressed in this order, Z first.",
-		Icon = "keyboard",
-		Values = { "Z", "X", "C", "V", "F" },
-		Multi = true,
-		Default = { "Z", "X", "C", "V" },
-		Callback = function(skillKeys)
-			tbl4.skillKeys = skillKeys
-		end,
-	})
-
-	fn4(pvPMode, "skillRange", "Skill range", "Studs to the target.", "ruler", 10, 300, 0)
-	fn4(pvPMode, "skillHold", "Hold time", "Seconds each key is held. Raise it for charged skills.", "timer", 0.03, 2, 2)
-	fn4(pvPMode, "skillGap", "Gap between skills", "Seconds.", "timer", 0.05, 2, 2)
-	local hitbox = fn2(tbl10.fight, "Hitbox", "box")
-	fn3(hitbox, "hitbox", "Hitbox Expander", "Grows every enemy's HumanoidRootPart on your screen so melee, swords and skills connect from further away.", "box")
-	fn4(hitbox, "hitboxSize", "Hitbox size", "Studs on each side.", "maximize", 4, 40, 0)
-	fn3(hitbox, "hitboxShow", "Show Hitbox", "Draws the enlarged box faintly.", "eye")
-	local autoGun = fn2(tbl10.fight, "Auto Gun", "target")
-
-	fn3(autoGun, "autoGun", "Auto Shoot", "When the target is in range, equips the gun, aims at the target through the silent aim hook for that shot only, fires, then goes back to what you held.", "flame", function(arg)
-		if not arg then
-			return
-		end
-		local v6, v7 = hook()
-		if v6 then
-			return
-		end
-		tbl4.autoGun = false
-		mirror("autoGun", false)
-		note(("Auto gun: %*"):format(v7), "warn")
-	end)
-
-	fn5(autoGun, "gunPick", "Gun", "Dragonstorm matches by name, Any gun takes the first gun in your backpack.", "crosshair", { "Dragonstorm", "Any gun" })
-	fn4(autoGun, "gunRange", "Fire range", "Studs to the target.", "locate", 20, 400, 0)
-	fn4(autoGun, "gunRate", "Fire delay", "Seconds between shots.", "timer", 0.1, 2, 2)
-	fn3(autoGun, "gunSkills", "Use Gun Skills", "Also presses Z and X on each shot.", "wand-2")
-	fn3(autoGun, "gunBack", "Swap Back", "Re-equips your previous weapon after the shot.", "undo-2")
-	fn(autoGun, "gun", "Auto Gun", "activity")
-	local killAura = fn2(tbl10.aura, "Kill Aura", "swords")
-	fn3(killAura, "aura", "Kill Aura", "Swings your melee or sword at players in range, the hit list is built client side.", "swords")
-	fn3(killAura, "auraAll", "Hit Everyone In Range", "Off means only the current target gets hit.", "users")
-	fn4(killAura, "auraRange", "Range", "Studs.", "locate", 5, 100, 0)
-	fn4(killAura, "auraRate", "Swing delay", "Seconds between swings.", "timer", 0.05, 1, 2)
-	fn5(killAura, "auraWeapon", "Weapon", "Keep current uses whatever melee or sword you hold. Melee or Sword equips one from your backpack.", "hand", { "Keep current", "Melee", "Sword" })
-	fn(killAura, "aura", "Kill Aura", "activity")
-	local v6 = fn2(tbl10.aura, "Haki & Race", "flame")
-	fn3(v6, "buso", "Auto Buso Haki", "Turns armament back on whenever it drops.", "shield-plus")
-	fn3(v6, "ken", "Auto Observation", "Fires observation every 10 seconds.", "eye")
-	fn3(v6, "race", "Auto Race Ability", "Fires your race ability every 5 seconds.", "flame")
-
-	v6:AddButton({
-		Title = "Use race ability",
-		Icon = "flame",
-		Label = "Use",
-		Callback = function()
-			local v7, v8 = race()
-
-			if not v7 then
-				note(("Race: %*"):format(v8), "warn")
-			end
-		end,
-	})
-
-	local playerEsp = fn2(tbl10.eye, "Player ESP", "eye")
-
-	if not flag5 then
-		fn(playerEsp, "draw", "Drawing API", "triangle-alert")
-	end
-
-	fn3(playerEsp, "esp", "ESP", "Master switch for everything in this section.", "eye")
-	fn3(playerEsp, "box", "Box", "2D box around each player.", "square")
-	fn3(playerEsp, "name", "Name", "Display name above the box.", "type")
-	fn3(playerEsp, "info", "Info", "Level, distance and fruit under the box.", "info")
-	fn3(playerEsp, "bar", "Health Bar", "Bar on the left side of the box.", "heart-pulse")
-	fn3(playerEsp, "hpText", "Health Number", "Current HP next to the bar.", "hash")
-	fn3(playerEsp, "chams", "Chams", "Highlights bodies through walls.", "layers")
-	fn3(playerEsp, "tracer", "Tracers", "A line to every player.", "git-commit-horizontal")
-	fn5(playerEsp, "tracerFrom", "Tracer origin", "Where the lines start on screen.", "move", { "Bottom", "Center", "Mouse" })
-	fn4(playerEsp, "espDist", "ESP distance", "Studs.", "ruler", 100, 10000, 0)
-	fn5(playerEsp, "espColor", "ESP color", "Used when Team Color is off.", "palette", tbl6)
-	fn3(playerEsp, "teamColor", "Team Color", "Colors each player by their team.", "flag")
-	local targetVisuals = fn2(tbl10.eye, "Target Visuals", "target")
-	fn3(targetVisuals, "showFov", "Show FOV Circle", "Only drawn while aimbot or silent aim is on.", "circle-dashed")
-	fn3(targetVisuals, "tgtLine", "Target Line", "Draws a line to the current target.", "spline")
-	fn5(targetVisuals, "lineFrom", "Line origin", "Where the target line starts.", "move", { "Character", "Bottom", "Mouse" })
-	fn3(targetVisuals, "tgtMark", "Target Marker", "Rings the target and recolors its ESP.", "crosshair")
-	fn5(targetVisuals, "tgtColor", "Target color", "Color for the line, marker and target ESP.", "palette", tbl6)
-	local speed = fn2(tbl10.body, "Speed", "gauge")
-
-	local function fn7(arg)
-		if not arg then
-			return
-		end
-		local v7, v8 = hook()
-
-		if not v7 then
-			note(("%*, the game may reset the value"):format(v8), "warn")
-		end
-	end
-
-	fn3(speed, "speed", "Walk Speed", "Holds your WalkSpeed. The game's own writes are swapped for your value and its reads get the old value back, so it stops resetting you.", "gauge", fn7)
-	fn4(speed, "speedValue", "Speed", "WalkSpeed while the toggle is on.", "gauge", 16, 350, 0)
-	fn3(speed, "jumpOn", "Jump Power", "Same trick for JumpPower and JumpHeight.", "arrow-up", fn7)
-	fn4(speed, "jumpValue", "Jump", "JumpPower while the toggle is on.", "arrow-up", 50, 400, 0)
-	fn3(speed, "noclip", "Noclip", "Walk through walls.", "ghost")
-	local survival = fn2(tbl10.body, "Survival", "heart-pulse")
-	fn3(survival, "noStun", "No Stun", "Blocks the game from zeroing your speed, anchoring you, platform standing or ragdolling you, and clears the Stun and Busy values on your character when they exist.", "shield-off", fn7)
-	fn5(survival, "moverFilter", "Stun filter", "Smart keeps velocity pushing you the way you face, so your own dashes and flash steps still work. Remove all deletes every BodyVelocity, BodyPosition and similar mover the game puts on you.", "filter", { "Smart", "Remove all" })
-	fn3(survival, "escape", "Escape At Low HP", "Jumps you straight up once when your health drops under the limit.", "shield-alert")
-	fn4(survival, "escapeHp", "HP limit", "Percent of max health.", "heart", 5, 80, 0)
-	fn4(survival, "escapeUp", "Escape height", "Studs.", "arrow-up", 50, 1000, 0)
-	local flyToTarget = fn2(tbl10.body, "Fly To Target", "plane")
-	fn3(flyToTarget, "fly", "Fly To Target", "Flies to the current target. Kite stays behind its back at a safe distance and sways sideways. Predict parks where it is heading, in front of it, so it gets hit. Orbit circles around it.", "plane")
-	fn6(flyToTarget, "flyKey", "Fly key", "Toggles Fly To Target.", "keyboard")
-	fn5(flyToTarget, "flyMode", "Mode", "Smart attacks from behind when the fight is in your favour and kites when it is not. Kite always keeps distance, Predict parks in front, Orbit circles.", "compass", { "Smart", "Kite", "Predict", "Orbit" })
-	fn4(flyToTarget, "engageDist", "Smart: attack distance", "Studs behind the target while attacking.", "swords", 3, 30, 0)
-	fn4(flyToTarget, "engageEdge", "Smart: HP disadvantage allowed", "Still attacks while your HP percent is up to this much lower than the target's.", "scale", 0, 50, 0)
-	fn4(flyToTarget, "retreatHp", "Smart: retreat below HP", "Your HP percent that switches to kiting.", "heart", 10, 80, 0)
-	fn4(flyToTarget, "gankRange", "Smart: gank range", "Two or more enemies this close makes you back off.", "users", 20, 150, 0)
-	fn4(flyToTarget, "kiteDist", "Kite distance", "Studs behind the target in Kite mode.", "ruler", 8, 80, 0)
-	fn4(flyToTarget, "kiteSway", "Kite sway", "How far you swing side to side in Kite mode.", "move", 0, 20, 0)
-	fn4(flyToTarget, "flySpeed", "Speed", "Studs per second.", "gauge", 50, 400, 0)
-	fn4(flyToTarget, "flySafe", "Speed after pull back", "Used for 6 seconds whenever the server snaps you back, then it tries the normal speed again.", "gauge", 50, 400, 0)
-	fn4(flyToTarget, "flyDist", "Distance", "Studs from the target in Predict mode.", "ruler", 2, 20, 0)
-	fn4(flyToTarget, "flyUp", "Height", "Studs above the target.", "arrow-up", 0, 30, 0)
-	fn4(flyToTarget, "orbitRadius", "Orbit radius", "Studs.", "circle", 4, 40, 0)
-	fn4(flyToTarget, "orbitSpeed", "Orbit speed", "Radians per second.", "rotate-cw", 0.5, 8, 1)
-	fn3(flyToTarget, "flyNoclip", "Noclip While Flying", "Passes through walls on the way.", "ghost")
-	fn(flyToTarget, "fly", "Fly", "activity")
-	local defense = fn2(tbl10.body, "Defense", "shield")
-	fn3(defense, "antiAim", "Anti Aim", "Other players see a fake random velocity on you while you move normally, so aimbots and silent aims that lead their shots by your velocity miss.", "shield")
-	fn4(defense, "antiAimPower", "Anti aim strength", "Size of the fake velocity.", "gauge", 50, 1000, 0)
-	fn3(defense, "dodge", "Auto Dodge", "Side steps when an enemy in range turns to face you.", "move")
-	fn4(defense, "dodgeRange", "Dodge range", "Studs.", "ruler", 8, 60, 0)
-	fn4(defense, "dodgeDist", "Dodge distance", "Studs per side step.", "move", 5, 40, 0)
-	fn4(defense, "dodgeCd", "Dodge cooldown", "Seconds between side steps.", "timer", 0.3, 5, 1)
-	local targetMovement = fn2(tbl10.body, "Target Movement", "move")
-	fn3(targetMovement, "stick", "Stick To Target", "Pins you behind and above the target every frame. Only engages inside the range below so it never jumps across the map.", "magnet")
-	fn4(targetMovement, "stickUp", "Height", "Studs above the target.", "arrow-up", 0, 80, 0)
-	fn4(targetMovement, "stickBack", "Behind", "Studs behind the target.", "arrow-left", 1, 15, 0)
-	fn4(targetMovement, "stickRange", "Engage range", "Studs.", "locate", 20, 300, 0)
-	fn3(targetMovement, "spectate", "Spectate Target", "Moves your camera onto the target.", "video")
-	fn3(fn2(tbl10.body, "Movement", "footprints"), "infJump", "Infinite Jump", "Jump again in mid air.", "arrow-up-from-line")
-	local misc = fn2(tbl10.conf, "Misc", "settings")
-
-	fn3(misc, "antiAfk", "Anti AFK", "Disables the idle kick connection.", "coffee", function()
-		local v7, v8 = antiAfk()
-
-		if not v7 then
-			note(("Anti AFK: %*"):format(v8), "warn")
+			flag9 = false
+			fn70(UIScale, 0.3, { Scale = 1 }, back)
+			fn70(v8, 0.3, { ImageTransparency = v9 })
+			fn70(v10, 0.3, { ImageTransparency = v11 })
+			fn70(v12, 0.3, { ImageTransparency = v13 })
 		end
 	end)
 
-	misc:AddKeybind("uiKey", {
-		Title = "Toggle key",
-		Description = "Click the box on the right, then press a new key.",
-		Icon = "keyboard",
-		Default = "RightControl",
-		Mode = "Toggle",
-	})
+	UserInputService.InputChanged:Connect(function(input)
+		if not flag9 then
+			return
+		end
 
-	local uiKey = night.Options and night.Options.uiKey
+		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+			local n21 = input.Position - position2
+			Frame.Position = UDim2.new(position3.X.Scale, position3.X.Offset + n21.X, position3.Y.Scale, position3.Y.Offset + n21.Y)
+		end
+	end)
 
-	if uiKey and uiKey.OnChanged then
-		uiKey:OnChanged(function(arg)
-			v5:SetKey(arg)
-		end)
+	tbl11.Rows = rows
+	fn70(UIScale, 0.42, { Scale = 1 }, back)
+	fn70(Frame, 0.35, { BackgroundTransparency = tbl10.Shell })
+	fn70(Frame2, 0.35, { BackgroundTransparency = tbl10.Head })
+	fn70(Frame3, 0.35, { BackgroundTransparency = tbl10.Head })
+	fn70(UIStroke, 0.5, { Transparency = 0.25 })
+	fn70(Frame5, 0.5, { BackgroundTransparency = 0.15 })
+
+	for _, shadow in ipairs(shadows) do
+		fn70(shadow[1], 0.5, { ImageTransparency = shadow[2] })
+	end
+end
+
+local function fn74(arg)
+	local n19 = math.max(0, math.floor(arg))
+	local n20 = math.floor(n19 / 3600)
+	local n21 = math.floor(n19 % 3600 / 60)
+	local n22 = n19 % 60
+	if n20 > 0 then
+		return string.format("%d:%02d:%02d", n20, n21, n22)
+	end
+	return string.format("%d:%02d", n21, n22)
+end
+
+local function fn75()
+	if not tbl11.Rows then
+		return
+	end
+	local rows = tbl11.Rows
+	local v8 = fn6()
+	local text
+
+	if fn9() then
+		text = "Trong dungeon"
+	elseif fn8() then
+		text = "Dungeon Hub"
+	else
+		text = "khong xac dinh"
+
+		if Workspace:GetAttribute("MAP") then
+			text = tostring(Workspace:GetAttribute("MAP"))
+		end
 	end
 
-	misc:AddButton({
-		Title = "Unload",
-		Description = "Stops every loop, removes the drawings and closes this window.",
-		Icon = "power",
-		Label = "Unload",
-		Callback = function()
-			v5:Dialog({
-				Title = "Unload the script",
-				Content = "Everything turns off and the window closes.",
-				Buttons = {
-					{
-						Title = "Unload",
-						Filled = true,
-						Callback = function()
-							if genv.NightPvp then
-								genv.NightPvp.Unload()
-							end
-						end,
-					},
-					{ Title = "Cancel" },
-				},
-			})
-		end,
-	})
+	local v9 = fn5()
+	local v10 = fn11()
+	local flag8 = v10 ~= nil and fn63(v10)
+	rows.place.Text = text
+	local text2 = state.MaxFloor > 0 and state.Floor .. " / " .. state.MaxFloor or tostring(state.Floor)
 
-	if tbl10.conf.AddInterface then
+	if state.Here and state.Here > 0 and state.Here ~= state.Floor then
+		text2 ..= "  [o " .. state.Here .. "]"
+	end
+
+	rows.floor.Text = text2
+	rows.mobs.Text = state.Total > 0 and state.Dead .. " / " .. state.Total or "-"
+	rows.boss.Text = flag8 and "tang nay CO boss" or "-"
+	rows.boss.TextColor3 = flag8 and tbl9.Pink or tbl9.Text
+	rows.time.Text = state.TimeLeft > 0 and fn74(state.TimeLeft) or "-"
+
+	if v8 then
+		local n19 = v8.MaxHealth > 0 and v8.Health / v8.MaxHealth or 0
+		local floor = math.floor
+		rows.hp.Text = string.format("%d / %d  (%d%%)", math.floor(v8.Health), math.floor(v8.MaxHealth), floor(n19 * 100))
+		rows.hp.TextColor3 = n19 < 0.35 and tbl9.Off or n19 < 0.7 and tbl9.Gold or tbl9.On
+	else
+		rows.hp.Text = "-"
+		rows.hp.TextColor3 = tbl9.Text
+	end
+
+	local energyMax = (state.EnergyMax or 0) > 0 and state.EnergyMax or 50
+	local text3 = tostring(state.Energy) .. " / " .. energyMax
+
+	if (state.EnergyNeed or 0) > 0 then
+		text3 ..= "  (can " .. state.EnergyNeed .. ")"
+	end
+
+	rows.energy.Text = text3
+	rows.target.Text = state.Target or "-"
+	rows.dist.Text = state.Dist and state.Dist >= 0 and state.Dist .. " m" or "-"
+	rows.mode.Text = state.Farm and "KAITUN dang chay" or "dung"
+	rows.mode.TextColor3 = state.Farm and tbl9.On or tbl9.Off
+	rows.weapon.Text = nightDungeonConfig.Weapon
+	rows.diff.Text = nightDungeonConfig.Difficulty
+	rows.attack.Text = flag5 and "dang danh" or state.FastAttack and "san sang" or "tat"
+	rows.attack.TextColor3 = flag5 and tbl9.On or tbl9.Sub
+	rows.hyper.Text = string.format("x%.2f", fn55())
+	rows.hyper.TextColor3 = fn55() > 1.01 and tbl9.Gold or tbl9.Text
+	rows.buff.Text = fn56()
+	rows.runs.Text = state.Runs .. " / " .. state.Kills
+	rows.alt.Text = v9 and math.floor(v9.Position.Y) .. " studs" or "-"
+	local started = state.Started
+	rows.uptime.Text = fn74(os.clock() - started)
+	tbl11.Sub.Text = state.Stage
+	tbl11.Sub.TextColor3 = state.Farm and tbl9.On or tbl9.Sub
+	tbl11.Foot.Text = log[#log] or "san sang"
+	tbl11.Pip.BackgroundColor3 = state.Farm and tbl9.On or tbl9.Off
+end
+
+fn73()
+
+task.spawn(function()
+	while not flag do
+		pcall(fn75)
+		task.wait(0.4)
+	end
+end)
+
+nightDungeon.Stop = function()
+	if flag then
+		return
+	end
+	flag = true
+	state.Farm = false
+	flag5 = false
+	fn25()
+	fn29(false)
+	fn26(false)
+
+	if connection4 then
+		connection4:Disconnect()
+	end
+
+	if connection3 then
+		connection3:Disconnect()
+	end
+
+	local buffSelector = dungeonShared:FindFirstChild("BuffSelector")
+
+	if buffSelector and buffSelector:IsA("RemoteFunction") then
 		pcall(function()
-			tbl10.conf:AddInterface()
+			buffSelector.OnClientInvoke = nil
 		end)
 	end
 
-	if not flag5 then
-		post("draw", "Your executor has no Drawing API, only Chams will show")
-	end
-
-	local v7 = UI
-	local v8 = UI
-	local v9 = UI
-	local v10 = UI
-	UI.Night = night
-	v7.Window = v5
-	v8.note = note
-	v9.post = post
-	v10.mirror = mirror
-	return true
-end
-
-unload = function()
-	flag = false
-	flag2 = false
-
-	pcall(function()
-		RunService:UnbindFromRenderStep("NightPvpAim")
-	end)
-
-	if flag4 then
-		local v5, v6 = alive(localPlayer)
-
-		if v6 then
-			currentCamera.CameraSubject = v6
-		end
-	end
-
-	for _, v5 in ipairs(tbl2) do
+	if tbl11.Screen then
 		pcall(function()
-			v5:Disconnect()
+			tbl11.Screen:Destroy()
 		end)
 	end
 
-	table.clear(tbl2)
-	local v5 = tbl4
-	local v6 = tbl4
-	local v7 = tbl4
-	local v8 = tbl4
-	local v9 = tbl4
-	local v10 = tbl4
-	local v11 = tbl4
-	local v12 = tbl4
-	tbl4.speed = false
-	v5.jumpOn = false
-	v6.noclip = false
-	v7.autoGun = false
-	v8.noStun = false
-	v9.fly = false
-	v10.hitbox = false
-	v11.antiAim = false
-	v12.dodge = false
-	tbl4.autoSkill = false
-	pcall(antiAimStep)
-	pcall(hitboxes)
-	pcall(movement)
-	pcall(noclip)
-	Move.on = false
-	pcall(Esp.clear)
-
-	if not (UI.Night and UI.Night.Glass) then
-		pcall(function()
-			UI.Window:Close()
-		end)
-	end
-
-	pcall(function()
-		UI.Night:Destroy()
-	end)
-
-	genv.NightPvp = nil
+	_G.NightDungeon = nil
+	print("[NightDungeon] da tat")
 end
 
-local ok, result, result2 = pcall(buildUI)
-genv.gethui = gethui_
-
-if not ok or not result then
-	local v5 = warn
-	local str = ("! UI: %*"):format(ok and result2 or result)
-	v5(str)
-	Esp.clear()
-	return
+nightDungeon.Park = function()
+	fn32()
 end
 
-for _, player in ipairs(Players:GetPlayers()) do
-	befriend(player)
+nightDungeon.Set = function(arg, arg2)
+	if state[arg] ~= nil then
+		state[arg] = arg2
+		return true
+	end
+
+	if nightDungeonConfig[arg] ~= nil then
+		nightDungeonConfig[arg] = arg2
+		return true
+	end
+	return false
 end
 
-bind(Players.PlayerAdded:Connect(befriend))
+nightDungeon.Dump = function()
+	print("Stage=" .. state.Stage .. " Floor=" .. state.Floor .. "/" .. state.MaxFloor .. " Mobs=" .. state.Dead .. "/" .. state.Total)
+	print("Farm=" .. tostring(state.Farm) .. " AutoStart=" .. tostring(state.AutoStart) .. " FastAttack=" .. tostring(state.FastAttack) .. " AutoBuff=" .. tostring(state.AutoBuff))
+	print("Buffs: " .. fn56())
 
-bind(Players.PlayerRemoving:Connect(function(player)
-	drop(player)
-	tbl3[player.UserId] = nil
-
-	if v4 == player then
-		v4 = nil
+	for k, buff in pairs(state.Buffs) do
+		print("   " .. tostring(k) .. " = " .. tostring(buff))
 	end
-end))
-
-bind(UserInputService.InputBegan:Connect(function(input)
-	if UserInputService:GetFocusedTextBox() or input.KeyCode.Name ~= tbl4.lockKey then
-		return
-	end
-
-	if v4 then
-		v4 = nil
-		UI.note("Target unlocked")
-		return
-	end
-
-	if not v2 then
-		return UI.note("No target", "warn")
-	end
-	v4 = v2
-	local note = UI.note
-	local str = ("Locked %*"):format(v2.DisplayName)
-	note(str)
-end))
-
-bind(UserInputService.InputBegan:Connect(function(input)
-	if UserInputService:GetFocusedTextBox() or tbl4.flyKey == "None" or input.KeyCode.Name ~= tbl4.flyKey then
-		return
-	end
-	tbl4.fly = not tbl4.fly
-	UI.mirror("fly", tbl4.fly)
-	UI.note(tbl4.fly and "Fly on" or "Fly off")
-end))
-
-bind(UserInputService.JumpRequest:Connect(function()
-	if not tbl4.infJump then
-		return
-	end
-	local v5, v6 = alive(localPlayer)
-
-	if v6 then
-		v6:ChangeState(Enum.HumanoidStateType.Jumping)
-	end
-end))
-
-bind(RunService.Heartbeat:Connect(stick))
-
-bind(RunService.Heartbeat:Connect(function()
-	pcall(movement)
-end))
-
-bind(RunService.Stepped:Connect(function()
-	pcall(antiAimStep)
-
-	if tbl4.noclip or tbl4.fly or next(Move.clip) then
-		pcall(noclip)
-	end
-end))
-
-bind(RunService.Heartbeat:Connect(function(deltaTime)
-	pcall(fly, deltaTime)
-	pcall(sweepMovers)
-	pcall(antiAimBeat)
-end))
-
-watchMovers(localPlayer.Character)
-bind(localPlayer.CharacterAdded:Connect(watchMovers))
-spin("Hitbox", 0.3, hitboxes)
-spin("Dodge", 0.05, dodge)
-spin("Crowd", 0.25, crowd)
-
-spin("Skills", 0.1, function()
-	if tbl4.autoSkill then
-		return skills()
-	end
-end)
-
-spin("Gun", function()
-	return tbl4.autoGun and tbl4.gunRate or 0.3
-end, function()
-	if not tbl4.autoGun then
-		Gun.note = "Off"
-		return
-	end
-	local v5
-	v5, v5 = shoot()
-	Gun.note = v5
-end)
-
-spin("Escape", 0.1, escape)
-RunService:BindToRenderStep("NightPvpAim", Enum.RenderPriority.Camera.Value + 1, frame)
-
-spin("Aura", function()
-	return tbl4.aura and tbl4.auraRate or 0.3
-end, function()
-	if not tbl4.aura then
-		Aura.note = "Off"
-		return
-	end
-	local v5
-	v5, v5 = swing()
-	Aura.note = v5
-end)
-
-spin("Buso", 2, function()
-	if tbl4.buso then
-		return buso()
-	end
-end)
-
-spin("Ken", 10, function()
-	if tbl4.ken then
-		return ken()
-	end
-end)
-
-spin("Race", 5, function()
-	if tbl4.race then
-		return race()
-	end
-end)
-
-spin("Panels", 0.5, function()
-	UI.post("target", tgtText())
-	local post = UI.post
-	local str = ("Swings %*  |  %*"):format(Aura.swings, Aura.note)
-	post("aura", str)
-	local post2 = UI.post
-	local str2 = ("Shots %*  |  %*"):format(Gun.shots, Gun.note)
-	post2("gun", str2)
-	UI.post("fly", Fly.note)
-end)
-
-if tbl4.antiAfk then
-	antiAfk()
 end
 
-genv.NightPvp = { Hub = tbl, State = tbl4, Aura = Aura, Esp = Esp, Unload = unload }
-local note = UI.note
-local str = ("Ready - %* build %*"):format(tbl.Game, tbl.Build)
-note(str)
+nightDungeon.State = state
+nightDungeon.Config = nightDungeonConfig
+nightDungeon.Log = log
+
+if flag2 then
+	fn32(true)
+	fn2("KAITUN ON - tu vao dungeon, tu danh, tu nhat the")
+else
+	fn2("Kaitun = false, dang dung")
+end
+
+return nightDungeon
