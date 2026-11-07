@@ -27051,7 +27051,7 @@ FarmingSeaEventSection.CreateToggle(
 		SaveSettings("Auto Sea Event", _)
 	end
 )
--- Auto Leviathan Exit: mesma logica do Auto Sea Event, mas sem lista:
+-- Auto exit cowdalm: mesma logica do Auto Sea Event, mas sem lista:
 -- ataca TODOS os eventos (Sea Beast, barcos, tubaroes, Terrorshark, piranhas).
 function LeavingCowdalmStop()
 	if not getgenv().LeavingCowdalmAll then
@@ -27068,7 +27068,7 @@ function LeavingCowdalmStop()
 end
 ToggleLeavingCowdalm = FarmingSeaEventSection.CreateToggle(
 	{
-		Title = "Auto Leviathan Exit",
+		Title = "Auto exit cowdalm",
 		Desc = "Auto Sea Event sem lista: ataca todos os eventos automaticamente.",
 		Default = false,
 	},
