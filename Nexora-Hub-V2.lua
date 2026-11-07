@@ -1,7 +1,3 @@
--- Deobfuscated By DevAurora Code - https://discord.gg/9dAFZsxKPc
--- Detected obfuscation: Luraph v15
--- Hello UwU
-
 local RunService = not game and game.GetService and game:GetService("RunService") or game.ClassName ~= "DataModel" or typeof and typeof(game.Players) ~= "Instance"
 
 if not RunService then
@@ -5913,8 +5909,8 @@ Restock: %s
 		local v22 = lua4:CreateWindow({
 			Title = "Quantum Onyx",
 			Subtitle = "Blox Fruit",
-			Version = "v.Premium",
-			Key = false,
+			Version = "v.Freemium",
+			Key = true,
 			Theme = "Purple",
 			Credits = {
 				{ Name = "Vin ", Role = "ServerOwner" },
@@ -6467,7 +6463,7 @@ Restock: %s
 		local tbl19 = {
 			OnAutoLoadScript = function()
 				if tbl.AutoLoadScriptonLoad then
-					local str5 = string.format(" task.wait(1) getgenv().Team = \"%s\" loadstring(game:HttpGet(\"https://raw.githubusercontent.com/AteneaNyx/DevAuroraCode/refs/heads/main/DevAuroraQuantumOnyx.lua\"))() ", tbl.TeamSelectLoad or "Pirates")
+					local str5 = string.format(" task.wait(1) getgenv().Team = \"%s\" loadstring(game:HttpGet(\"https://raw.githubusercontent.com/flazhy/QuantumOnyx/refs/heads/main/QuantumOnyx.lua\"))() ", tbl.TeamSelectLoad or "Pirates")
 
 					if not pcall(function()
 						syn.queue_on_teleport(str5)
@@ -7997,7 +7993,7 @@ Restock: %s
 			local v31 = tbl15.Home:addSection()
 			local v32 = v31:addMenu("Farm Settings")
 			tbl16:CreateSlider(v32, "Tweening Speed", "TweenSpeed", 10, 250, 250, { global = true })
-			tbl16:CreateToggle(v32, "Bypass TP ", "BypassTP", false, { locked = false, save = true, global = true })
+			tbl16:CreateToggle(v32, "Bypass TP ", "BypassTP", false, { locked = true, save = true, global = true })
 			tbl16:CreateSlider(v32, "Farm Distance", "PosY", 0, 30, 18, { global = true })
 			tbl16:CreateSlider(v32, "Bring Radius", "BringMonsterRadius", 150, 400, 350, { global = true })
 			tbl16:CreateDropdown(v32, "Pos Method", "PosMethod", "Above", { "Above", "Orbit" }, { global = true })
@@ -8034,7 +8030,7 @@ Restock: %s
 			tbl16:CreateToggle(v32, "Disable Damage Counter", "DisableDamageCounter", false, { callback = tbl19.ToggleDamageCounter })
 			tbl16:CreateToggle(v32, "Disable Notifications", "DisableNotifications", false, { callback = tbl19.ToggleNotifications })
 			tbl16:CreateToggle(v32, "Walk in Water", "Water", true, { callback = tbl19.ToggleWalkInWater })
-			tbl16:CreateToggle(v32, "Auto Hop when 30mins", "AutoHopwhen30mins", false, { locked = false, global = true, save = true, callback = tbl19.OnAutoHop30Mins })
+			tbl16:CreateToggle(v32, "Auto Hop when 30mins", "AutoHopwhen30mins", false, { locked = true, global = true, save = true, callback = tbl19.OnAutoHop30Mins })
 			tbl16:CreateToggle(v32, "Auto Hop When Admin Joined", "HopWhenAdmin", true, { callback = tbl19.ToggleHopAdmin })
 			tbl16:CreateToggle(v32, "Anti Afk", "AntiAFK", true, { callback = tbl19.ToggleAntiAFK })
 
@@ -8078,7 +8074,7 @@ Restock: %s
 
 			tbl16:CreateToggle(v28, "Auto Get CDK (Fully)", "AutoCDKQuest", false, {
 				global = true,
-				locked = false,
+				locked = true,
 				stop = true,
 				save = true,
 				description = "don't turn on remove fog while using this function",
@@ -8086,12 +8082,12 @@ Restock: %s
 
 			tbl16:CreateToggle(v28, "Auto Get Rengoku (Fully)", "AutoRengoku", false, { global = true, stop = true })
 			tbl16:CreateToggle(v28, "Auto Get TTK (Fully)", "AutoTTK", false, { global = true, save = true, stop = true })
-			tbl16:CreateToggle(v28, "Auto Evolve DarkBlade (V2)", "AutoGetDBV2", false, { locked = false, global = true, stop = true })
-			tbl16:CreateToggle(v28, "Auto Shark Anchor (Fully)", "AutoSharkAnchor", false, { locked = false, global = true, stop = true })
-			tbl16:CreateToggle(v28, "Auto Get Skull Guitar (Fully)", "AutoGetSkullGuitar", false, { global = true, locked = false, save = true, stop = true })
-			tbl16:CreateToggle(v28, "Ignore Material Farm for Skull Guitar", "IgnoreMaterialFarmGuitar", false, { global = true, locked = false, stop = true })
+			tbl16:CreateToggle(v28, "Auto Evolve DarkBlade (V2)", "AutoGetDBV2", false, { locked = true, global = true, stop = true })
+			tbl16:CreateToggle(v28, "Auto Shark Anchor (Fully)", "AutoSharkAnchor", false, { locked = true, global = true, stop = true })
+			tbl16:CreateToggle(v28, "Auto Get Skull Guitar (Fully)", "AutoGetSkullGuitar", false, { global = true, locked = true, save = true, stop = true })
+			tbl16:CreateToggle(v28, "Ignore Material Farm for Skull Guitar", "IgnoreMaterialFarmGuitar", false, { global = true, locked = true, stop = true })
 			local v29 = v25:addMenu("Sword Mastery")
-			tbl16:CreateSlider(v29, "Select Sword Mastery", "SelectSwordMastery", 100, 600, 600, { locked = false, global = true })
+			tbl16:CreateSlider(v29, "Select Sword Mastery", "SelectSwordMastery", 100, 600, 600, { locked = true, global = true })
 			tbl16:CreateToggle(v29, "Auto Mastery Swords (Fully)", "AutoMasterySwords", false, { global = true, save = true })
 			local v30 = v25:addMenu("Fight Style Obtainment")
 			tbl16:CreateToggle(v30, "Auto Death Step", "AutoDeathStep", false, { global = true, stop = true })
@@ -8135,7 +8131,7 @@ Restock: %s
 			v28:addButton("Bribe", tbl19.BribeLeviathan or function()
 			end)
 
-			tbl6._FindLeviathan = tbl16:CreateToggle(v28, "Auto Find Leviathan", "AutoFindLeviatan", false, { locked = false, global = true, stop = true })
+			tbl6._FindLeviathan = tbl16:CreateToggle(v28, "Auto Find Leviathan", "AutoFindLeviatan", false, { locked = true, global = true, stop = true })
 
 			tbl16:CreateToggle(v28, "Ignore Sea Events While Finding", "AutoIgnoreSeaEventsLeviathan", false, {
 				global = true,
@@ -8143,13 +8139,13 @@ Restock: %s
 				description = "Ignores sea beasts, sharks, and ships so boat sails uninterrupted to Leviathan",
 			})
 
-			tbl16:CreateToggle(v28, "Auto Kill Leviathan", "AutoKillLeviathan", false, { locked = false, global = true, stop = true })
-			tbl16:CreateToggle(v28, "Auto Sail back to Tiki", "AutoSailbacktoTiki", false, { locked = false, global = true, stop = true })
+			tbl16:CreateToggle(v28, "Auto Kill Leviathan", "AutoKillLeviathan", false, { locked = true, global = true, stop = true })
+			tbl16:CreateToggle(v28, "Auto Sail back to Tiki", "AutoSailbacktoTiki", false, { locked = true, global = true, stop = true })
 			local v29 = tbl15.Sevent:addSection()
 			local v30 = v29:addMenu("Sea Farm")
 			tbl16:CreateDropdown(v30, "Select Boat", "BoatSelected", "PirateBrigade", tbl17.BoatsList or {}, { global = true, save = true })
 			tbl16:CreateDropdown(v30, "Select Zone", "SeaLevelSelected", 6, tbl17.ZoneList or {}, { global = true })
-			tbl16:CreateSlider(v30, "Boat Height", "BoatPosY", 0, 150, 31, { locked = false, global = true })
+			tbl16:CreateSlider(v30, "Boat Height", "BoatPosY", 0, 150, 31, { locked = true, global = true })
 			tbl16:CreateSlider(v30, "Boat Speed", "SpeedBoat", 10, 250, 230, { global = true })
 			tbl16:CreateDropdown(v30, "Sea Event Targets", "SeaEventTargets", 1, tbl17.SeaEventTargets or {}, { global = true }, true)
 			local getAllBoats = tbl19.GetAllBoats and tbl19.GetAllBoats() or { "My Boat" }
@@ -8387,7 +8383,7 @@ Restock: %s
 			end)
 
 			tbl16:CreateToggle(v30, "Auto Draco Race V2 ", "AutoCollectFireFlowers", false, { global = true, stop = true })
-			tbl16:CreateToggle(v30, "Auto Complete Draco Trial", "AutoCompleteDracoTrial", false, { locked = false, global = true, stop = true })
+			tbl16:CreateToggle(v30, "Auto Complete Draco Trial", "AutoCompleteDracoTrial", false, { locked = true, global = true, stop = true })
 		end)
 
 		fn50("Dungeon", function()
@@ -8397,7 +8393,7 @@ Restock: %s
 			tbl16:CreateDropdown(v26, "Raid Chip", "SelectRaid", 1, tbl17.Raids_Chip or {}, { global = true })
 			tbl16:CreateToggle(v26, "Auto Buy Chip", "AutoBuyChip", false, { global = true, save = true })
 			tbl6._AutoRaidToggle = tbl16:CreateToggle(v26, "Auto Complete Raid", "AutoRaidFull", false, { global = true, stop = true })
-			tbl16:CreateToggle(v26, "Instant Kill Islands 4-5 ", "InstantKillLateIslands", false, { locked = false, global = true })
+			tbl16:CreateToggle(v26, "Instant Kill Islands 4-5 ", "InstantKillLateIslands", false, { locked = true, global = true })
 			tbl16:CreateToggle(v26, "Auto Unstore Below 1m Fruit", "AutoUnstoreBelowFruit", false, { global = true, save = true, description = "this will ignore fruit skins" })
 			tbl16:CreateToggle(v26, "Auto Awaken", "AutoAwaken", false, { global = true, save = true })
 			tbl16:CreateSlider(v26, "Frags Cap", "FragsCap", 1000, 1000000, 1000, { global = true })
@@ -8525,7 +8521,7 @@ Restock: %s
 
 			tbl16:CreateDropdown(Trials, "Train Method", "TrainMethod", "Bones", tbl17.TrainMethods or { "Bones", "Cakes" }, { global = true })
 			tbl16:CreateToggle(Trials, "Start Auto Train", "AutoTrainGear", false, { global = true, stop = true })
-			tbl16:CreateToggle(Trials, "Auto Pull Lever (Fully)", "AutoFullyPullLever", false, { locked = false, global = true, save = true, stop = true })
+			tbl16:CreateToggle(Trials, "Auto Pull Lever (Fully)", "AutoFullyPullLever", false, { locked = true, global = true, save = true, stop = true })
 			tbl16:CreateToggle(Trials, "Teleport To Blue Gear", "TweenMGear", false, { global = true })
 			local Area = v25:addMenu("Area")
 
@@ -8667,11 +8663,11 @@ Restock: %s
 
 			local v33 = v29:addMenu("AFK Quantum Joiner")
 			tbl16:CreateSlider(v33, "Hop Delay (s)", "HopDelay", 1, 60, 10, { global = true, save = true })
-			tbl16:CreateToggle(v33, "Auto Afk Join Castle Raid", "AutoAfkJoinCastleRaid", false, { locked = false, save = true, global = true })
-			tbl16:CreateToggle(v33, "Auto Afk Join Factory Raid", "AutoAfkJoinFactoryRaid", false, { locked = false, global = true, save = true })
-			tbl16:CreateToggle(v33, "Auto Afk Join Boss Raid", "AutoAfkJoinBossRaid", false, { locked = false, global = true, save = true })
-			tbl16:CreateToggle(v33, "Auto Afk Join Elite Hunter", "AutoAfkJoinEliteHunter", false, { locked = false, global = true, save = true })
-			tbl16:CreateToggle(v33, "Auto Afk Join Fruit", "AutoAfkJoinFruit", false, { locked = false, global = true, save = true })
+			tbl16:CreateToggle(v33, "Auto Afk Join Castle Raid", "AutoAfkJoinCastleRaid", false, { locked = true, save = true, global = true })
+			tbl16:CreateToggle(v33, "Auto Afk Join Factory Raid", "AutoAfkJoinFactoryRaid", false, { locked = true, global = true, save = true })
+			tbl16:CreateToggle(v33, "Auto Afk Join Boss Raid", "AutoAfkJoinBossRaid", false, { locked = true, global = true, save = true })
+			tbl16:CreateToggle(v33, "Auto Afk Join Elite Hunter", "AutoAfkJoinEliteHunter", false, { locked = true, global = true, save = true })
+			tbl16:CreateToggle(v33, "Auto Afk Join Fruit", "AutoAfkJoinFruit", false, { locked = true, global = true, save = true })
 			tbl16:CreateToggle(v33, "Stop Hop If Chalice / Fist", "StopHopEliteIfChalice", true, { global = true, save = true })
 		end)
 
@@ -14152,12 +14148,12 @@ Restock: %s
 
 	task.spawn(function()
 		task.wait(1.5)
-		tbl6:SendNotify("Quantum Fully Loaded", "Quantum  Craked By DevAurora Code.", 8)
+		tbl6:SendNotify("Quantum Fully Loaded", "All Functions, Modules, Dependencies, Successfully loaded.", 8)
 		task.wait(1)
-		tbl6:SendNotify("Quantum (INFO)", "DevAurora Code -  https://discord.gg/9dAFZsxKPc", 8)
+		tbl6:SendNotify("Quantum (INFO)", "Quantum Onyx Script is 100% Free and Keyless", 8)
 
 		pcall(function()
-			loadstring(game:HttpGet("https://raw.githubusercontent.com/AteneaNyx/DevAuroraCode/refs/heads/main/WeeboDevAurora.lua"))()
+			loadstring(game:HttpGet("https://raw.githubusercontent.com/flazhy/QuantumOnyx/refs/heads/main/Util/BloxFruitModule/Preload/Weebo.lua"))()
 		end)
 	end)
 
