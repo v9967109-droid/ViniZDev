@@ -3231,27 +3231,33 @@ function Nexora.CreateMain(config)
                     -- O menu fica dentro da janela (mesma escala): converte posições absolutas em pixels de design.
                     local s = math.max(scale.Scale, 0.01)
                     local shellPos, shellSize = shell.AbsolutePosition, shell.AbsoluteSize
-                    local bPos, bSize = b.AbsolutePosition, b.AbsoluteSize
+                    local bPos, bSize = holderD.AbsolutePosition, Vector2.new(holderD.AbsoluteSize.X, 77 * s)
                     local shellW, shellH = shellSize.X / s, shellSize.Y / s
                     local count = #listValues + (multi and 1 or 0)
-                    local h = math.max(40, math.min(196, count * 32 + 12))
-                    local w = math.max(bSize.X / s, 150)
+                    local h = math.max(48, math.min(232, count * 38 + 12))
+                    local w = math.max(bSize.X / s, 160)
                     local x = (bPos.X - shellPos.X) / s
-                    local y = (bPos.Y - shellPos.Y + bSize.Y) / s + 5
+                    local y = (bPos.Y - shellPos.Y + bSize.Y) / s + 6
                     if y + h > shellH - 8 then y = math.max(8, (bPos.Y - shellPos.Y) / s - h - 5) end
                     x = math.clamp(x, 6, math.max(6, shellW - w - 6))
+                    local shadow = make("Frame", {Name = menuName .. "Shadow", Position = UDim2.fromOffset(x - 4, y + 3), Size = UDim2.fromOffset(w + 8, h + 8), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.6, BorderSizePixel = 0, ZIndex = 99}, shell)
+                    corner(shadow, 16)
                     local menu = make("ScrollingFrame", {
-                        Name = menuName, Position = UDim2.fromOffset(x, y - 6), Size = UDim2.fromOffset(w, h), CanvasSize = UDim2.new(),
-                        ScrollBarThickness = 2, ScrollBarImageColor3 = C.blue, BackgroundColor3 = C.panel2, BorderSizePixel = 0,
-                        ZIndex = 200, Active = true, ClipsDescendants = true, ScrollingDirection = Enum.ScrollingDirection.Y,
-                        ElasticBehavior = Enum.ElasticBehavior.Never,
+                        Name = menuName, Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(w, h), CanvasSize = UDim2.new(),
+                        ScrollBarThickness = 3, ScrollBarImageColor3 = C.blue2, ScrollBarImageTransparency = 0.3, BackgroundColor3 = C.panel, BackgroundTransparency = 0.04,
+                        BorderSizePixel = 0, ZIndex = 100, Active = true, ScrollingDirection = Enum.ScrollingDirection.Y,
                     }, shell)
-                    pcall(function() TweenService:Create(menu, TweenInfo.new(.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.fromOffset(x, y)}):Play() end)
-                    -- Se a página rolar, o botão sai do lugar: fecha o menu em vez de ficar flutuando solto.
-                    local posConn = b:GetPropertyChangedSignal("AbsolutePosition"):Connect(function() if menu and menu.Parent then menu:Destroy() end end)
-                    menu.Destroying:Connect(function() posConn:Disconnect() end)
                     menu:SetAttribute("NexoraOwner", t)
-                    corner(menu, 10); stroke(menu, C.blue, 0.2, 1.5)
+                    corner(menu, 12); stroke(menu, C.blue2, 0.4, 1.2)
+                    gradient(menu, Color3.fromRGB(28, 44, 80), Color3.fromRGB(12, 18, 34), 90)
+                    menu.Destroying:Connect(function() if shadow then shadow:Destroy() end end)
+                    -- abre com um leve zoom + fade da sombra
+                    do
+                        local mScale = make("UIScale", {Scale = 0.92}, menu)
+                        TweenService:Create(mScale, TweenInfo.new(.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+                        shadow.BackgroundTransparency = 1
+                        TweenService:Create(shadow, TweenInfo.new(.18), {BackgroundTransparency = 0.6}):Play()
+                    end
                     -- Fecha o menu ao tocar fora dele.
                     local outsideConnection
                     outsideConnection = UIS.InputBegan:Connect(function(input, processed)
@@ -3270,28 +3276,56 @@ function Nexora.CreateMain(config)
                             if not insideMenu and not insideButton then menu:Destroy() end
                         end)
                     end)
-                    menu.Destroying:Connect(function() if outsideConnection then outsideConnection:Disconnect() end end)
-                    local lay = make("UIListLayout", {Padding = UDim.new(0, 3), SortOrder = Enum.SortOrder.LayoutOrder}, menu)
-                    make("UIPadding", {PaddingTop = UDim.new(0, 5), PaddingBottom = UDim.new(0, 5), PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5)}, menu)
-                    lay:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() menu.CanvasSize = UDim2.new(0, 0, 0, lay.AbsoluteContentSize.Y + 10) end)
+                    -- A lista acompanha o botao quando a pagina rola e fecha se o botao sair da area visivel.
+                    local scroller = b:FindFirstAncestorOfClass("ScrollingFrame")
+                    local followConn
+                    local function followButton()
+                        if not menu.Parent then return end
+                        local sc = math.max(scale.Scale, 0.01)
+                        local sp2, ss2 = shell.AbsolutePosition, shell.AbsoluteSize
+                        local bp2, bs2 = holderD.AbsolutePosition, Vector2.new(holderD.AbsoluteSize.X, 77 * sc)
+                        if scroller then
+                            local cp, cs = scroller.AbsolutePosition, scroller.AbsoluteSize
+                            local cy = bp2.Y + bs2.Y / 2
+                            if cy < cp.Y or cy > cp.Y + cs.Y then menu:Destroy() return end
+                        end
+                        local ny = (bp2.Y - sp2.Y + bs2.Y) / sc + 5
+                        if ny + h > ss2.Y / sc - 8 then ny = math.max(8, (bp2.Y - sp2.Y) / sc - h - 5) end
+                        menu.Position = UDim2.fromOffset(menu.Position.X.Offset, ny)
+                        if shadow and shadow.Parent then shadow.Position = UDim2.fromOffset(menu.Position.X.Offset - 4, ny + 3) end
+                    end
+                    followConn = b:GetPropertyChangedSignal("AbsolutePosition"):Connect(followButton)
+                    menu.Destroying:Connect(function()
+                        if outsideConnection then outsideConnection:Disconnect() end
+                        if followConn then followConn:Disconnect() end
+                    end)
+                    local lay = make("UIListLayout", {Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder}, menu)
+                    make("UIPadding", {PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4), PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 4)}, menu)
+                    lay:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() menu.CanvasSize = UDim2.new(0, 0, 0, lay.AbsoluteContentSize.Y + 8) end)
                     local function styleOption(ob, on)
-                        ob.BackgroundTransparency = on and 0 or 1
+                        ob.BackgroundTransparency = on and 0.1 or 1
                         ob.BackgroundColor3 = on and C.tabOn or C.panel2
-                        ob.TextColor3 = on and C.blue or C.white
+                        ob.TextColor3 = on and C.blue2 or C.white
+                        local ac = ob:FindFirstChild("Accent"); if ac then ac.Visible = on end
+                        local ck = ob:FindFirstChild("Check"); if ck then ck.Visible = on end
                     end
                     for index, value in ipairs(listValues) do
                         local isOn = multi and selected[value] == true
                         local ob = make("TextButton", {
-                            AutoButtonColor = false, BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 29),
-                            Text = (multi and (isOn and "✓  " or "□  ") or "") .. tostring(value), TextColor3 = C.white, TextSize = 13,
-                            Font = Enum.Font.GothamMedium, ZIndex = 201, LayoutOrder = index, TextXAlignment = Enum.TextXAlignment.Left,
-                            TextTruncate = Enum.TextTruncate.AtEnd,
+                            AutoButtonColor = false, BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 36),
+                            Text = (multi and (isOn and "✓  " or "□  ") or "") .. tostring(value), TextColor3 = C.white, TextSize = 14,
+                            Font = Enum.Font.GothamMedium, ZIndex = 101, LayoutOrder = index, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd,
                         }, menu)
-                        corner(ob, 7)
-                        make("UIPadding", {PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 8)}, ob)
-                        if multi then styleOption(ob, isOn) end
-                        ob.MouseEnter:Connect(function() if not (multi and selected[value]) then ob.BackgroundTransparency = 0; ob.BackgroundColor3 = C.hover end end)
-                        ob.MouseLeave:Connect(function() styleOption(ob, multi and selected[value] == true) end)
+                        corner(ob, 9)
+                        make("UIPadding", {PaddingLeft = UDim.new(0, 16), PaddingRight = UDim.new(0, 34)}, ob)
+                        local accent = make("Frame", {Name = "Accent", AnchorPoint = Vector2.new(0, .5), Position = UDim2.new(0, -10, .5, 0), Size = UDim2.new(0, 3, .5, 0), BackgroundColor3 = C.blue2, BorderSizePixel = 0, Visible = false, ZIndex = 102}, ob)
+                        corner(accent, 3)
+                        if not multi then
+                            make("TextLabel", {Name = "Check", BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, .5), Position = UDim2.new(1, 26, .5, 0), Size = UDim2.fromOffset(20, 20), Text = "✓", TextColor3 = C.blue2, Font = Enum.Font.GothamBold, TextSize = 15, Visible = false, ZIndex = 102}, ob)
+                        end
+                        styleOption(ob, (multi and isOn) or (not multi and selected == value))
+                        ob.MouseEnter:Connect(function() if not ((multi and selected[value]) or (not multi and selected == value)) then ob.BackgroundTransparency = 0.15; ob.BackgroundColor3 = C.hover end end)
+                        ob.MouseLeave:Connect(function() styleOption(ob, (multi and selected[value] == true) or (not multi and selected == value)) end)
                         ob.MouseButton1Click:Connect(function()
                             if multi then
                                 selected[value] = not selected[value]
@@ -3309,10 +3343,10 @@ function Nexora.CreateMain(config)
                     end
                     if multi then
                         local done = make("TextButton", {
-                            AutoButtonColor = false, BackgroundColor3 = C.blue, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 29),
-                            Text = "Done", TextColor3 = Color3.new(1, 1, 1), TextSize = 13, Font = Enum.Font.GothamBold, ZIndex = 201, LayoutOrder = #listValues + 1,
+                            AutoButtonColor = false, BackgroundColor3 = C.blue, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 34),
+                            Text = "Concluir", TextColor3 = Color3.new(1, 1, 1), TextSize = 14, Font = Enum.Font.GothamBold, ZIndex = 101, LayoutOrder = #listValues + 1,
                         }, menu)
-                        corner(done, 8)
+                        corner(done, 9)
                         done.MouseButton1Click:Connect(function() menu:Destroy() end)
                     end
                 end)
@@ -4581,27 +4615,33 @@ function Nexora.CreateMain(config)
                     -- O menu fica dentro da janela (mesma escala): converte posições absolutas em pixels de design.
                     local s = math.max(scale.Scale, 0.01)
                     local shellPos, shellSize = shell.AbsolutePosition, shell.AbsoluteSize
-                    local bPos, bSize = b.AbsolutePosition, b.AbsoluteSize
+                    local bPos, bSize = holderD.AbsolutePosition, Vector2.new(holderD.AbsoluteSize.X, 77 * s)
                     local shellW, shellH = shellSize.X / s, shellSize.Y / s
                     local count = #listValues + (multi and 1 or 0)
-                    local h = math.max(40, math.min(196, count * 32 + 12))
-                    local w = math.max(bSize.X / s, 150)
+                    local h = math.max(48, math.min(232, count * 38 + 12))
+                    local w = math.max(bSize.X / s, 160)
                     local x = (bPos.X - shellPos.X) / s
-                    local y = (bPos.Y - shellPos.Y + bSize.Y) / s + 5
+                    local y = (bPos.Y - shellPos.Y + bSize.Y) / s + 6
                     if y + h > shellH - 8 then y = math.max(8, (bPos.Y - shellPos.Y) / s - h - 5) end
                     x = math.clamp(x, 6, math.max(6, shellW - w - 6))
+                    local shadow = make("Frame", {Name = menuName .. "Shadow", Position = UDim2.fromOffset(x - 4, y + 3), Size = UDim2.fromOffset(w + 8, h + 8), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.6, BorderSizePixel = 0, ZIndex = 99}, shell)
+                    corner(shadow, 16)
                     local menu = make("ScrollingFrame", {
-                        Name = menuName, Position = UDim2.fromOffset(x, y - 6), Size = UDim2.fromOffset(w, h), CanvasSize = UDim2.new(),
-                        ScrollBarThickness = 2, ScrollBarImageColor3 = C.blue, BackgroundColor3 = C.panel2, BorderSizePixel = 0,
-                        ZIndex = 200, Active = true, ClipsDescendants = true, ScrollingDirection = Enum.ScrollingDirection.Y,
-                        ElasticBehavior = Enum.ElasticBehavior.Never,
+                        Name = menuName, Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(w, h), CanvasSize = UDim2.new(),
+                        ScrollBarThickness = 3, ScrollBarImageColor3 = C.blue2, ScrollBarImageTransparency = 0.3, BackgroundColor3 = C.panel, BackgroundTransparency = 0.04,
+                        BorderSizePixel = 0, ZIndex = 100, Active = true, ScrollingDirection = Enum.ScrollingDirection.Y,
                     }, shell)
-                    pcall(function() TweenService:Create(menu, TweenInfo.new(.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.fromOffset(x, y)}):Play() end)
-                    -- Se a página rolar, o botão sai do lugar: fecha o menu em vez de ficar flutuando solto.
-                    local posConn = b:GetPropertyChangedSignal("AbsolutePosition"):Connect(function() if menu and menu.Parent then menu:Destroy() end end)
-                    menu.Destroying:Connect(function() posConn:Disconnect() end)
                     menu:SetAttribute("NexoraOwner", t)
-                    corner(menu, 10); stroke(menu, C.blue, 0.2, 1.5)
+                    corner(menu, 12); stroke(menu, C.blue2, 0.4, 1.2)
+                    gradient(menu, Color3.fromRGB(28, 44, 80), Color3.fromRGB(12, 18, 34), 90)
+                    menu.Destroying:Connect(function() if shadow then shadow:Destroy() end end)
+                    -- abre com um leve zoom + fade da sombra
+                    do
+                        local mScale = make("UIScale", {Scale = 0.92}, menu)
+                        TweenService:Create(mScale, TweenInfo.new(.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+                        shadow.BackgroundTransparency = 1
+                        TweenService:Create(shadow, TweenInfo.new(.18), {BackgroundTransparency = 0.6}):Play()
+                    end
                     -- Fecha o menu ao tocar fora dele.
                     local outsideConnection
                     outsideConnection = UIS.InputBegan:Connect(function(input, processed)
@@ -4620,28 +4660,56 @@ function Nexora.CreateMain(config)
                             if not insideMenu and not insideButton then menu:Destroy() end
                         end)
                     end)
-                    menu.Destroying:Connect(function() if outsideConnection then outsideConnection:Disconnect() end end)
-                    local lay = make("UIListLayout", {Padding = UDim.new(0, 3), SortOrder = Enum.SortOrder.LayoutOrder}, menu)
-                    make("UIPadding", {PaddingTop = UDim.new(0, 5), PaddingBottom = UDim.new(0, 5), PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5)}, menu)
-                    lay:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() menu.CanvasSize = UDim2.new(0, 0, 0, lay.AbsoluteContentSize.Y + 10) end)
+                    -- A lista acompanha o botao quando a pagina rola e fecha se o botao sair da area visivel.
+                    local scroller = b:FindFirstAncestorOfClass("ScrollingFrame")
+                    local followConn
+                    local function followButton()
+                        if not menu.Parent then return end
+                        local sc = math.max(scale.Scale, 0.01)
+                        local sp2, ss2 = shell.AbsolutePosition, shell.AbsoluteSize
+                        local bp2, bs2 = holderD.AbsolutePosition, Vector2.new(holderD.AbsoluteSize.X, 77 * sc)
+                        if scroller then
+                            local cp, cs = scroller.AbsolutePosition, scroller.AbsoluteSize
+                            local cy = bp2.Y + bs2.Y / 2
+                            if cy < cp.Y or cy > cp.Y + cs.Y then menu:Destroy() return end
+                        end
+                        local ny = (bp2.Y - sp2.Y + bs2.Y) / sc + 5
+                        if ny + h > ss2.Y / sc - 8 then ny = math.max(8, (bp2.Y - sp2.Y) / sc - h - 5) end
+                        menu.Position = UDim2.fromOffset(menu.Position.X.Offset, ny)
+                        if shadow and shadow.Parent then shadow.Position = UDim2.fromOffset(menu.Position.X.Offset - 4, ny + 3) end
+                    end
+                    followConn = b:GetPropertyChangedSignal("AbsolutePosition"):Connect(followButton)
+                    menu.Destroying:Connect(function()
+                        if outsideConnection then outsideConnection:Disconnect() end
+                        if followConn then followConn:Disconnect() end
+                    end)
+                    local lay = make("UIListLayout", {Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder}, menu)
+                    make("UIPadding", {PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4), PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 4)}, menu)
+                    lay:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() menu.CanvasSize = UDim2.new(0, 0, 0, lay.AbsoluteContentSize.Y + 8) end)
                     local function styleOption(ob, on)
-                        ob.BackgroundTransparency = on and 0 or 1
+                        ob.BackgroundTransparency = on and 0.1 or 1
                         ob.BackgroundColor3 = on and C.tabOn or C.panel2
-                        ob.TextColor3 = on and C.blue or C.white
+                        ob.TextColor3 = on and C.blue2 or C.white
+                        local ac = ob:FindFirstChild("Accent"); if ac then ac.Visible = on end
+                        local ck = ob:FindFirstChild("Check"); if ck then ck.Visible = on end
                     end
                     for index, value in ipairs(listValues) do
                         local isOn = multi and selected[value] == true
                         local ob = make("TextButton", {
-                            AutoButtonColor = false, BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 29),
-                            Text = (multi and (isOn and "✓  " or "□  ") or "") .. tostring(value), TextColor3 = C.white, TextSize = 13,
-                            Font = Enum.Font.GothamMedium, ZIndex = 201, LayoutOrder = index, TextXAlignment = Enum.TextXAlignment.Left,
-                            TextTruncate = Enum.TextTruncate.AtEnd,
+                            AutoButtonColor = false, BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 36),
+                            Text = (multi and (isOn and "✓  " or "□  ") or "") .. tostring(value), TextColor3 = C.white, TextSize = 14,
+                            Font = Enum.Font.GothamMedium, ZIndex = 101, LayoutOrder = index, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd,
                         }, menu)
-                        corner(ob, 7)
-                        make("UIPadding", {PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 8)}, ob)
-                        if multi then styleOption(ob, isOn) end
-                        ob.MouseEnter:Connect(function() if not (multi and selected[value]) then ob.BackgroundTransparency = 0; ob.BackgroundColor3 = C.hover end end)
-                        ob.MouseLeave:Connect(function() styleOption(ob, multi and selected[value] == true) end)
+                        corner(ob, 9)
+                        make("UIPadding", {PaddingLeft = UDim.new(0, 16), PaddingRight = UDim.new(0, 34)}, ob)
+                        local accent = make("Frame", {Name = "Accent", AnchorPoint = Vector2.new(0, .5), Position = UDim2.new(0, -10, .5, 0), Size = UDim2.new(0, 3, .5, 0), BackgroundColor3 = C.blue2, BorderSizePixel = 0, Visible = false, ZIndex = 102}, ob)
+                        corner(accent, 3)
+                        if not multi then
+                            make("TextLabel", {Name = "Check", BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, .5), Position = UDim2.new(1, 26, .5, 0), Size = UDim2.fromOffset(20, 20), Text = "✓", TextColor3 = C.blue2, Font = Enum.Font.GothamBold, TextSize = 15, Visible = false, ZIndex = 102}, ob)
+                        end
+                        styleOption(ob, (multi and isOn) or (not multi and selected == value))
+                        ob.MouseEnter:Connect(function() if not ((multi and selected[value]) or (not multi and selected == value)) then ob.BackgroundTransparency = 0.15; ob.BackgroundColor3 = C.hover end end)
+                        ob.MouseLeave:Connect(function() styleOption(ob, (multi and selected[value] == true) or (not multi and selected == value)) end)
                         ob.MouseButton1Click:Connect(function()
                             if multi then
                                 selected[value] = not selected[value]
@@ -4659,10 +4727,10 @@ function Nexora.CreateMain(config)
                     end
                     if multi then
                         local done = make("TextButton", {
-                            AutoButtonColor = false, BackgroundColor3 = C.blue, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 29),
-                            Text = "Done", TextColor3 = Color3.new(1, 1, 1), TextSize = 13, Font = Enum.Font.GothamBold, ZIndex = 201, LayoutOrder = #listValues + 1,
+                            AutoButtonColor = false, BackgroundColor3 = C.blue, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 34),
+                            Text = "Concluir", TextColor3 = Color3.new(1, 1, 1), TextSize = 14, Font = Enum.Font.GothamBold, ZIndex = 101, LayoutOrder = #listValues + 1,
                         }, menu)
-                        corner(done, 8)
+                        corner(done, 9)
                         done.MouseButton1Click:Connect(function() menu:Destroy() end)
                     end
                 end)
@@ -27048,6 +27116,82 @@ FarmingSeaEventSection.CreateToggle(
 		SaveSettings("Auto Sea Event", _)
 	end
 )
+-- Leaving Cowdalm for Leviathan: usa a logica do Auto Sea Event atacando TODOS os eventos
+-- (Ship, Piranha, Shark, Terrorshark, SeaBeast) sem precisar de "Select Sea Events".
+-- Para sozinho quando o status do Leviathan vira "I DONT KNOW".
+do
+	local LCL_KEY = "Leaving Cowdalm for Leviathan"
+	local ALL_SEA_EVENTS = { SeaBeast = true, Ship = true, Shark = true, Terrorshark = true, Piranha = true }
+	if not getgenv().__LCL_SafeMultiSelectPatched then
+		getgenv().__LCL_SafeMultiSelectPatched = true
+		local originalSafeMultiSelect = SafeMultiSelect
+		-- Enquanto o toggle esta ativo, a lista de eventos vira "todos", sem apagar a selecao salva do usuario.
+		function SafeMultiSelect(l)
+			if l == "Select Sea Events" and Settings[LCL_KEY] == true then
+				return ALL_SEA_EVENTS
+			end
+			return originalSafeMultiSelect(l)
+		end
+	end
+	ToggleLeavingCowdalm = FarmingSeaEventSection.CreateToggle(
+		{
+			Title = LCL_KEY,
+			Desc = "Ataca todos os Sea Events (barco, piranha, tubarao, Terrorshark, Sea Beast). Desliga sozinho quando o status do Leviathan for I DONT KNOW.",
+			Default = Settings[LCL_KEY] or false,
+		},
+		function(on)
+			SaveSettings(LCL_KEY, on)
+			getgenv().LCL_RunId = (getgenv().LCL_RunId or 0) + 1
+			local runId = getgenv().LCL_RunId
+			if not on then
+				if getgenv().LCL_RestoreAuto ~= nil then
+					Settings["Auto Sea Event"] = getgenv().LCL_RestoreAuto
+					getgenv().LCL_RestoreAuto = nil
+				end
+				return
+			end
+			local userHadAutoSeaEvent = Settings["Auto Sea Event"] == true
+			if getgenv().LCL_RestoreAuto == nil then
+				getgenv().LCL_RestoreAuto = Settings["Auto Sea Event"] == true
+			end
+			getgenv().StopBoatSeaEvent = true
+			spawn(function()
+				local lastCheck = 0
+				while Settings[LCL_KEY] and getgenv().LCL_RunId == runId and (task.wait()) do
+					-- Checa o status so a cada 3s (evita spam de InvokeServer).
+					if tick() - lastCheck >= 3 then
+						lastCheck = tick()
+						local ok, status = pcall(StatusCheckLeviathan)
+						if ok and status == "I DONT KNOW" then
+							break
+						end
+					end
+					Settings["Auto Sea Event"] = true -- so em memoria; nao salva no arquivo
+					if not userHadAutoSeaEvent then
+						pcall(AutoSeabeast)
+					end
+				end
+				-- Terminou (status I DONT KNOW) ou foi desligado: restaura tudo.
+				if getgenv().LCL_RunId == runId then
+					if getgenv().LCL_RestoreAuto ~= nil then
+						Settings["Auto Sea Event"] = getgenv().LCL_RestoreAuto
+						getgenv().LCL_RestoreAuto = nil
+					end
+					if Settings[LCL_KEY] then
+						pcall(function()
+							ToggleLeavingCowdalm:SetStage(false)
+						end)
+						SaveSettings(LCL_KEY, false)
+						pcall(function()
+							WarnOnce("LCLStop", "Leaving Cowdalm for Leviathan desligado (I DONT KNOW).")
+						end)
+					end
+					y()
+				end
+			end)
+		end
+	)
+end
 local _
 if game.PlaceId == getgenv().CheckPlaceId then
 	_ = require(game:GetService("ReplicatedStorage").DangerDistance)
