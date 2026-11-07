@@ -3234,19 +3234,24 @@ function Nexora.CreateMain(config)
                     local bPos, bSize = b.AbsolutePosition, b.AbsoluteSize
                     local shellW, shellH = shellSize.X / s, shellSize.Y / s
                     local count = #listValues + (multi and 1 or 0)
-                    local h = math.max(40, math.min(220, count * 36 + 8))
+                    local h = math.max(40, math.min(196, count * 32 + 12))
                     local w = math.max(bSize.X / s, 150)
                     local x = (bPos.X - shellPos.X) / s
                     local y = (bPos.Y - shellPos.Y + bSize.Y) / s + 5
                     if y + h > shellH - 8 then y = math.max(8, (bPos.Y - shellPos.Y) / s - h - 5) end
                     x = math.clamp(x, 6, math.max(6, shellW - w - 6))
                     local menu = make("ScrollingFrame", {
-                        Name = menuName, Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(w, h), CanvasSize = UDim2.new(),
-                        ScrollBarThickness = 3, ScrollBarImageColor3 = C.blue, BackgroundColor3 = C.panel2, BorderSizePixel = 0,
-                        ZIndex = 100, Active = true,
+                        Name = menuName, Position = UDim2.fromOffset(x, y - 6), Size = UDim2.fromOffset(w, h), CanvasSize = UDim2.new(),
+                        ScrollBarThickness = 2, ScrollBarImageColor3 = C.blue, BackgroundColor3 = C.panel2, BorderSizePixel = 0,
+                        ZIndex = 200, Active = true, ClipsDescendants = true, ScrollingDirection = Enum.ScrollingDirection.Y,
+                        ElasticBehavior = Enum.ElasticBehavior.Never,
                     }, shell)
+                    pcall(function() TweenService:Create(menu, TweenInfo.new(.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.fromOffset(x, y)}):Play() end)
+                    -- Se a página rolar, o botão sai do lugar: fecha o menu em vez de ficar flutuando solto.
+                    local posConn = b:GetPropertyChangedSignal("AbsolutePosition"):Connect(function() if menu and menu.Parent then menu:Destroy() end end)
+                    menu.Destroying:Connect(function() posConn:Disconnect() end)
                     menu:SetAttribute("NexoraOwner", t)
-                    corner(menu, 10); stroke(menu, C.blue, 0.35)
+                    corner(menu, 10); stroke(menu, C.blue, 0.2, 1.5)
                     -- Fecha o menu ao tocar fora dele.
                     local outsideConnection
                     outsideConnection = UIS.InputBegan:Connect(function(input, processed)
@@ -3266,21 +3271,24 @@ function Nexora.CreateMain(config)
                         end)
                     end)
                     menu.Destroying:Connect(function() if outsideConnection then outsideConnection:Disconnect() end end)
-                    local lay = make("UIListLayout", {Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder}, menu)
-                    make("UIPadding", {PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4), PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 4)}, menu)
-                    lay:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() menu.CanvasSize = UDim2.new(0, 0, 0, lay.AbsoluteContentSize.Y + 8) end)
+                    local lay = make("UIListLayout", {Padding = UDim.new(0, 3), SortOrder = Enum.SortOrder.LayoutOrder}, menu)
+                    make("UIPadding", {PaddingTop = UDim.new(0, 5), PaddingBottom = UDim.new(0, 5), PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5)}, menu)
+                    lay:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() menu.CanvasSize = UDim2.new(0, 0, 0, lay.AbsoluteContentSize.Y + 10) end)
                     local function styleOption(ob, on)
                         ob.BackgroundTransparency = on and 0 or 1
                         ob.BackgroundColor3 = on and C.tabOn or C.panel2
+                        ob.TextColor3 = on and C.blue or C.white
                     end
                     for index, value in ipairs(listValues) do
                         local isOn = multi and selected[value] == true
                         local ob = make("TextButton", {
-                            AutoButtonColor = false, BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 34),
+                            AutoButtonColor = false, BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 29),
                             Text = (multi and (isOn and "✓  " or "□  ") or "") .. tostring(value), TextColor3 = C.white, TextSize = 13,
-                            Font = Enum.Font.GothamMedium, ZIndex = 101, LayoutOrder = index,
+                            Font = Enum.Font.GothamMedium, ZIndex = 201, LayoutOrder = index, TextXAlignment = Enum.TextXAlignment.Left,
+                            TextTruncate = Enum.TextTruncate.AtEnd,
                         }, menu)
-                        corner(ob, 8)
+                        corner(ob, 7)
+                        make("UIPadding", {PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 8)}, ob)
                         if multi then styleOption(ob, isOn) end
                         ob.MouseEnter:Connect(function() if not (multi and selected[value]) then ob.BackgroundTransparency = 0; ob.BackgroundColor3 = C.hover end end)
                         ob.MouseLeave:Connect(function() styleOption(ob, multi and selected[value] == true) end)
@@ -3301,8 +3309,8 @@ function Nexora.CreateMain(config)
                     end
                     if multi then
                         local done = make("TextButton", {
-                            AutoButtonColor = false, BackgroundColor3 = C.blue, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 34),
-                            Text = "Done", TextColor3 = Color3.new(1, 1, 1), TextSize = 13, Font = Enum.Font.GothamBold, ZIndex = 101, LayoutOrder = #listValues + 1,
+                            AutoButtonColor = false, BackgroundColor3 = C.blue, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 29),
+                            Text = "Done", TextColor3 = Color3.new(1, 1, 1), TextSize = 13, Font = Enum.Font.GothamBold, ZIndex = 201, LayoutOrder = #listValues + 1,
                         }, menu)
                         corner(done, 8)
                         done.MouseButton1Click:Connect(function() menu:Destroy() end)
@@ -4576,19 +4584,24 @@ function Nexora.CreateMain(config)
                     local bPos, bSize = b.AbsolutePosition, b.AbsoluteSize
                     local shellW, shellH = shellSize.X / s, shellSize.Y / s
                     local count = #listValues + (multi and 1 or 0)
-                    local h = math.max(40, math.min(220, count * 36 + 8))
+                    local h = math.max(40, math.min(196, count * 32 + 12))
                     local w = math.max(bSize.X / s, 150)
                     local x = (bPos.X - shellPos.X) / s
                     local y = (bPos.Y - shellPos.Y + bSize.Y) / s + 5
                     if y + h > shellH - 8 then y = math.max(8, (bPos.Y - shellPos.Y) / s - h - 5) end
                     x = math.clamp(x, 6, math.max(6, shellW - w - 6))
                     local menu = make("ScrollingFrame", {
-                        Name = menuName, Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(w, h), CanvasSize = UDim2.new(),
-                        ScrollBarThickness = 3, ScrollBarImageColor3 = C.blue, BackgroundColor3 = C.panel2, BorderSizePixel = 0,
-                        ZIndex = 100, Active = true,
+                        Name = menuName, Position = UDim2.fromOffset(x, y - 6), Size = UDim2.fromOffset(w, h), CanvasSize = UDim2.new(),
+                        ScrollBarThickness = 2, ScrollBarImageColor3 = C.blue, BackgroundColor3 = C.panel2, BorderSizePixel = 0,
+                        ZIndex = 200, Active = true, ClipsDescendants = true, ScrollingDirection = Enum.ScrollingDirection.Y,
+                        ElasticBehavior = Enum.ElasticBehavior.Never,
                     }, shell)
+                    pcall(function() TweenService:Create(menu, TweenInfo.new(.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.fromOffset(x, y)}):Play() end)
+                    -- Se a página rolar, o botão sai do lugar: fecha o menu em vez de ficar flutuando solto.
+                    local posConn = b:GetPropertyChangedSignal("AbsolutePosition"):Connect(function() if menu and menu.Parent then menu:Destroy() end end)
+                    menu.Destroying:Connect(function() posConn:Disconnect() end)
                     menu:SetAttribute("NexoraOwner", t)
-                    corner(menu, 10); stroke(menu, C.blue, 0.35)
+                    corner(menu, 10); stroke(menu, C.blue, 0.2, 1.5)
                     -- Fecha o menu ao tocar fora dele.
                     local outsideConnection
                     outsideConnection = UIS.InputBegan:Connect(function(input, processed)
@@ -4608,21 +4621,24 @@ function Nexora.CreateMain(config)
                         end)
                     end)
                     menu.Destroying:Connect(function() if outsideConnection then outsideConnection:Disconnect() end end)
-                    local lay = make("UIListLayout", {Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder}, menu)
-                    make("UIPadding", {PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4), PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 4)}, menu)
-                    lay:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() menu.CanvasSize = UDim2.new(0, 0, 0, lay.AbsoluteContentSize.Y + 8) end)
+                    local lay = make("UIListLayout", {Padding = UDim.new(0, 3), SortOrder = Enum.SortOrder.LayoutOrder}, menu)
+                    make("UIPadding", {PaddingTop = UDim.new(0, 5), PaddingBottom = UDim.new(0, 5), PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5)}, menu)
+                    lay:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() menu.CanvasSize = UDim2.new(0, 0, 0, lay.AbsoluteContentSize.Y + 10) end)
                     local function styleOption(ob, on)
                         ob.BackgroundTransparency = on and 0 or 1
                         ob.BackgroundColor3 = on and C.tabOn or C.panel2
+                        ob.TextColor3 = on and C.blue or C.white
                     end
                     for index, value in ipairs(listValues) do
                         local isOn = multi and selected[value] == true
                         local ob = make("TextButton", {
-                            AutoButtonColor = false, BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 34),
+                            AutoButtonColor = false, BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 29),
                             Text = (multi and (isOn and "✓  " or "□  ") or "") .. tostring(value), TextColor3 = C.white, TextSize = 13,
-                            Font = Enum.Font.GothamMedium, ZIndex = 101, LayoutOrder = index,
+                            Font = Enum.Font.GothamMedium, ZIndex = 201, LayoutOrder = index, TextXAlignment = Enum.TextXAlignment.Left,
+                            TextTruncate = Enum.TextTruncate.AtEnd,
                         }, menu)
-                        corner(ob, 8)
+                        corner(ob, 7)
+                        make("UIPadding", {PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 8)}, ob)
                         if multi then styleOption(ob, isOn) end
                         ob.MouseEnter:Connect(function() if not (multi and selected[value]) then ob.BackgroundTransparency = 0; ob.BackgroundColor3 = C.hover end end)
                         ob.MouseLeave:Connect(function() styleOption(ob, multi and selected[value] == true) end)
@@ -4643,8 +4659,8 @@ function Nexora.CreateMain(config)
                     end
                     if multi then
                         local done = make("TextButton", {
-                            AutoButtonColor = false, BackgroundColor3 = C.blue, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 34),
-                            Text = "Done", TextColor3 = Color3.new(1, 1, 1), TextSize = 13, Font = Enum.Font.GothamBold, ZIndex = 101, LayoutOrder = #listValues + 1,
+                            AutoButtonColor = false, BackgroundColor3 = C.blue, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 29),
+                            Text = "Done", TextColor3 = Color3.new(1, 1, 1), TextSize = 13, Font = Enum.Font.GothamBold, ZIndex = 201, LayoutOrder = #listValues + 1,
                         }, menu)
                         corner(done, 8)
                         done.MouseButton1Click:Connect(function() menu:Destroy() end)
@@ -14247,176 +14263,9 @@ local FarmotherMain = NXSQPage
 			ToTarget(arg)
 		end
 	end
-	-- ===== Skypea (Sky Area 1 / 2 / 3) =====
-	-- O tween direto nao chega nas ilhas do ceu; o jogo leva ate la pelo portal (requestEntrance).
-	HiddenEvent.SkyPortalBad = {}
-	HiddenEvent.SkyPortalLast = 0
-	HiddenEvent.SkyDests = function()
-		local function mapPos(...)
-			local node = workspace:FindFirstChild("Map")
-			for _, name in ipairs({ ... }) do
-				node = node and (node:FindFirstChild(name) or node:FindFirstChild(name, true))
-			end
-			if not node then
-				return nil
-			end
-			if node:IsA("BasePart") then
-				return node.Position
-			end
-			local ok, p = pcall(function()
-				return node:GetPivot().Position
-			end)
-			return ok and p or nil
-		end
-		local sky3Exit = Vector3.new(-4607.82, 872.54, -1667.56)
-		return {
-			Sky1 = mapPos("SkyArea1", "PathwayTemple", "ExitPoint") or sky3Exit,
-			Sky2 = mapPos("SkyArea2", "PathwayHouse", "EntrancePoint"),
-			Sky3 = Vector3.new(-7894.62, 5545.49, -380.25),
-			Sky3Exit = sky3Exit,
-		}
-	end
-	-- posicao de uma ilha do ceu pelo nome (quando o mapa nao devolve a ilha)
-	HiddenEvent.SkyIslandPos = function(name)
-		local d = HiddenEvent.SkyDests()
-		if name == "Sky" or name == "SkyArea1" or name == "Sky1" then
-			return d.Sky1
-		elseif name == "SkyArea2" or name == "Sky2" then
-			return d.Sky2 or d.Sky1
-		elseif name == "SkyArea3" or name == "Sky3" then
-			return d.Sky3
-		end
-	end
-	HiddenEvent.SkyPortalAssist = function(target)
-		if GetCurrentSea() ~= 1 or tick() - HiddenEvent.SkyPortalLast < 4 then
-			return false
-		end
-		local root = localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart")
-		if not root then
-			return false
-		end
-		local direct = (target - root.Position).Magnitude
-		if direct < 1500 then
-			return false
-		end
-		local bestName, best, bestDist
-		for name, pos in pairs(HiddenEvent.SkyDests()) do
-			local dist = (pos - target).Magnitude
-			if tick() - (HiddenEvent.SkyPortalBad[name] or -1e9) > 900 and (not bestDist or dist < bestDist) then
-				bestName, best, bestDist = name, pos, dist
-			end
-		end
-		-- so usa o portal se o alvo ficar pelo menos 10% mais perto
-		if not best or not (bestDist < direct * 0.9) then
-			return false
-		end
-		HiddenEvent.SkyPortalLast = tick()
-		SetHiddenStep("Skypea portal: " .. bestName)
-		pcall(function()
-			game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("requestEntrance", best)
-		end)
-		task.wait(1)
-		local root2 = localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart")
-		if root2 and (target - root2.Position).Magnitude >= direct then
-			HiddenEvent.SkyPortalBad[bestName] = tick()
-		end
-		return true
-	end
-	getgenv().NxSkyPortalAssist = HiddenEvent.SkyPortalAssist
-	-- ===== Tween de longa distancia ate o Skypea (Sky Area 1 / 2 / 3), mesmo de muito longe =====
-	-- O tween normal (limite 220, reinicia a cada 1s, aborta se achar "rubberband") nao aguenta essas distancias.
-	-- Este anda a velocidade constante, sempre a partir da posicao REAL do personagem (se o servidor puxar de volta, ele continua dali).
-	HiddenEvent.FarRun = nil
-	HiddenEvent.FarStop = function()
-		local run = HiddenEvent.FarRun
-		if run then
-			run.alive = false
-		end
-		HiddenEvent.FarRun = nil
-	end
-	HiddenEvent.FarTween = function(target)
-		local run = HiddenEvent.FarRun
-		if run and run.alive and (run.goal - target).Magnitude < 5 then
-			return true
-		end
-		if run then
-			run.alive = false
-		end
-		run = { alive = true, goal = target, t0 = tick(), lastProg = tick() }
-		do
-			local r0 = localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart")
-			run.best = r0 and (target - r0.Position).Magnitude or math.huge
-		end
-		HiddenEvent.FarRun = run
-		task.spawn(function()
-			local rs = game:GetService("RunService")
-			while run.alive do
-				local dt = rs.Heartbeat:Wait()
-				local ch = localPlayer.Character
-				local r = ch and ch:FindFirstChild("HumanoidRootPart")
-				local h = ch and ch:FindFirstChildOfClass("Humanoid")
-				if not r or not h or h.Health <= 0 or r.Anchored or not Settings["Auto Secret Quest"] then
-					break
-				end
-				local pos = r.Position
-				local diff = run.goal - pos
-				local dist = diff.Magnitude
-				if dist <= 6 then
-					r.CFrame = CFrame.new(run.goal)
-					break
-				end
-				-- sem progresso por 4s = travou (o HiddenGoTo entao tenta o portal e recomeca)
-				if dist < run.best - 5 then
-					run.best = dist
-					run.lastProg = tick()
-				end
-				if tick() - run.lastProg > 4 then
-					run.stuck = true
-					break
-				end
-				if not r:FindFirstChild("FloatForce") then
-					local bv = Instance.new("BodyVelocity")
-					bv.Name = "FloatForce"
-					bv.Velocity = Vector3.new(0, 0, 0)
-					bv.MaxForce = Vector3.new(100000, 100000, 100000)
-					bv.P = 10000
-					bv.Parent = r
-				end
-				getgenv().noclip = true
-				local speed = tonumber(getgenv().SkyTweenSpeed) or 320
-				local step = math.min(speed * dt, 30, dist)
-				r.CFrame = r.CFrame + diff.Unit * step
-				r.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-				r.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-			end
-			run.alive = false
-		end)
-		return true
-	end
 	HiddenGoTo = function(arg, arg2)
 		if localPlayer:DistanceFromCharacter(arg) <= (arg2 or 8) then
-			HiddenEvent.FarStop()
 			return true
-		end
-		if Settings["Auto Secret Quest"] then
-			local root = localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart")
-			-- so no Sea 1 e so quando origem ou destino esta no Skypea (altura > 600): nao mexe nas outras viagens
-			if root and GetCurrentSea() == 1 and (arg.Y > 600 or root.Position.Y > 600) then
-				if (arg - root.Position).Magnitude > 1500 then
-					local run = HiddenEvent.FarRun
-					if run and run.stuck then
-						-- o tween travou: tenta o portal do Skypea e recomeca o tween
-						HiddenEvent.FarRun = nil
-						if HiddenEvent.SkyPortalAssist(arg) then
-							return false
-						end
-					end
-					SetHiddenStep("Tween to Skypea")
-					HiddenEvent.FarTween(arg)
-					return false
-				end
-				HiddenEvent.FarStop()
-			end
 		end
 		HiddenMove(CFrame.new(arg))
 		return false
@@ -14424,11 +14273,6 @@ local FarmotherMain = NXSQPage
 	HiddenGoToIsland = function(arg)
 		local v6 = GetHiddenIsland(arg)
 		if not v6 then
-			local skyPos = HiddenEvent.SkyIslandPos(arg)
-			if skyPos then
-				SetHiddenStep("Travel to " .. arg)
-				return HiddenGoTo(skyPos + Vector3.new(0, 30, 0), 150)
-			end
 			return
 		end
 		SetHiddenStep("Travel to " .. arg)
@@ -20261,11 +20105,15 @@ do
 			local prefer = { "treat", "yes", "ok", "thank", "knock" }
 			local decline = { "no thanks", "cancel", "bye", "leave", "nevermind", "never mind", "not now" }
 			local started, seen = tick(), false
-			while trick.on and tick() - started < 20 do
-				task.wait(0.35)
-				if not DC.Active and not seen and nobodyHome() then
-					pcall(DC.close)
-					return false, true
+			local lastNobody, lastPage, lastSel = 0, nil, 0
+			while trick.on and tick() - started < 14 do
+				task.wait(0.1)
+				if not DC.Active and not seen and tick() - lastNobody > 0.4 then
+					lastNobody = tick()
+					if nobodyHome() then
+						pcall(DC.close)
+						return false, true
+					end
 				end
 				if DC.Active then
 					seen = true
@@ -20302,7 +20150,10 @@ do
 									end
 								end
 							end
-							pcall(DC.select, pick or options[1])
+							if lastPage ~= page or tick() - lastSel > 0.8 then
+								lastPage, lastSel = page, tick()
+								pcall(DC.select, pick or options[1])
+							end
 						end
 					end
 				elseif seen or tick() - started > 4 then
@@ -20616,7 +20467,7 @@ do
 
 						-- porta disponivel mais proxima (cada porta so de novo depois de 60s)
 						local best, bestDist
-						for _, door in ipairs(scanDoors(30)) do
+						for _, door in ipairs(scanDoors(12)) do
 							local inst, part = door.inst, door.part
 							if inst.Parent and part.Parent then
 								local enabled = true
@@ -20638,8 +20489,8 @@ do
 								trick.warned = true
 								notify("Nenhuma porta disponivel agora. O evento roda de :00 a :10 de cada hora; fico procurando.")
 							end
-							scanDoors(20)
-							task.wait(3)
+							scanDoors(6)
+							task.wait(1.5)
 							return
 						end
 						trick.warned = false
@@ -20668,6 +20519,9 @@ do
 
 						-- fica parado em frente a porta ate o dialogo/evento terminar (sair cancela: "You walked away")
 						local held = true
+						trick.heldCancel = function()
+							held = false
+						end
 						task.spawn(function()
 							local lastSnap = 0
 							while held and trick.on do
@@ -20684,7 +20538,7 @@ do
 						local talked, empty = false, false
 						local waitT = tick()
 						while nobodyHome() and tick() - waitT < 3 do
-							task.wait(0.2) -- espera sumir a mensagem da porta anterior
+							task.wait(0.1) -- espera sumir a mensagem da porta anterior
 						end
 						for attempt = 1, 3 do
 							if attempt >= 2 then
@@ -20711,7 +20565,7 @@ do
 							if talked then
 								break
 							end
-							task.wait(0.4)
+							task.wait(0.15)
 						end
 						held = false
 						if not talked then
@@ -20730,9 +20584,15 @@ do
 							fightGhost(tStart)
 							fightNew(before, dpos)
 						end
-						task.wait(0.3)
+						task.wait(0.05)
 					end)
-					task.wait(0.5)
+					-- sempre solta a trava e o voo, mesmo se a rodada deu erro (era isso que travava a ida para as portas)
+					if trick.heldCancel then
+						pcall(trick.heldCancel)
+						trick.heldCancel = nil
+					end
+					trick.flying = false
+					task.wait(0.1)
 				end
 			end)
 		end
@@ -21029,27 +20889,98 @@ do
 			local hrp = char and char:FindFirstChild("HumanoidRootPart")
 			return hrp ~= nil and (hrp.Position - part.Position).Magnitude < 12
 		end
-		-- vai ate a porta com toTarget, entra nela e confirma que foi teleportado (>150 studs)
+		local knockWords = { "knock", "trick", "treat" }
+		-- prompt de entrada (Enter/Open) de uma porta ja aberta: qualquer prompt que NAO seja de bater (nao gasta token)
+		local openPrompt = function(door)
+			local model = door.inst and door.inst:FindFirstAncestorOfClass("Model") or (door.part and door.part.Parent)
+			if not model or model == workspace then
+				return nil
+			end
+			local n = 0
+			for _, d in ipairs(model:GetDescendants()) do
+				n = n + 1
+				if n > 300 then
+					break
+				end
+				if d:IsA("ProximityPrompt") and d.Enabled and not hasAny(lower(d.ActionText .. " " .. d.ObjectText), knockWords) then
+					return d
+				end
+			end
+			return nil
+		end
+		-- entra pela porta que ja esta aberta: encosta/atravessa a porta e dispara o toque (sem bater, sem gastar token)
+		local walkIn = function(door)
+			local char = plr.Character
+			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			if not hrp or not door.part or not door.part.Parent then
+				return
+			end
+			pcall(function()
+				hrp.CFrame = door.part.CFrame
+				hrp.AssemblyLinearVelocity = Vector3.zero
+				if firetouchinterest then
+					local model = door.inst and door.inst:FindFirstAncestorOfClass("Model") or door.part.Parent
+					local n = 0
+					if model and model ~= workspace then
+						for _, d in ipairs(model:GetDescendants()) do
+							if d:IsA("BasePart") then
+								firetouchinterest(hrp, d, 0)
+								firetouchinterest(hrp, d, 1)
+								n = n + 1
+								if n >= 12 then
+									break
+								end
+							end
+						end
+					end
+					firetouchinterest(hrp, door.part, 0)
+					firetouchinterest(hrp, door.part, 1)
+				end
+			end)
+		end
+		-- vai ate a porta com toTarget, entra nela e confirma que foi teleportado (>50 studs DEPOIS de chegar na porta)
 		local passDoor = function(door)
 			local char = plr.Character
 			local hrp = char and char:FindFirstChild("HumanoidRootPart")
 			if not hrp then
 				return false
 			end
-			local from = hrp.Position
 			if not boss.inArena then
-				boss.entryPos = from
+				boss.entryPos = hrp.Position
 			end
-			goNear(door.part)
-			for _ = 1, 10 do
+			goNear(door.part, 90)
+			-- a referencia do teleporte e a posicao ao chegar na porta (antes comparava com a posicao de antes do voo
+			-- e achava que ja tinha entrado so por ter voado ate la)
+			local at = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+			local from = at and at.Position or hrp.Position
+			local knocks = 0
+			for i = 1, 10 do
 				if not boss.on then
 					return false
 				end
-				triggerObj(door)
+				if door.burning then
+					-- porta em chamas: entra pela porta aberta; so bate (no maximo 1x) se nao tiver outro jeito
+					local ep = openPrompt(door)
+					if ep and ep ~= door.inst then
+						triggerObj({ inst = ep, part = door.part })
+					end
+					walkIn(door)
+					if door.inst then
+						local isKnock = hasAny(objText(door.inst), knockWords)
+						if not isKnock or (i >= 4 and knocks < 1) then
+							if isKnock then
+								knocks = knocks + 1
+							end
+							triggerObj(door)
+						end
+					end
+				else
+					triggerObj(door)
+				end
 				local waited = 0
-				while waited < 1.5 do
-					task.wait(0.25)
-					waited = waited + 0.25
+				while waited < 1.2 do
+					task.wait(0.2)
+					waited = waited + 0.2
 					local h = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
 					if h and (h.Position - from).Magnitude > 50 then
 						return true
@@ -21064,29 +20995,33 @@ do
 		local exitWords = { "portal", "exit", "leave", "return", "door", "gate", "hellfire" }
 		-- porta do Hellfire Gas = porta normal de Trick or Treat "coberta de chamas" (efeito de fogo no modelo)
 		local doorWords = { "knock", "trick", "treat", "halloween", "door" }
-		local isBurning = function(inst)
+		-- 2 = objeto Fire ligado (porta em chamas de verdade); 1 = particula com nome de fogo; 0 = nao queima
+		local fireScore = function(inst)
 			local model = inst:FindFirstAncestorOfClass("Model")
 			local root = model or inst.Parent
 			if not root then
-				return false
+				return 0
 			end
-			local n = 0
+			local best, n = 0, 0
 			for _, d in ipairs(root:GetDescendants()) do
 				n = n + 1
 				if n > 300 then
 					break
 				end
 				if d:IsA("Fire") and d.Enabled then
-					return true
+					return 2
 				end
 				if d:IsA("ParticleEmitter") and d.Enabled then
 					local nm = lower(d.Name)
 					if string.find(nm, "fire", 1, true) or string.find(nm, "flame", 1, true) or string.find(nm, "hell", 1, true) then
-						return true
+						best = 1
 					end
 				end
 			end
-			return false
+			return best
+		end
+		local isBurning = function(inst)
+			return fireScore(inst) > 0
 		end
 		-- ===== Portal do Unbound Werewolf (leva ao Observatory) =====
 		-- Ao abrir uma porta de Trick or Treat pode surgir um portal novo no mapa. Guardamos tudo que nasce com nome de
@@ -21209,7 +21144,7 @@ do
 			boss.purpleList = out
 			return out
 		end
-		local findWolfPortals = function()
+		local findWolfPortals = function(mode)
 			local out = {}
 			local char = plr.Character
 			local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -21217,11 +21152,13 @@ do
 				return out
 			end
 			-- 1) prompts/cliques/toques com nome de werewolf/observatory
-			for _, d in ipairs(findInteractables(WOLF.words, nil, { "knock", "nobody", "halloweendoor", "trick", "treat" })) do
-				table.insert(out, d)
+			if mode == nil or mode == "names" then
+				for _, d in ipairs(findInteractables(WOLF.words, nil, { "knock", "nobody", "halloweendoor", "trick", "treat" })) do
+					table.insert(out, d)
+				end
 			end
 			-- 2) portais que acabaram de nascer
-			if #out == 0 then
+			if #out == 0 and (mode == nil or mode == "fresh") then
 				for i = #boss.fresh, 1, -1 do
 					local f = boss.fresh[i]
 					local inst = f.inst
@@ -21253,23 +21190,42 @@ do
 				end)
 			end
 			-- 3) portal roxo / qualquer "portal" fora da lista de portais conhecidos (Hydra, Mansao, Tiki, Castelo...)
-			if #out == 0 then
+			if #out == 0 and (mode == nil or mode == "loose") then
 				out = findPurplePortals()
 			end
 			return out
 		end
 		local findEntryDoors = function()
-			local out = {}
-			for _, d in ipairs(findInteractables(doorWords, nil, nil)) do
-				if isBurning(d.inst) then
-					table.insert(out, d)
+			-- 1) portal do Werewolf pelo nome (werewolf/observatory)
+			local out = findWolfPortals("names")
+			-- 2) porta do Hellfire Gas: porta em chamas (a mais "pegando fogo" e mais perto primeiro)
+			if #out == 0 then
+				for _, d in ipairs(findInteractables(doorWords, nil, nil)) do
+					local sc = fireScore(d.inst)
+					if sc > 0 then
+						d.burning, d.fire = true, sc
+						table.insert(out, d)
+					end
 				end
+				table.sort(out, function(x, y)
+					if x.fire ~= y.fire then
+						return x.fire > y.fire
+					end
+					return x.dist < y.dist
+				end)
 			end
 			if #out == 0 then
 				out = findInteractables(entryWords, nil, entrySkip)
+				for _, d in ipairs(out) do
+					d.burning = true
+				end
+			end
+			-- 3) portais recem-nascidos e, por ultimo, portal roxo / qualquer "portal"
+			if #out == 0 then
+				out = findWolfPortals("fresh")
 			end
 			if #out == 0 then
-				out = findWolfPortals()
+				out = findWolfPortals("loose")
 			end
 			return out
 		end
@@ -21389,10 +21345,62 @@ do
 			task.wait(1.2)
 			return quickWitch()
 		end
+		-- posicao direta da Bruxa pelo NPC dela (ReplicatedStorage.NPCs / NPCManager), sem precisar do mapa carregado
+		local directWitch = function()
+			local RS = game:GetService("ReplicatedStorage")
+			local function fromModel(m)
+				if m and m:IsA("Model") and string.find(lower(m.Name), "witch", 1, true) then
+					local ok, pos = pcall(function()
+						return m:GetPivot().Position
+					end)
+					if ok and pos then
+						return { Position = pos, CFrame = CFrame.new(pos + Vector3.new(0, 4, 0)) }
+					end
+				end
+			end
+			for _, root in ipairs({ workspace:FindFirstChild("NPCs"), RS:FindFirstChild("NPCs") }) do
+				if root then
+					for _, m in ipairs(root:GetChildren()) do
+						local r = fromModel(m)
+						if r then
+							return r
+						end
+					end
+				end
+			end
+			local okNL, NpcList = pcall(function()
+				return require(RS.NPCManager.NPCList)
+			end)
+			local okNM, NpcManager = pcall(function()
+				return require(RS.NPCManager)
+			end)
+			if okNL and okNM and type(NpcList) == "table" and type(NpcList.List) == "table" and type(NpcManager) == "table" and NpcManager.getNPCsByName then
+				for name in pairs(NpcList.List) do
+					if string.find(lower(tostring(name)), "witch", 1, true) then
+						local okG, list = pcall(NpcManager.getNPCsByName, name)
+						local n = okG and list and list[1]
+						local inst = n and n._modelState and n._modelState._instance
+						local r = fromModel(inst)
+						if r then
+							return r
+						end
+					end
+				end
+			end
+			local mem = getgenv().__WitchPos[game.PlaceId]
+			if mem then
+				return { Position = mem, CFrame = CFrame.new(mem + Vector3.new(0, 4, 0)) }
+			end
+		end
 		local findWitchPart = function()
 			local part = quickWitch()
 			if part then
 				return rememberWitch(part)
+			end
+			-- vai direto no NPC da Bruxa com toTarget (sem procurar ilha em ilha)
+			local direct = directWitch()
+			if direct then
+				return rememberWitch(direct)
 			end
 			local mem = getgenv().__WitchPos[game.PlaceId]
 			if mem then
@@ -21877,30 +21885,35 @@ do
 									task.wait(1)
 									return
 								end
-								notify("Boss derrotado. Saindo da arena...")
+								notify("Boss derrotado. Resetando o personagem...")
 								task.wait(2)
-								local left = false
+								-- Great Pumpkin: junta os candies antes de resetar
 								if boss.wasPump then
 									boss.wasPump = false
 									pcall(collectCandies)
-									local okL, res = pcall(leaveAfterPumpkin)
-									left = okL and res == true
 									boss.arenaCenter = nil
 								end
-								for _ = 1, 4 do
-									if left or not boss.on then
-										break
-									end
-									if exitArena() then
-										left = true
-										break
-									end
-									task.wait(2)
+								local oldChar = plr.Character
+								local oldHum = oldChar and oldChar:FindFirstChildOfClass("Humanoid")
+								if oldHum then
+									oldHum.Health = 0
+								elseif oldChar then
+									pcall(function()
+										oldChar:BreakJoints()
+									end)
 								end
+								-- espera o novo personagem nascer
+								local waitSpawn = tick()
+								while boss.on and tick() - waitSpawn < 15 do
+									local nc = plr.Character
+									if nc and nc ~= oldChar and nc:FindFirstChild("HumanoidRootPart") and nc:FindFirstChildOfClass("Humanoid") then
+										break
+									end
+									task.wait(0.3)
+								end
+								task.wait(1)
 								boss.inArena, boss.arenaSeen = false, false
-								if not left then
-									notify("Nao achei o portal de saida. Saia manualmente.")
-								end
+								boss.entryPos = nil
 								return
 							end
 							if boss.wantPump and tick() - (boss.pumpAt or 0) >= 2 then
@@ -25999,6 +26012,7 @@ SettingSeaEventSection.CreateToggle(
 		SaveSettings("Raise Boat Manual Drive", l)
 		if not l then
 			-- Desativou: volta ao normal pra não ficar preso no ar
+			getgenv().__RaisedBoat = nil
 			ResetAirState()
 		end
 	end
@@ -26024,33 +26038,42 @@ do
 		end
 		-- V13: Raise Boat Manual Drive totalmente independente - não bloqueia nenhuma outra função de barco
 		-- Só trava o Y, mantendo X/Z livre, pode coexistir com Sea Event, Leviathan, Prehistoric, etc.
+		-- Auto Find Leviathan e os dodges controlam a altura do barco sozinhos: não briga com eles.
+		if Settings["Auto Find Leviathan"] or getgenv().ReadyToDodge then return end
 		pcall(function()
 			local char = t.Character
 			local hum = char and char:FindFirstChildOfClass("Humanoid")
 			local seat = hum and hum.SeatPart
-			if not seat or not seat:IsA("VehicleSeat") then return end
-			local boat = seat:FindFirstAncestorOfClass("Model")
 			local boats = workspace:FindFirstChild("Boats")
-			if not boat or not boats or boat.Parent ~= boats then return end
-			-- Altura "normal" do barco na água, medida na primeira vez que o vemos.
+			local boat
+			if seat and seat:IsA("VehicleSeat") then
+				boat = seat:FindFirstAncestorOfClass("Model")
+				if not boat or not boats or boat.Parent ~= boats then boat = nil end
+				if boat then getgenv().__RaisedBoat = boat end
+			else
+				-- Saiu do barco: continua segurando o mesmo barco na altura, e você anda normalmente nele.
+				boat = getgenv().__RaisedBoat
+				if boat and not boat:IsDescendantOf(workspace) then getgenv().__RaisedBoat = nil; boat = nil end
+			end
+			if not boat then return end
+			local vs = boat:FindFirstChild("VehicleSeat") or seat
+			if not vs then return end
 			local base = boat:GetAttribute("NexoraBaseY")
 			if not base then
-				base = (seat.Position.Y < 30) and seat.Position.Y or 8
+				base = (vs.Position.Y < 30) and vs.Position.Y or 8
 				boat:SetAttribute("NexoraBaseY", base)
 			end
 			local height = math.clamp(tonumber(Settings["Boat Height"]) or 175, 5, 175)
 			local targetY = base + height
 			local pivot = boat:GetPivot()
-			-- trava Y sem interferir na velocidade
 			if math.abs(pivot.Position.Y - targetY) > 0.05 then
 				local pos = pivot.Position
 				local rot = pivot - pos
 				boat:PivotTo(CFrame.new(pos.X, targetY, pos.Z) * rot)
 			end
-			-- só zera Y, mantém X/Z (velocidade do barco)
-			local v = seat.AssemblyLinearVelocity
+			local v = vs.AssemblyLinearVelocity
 			if math.abs(v.Y) > 0.01 then
-				seat.AssemblyLinearVelocity = Vector3.new(v.X, 0, v.Z)
+				vs.AssemblyLinearVelocity = Vector3.new(v.X, 0, v.Z)
 			end
 		end)
 	end)
@@ -26633,7 +26656,7 @@ function DetectSeaEvents(b)
 				and C.Health.Value > 0
 				and t:DistanceFromCharacter(C.Engine.Position) < 2000
 			then
-				if l["Only Farm Ship Brigade"] then
+				if l["Only Farm Ship Brigade"] and not b then
 					if table.find(X, C.Name) then
 						return C
 					end
@@ -26837,11 +26860,14 @@ function AutoSeabeast()
 			break
 		end
 	end
+	if getgenv().LeavingCowdalmAll then
+		b = true
+	end
 	if not b then
 		WarnOnce("NoSeaEvent", "Chua chon su kien nao o Sea Event > Select Sea Events.")
 		return
 	end
-	b = DetectSeaEvents()
+	b = DetectSeaEvents(getgenv().LeavingCowdalmAll and true or nil)
 	if not b then
 		getgenv().PathSeaBeast = false
 		getgenv().PathTerrorshark = false
@@ -27020,6 +27046,99 @@ FarmingSeaEventSection.CreateToggle(
 			getgenv().StopBoatSeaEvent = false
 		end
 		SaveSettings("Auto Sea Event", _)
+	end
+)
+-- Auto exit cowdalm: mesma logica do Auto Sea Event, mas sem lista:
+-- ataca TODOS os eventos (Sea Beast, barcos, tubaroes, Terrorshark, piranhas).
+function LeavingCowdalmStop()
+	if not getgenv().LeavingCowdalmAll then
+		return
+	end
+	getgenv().LeavingCowdalmAll = false
+	getgenv().LeavingCowdalmRunId = nil
+	if getgenv().LeavingCowdalmOwnsAuto then
+		getgenv().LeavingCowdalmOwnsAuto = false
+		Settings["Auto Sea Event"] = false
+		pcall(y)
+		getgenv().StopBoatSeaEvent = false
+	end
+end
+ToggleLeavingCowdalm = FarmingSeaEventSection.CreateToggle(
+	{
+		Title = "Auto Exit Cowdalm To Leviathan",
+		Desc = "Auto Sea Event sem lista: ataca todos os eventos automaticamente.",
+		Default = false,
+	},
+	function(_)
+		if _ then
+			-- so funciona quando o status do Leviathan estiver em "I DONT KNOW" (ainda no Cowdalm)
+			local okS0, status0 = pcall(StatusCheckLeviathan)
+			if not okS0 or status0 ~= "I DONT KNOW" then
+				local msg
+				if okS0 and (status0 == "Buy Find leviathan" or status0 == "You can find leviathan now") then
+					msg = "You are out of Cowdalm."
+				else
+					msg = "Nao foi possivel confirmar o Cowdalm (status: " .. tostring(okS0 and status0 or "erro") .. "). So funciona no Sea 3 com status I DONT KNOW."
+				end
+				pcall(function()
+					Main.CreateNoti(msg, 6)
+				end)
+				task.defer(function()
+					pcall(function()
+						ToggleLeavingCowdalm:SetStage(false)
+					end)
+				end)
+				return
+			end
+			local runId = tick()
+			getgenv().LeavingCowdalmRunId = runId
+			getgenv().LeavingCowdalmAll = true
+			getgenv().StopBoatSeaEvent = true
+			-- detecta a saida do Cowdalm pelo status do Leviathan (Status and Server):
+			-- "I DONT KNOW" = ainda no Cowdalm; "Buy Find leviathan" = ja saiu -> reseta o personagem e avisa
+			task.spawn(function()
+				local armed = true -- ja confirmado "I DONT KNOW" ao ativar
+				while getgenv().LeavingCowdalmRunId == runId and getgenv().LeavingCowdalmAll do
+					local okS, status = pcall(StatusCheckLeviathan)
+					if okS then
+						if status == "I DONT KNOW" then
+							armed = true
+						elseif armed and (status == "Buy Find leviathan" or status == "You can find leviathan now") then
+							LeavingCowdalmStop()
+							pcall(function()
+								ToggleLeavingCowdalm:SetStage(false)
+							end)
+							pcall(function()
+								Main.CreateNoti("Voce ja saiu do Cowdalm! Resetando o personagem...", 6)
+							end)
+							local char = game:GetService("Players").LocalPlayer.Character
+							local hum = char and char:FindFirstChildOfClass("Humanoid")
+							if hum then
+								hum.Health = 0
+							elseif char then
+								pcall(function()
+									char:BreakJoints()
+								end)
+							end
+							break
+						end
+					end
+					task.wait(1)
+				end
+			end)
+			-- se o Auto Sea Event normal ja estiver ligado, reaproveita o loop dele
+			getgenv().LeavingCowdalmOwnsAuto = not Settings["Auto Sea Event"]
+			if getgenv().LeavingCowdalmOwnsAuto then
+				Settings["Auto Sea Event"] = true
+				spawn(function()
+					while getgenv().LeavingCowdalmRunId == runId and Settings["Auto Sea Event"] and (task.wait()) do
+						pcall(AutoSeabeast)
+					end
+				end)
+			end
+		else
+			LeavingCowdalmStop()
+		end
 	end
 )
 local _
@@ -27863,6 +27982,12 @@ function AutoFindLeviathan()
 			J = false
 			repeat
 				task.wait(0.5)
+				-- Dodge/skill do barco em andamento: não mexe no barco (nem tween, nem altura, nem noclip).
+				if getgenv().Doding or getgenv().ReadyToDodge then
+					if getgenv().TweenBoat then pcall(function() getgenv().TweenBoat:Pause(); getgenv().TweenBoat:Cancel() end) end
+					if getgenv().TweenBoatBack then pcall(function() getgenv().TweenBoatBack:Pause(); getgenv().TweenBoatBack:Cancel() end) end
+					continue
+				end
 				NoclipBoat(g)
 				if t.Character:FindFirstChild("HumanoidRootPart") and (t.Character:FindFirstChild("Humanoid")) then
 					local F, q, c = next, t.Character:GetDescendants()
@@ -40941,67 +41066,63 @@ getgenv().DSClickInterval = 0.05
 getgenv().DragonstormRemoteDelay = 0.05
 getgenv().__DragonstormLastShot = 0
 
+-- REMOTE ONLY: o clique da gun usa só os remotes do próprio jogo (sem VirtualInputManager, VirtualUser, toque ou Tool:Activate).
+local function GunTargetInfo(x)
+    if typeof(x) == "Instance" then
+        if x:IsA("BasePart") then return x.Position, x end
+        if x:IsA("Model") then
+            local hrp = x:FindFirstChild("HumanoidRootPart") or x.PrimaryPart or x:FindFirstChildWhichIsA("BasePart", true)
+            return (hrp and hrp.Position or x:GetPivot().Position), hrp
+        end
+    elseif typeof(x) == "Vector3" then return x, nil
+    elseif typeof(x) == "CFrame" then return x.Position, nil end
+end
+
+-- "Click" da arma: remote TAP da própria tool, na posição da mira.
 function DragonstormPhysicalClick(force, toolName)
     toolName = toolName or "Dragonstorm"
     local now = os.clock()
-    local lastKey = "__PhysicalClickLast_" .. tostring(toolName)
+    local lastKey = "__RemoteClickLast_" .. tostring(toolName)
     if not force and now - (getgenv()[lastKey] or 0) < 0.05 then return false end
     getgenv()[lastKey] = now
-    task.spawn(function()
-        pcall(function()
-            local Camera = workspace.CurrentCamera
-            if not Camera then return end
-            local vp = Camera.ViewportSize
-            local x, y = math.floor(vp.X / 2), 2
-            local VIM = game:GetService("VirtualInputManager")
-            VIM:SendMouseMoveEvent(x, y, game)
-            VIM:SendMouseButtonEvent(x, y, 0, true, game, 0)
-            VIM:SendMouseButtonEvent(x, y, 0, false, game, 0)
-            pcall(function() local tool = t.Character and t.Character:FindFirstChild(toolName) if tool then tool:Activate() end end)
-            pcall(function() local VU = game:GetService("VirtualUser") VU:CaptureController() VU:ClickButton1(Vector2.new(x, y)) end)
-        end)
+    pcall(function()
+        local char = game.Players.LocalPlayer.Character
+        local tool = char and char:FindFirstChild(toolName)
+        local remote = tool and tool:FindFirstChild("RemoteEvent")
+        local aim = getgenv().AimPos
+        if remote and aim then remote:FireServer("TAP", aim.Position) end
     end)
     return true
 end
 getgenv().DragonstormPhysicalClick = DragonstormPhysicalClick
 
 getgenv().SpamGunDragonStorm = function(targetPart)
-    local plr = game.Players.LocalPlayer
-    local char = plr and plr.Character
-    if not char then return end
-    local tool = char:FindFirstChild("Dragonstorm")
-    if not tool then return end
-    if not targetPart then return end
-    local targetPos, hitPart
-    if typeof(targetPart) == "Instance" then
-        if targetPart:IsA("BasePart") then targetPos = targetPart.Position hitPart = targetPart
-        elseif targetPart:IsA("Model") then local hrp = targetPart:FindFirstChild("HumanoidRootPart") or targetPart.PrimaryPart if hrp then targetPos = hrp.Position hitPart = hrp else targetPos = targetPart:GetPivot().Position end
-        end
-    elseif typeof(targetPart) == "Vector3" then targetPos = targetPart
-    elseif typeof(targetPart) == "CFrame" then targetPos = targetPart.Position end
+    local rs = game:GetService("ReplicatedStorage")
+    local char = game.Players.LocalPlayer.Character
+    local tool = char and char:FindFirstChild("Dragonstorm")
+    if not tool or not targetPart then return end
+    local targetPos, hitPart = GunTargetInfo(targetPart)
     if not targetPos then return end
     local now = os.clock()
-    if now - (getgenv().__DragonstormLastShot or 0) < 0.06 then return end
+    if now - (getgenv().__DragonstormLastShot or 0) < (getgenv().DragonstormRemoteDelay or 0.06) then return end
     getgenv().__DragonstormLastShot = now
     getgenv().AimPos = CFrame.new(targetPos)
-    -- FAST: 3 physical clicks + 3 activates per call = no more 2 sec delay
-    for i=1,3 do
-        pcall(function() if DragonstormPhysicalClick then DragonstormPhysicalClick(true, "Dragonstorm") end end)
-        pcall(function() tool:Activate() end)
-        pcall(function()
-            local VU = game:GetService("VirtualUser")
-            VU:CaptureController()
-            VU:ClickButton1(Vector2.new(0,0))
-        end)
-    end
+    -- 1) Validator2 (o jogo exige antes do tiro; protegido porque os upvalues mudam com updates)
     pcall(function()
-        local net = game:GetService("ReplicatedStorage").Modules.Net
-        local shoot = net and net:FindFirstChild("RE/ShootGunEvent")
-        if shoot then if hitPart then shoot:FireServer(targetPos, {hitPart}) else shoot:FireServer(targetPos, {}) end end
+        local l = getupvalues(require(rs.Controllers.CombatController).Attack)[9]
+        local I, _, o, V, N, y, P = debug.getupvalue(l, 15), debug.getupvalue(l, 13), debug.getupvalue(l, 16), debug.getupvalue(l, 17), debug.getupvalue(l, 14), debug.getupvalue(l, 12), debug.getupvalue(l, 18)
+        local d2 = ((N * _ + y * I) % o * o + y * _) % V
+        N = math.floor(d2 / o); y = d2 - N * o; P += 1
+        debug.setupvalue(l, 15, I); debug.setupvalue(l, 13, _); debug.setupvalue(l, 16, o)
+        debug.setupvalue(l, 17, V); debug.setupvalue(l, 14, N); debug.setupvalue(l, 12, y); debug.setupvalue(l, 18, P)
+        rs.Remotes.Validator2:FireServer(math.floor(d2 / V * 16777215), P)
     end)
+    -- 2) Tiro (RE/ShootGunEvent) + 3) clique (TAP da tool)
     pcall(function()
-        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("ShootGun", targetPos)
+        local shoot = rs.Modules.Net:FindFirstChild("RE/ShootGunEvent")
+        if shoot then shoot:FireServer(targetPos, hitPart and { hitPart } or {}) end
     end)
+    DragonstormPhysicalClick(true, "Dragonstorm")
 end
 
 function UseDragonstormAllSeaEvents(Part)
