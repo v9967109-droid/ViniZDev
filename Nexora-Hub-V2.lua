@@ -20105,11 +20105,15 @@ do
 			local prefer = { "treat", "yes", "ok", "thank", "knock" }
 			local decline = { "no thanks", "cancel", "bye", "leave", "nevermind", "never mind", "not now" }
 			local started, seen = tick(), false
-			while trick.on and tick() - started < 20 do
-				task.wait(0.35)
-				if not DC.Active and not seen and nobodyHome() then
-					pcall(DC.close)
-					return false, true
+			local lastNobody, lastPage, lastSel = 0, nil, 0
+			while trick.on and tick() - started < 14 do
+				task.wait(0.1)
+				if not DC.Active and not seen and tick() - lastNobody > 0.4 then
+					lastNobody = tick()
+					if nobodyHome() then
+						pcall(DC.close)
+						return false, true
+					end
 				end
 				if DC.Active then
 					seen = true
@@ -20146,7 +20150,10 @@ do
 									end
 								end
 							end
-							pcall(DC.select, pick or options[1])
+							if lastPage ~= page or tick() - lastSel > 0.8 then
+								lastPage, lastSel = page, tick()
+								pcall(DC.select, pick or options[1])
+							end
 						end
 					end
 				elseif seen or tick() - started > 4 then
@@ -20460,7 +20467,7 @@ do
 
 						-- porta disponivel mais proxima (cada porta so de novo depois de 60s)
 						local best, bestDist
-						for _, door in ipairs(scanDoors(30)) do
+						for _, door in ipairs(scanDoors(12)) do
 							local inst, part = door.inst, door.part
 							if inst.Parent and part.Parent then
 								local enabled = true
@@ -20482,8 +20489,8 @@ do
 								trick.warned = true
 								notify("Nenhuma porta disponivel agora. O evento roda de :00 a :10 de cada hora; fico procurando.")
 							end
-							scanDoors(20)
-							task.wait(3)
+							scanDoors(6)
+							task.wait(1.5)
 							return
 						end
 						trick.warned = false
@@ -20512,6 +20519,9 @@ do
 
 						-- fica parado em frente a porta ate o dialogo/evento terminar (sair cancela: "You walked away")
 						local held = true
+						trick.heldCancel = function()
+							held = false
+						end
 						task.spawn(function()
 							local lastSnap = 0
 							while held and trick.on do
@@ -20528,7 +20538,7 @@ do
 						local talked, empty = false, false
 						local waitT = tick()
 						while nobodyHome() and tick() - waitT < 3 do
-							task.wait(0.2) -- espera sumir a mensagem da porta anterior
+							task.wait(0.1) -- espera sumir a mensagem da porta anterior
 						end
 						for attempt = 1, 3 do
 							if attempt >= 2 then
@@ -20555,7 +20565,7 @@ do
 							if talked then
 								break
 							end
-							task.wait(0.4)
+							task.wait(0.15)
 						end
 						held = false
 						if not talked then
@@ -20574,9 +20584,15 @@ do
 							fightGhost(tStart)
 							fightNew(before, dpos)
 						end
-						task.wait(0.3)
+						task.wait(0.05)
 					end)
-					task.wait(0.5)
+					-- sempre solta a trava e o voo, mesmo se a rodada deu erro (era isso que travava a ida para as portas)
+					if trick.heldCancel then
+						pcall(trick.heldCancel)
+						trick.heldCancel = nil
+					end
+					trick.flying = false
+					task.wait(0.1)
 				end
 			end)
 		end
@@ -20873,27 +20889,98 @@ do
 			local hrp = char and char:FindFirstChild("HumanoidRootPart")
 			return hrp ~= nil and (hrp.Position - part.Position).Magnitude < 12
 		end
-		-- vai ate a porta com toTarget, entra nela e confirma que foi teleportado (>150 studs)
+		local knockWords = { "knock", "trick", "treat" }
+		-- prompt de entrada (Enter/Open) de uma porta ja aberta: qualquer prompt que NAO seja de bater (nao gasta token)
+		local openPrompt = function(door)
+			local model = door.inst and door.inst:FindFirstAncestorOfClass("Model") or (door.part and door.part.Parent)
+			if not model or model == workspace then
+				return nil
+			end
+			local n = 0
+			for _, d in ipairs(model:GetDescendants()) do
+				n = n + 1
+				if n > 300 then
+					break
+				end
+				if d:IsA("ProximityPrompt") and d.Enabled and not hasAny(lower(d.ActionText .. " " .. d.ObjectText), knockWords) then
+					return d
+				end
+			end
+			return nil
+		end
+		-- entra pela porta que ja esta aberta: encosta/atravessa a porta e dispara o toque (sem bater, sem gastar token)
+		local walkIn = function(door)
+			local char = plr.Character
+			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			if not hrp or not door.part or not door.part.Parent then
+				return
+			end
+			pcall(function()
+				hrp.CFrame = door.part.CFrame
+				hrp.AssemblyLinearVelocity = Vector3.zero
+				if firetouchinterest then
+					local model = door.inst and door.inst:FindFirstAncestorOfClass("Model") or door.part.Parent
+					local n = 0
+					if model and model ~= workspace then
+						for _, d in ipairs(model:GetDescendants()) do
+							if d:IsA("BasePart") then
+								firetouchinterest(hrp, d, 0)
+								firetouchinterest(hrp, d, 1)
+								n = n + 1
+								if n >= 12 then
+									break
+								end
+							end
+						end
+					end
+					firetouchinterest(hrp, door.part, 0)
+					firetouchinterest(hrp, door.part, 1)
+				end
+			end)
+		end
+		-- vai ate a porta com toTarget, entra nela e confirma que foi teleportado (>50 studs DEPOIS de chegar na porta)
 		local passDoor = function(door)
 			local char = plr.Character
 			local hrp = char and char:FindFirstChild("HumanoidRootPart")
 			if not hrp then
 				return false
 			end
-			local from = hrp.Position
 			if not boss.inArena then
-				boss.entryPos = from
+				boss.entryPos = hrp.Position
 			end
-			goNear(door.part)
-			for _ = 1, 10 do
+			goNear(door.part, 90)
+			-- a referencia do teleporte e a posicao ao chegar na porta (antes comparava com a posicao de antes do voo
+			-- e achava que ja tinha entrado so por ter voado ate la)
+			local at = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+			local from = at and at.Position or hrp.Position
+			local knocks = 0
+			for i = 1, 10 do
 				if not boss.on then
 					return false
 				end
-				triggerObj(door)
+				if door.burning then
+					-- porta em chamas: entra pela porta aberta; so bate (no maximo 1x) se nao tiver outro jeito
+					local ep = openPrompt(door)
+					if ep and ep ~= door.inst then
+						triggerObj({ inst = ep, part = door.part })
+					end
+					walkIn(door)
+					if door.inst then
+						local isKnock = hasAny(objText(door.inst), knockWords)
+						if not isKnock or (i >= 4 and knocks < 1) then
+							if isKnock then
+								knocks = knocks + 1
+							end
+							triggerObj(door)
+						end
+					end
+				else
+					triggerObj(door)
+				end
 				local waited = 0
-				while waited < 1.5 do
-					task.wait(0.25)
-					waited = waited + 0.25
+				while waited < 1.2 do
+					task.wait(0.2)
+					waited = waited + 0.2
 					local h = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
 					if h and (h.Position - from).Magnitude > 50 then
 						return true
@@ -20908,29 +20995,33 @@ do
 		local exitWords = { "portal", "exit", "leave", "return", "door", "gate", "hellfire" }
 		-- porta do Hellfire Gas = porta normal de Trick or Treat "coberta de chamas" (efeito de fogo no modelo)
 		local doorWords = { "knock", "trick", "treat", "halloween", "door" }
-		local isBurning = function(inst)
+		-- 2 = objeto Fire ligado (porta em chamas de verdade); 1 = particula com nome de fogo; 0 = nao queima
+		local fireScore = function(inst)
 			local model = inst:FindFirstAncestorOfClass("Model")
 			local root = model or inst.Parent
 			if not root then
-				return false
+				return 0
 			end
-			local n = 0
+			local best, n = 0, 0
 			for _, d in ipairs(root:GetDescendants()) do
 				n = n + 1
 				if n > 300 then
 					break
 				end
 				if d:IsA("Fire") and d.Enabled then
-					return true
+					return 2
 				end
 				if d:IsA("ParticleEmitter") and d.Enabled then
 					local nm = lower(d.Name)
 					if string.find(nm, "fire", 1, true) or string.find(nm, "flame", 1, true) or string.find(nm, "hell", 1, true) then
-						return true
+						best = 1
 					end
 				end
 			end
-			return false
+			return best
+		end
+		local isBurning = function(inst)
+			return fireScore(inst) > 0
 		end
 		-- ===== Portal do Unbound Werewolf (leva ao Observatory) =====
 		-- Ao abrir uma porta de Trick or Treat pode surgir um portal novo no mapa. Guardamos tudo que nasce com nome de
@@ -21053,7 +21144,7 @@ do
 			boss.purpleList = out
 			return out
 		end
-		local findWolfPortals = function()
+		local findWolfPortals = function(mode)
 			local out = {}
 			local char = plr.Character
 			local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -21061,11 +21152,13 @@ do
 				return out
 			end
 			-- 1) prompts/cliques/toques com nome de werewolf/observatory
-			for _, d in ipairs(findInteractables(WOLF.words, nil, { "knock", "nobody", "halloweendoor", "trick", "treat" })) do
-				table.insert(out, d)
+			if mode == nil or mode == "names" then
+				for _, d in ipairs(findInteractables(WOLF.words, nil, { "knock", "nobody", "halloweendoor", "trick", "treat" })) do
+					table.insert(out, d)
+				end
 			end
 			-- 2) portais que acabaram de nascer
-			if #out == 0 then
+			if #out == 0 and (mode == nil or mode == "fresh") then
 				for i = #boss.fresh, 1, -1 do
 					local f = boss.fresh[i]
 					local inst = f.inst
@@ -21097,23 +21190,42 @@ do
 				end)
 			end
 			-- 3) portal roxo / qualquer "portal" fora da lista de portais conhecidos (Hydra, Mansao, Tiki, Castelo...)
-			if #out == 0 then
+			if #out == 0 and (mode == nil or mode == "loose") then
 				out = findPurplePortals()
 			end
 			return out
 		end
 		local findEntryDoors = function()
-			local out = {}
-			for _, d in ipairs(findInteractables(doorWords, nil, nil)) do
-				if isBurning(d.inst) then
-					table.insert(out, d)
+			-- 1) portal do Werewolf pelo nome (werewolf/observatory)
+			local out = findWolfPortals("names")
+			-- 2) porta do Hellfire Gas: porta em chamas (a mais "pegando fogo" e mais perto primeiro)
+			if #out == 0 then
+				for _, d in ipairs(findInteractables(doorWords, nil, nil)) do
+					local sc = fireScore(d.inst)
+					if sc > 0 then
+						d.burning, d.fire = true, sc
+						table.insert(out, d)
+					end
 				end
+				table.sort(out, function(x, y)
+					if x.fire ~= y.fire then
+						return x.fire > y.fire
+					end
+					return x.dist < y.dist
+				end)
 			end
 			if #out == 0 then
 				out = findInteractables(entryWords, nil, entrySkip)
+				for _, d in ipairs(out) do
+					d.burning = true
+				end
+			end
+			-- 3) portais recem-nascidos e, por ultimo, portal roxo / qualquer "portal"
+			if #out == 0 then
+				out = findWolfPortals("fresh")
 			end
 			if #out == 0 then
-				out = findWolfPortals()
+				out = findWolfPortals("loose")
 			end
 			return out
 		end
@@ -21773,30 +21885,35 @@ do
 									task.wait(1)
 									return
 								end
-								notify("Boss derrotado. Saindo da arena...")
+								notify("Boss derrotado. Resetando o personagem...")
 								task.wait(2)
-								local left = false
+								-- Great Pumpkin: junta os candies antes de resetar
 								if boss.wasPump then
 									boss.wasPump = false
 									pcall(collectCandies)
-									local okL, res = pcall(leaveAfterPumpkin)
-									left = okL and res == true
 									boss.arenaCenter = nil
 								end
-								for _ = 1, 4 do
-									if left or not boss.on then
-										break
-									end
-									if exitArena() then
-										left = true
-										break
-									end
-									task.wait(2)
+								local oldChar = plr.Character
+								local oldHum = oldChar and oldChar:FindFirstChildOfClass("Humanoid")
+								if oldHum then
+									oldHum.Health = 0
+								elseif oldChar then
+									pcall(function()
+										oldChar:BreakJoints()
+									end)
 								end
+								-- espera o novo personagem nascer
+								local waitSpawn = tick()
+								while boss.on and tick() - waitSpawn < 15 do
+									local nc = plr.Character
+									if nc and nc ~= oldChar and nc:FindFirstChild("HumanoidRootPart") and nc:FindFirstChildOfClass("Humanoid") then
+										break
+									end
+									task.wait(0.3)
+								end
+								task.wait(1)
 								boss.inArena, boss.arenaSeen = false, false
-								if not left then
-									notify("Nao achei o portal de saida. Saia manualmente.")
-								end
+								boss.entryPos = nil
 								return
 							end
 							if boss.wantPump and tick() - (boss.pumpAt or 0) >= 2 then
