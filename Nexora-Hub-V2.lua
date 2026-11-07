@@ -2229,14 +2229,17 @@ end
 local function pageIcon(name)
     local n = string.lower(tostring(name))
     local map = {
-        {"setting", "⚙"}, {"config", "⚙"}, {"status", "★"}, {"server", "★"}, {"farm", "▣"}, {"main", "▣"},
-        {"quest", "✦"}, {"item", "♧"}, {"shop", "♧"}, {"raid", "⚔"}, {"boss", "⚔"}, {"pvp", "⚔"}, {"fight", "⚔"},
-        {"race", "♨"}, {"fish", "♨"}, {"fruit", "✧"}, {"halloween", "✧"}, {"esp", "◎"}, {"player", "♟"},
+        {"halloween", "🎃"}, {"kitsune", "🦊"}, {"volcano", "🌋"}, {"dungeon", "🏰"}, {"secret", "🗝️"},
+        {"webhook", "🔔"}, {"resize", "📐"}, {"teleport", "🌀"}, {"upgrade", "⬆️"}, {"craft", "🔨"},
+        {"status", "📊"}, {"server", "🌐"}, {"setting", "⚙️"}, {"config", "⚙️"}, {"sea", "🌊"},
+        {"quest", "📜"}, {"item", "🎒"}, {"shop", "🛒"}, {"raid", "⚔️"}, {"boss", "👹"}, {"pvp", "🗡️"},
+        {"fight", "⚔️"}, {"race", "🧬"}, {"fish", "🎣"}, {"fruit", "🍎"}, {"esp", "👁️"}, {"player", "🧍"},
+        {"farm", "🌾"}, {"main", "🏠"}, {"misc", "✨"}, {"get", "🎁"},
     }
     for _, m in ipairs(map) do
         if string.find(n, m[1], 1, true) then return m[2] end
     end
-    return "✦"
+    return "✨"
 end
 local PAGE_DESC = {
     main = "Farming and progression.",
@@ -2252,6 +2255,14 @@ local function pageDesc(name)
         if string.find(n, key, 1, true) then return d end
     end
     return "Configure your options."
+end
+
+local function pulse(obj, amount)
+    local sc = make("UIScale", {Scale = 1}, obj)
+    pcall(function()
+        TweenService:Create(sc, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Scale = amount or 1.08}):Play()
+    end)
+    return sc
 end
 
 local CurrentMain
@@ -2272,7 +2283,10 @@ function Nexora.CreateMain(config)
         Size = UDim2.fromOffset(W, H), BackgroundColor3 = C.bg, BorderSizePixel = 0,
     }, gui)
     corner(shell, 20)
-    stroke(shell, C.stroke, 0.1, 1.5)
+    local shellStroke = stroke(shell, C.stroke, 0.1, 1.5)
+    pcall(function()
+        TweenService:Create(shellStroke, TweenInfo.new(2.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Color = C.accent, Transparency = 0.35}):Play()
+    end)
     local scale = make("UIScale", {Scale = 1}, shell)
 
     -- ===== tamanho / escala (compativel com a aba "Resize UI") =====
@@ -2337,6 +2351,7 @@ function Nexora.CreateMain(config)
     make("UIGradient", {Rotation = 45, Color = ColorSequence.new(Color3.fromRGB(120, 196, 255), Color3.fromRGB(40, 110, 210))}, logo)
     local logoN = lbl(logo, "N", UDim2.fromScale(1, 1), UDim2.new(), 22, Color3.new(1, 1, 1), Enum.Font.GothamBold)
     logoN.TextXAlignment = Enum.TextXAlignment.Center
+    pulse(logo, 1.07)
     local ptitle = lbl(profile, TITLE, UDim2.new(1, -62, 0, 22), UDim2.fromOffset(56, 12), 15, C.white, Enum.Font.GothamBold)
     ptitle.TextTruncate = Enum.TextTruncate.AtEnd
     local psub = lbl(profile, SUBTITLE, UDim2.new(1, -62, 0, 16), UDim2.fromOffset(56, 33), 11, C.muted)
@@ -2345,7 +2360,7 @@ function Nexora.CreateMain(config)
 
     local searchBox = make("Frame", {Position = UDim2.fromOffset(10, 80), Size = UDim2.new(1, -20, 0, 34), BackgroundColor3 = C.card, BorderSizePixel = 0}, side)
     corner(searchBox, 12)
-    stroke(searchBox, C.stroke, 0.3, 1)
+    local searchStroke = stroke(searchBox, C.stroke, 0.3, 1)
     local mag = lbl(searchBox, "🔍", UDim2.fromOffset(28, 34), UDim2.fromOffset(8, 0), 13, C.muted)
     mag.TextXAlignment = Enum.TextXAlignment.Center
     local search = make("TextBox", {
@@ -2353,6 +2368,9 @@ function Nexora.CreateMain(config)
         PlaceholderText = "Search...", PlaceholderColor3 = C.muted, TextColor3 = C.white, Font = Enum.Font.GothamMedium,
         TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, ClearTextOnFocus = false,
     }, searchBox)
+
+    search.Focused:Connect(function() TweenService:Create(searchStroke, TweenInfo.new(.18), {Color = C.accent, Transparency = 0}):Play() end)
+    search.FocusLost:Connect(function() TweenService:Create(searchStroke, TweenInfo.new(.18), {Color = C.stroke, Transparency = 0.3}):Play() end)
 
     local tabList = make("ScrollingFrame", {
         Name = "Tabs", Position = UDim2.fromOffset(10, 124), Size = UDim2.new(1, -20, 1, -170), BackgroundTransparency = 1,
@@ -2381,8 +2399,9 @@ function Nexora.CreateMain(config)
     local hBox = make("Frame", {Position = UDim2.fromOffset(4, 6), Size = UDim2.fromOffset(42, 42), BackgroundColor3 = C.card, BorderSizePixel = 0}, header)
     corner(hBox, 12)
     stroke(hBox, C.stroke, 0.3, 1)
-    local hIcon = lbl(hBox, "▣", UDim2.fromScale(1, 1), UDim2.new(), 20, C.white, Enum.Font.GothamBold)
+    local hIcon = lbl(hBox, "🏠", UDim2.fromScale(1, 1), UDim2.new(), 22, C.white, Enum.Font.GothamBold)
     hIcon.TextXAlignment = Enum.TextXAlignment.Center
+    local hIconScale = make("UIScale", {Scale = 1}, hIcon)
     local hTitle = lbl(header, "", UDim2.new(1, -60, 0, 24), UDim2.fromOffset(56, 6), 19, C.white, Enum.Font.GothamBold)
     hTitle.TextTruncate = Enum.TextTruncate.AtEnd
     local hSub = lbl(header, "", UDim2.new(1, -60, 0, 18), UDim2.fromOffset(56, 30), 12, C.muted)
@@ -2404,11 +2423,31 @@ function Nexora.CreateMain(config)
     make("UIGradient", {Rotation = 45, Color = ColorSequence.new(Color3.fromRGB(120, 196, 255), Color3.fromRGB(40, 110, 210))}, pl)
     local plN = lbl(pl, "N", UDim2.fromScale(1, 1), UDim2.new(), 15, Color3.new(1, 1, 1), Enum.Font.GothamBold)
     plN.TextXAlignment = Enum.TextXAlignment.Center
+    pulse(pl, 1.1)
+    local pillScale = make("UIScale", {Scale = 1}, pill)
+    pill.MouseEnter:Connect(function() TweenService:Create(pillScale, TweenInfo.new(.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1.06}):Play() end)
+    pill.MouseLeave:Connect(function() TweenService:Create(pillScale, TweenInfo.new(.15), {Scale = 1}):Play() end)
     local plT = lbl(pill, TITLE, UDim2.new(1, -46, 1, 0), UDim2.fromOffset(40, 0), 13, C.white, Enum.Font.GothamBold)
     plT.TextTruncate = Enum.TextTruncate.AtEnd
+    local isOpen = true
     local function toggleWindow()
-        gui.Enabled = not gui.Enabled
-        getgenv().UIToggled = gui.Enabled
+        local opening = not (gui.Enabled and isOpen)
+        isOpen = opening
+        getgenv().UIToggled = opening
+        if opening then
+            gui.Enabled = true
+            local target = fitScale()
+            scale.Scale = target * 0.88
+            TweenService:Create(scale, TweenInfo.new(.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = target}):Play()
+        else
+            TweenService:Create(scale, TweenInfo.new(.14, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = scale.Scale * 0.88}):Play()
+            task.delay(.14, function()
+                if not isOpen then
+                    gui.Enabled = false
+                    scale.Scale = fitScale()
+                end
+            end)
+        end
     end
     do
         local pdrag, pStart, pPos, moved = false, nil, nil, false
@@ -2443,18 +2482,37 @@ function Nexora.CreateMain(config)
     local current
 
     local function showPage(p)
+        local changed = current ~= p
         for _, q in ipairs(pages) do
             local on = (q == p)
             q.frame.Visible = on
-            q.tab.BackgroundTransparency = on and 0 or 1
+            TweenService:Create(q.tab, TweenInfo.new(.18), {BackgroundTransparency = on and 0 or 1}):Play()
+            TweenService:Create(q.tabText, TweenInfo.new(.18), {TextColor3 = on and C.white or C.muted}):Play()
             q.bar.Visible = on
-            q.tabText.TextColor3 = on and C.white or C.muted
-            q.tabIcon.TextColor3 = on and C.accent or C.muted
+            if on and changed then
+                q.bar.Size = UDim2.fromOffset(3, 0)
+                q.bar.Position = UDim2.new(0, 0, .5, 0)
+                TweenService:Create(q.bar, TweenInfo.new(.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.fromOffset(3, 18), Position = UDim2.new(0, 0, .5, -9)}):Play()
+                q.iconScale.Scale = .6
+                TweenService:Create(q.iconScale, TweenInfo.new(.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1.12}):Play()
+            elseif not on then
+                TweenService:Create(q.iconScale, TweenInfo.new(.15), {Scale = 1}):Play()
+            end
         end
         current = p
         hTitle.Text = p.title
         hSub.Text = p.desc
         hIcon.Text = p.icon
+        if changed then
+            -- entrada da pagina: desliza de baixo, titulo aparece e o icone "pula"
+            p.frame.Position = UDim2.fromOffset(0, 22)
+            TweenService:Create(p.frame, TweenInfo.new(.28, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position = UDim2.fromOffset(0, 0)}):Play()
+            hTitle.TextTransparency, hSub.TextTransparency = 1, 1
+            TweenService:Create(hTitle, TweenInfo.new(.25), {TextTransparency = 0}):Play()
+            TweenService:Create(hSub, TweenInfo.new(.35), {TextTransparency = 0}):Play()
+            hIconScale.Scale = .6
+            TweenService:Create(hIconScale, TweenInfo.new(.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+        end
     end
 
     -- ---------- linhas (cards) ----------
@@ -2467,9 +2525,21 @@ function Nexora.CreateMain(config)
             row.Text = ""
         end
         corner(row, 14)
-        stroke(row, C.stroke, 0.45, 1)
-        row.MouseEnter:Connect(function() TweenService:Create(row, TweenInfo.new(.12), {BackgroundColor3 = C.card2}):Play() end)
-        row.MouseLeave:Connect(function() TweenService:Create(row, TweenInfo.new(.12), {BackgroundColor3 = C.card}):Play() end)
+        local rowStroke = stroke(row, C.stroke, 0.45, 1)
+        row.MouseEnter:Connect(function()
+            TweenService:Create(row, TweenInfo.new(.12), {BackgroundColor3 = C.card2}):Play()
+            TweenService:Create(rowStroke, TweenInfo.new(.12), {Color = C.accent, Transparency = 0.6}):Play()
+        end)
+        row.MouseLeave:Connect(function()
+            TweenService:Create(row, TweenInfo.new(.12), {BackgroundColor3 = C.card}):Play()
+            TweenService:Create(rowStroke, TweenInfo.new(.12), {Color = C.stroke, Transparency = 0.45}):Play()
+        end)
+        if clickable then
+            local rs = make("UIScale", {Scale = 1}, row)
+            row.MouseButton1Down:Connect(function() TweenService:Create(rs, TweenInfo.new(.07), {Scale = 0.975}):Play() end)
+            row.MouseButton1Up:Connect(function() TweenService:Create(rs, TweenInfo.new(.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play() end)
+            row.MouseLeave:Connect(function() TweenService:Create(rs, TweenInfo.new(.12), {Scale = 1}):Play() end)
+        end
         return row
     end
     local function hasText(d)
@@ -2506,19 +2576,39 @@ function Nexora.CreateMain(config)
         corner(tab, 11)
         local bar = make("Frame", {Visible = false, Position = UDim2.new(0, 0, .5, -9), Size = UDim2.fromOffset(3, 18), BackgroundColor3 = C.accent, BorderSizePixel = 0}, tab)
         corner(bar, 2)
-        local tIcon = lbl(tab, icon, UDim2.fromOffset(30, 38), UDim2.fromOffset(10, 0), 15, C.muted, Enum.Font.GothamBold)
+        local tIcon = lbl(tab, icon, UDim2.fromOffset(30, 38), UDim2.fromOffset(10, 0), 17, C.muted, Enum.Font.GothamBold)
         tIcon.TextXAlignment = Enum.TextXAlignment.Center
+        local iconScale = make("UIScale", {Scale = 1}, tIcon)
         local tText = lbl(tab, navText, UDim2.new(1, -48, 1, 0), UDim2.fromOffset(44, 0), 14, C.muted, Enum.Font.GothamMedium)
         tText.TextTruncate = Enum.TextTruncate.AtEnd
+        -- entrada em cascata das abas
+        tIcon.TextTransparency, tText.TextTransparency = 1, 1
+        tab.BackgroundTransparency = 1
+        task.delay(math.min(0.06 * #pages, 1.2), function()
+            TweenService:Create(tIcon, TweenInfo.new(.3), {TextTransparency = 0}):Play()
+            TweenService:Create(tText, TweenInfo.new(.3), {TextTransparency = 0}):Play()
+        end)
 
         local p = {
             name = pageName, title = navText, frame = frame, tab = tab, bar = bar, tabText = tText, tabIcon = tIcon,
-            icon = icon, desc = tostring(pageConfig.Page_Desc or pageDesc(navText)),
+            icon = icon, desc = tostring(pageConfig.Page_Desc or pageDesc(navText)), iconScale = iconScale,
         }
         pages[#pages + 1] = p
         tab.MouseButton1Click:Connect(function() showPage(p) end)
-        tab.MouseEnter:Connect(function() if current ~= p then tab.BackgroundTransparency = 0.6 end end)
-        tab.MouseLeave:Connect(function() if current ~= p then tab.BackgroundTransparency = 1 end end)
+        tab.MouseEnter:Connect(function()
+            if current ~= p then
+                TweenService:Create(tab, TweenInfo.new(.12), {BackgroundTransparency = 0.6}):Play()
+                TweenService:Create(tText, TweenInfo.new(.15, Enum.EasingStyle.Quad), {Position = UDim2.fromOffset(49, 0)}):Play()
+                TweenService:Create(iconScale, TweenInfo.new(.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1.2}):Play()
+            end
+        end)
+        tab.MouseLeave:Connect(function()
+            TweenService:Create(tText, TweenInfo.new(.15, Enum.EasingStyle.Quad), {Position = UDim2.fromOffset(44, 0)}):Play()
+            if current ~= p then
+                TweenService:Create(tab, TweenInfo.new(.12), {BackgroundTransparency = 1}):Play()
+                TweenService:Create(iconScale, TweenInfo.new(.15), {Scale = 1}):Play()
+            end
+        end)
         if #pages == 1 then showPage(p) end
 
         local Page = {}
@@ -2563,8 +2653,8 @@ function Nexora.CreateMain(config)
                     local pos = val and UDim2.new(1, -21, 0, 3) or UDim2.new(0, 3, 0, 3)
                     local col = val and C.accent or C.off
                     if animate then
-                        TweenService:Create(track, TweenInfo.new(.15), {BackgroundColor3 = col}):Play()
-                        TweenService:Create(knob, TweenInfo.new(.15), {Position = pos}):Play()
+                        TweenService:Create(track, TweenInfo.new(.18), {BackgroundColor3 = col}):Play()
+                        TweenService:Create(knob, TweenInfo.new(.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = pos}):Play()
                     else
                         track.BackgroundColor3 = col
                         knob.Position = pos
@@ -2640,7 +2730,10 @@ function Nexora.CreateMain(config)
                     BackgroundColor3 = C.knob, BorderSizePixel = 0, AnchorPoint = Vector2.new(.5, .5),
                     Position = UDim2.new(ratio0, 0, .5, 0), Size = UDim2.fromOffset(14, 14),
                 }, bar)
-                corner(knob, 7)
+                corner(knob, 20)
+                local function growKnob(on)
+                    TweenService:Create(knob, TweenInfo.new(.12, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = on and UDim2.fromOffset(20, 20) or UDim2.fromOffset(14, 14)}):Play()
+                end
                 local hit = make("TextButton", {BackgroundTransparency = 1, Text = "", Size = UDim2.new(1, -20, 0, 26), Position = UDim2.new(0, 10, 0, barY - 10)}, row)
                 local opt
                 local sliding = false
@@ -2664,6 +2757,7 @@ function Nexora.CreateMain(config)
                 hit.InputBegan:Connect(function(i)
                     if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
                         sliding = true
+                        growKnob(true)
                         set(i.Position.X)
                     end
                 end)
@@ -2671,7 +2765,10 @@ function Nexora.CreateMain(config)
                     if sliding and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then set(i.Position.X) end
                 end)
                 UIS.InputEnded:Connect(function(i)
-                    if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then sliding = false end
+                    if (i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch) and sliding then
+                        sliding = false
+                        growKnob(false)
+                    end
                 end)
                 return opt
             end
