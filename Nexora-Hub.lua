@@ -84,7 +84,7 @@ end
 -- Depois do carregamento: Classic (UI original) ou Glass (UI nova). So a escolhida e carregada.
 do
 	local env = getgenv()
-	local skip = env.NexoraSkipUIChoice and (env.NexoraUIChoice == "Classic" or env.NexoraUIChoice == "Banana")
+	local skip = env.NexoraSkipUIChoice and (env.NexoraUIChoice == "Classic" or env.NexoraUIChoice == "Banana" or env.NexoraUIChoice == "Maru")
 	env.NexoraSkipUIChoice = nil
 	if not skip then
 		env.NexoraUIChoice = nil
@@ -119,7 +119,7 @@ do
 			end)
 			local dim = mk("Frame", {Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, BorderSizePixel = 0}, gui)
 			TS:Create(dim, TweenInfo.new(.3), {BackgroundTransparency = .45}):Play()
-			local CW, CH = 340, 296
+			local CW, CH = 340, 402
 			local glow = mk("Frame", {AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = UDim2.fromOffset(CW + 18, CH + 18), BackgroundTransparency = 1}, gui)
 			mk("UICorner", {CornerRadius = UDim.new(0, 32)}, glow)
 			local glowS = mk("UIStroke", {Color = BLUE_L, Thickness = 6, Transparency = 1}, glow)
@@ -228,8 +228,27 @@ do
 					mk("UIStroke", {Color = accent, Thickness = 1}, cb)
 				end
 			end
+			-- previa do Maru: lateral com perfil/busca/abas, linhas com titulo, descricao e toggle azul claro
+			local function pvMaru(f, accent)
+				f.BackgroundColor3 = Color3.fromRGB(14, 18, 27)
+				box(f, 0, 0, 34, 66, Color3.fromRGB(18, 23, 34), nil)
+				box(f, 3, 3, 28, 12, Color3.fromRGB(40, 60, 88), 3)
+				box(f, 3, 18, 28, 6, Color3.fromRGB(22, 28, 41), 3)
+				for i = 0, 3 do
+					box(f, 4, 28 + i * 9, 26, 7, i == 1 and Color3.fromRGB(28, 36, 52) or Color3.fromRGB(18, 23, 34), 2)
+					box(f, 7, 30 + i * 9, i == 1 and 18 or 14, 3, i == 1 and Color3.fromRGB(236, 241, 250) or Color3.fromRGB(128, 140, 162), 1)
+				end
+				box(f, 39, 5, 30, 4, Color3.fromRGB(236, 241, 250), 2)
+				for i = 0, 2 do
+					box(f, 39, 14 + i * 17, 57, 14, Color3.fromRGB(22, 28, 41), 4)
+					box(f, 43, 17 + i * 17, 24, 3, Color3.fromRGB(236, 241, 250), 1)
+					box(f, 43, 22 + i * 17, 34, 2, Color3.fromRGB(128, 140, 162), 1)
+					box(f, 82, 18 + i * 17, 11, 6, i == 1 and Color3.fromRGB(52, 60, 78) or accent, 3)
+				end
+			end
 			option(70, "Classic", "UI original: abas no topo e visual azul-marinho.", BLUE, pvClassic, "Classic", .15)
 			option(176, "Glass", "Nova UI em vidro: blur, busca e abas na lateral, seções em card.", Color3.fromRGB(59, 130, 246), pvBanana, "Banana", .27)
+			option(282, "Maru", "UI escura estilo Maru: perfil, busca e abas na lateral, linhas com descrição.", Color3.fromRGB(98, 176, 238), pvMaru, "Maru", .39)
 			-- entrada geral
 			TS:Create(card, TweenInfo.new(.22, Enum.EasingStyle.Quad), {GroupTransparency = 0}):Play()
 			TS:Create(sc, TweenInfo.new(.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = fit}):Play()
@@ -2107,7 +2126,877 @@ game:GetService("Players").LocalPlayer.Idled:connect(function()
 	vu:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 end)
 local A
-if getgenv().NexoraUIChoice == "Banana" then
+if getgenv().NexoraUIChoice == "Maru" then
+A = (function()
+-- MaruUI | interface "Maru": perfil + busca + abas na lateral, linhas com titulo/descricao e controle a direita.
+-- API identica a da biblioteca do Nexora:
+-- CreateMain, CreatePage, CreateSection, CreateToggle, CreateButton,
+-- CreateDropdown, CreateSlider, CreateLabel, CreateBox, CreateNoti, CreateBind.
+-- Esta biblioteca so cria a UI; a source principal continua responsavel pelas funcoes do jogo.
+
+local Nexora = {}
+Nexora.Options = {}
+Nexora.OptionOrder = {}
+
+local UIS = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
+local parentGui = (gethui and gethui()) or CoreGui
+
+local CONFIG = {
+    Title = "Nexora Hub",
+    Subtitle = "[ Blox Fruits ]",
+}
+
+for _, n in ipairs({ "NexoraUI", "NexoraFloat", "NexoraNotifs" }) do
+    local o = parentGui:FindFirstChild(n)
+    if o then o:Destroy() end
+end
+
+local C = {
+    bg = Color3.fromRGB(14, 18, 27),
+    side = Color3.fromRGB(18, 23, 34),
+    card = Color3.fromRGB(22, 28, 41),
+    card2 = Color3.fromRGB(28, 36, 52),
+    stroke = Color3.fromRGB(40, 50, 70),
+    white = Color3.fromRGB(236, 241, 250),
+    muted = Color3.fromRGB(128, 140, 162),
+    accent = Color3.fromRGB(98, 176, 238),
+    off = Color3.fromRGB(52, 60, 78),
+    knob = Color3.fromRGB(245, 248, 255),
+    tabOn = Color3.fromRGB(28, 36, 52),
+}
+
+local function make(class, props, parent)
+    local o = Instance.new(class)
+    for k, v in pairs(props or {}) do o[k] = v end
+    o.Parent = parent
+    return o
+end
+local function corner(obj, radius)
+    return make("UICorner", {CornerRadius = UDim.new(0, radius or 8)}, obj)
+end
+local function stroke(obj, color, transparency, thickness)
+    return make("UIStroke", {
+        Color = color or C.stroke,
+        Transparency = transparency or 0,
+        Thickness = thickness or 1,
+        ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+    }, obj)
+end
+local function lbl(parent, text, size, pos, textSize, color, font)
+    return make("TextLabel", {
+        BackgroundTransparency = 1,
+        Position = pos or UDim2.new(),
+        Size = size or UDim2.new(1, 0, 0, 24),
+        Text = tostring(text or ""),
+        TextColor3 = color or C.white,
+        TextSize = textSize or 14,
+        Font = font or Enum.Font.GothamMedium,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Center,
+    }, parent)
+end
+
+local function addOption(title, typ, value, page, section, callback)
+    local opt = {Title = title, name = title, type = typ, value = value, Page_Name = page, Section_Name = section, Callback = callback}
+    local control = {}
+    control.GetText = function() return tostring(opt.value or "") end
+    control.SetValue = function(a, b)
+        local v = b
+        if b == nil then v = a end
+        if v == control then return end
+        opt.value = v
+        if opt._setValue then opt._setValue(v) end
+        if callback then task.spawn(function() pcall(callback, v) end) end
+    end
+    control.SetStage = control.SetValue
+    control.SetSubValue = function(a, b, c)
+        local key, v
+        if c ~= nil then key, v = b, c else key, v = a, b end
+        opt.value = opt.value or {}
+        opt.value[key] = v
+        if opt._setSubValue then opt._setSubValue(key, v) end
+        if callback then task.spawn(function() pcall(callback, opt.value) end) end
+    end
+    opt.FunctionCreate = control
+    Nexora.Options[title] = opt
+    table.insert(Nexora.OptionOrder, opt)
+    return opt
+end
+
+-- Icone da aba (pelo nome)
+local function pageIcon(name)
+    local n = string.lower(tostring(name))
+    local map = {
+        {"setting", "⚙"}, {"config", "⚙"}, {"status", "★"}, {"server", "★"}, {"farm", "▣"}, {"main", "▣"},
+        {"quest", "✦"}, {"item", "♧"}, {"shop", "♧"}, {"raid", "⚔"}, {"boss", "⚔"}, {"pvp", "⚔"}, {"fight", "⚔"},
+        {"race", "♨"}, {"fish", "♨"}, {"fruit", "✧"}, {"halloween", "✧"}, {"esp", "◎"}, {"player", "♟"},
+    }
+    for _, m in ipairs(map) do
+        if string.find(n, m[1], 1, true) then return m[2] end
+    end
+    return "✦"
+end
+local PAGE_DESC = {
+    main = "Farming and progression.",
+    status = "Live status and server info.",
+    setting = "Script behaviour and options.",
+    shop = "Buy items and fruits.",
+    player = "Local player tweaks.",
+    esp = "Visual helpers.",
+}
+local function pageDesc(name)
+    local n = string.lower(tostring(name))
+    for key, d in pairs(PAGE_DESC) do
+        if string.find(n, key, 1, true) then return d end
+    end
+    return "Configure your options."
+end
+
+local CurrentMain
+
+function Nexora.CreateMain(config)
+    config = config or {}
+    local TITLE = tostring(config.Title or CONFIG.Title)
+    local SUBTITLE = tostring(config.Subtitle or CONFIG.Subtitle)
+
+    local gui = make("ScreenGui", {Name = "NexoraUI", ResetOnSpawn = false, IgnoreGuiInset = true, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
+    getgenv().UIToggled = true
+
+    local W, H = 650, 430
+    local SIDEBAR_W = 196
+
+    local shell = make("Frame", {
+        Name = "Window", AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5),
+        Size = UDim2.fromOffset(W, H), BackgroundColor3 = C.bg, BorderSizePixel = 0,
+    }, gui)
+    corner(shell, 20)
+    stroke(shell, C.stroke, 0.1, 1.5)
+    local scale = make("UIScale", {Scale = 1}, shell)
+
+    -- ===== tamanho / escala (compativel com a aba "Resize UI") =====
+    local userW, userH = 1, 1
+    local MIN_W, MIN_H = 420, 260
+    local function fitScale()
+        local cam = workspace.CurrentCamera
+        local vx, vy = 1280, 720
+        if cam then vx, vy = cam.ViewportSize.X, cam.ViewportSize.Y end
+        local sc = math.clamp(math.min(0.8 * vx / W, 0.9 * vy / H, 1), .3, 1)
+        local w2 = math.clamp(W * userW, MIN_W, math.max(MIN_W, (vx - 16) / sc))
+        local h2 = math.clamp(H * userH, MIN_H, math.max(MIN_H, (vy - 16) / sc))
+        pcall(function() shell.Size = UDim2.fromOffset(math.floor(w2), math.floor(h2)) end)
+        return sc
+    end
+    scale.Scale = fitScale() * 0.9
+    getgenv().NexoraSetUISize = function(wp, hp)
+        userW = math.clamp((tonumber(wp) or 100) / 100, .5, 1.6)
+        userH = math.clamp((tonumber(hp) or 100) / 100, .5, 1.6)
+        scale.Scale = fitScale()
+    end
+    getgenv().NexoraSetUIScale = function(pct)
+        getgenv().NexoraSetUISize(pct, pct)
+    end
+    if workspace.CurrentCamera then
+        workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function() scale.Scale = fitScale() end)
+    end
+
+    -- ===== arrastar a janela =====
+    local function makeDraggable(handle)
+        local dragging, dragStart, startPos = false, nil, nil
+        handle.InputBegan:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+                dragStart = i.Position
+                startPos = shell.Position
+                i.Changed:Connect(function()
+                    if i.UserInputState == Enum.UserInputState.End then dragging = false end
+                end)
+            end
+        end)
+        UIS.InputChanged:Connect(function(i)
+            if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+                local d = i.Position - dragStart
+                local s = math.max(scale.Scale, 0.01)
+                shell.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X / s, startPos.Y.Scale, startPos.Y.Offset + d.Y / s)
+            end
+        end)
+    end
+
+    -- ===================== LATERAL =====================
+    local side = make("Frame", {Name = "Sidebar", Position = UDim2.fromOffset(8, 8), Size = UDim2.new(0, SIDEBAR_W - 8, 1, -16), BackgroundColor3 = C.side, BorderSizePixel = 0}, shell)
+    corner(side, 14)
+    stroke(side, C.stroke, 0.35, 1)
+
+    local profile = make("Frame", {Name = "Profile", Position = UDim2.fromOffset(10, 10), Size = UDim2.new(1, -20, 0, 60), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0}, side)
+    corner(profile, 14)
+    stroke(profile, C.stroke, 0.2, 1)
+    make("UIGradient", {Rotation = 0, Color = ColorSequence.new(Color3.fromRGB(40, 60, 88), Color3.fromRGB(24, 33, 49))}, profile)
+    local logo = make("Frame", {Position = UDim2.fromOffset(10, 11), Size = UDim2.fromOffset(38, 38), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0}, profile)
+    corner(logo, 11)
+    make("UIGradient", {Rotation = 45, Color = ColorSequence.new(Color3.fromRGB(120, 196, 255), Color3.fromRGB(40, 110, 210))}, logo)
+    local logoN = lbl(logo, "N", UDim2.fromScale(1, 1), UDim2.new(), 22, Color3.new(1, 1, 1), Enum.Font.GothamBold)
+    logoN.TextXAlignment = Enum.TextXAlignment.Center
+    local ptitle = lbl(profile, TITLE, UDim2.new(1, -62, 0, 22), UDim2.fromOffset(56, 12), 15, C.white, Enum.Font.GothamBold)
+    ptitle.TextTruncate = Enum.TextTruncate.AtEnd
+    local psub = lbl(profile, SUBTITLE, UDim2.new(1, -62, 0, 16), UDim2.fromOffset(56, 33), 11, C.muted)
+    psub.TextTruncate = Enum.TextTruncate.AtEnd
+    makeDraggable(profile)
+
+    local searchBox = make("Frame", {Position = UDim2.fromOffset(10, 80), Size = UDim2.new(1, -20, 0, 34), BackgroundColor3 = C.card, BorderSizePixel = 0}, side)
+    corner(searchBox, 12)
+    stroke(searchBox, C.stroke, 0.3, 1)
+    local mag = lbl(searchBox, "🔍", UDim2.fromOffset(28, 34), UDim2.fromOffset(8, 0), 13, C.muted)
+    mag.TextXAlignment = Enum.TextXAlignment.Center
+    local search = make("TextBox", {
+        BackgroundTransparency = 1, Position = UDim2.fromOffset(36, 0), Size = UDim2.new(1, -44, 1, 0), Text = "",
+        PlaceholderText = "Search...", PlaceholderColor3 = C.muted, TextColor3 = C.white, Font = Enum.Font.GothamMedium,
+        TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, ClearTextOnFocus = false,
+    }, searchBox)
+
+    local tabList = make("ScrollingFrame", {
+        Name = "Tabs", Position = UDim2.fromOffset(10, 124), Size = UDim2.new(1, -20, 1, -170), BackgroundTransparency = 1,
+        BorderSizePixel = 0, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollBarThickness = 0,
+        ScrollingDirection = Enum.ScrollingDirection.Y,
+    }, side)
+    make("UIListLayout", {Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder}, tabList)
+
+    local down = make("TextButton", {
+        AnchorPoint = Vector2.new(.5, 1), Position = UDim2.new(.5, 0, 1, -8), Size = UDim2.fromOffset(34, 26),
+        BackgroundColor3 = C.card2, AutoButtonColor = false, Text = "⌄", TextColor3 = C.muted, TextSize = 20,
+        Font = Enum.Font.GothamBold, BorderSizePixel = 0,
+    }, side)
+    corner(down, 13)
+    stroke(down, C.stroke, 0.3, 1)
+    down.MouseButton1Click:Connect(function()
+        local maxY = math.max(0, tabList.AbsoluteCanvasSize.Y - tabList.AbsoluteSize.Y)
+        local y = tabList.CanvasPosition.Y
+        if y >= maxY - 2 then y = 0 else y = math.min(maxY, y + 120) end
+        TweenService:Create(tabList, TweenInfo.new(.2), {CanvasPosition = Vector2.new(0, y)}):Play()
+    end)
+
+    -- ===================== CONTEUDO =====================
+    local content = make("Frame", {Name = "Content", Position = UDim2.new(0, SIDEBAR_W + 6, 0, 8), Size = UDim2.new(1, -(SIDEBAR_W + 16), 1, -16), BackgroundTransparency = 1}, shell)
+    local header = make("Frame", {Name = "Header", Size = UDim2.new(1, 0, 0, 56), BackgroundTransparency = 1}, content)
+    local hBox = make("Frame", {Position = UDim2.fromOffset(4, 6), Size = UDim2.fromOffset(42, 42), BackgroundColor3 = C.card, BorderSizePixel = 0}, header)
+    corner(hBox, 12)
+    stroke(hBox, C.stroke, 0.3, 1)
+    local hIcon = lbl(hBox, "▣", UDim2.fromScale(1, 1), UDim2.new(), 20, C.white, Enum.Font.GothamBold)
+    hIcon.TextXAlignment = Enum.TextXAlignment.Center
+    local hTitle = lbl(header, "", UDim2.new(1, -60, 0, 24), UDim2.fromOffset(56, 6), 19, C.white, Enum.Font.GothamBold)
+    hTitle.TextTruncate = Enum.TextTruncate.AtEnd
+    local hSub = lbl(header, "", UDim2.new(1, -60, 0, 18), UDim2.fromOffset(56, 30), 12, C.muted)
+    hSub.TextTruncate = Enum.TextTruncate.AtEnd
+    makeDraggable(header)
+    make("Frame", {Position = UDim2.new(0, 0, 0, 60), Size = UDim2.new(1, 0, 0, 1), BackgroundColor3 = C.stroke, BackgroundTransparency = 0.4, BorderSizePixel = 0}, content)
+    local pageHolder = make("Frame", {Name = "Pages", Position = UDim2.fromOffset(0, 70), Size = UDim2.new(1, 0, 1, -70), BackgroundTransparency = 1, ClipsDescendants = true}, content)
+
+    -- ===================== BOTAO FLUTUANTE (pílula) =====================
+    local float = make("ScreenGui", {Name = "NexoraFloat", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 998, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
+    local pill = make("TextButton", {
+        AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -14, 0, 10), Size = UDim2.fromOffset(150, 38),
+        BackgroundColor3 = C.side, AutoButtonColor = false, Text = "", BorderSizePixel = 0,
+    }, float)
+    corner(pill, 19)
+    stroke(pill, C.stroke, 0.1, 1)
+    local pl = make("Frame", {Position = UDim2.fromOffset(8, 7), Size = UDim2.fromOffset(24, 24), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0}, pill)
+    corner(pl, 8)
+    make("UIGradient", {Rotation = 45, Color = ColorSequence.new(Color3.fromRGB(120, 196, 255), Color3.fromRGB(40, 110, 210))}, pl)
+    local plN = lbl(pl, "N", UDim2.fromScale(1, 1), UDim2.new(), 15, Color3.new(1, 1, 1), Enum.Font.GothamBold)
+    plN.TextXAlignment = Enum.TextXAlignment.Center
+    local plT = lbl(pill, TITLE, UDim2.new(1, -46, 1, 0), UDim2.fromOffset(40, 0), 13, C.white, Enum.Font.GothamBold)
+    plT.TextTruncate = Enum.TextTruncate.AtEnd
+    local function toggleWindow()
+        gui.Enabled = not gui.Enabled
+        getgenv().UIToggled = gui.Enabled
+    end
+    do
+        local pdrag, pStart, pPos, moved = false, nil, nil, false
+        pill.InputBegan:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+                pdrag, moved = true, false
+                pStart, pPos = i.Position, pill.Position
+                i.Changed:Connect(function()
+                    if i.UserInputState == Enum.UserInputState.End then
+                        pdrag = false
+                        if not moved then toggleWindow() end
+                    end
+                end)
+            end
+        end)
+        UIS.InputChanged:Connect(function(i)
+            if pdrag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+                local d = i.Position - pStart
+                if d.Magnitude > 6 then moved = true end
+                if moved then
+                    pill.Position = UDim2.new(pPos.X.Scale, pPos.X.Offset + d.X, pPos.Y.Scale, pPos.Y.Offset + d.Y)
+                end
+            end
+        end)
+    end
+
+    -- ===================== PAGINAS =====================
+    local Main = {}
+    CurrentMain = Main
+    Main.Gui = gui
+    local pages = {}
+    local current
+
+    local function showPage(p)
+        for _, q in ipairs(pages) do
+            local on = (q == p)
+            q.frame.Visible = on
+            q.tab.BackgroundTransparency = on and 0 or 1
+            q.bar.Visible = on
+            q.tabText.TextColor3 = on and C.white or C.muted
+            q.tabIcon.TextColor3 = on and C.accent or C.muted
+        end
+        current = p
+        hTitle.Text = p.title
+        hSub.Text = p.desc
+        hIcon.Text = p.icon
+    end
+
+    -- ---------- linhas (cards) ----------
+    local function newRow(body, h, order, clickable)
+        local row = make(clickable and "TextButton" or "Frame", {
+            BackgroundColor3 = C.card, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, h), LayoutOrder = order,
+        }, body)
+        if clickable then
+            row.AutoButtonColor = false
+            row.Text = ""
+        end
+        corner(row, 14)
+        stroke(row, C.stroke, 0.45, 1)
+        row.MouseEnter:Connect(function() TweenService:Create(row, TweenInfo.new(.12), {BackgroundColor3 = C.card2}):Play() end)
+        row.MouseLeave:Connect(function() TweenService:Create(row, TweenInfo.new(.12), {BackgroundColor3 = C.card}):Play() end)
+        return row
+    end
+    local function hasText(d)
+        return type(d) == "string" and d ~= ""
+    end
+    local function rowTexts(row, title, desc, rightPad)
+        local hd = hasText(desc)
+        local t = lbl(row, title, hd and UDim2.new(1, -rightPad, 0, 22) or UDim2.new(1, -rightPad, 1, 0), hd and UDim2.fromOffset(14, 9) or UDim2.fromOffset(14, 0), 14, C.white, Enum.Font.GothamBold)
+        t.TextTruncate = Enum.TextTruncate.AtEnd
+        if hd then
+            local dl = lbl(row, desc, UDim2.new(1, -rightPad, 0, 20), UDim2.fromOffset(14, 31), 12, C.muted)
+            dl.TextTruncate = Enum.TextTruncate.AtEnd
+        end
+    end
+
+    function Main.CreatePage(pageConfig)
+        pageConfig = pageConfig or {}
+        local pageName = pageConfig.Page_Name or pageConfig.Page_Title or "Page"
+        local navText = tostring(pageConfig.Page_Title or pageName)
+        local icon = pageIcon(navText)
+
+        local frame = make("ScrollingFrame", {
+            Name = pageName, BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.fromScale(1, 1),
+            CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollingDirection = Enum.ScrollingDirection.Y,
+            ScrollBarThickness = 3, ScrollBarImageColor3 = C.accent, Visible = false,
+        }, pageHolder)
+        make("UIPadding", {PaddingRight = UDim.new(0, 8), PaddingBottom = UDim.new(0, 14)}, frame)
+        make("UIListLayout", {Padding = UDim.new(0, 14), SortOrder = Enum.SortOrder.LayoutOrder}, frame)
+
+        local tab = make("TextButton", {
+            AutoButtonColor = false, Text = "", BackgroundColor3 = C.tabOn, BackgroundTransparency = 1, BorderSizePixel = 0,
+            Size = UDim2.new(1, 0, 0, 38), LayoutOrder = #pages + 1,
+        }, tabList)
+        corner(tab, 11)
+        local bar = make("Frame", {Visible = false, Position = UDim2.new(0, 0, .5, -9), Size = UDim2.fromOffset(3, 18), BackgroundColor3 = C.accent, BorderSizePixel = 0}, tab)
+        corner(bar, 2)
+        local tIcon = lbl(tab, icon, UDim2.fromOffset(30, 38), UDim2.fromOffset(10, 0), 15, C.muted, Enum.Font.GothamBold)
+        tIcon.TextXAlignment = Enum.TextXAlignment.Center
+        local tText = lbl(tab, navText, UDim2.new(1, -48, 1, 0), UDim2.fromOffset(44, 0), 14, C.muted, Enum.Font.GothamMedium)
+        tText.TextTruncate = Enum.TextTruncate.AtEnd
+
+        local p = {
+            name = pageName, title = navText, frame = frame, tab = tab, bar = bar, tabText = tText, tabIcon = tIcon,
+            icon = icon, desc = tostring(pageConfig.Page_Desc or pageDesc(navText)),
+        }
+        pages[#pages + 1] = p
+        tab.MouseButton1Click:Connect(function() showPage(p) end)
+        tab.MouseEnter:Connect(function() if current ~= p then tab.BackgroundTransparency = 0.6 end end)
+        tab.MouseLeave:Connect(function() if current ~= p then tab.BackgroundTransparency = 1 end end)
+        if #pages == 1 then showPage(p) end
+
+        local Page = {}
+        local sectionOrder = 0
+        function Page.CreateSection(sectionName)
+            sectionName = tostring(sectionName or "Section")
+            sectionOrder = sectionOrder + 1
+
+            local wrap = make("Frame", {Name = sectionName, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = sectionOrder}, frame)
+            make("UIListLayout", {Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder}, wrap)
+            local head = lbl(wrap, string.upper(sectionName), UDim2.new(1, 0, 0, 18), UDim2.new(), 12, C.accent, Enum.Font.GothamBold)
+            head.LayoutOrder = 0
+            head.TextTruncate = Enum.TextTruncate.AtEnd
+            local body = wrap
+
+            local order = 0
+            local function nextOrder() order = order + 1; return order end
+
+            local Section = {}
+
+            -- ---------- TOGGLE ----------
+            function Section.CreateToggle(cfg, callback)
+                cfg = cfg or {}
+                local t = cfg.Title or "Toggle"
+                Settings = Settings or {}
+                local saved = Settings[t]
+                local val
+                if type(saved) == "boolean" then val = saved else val = (cfg.Default == true) end
+                local row = newRow(body, hasText(cfg.Desc) and 62 or 50, nextOrder(), true)
+                rowTexts(row, t, cfg.Desc, 84)
+                local track = make("Frame", {
+                    BackgroundColor3 = val and C.accent or C.off, BorderSizePixel = 0, AnchorPoint = Vector2.new(1, .5),
+                    Position = UDim2.new(1, -14, .5, 0), Size = UDim2.fromOffset(46, 24),
+                }, row)
+                corner(track, 12)
+                local knob = make("Frame", {
+                    BackgroundColor3 = C.knob, BorderSizePixel = 0, Size = UDim2.fromOffset(18, 18),
+                    Position = val and UDim2.new(1, -21, 0, 3) or UDim2.new(0, 3, 0, 3),
+                }, track)
+                corner(knob, 9)
+                local function paint(animate)
+                    local pos = val and UDim2.new(1, -21, 0, 3) or UDim2.new(0, 3, 0, 3)
+                    local col = val and C.accent or C.off
+                    if animate then
+                        TweenService:Create(track, TweenInfo.new(.15), {BackgroundColor3 = col}):Play()
+                        TweenService:Create(knob, TweenInfo.new(.15), {Position = pos}):Play()
+                    else
+                        track.BackgroundColor3 = col
+                        knob.Position = pos
+                    end
+                end
+                local opt = addOption(t, "toggle", val, pageName, sectionName, callback)
+                local function applyToggle(v, fire)
+                    val = not not v
+                    opt.value = val
+                    paint(true)
+                    Settings[t] = val
+                    pcall(function() SaveSettings(t, val) end)
+                    if fire and callback then task.spawn(function() pcall(callback, val) end) end
+                end
+                opt._setValue = function(v) applyToggle(v, false) end
+                row.MouseButton1Click:Connect(function() applyToggle(not val, true) end)
+                return opt
+            end
+
+            -- ---------- BUTTON ----------
+            function Section.CreateButton(cfg, callback)
+                cfg = cfg or {}
+                local t = cfg.Title or "Button"
+                local row = newRow(body, hasText(cfg.Desc) and 62 or 50, nextOrder(), true)
+                rowTexts(row, t, cfg.Desc, 60)
+                local arrow = lbl(row, "›", UDim2.fromOffset(30, 30), UDim2.new(1, -40, .5, -15), 24, C.accent, Enum.Font.GothamBold)
+                arrow.TextXAlignment = Enum.TextXAlignment.Center
+                addOption(t, "button", false, pageName, sectionName, callback)
+                row.MouseButton1Click:Connect(function() if callback then task.spawn(callback) end end)
+                return row
+            end
+
+            -- ---------- LABEL ----------
+            function Section.CreateLabel(cfg)
+                local t = type(cfg) == "table" and (cfg.Title or cfg.Text or "") or tostring(cfg or "")
+                local holderL = make("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = nextOrder()}, body)
+                make("UIPadding", {PaddingLeft = UDim.new(0, 4), PaddingTop = UDim.new(0, 2), PaddingBottom = UDim.new(0, 2)}, holderL)
+                local txt = make("TextLabel", {
+                    BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y,
+                    Text = tostring(t), TextColor3 = C.muted, TextSize = 13, Font = Enum.Font.GothamMedium,
+                    TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true,
+                }, holderL)
+                local handle = {Object = txt}
+                handle.SetText = function(value) txt.Text = tostring(value or "") end
+                handle.GetText = function() return txt.Text end
+                return handle
+            end
+
+            -- ---------- SLIDER ----------
+            function Section.CreateSlider(cfg, callback)
+                cfg = cfg or {}
+                local t = cfg.Title or "Slider"
+                local min = cfg.Min or cfg.MinValue or 0
+                local max = cfg.Max or cfg.MaxValue or 100
+                local val = math.clamp(cfg.Default or cfg.Value or min, min, max)
+                local hd = hasText(cfg.Desc)
+                local row = newRow(body, hd and 84 or 68, nextOrder(), false)
+                local ttl = lbl(row, t, UDim2.new(1, -90, 0, 22), UDim2.fromOffset(14, 8), 14, C.white, Enum.Font.GothamBold)
+                ttl.TextTruncate = Enum.TextTruncate.AtEnd
+                if hd then
+                    local dl = lbl(row, cfg.Desc, UDim2.new(1, -28, 0, 18), UDim2.fromOffset(14, 29), 12, C.muted)
+                    dl.TextTruncate = Enum.TextTruncate.AtEnd
+                end
+                local num = lbl(row, tostring(val), UDim2.fromOffset(70, 22), UDim2.new(1, -84, 0, 8), 14, C.accent, Enum.Font.GothamBold)
+                num.TextXAlignment = Enum.TextXAlignment.Right
+                local barY = hd and 60 or 44
+                local ratio0 = (val - min) / math.max(1, max - min)
+                local bar = make("Frame", {BackgroundColor3 = C.off, BorderSizePixel = 0, Position = UDim2.new(0, 14, 0, barY), Size = UDim2.new(1, -28, 0, 6)}, row)
+                corner(bar, 3)
+                local fill = make("Frame", {BackgroundColor3 = C.accent, BorderSizePixel = 0, Size = UDim2.new(ratio0, 0, 1, 0)}, bar)
+                corner(fill, 3)
+                local knob = make("Frame", {
+                    BackgroundColor3 = C.knob, BorderSizePixel = 0, AnchorPoint = Vector2.new(.5, .5),
+                    Position = UDim2.new(ratio0, 0, .5, 0), Size = UDim2.fromOffset(14, 14),
+                }, bar)
+                corner(knob, 7)
+                local hit = make("TextButton", {BackgroundTransparency = 1, Text = "", Size = UDim2.new(1, -20, 0, 26), Position = UDim2.new(0, 10, 0, barY - 10)}, row)
+                local opt
+                local sliding = false
+                local function set(x)
+                    local ratio = math.clamp((x - bar.AbsolutePosition.X) / math.max(1, bar.AbsoluteSize.X), 0, 1)
+                    val = math.floor(min + (max - min) * ratio + 0.5)
+                    fill.Size = UDim2.new(ratio, 0, 1, 0)
+                    knob.Position = UDim2.new(ratio, 0, .5, 0)
+                    num.Text = tostring(val)
+                    if opt then opt.value = val end
+                    if callback then pcall(callback, val) end
+                end
+                opt = addOption(t, "slider", val, pageName, sectionName, callback)
+                opt._setValue = function(v)
+                    val = math.clamp(tonumber(v) or min, min, max)
+                    local ratio = (val - min) / math.max(1, max - min)
+                    fill.Size = UDim2.new(ratio, 0, 1, 0)
+                    knob.Position = UDim2.new(ratio, 0, .5, 0)
+                    num.Text = tostring(val)
+                end
+                hit.InputBegan:Connect(function(i)
+                    if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+                        sliding = true
+                        set(i.Position.X)
+                    end
+                end)
+                UIS.InputChanged:Connect(function(i)
+                    if sliding and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then set(i.Position.X) end
+                end)
+                UIS.InputEnded:Connect(function(i)
+                    if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then sliding = false end
+                end)
+                return opt
+            end
+
+            -- ---------- DROPDOWN ----------
+            function Section.CreateDropdown(cfg, callback)
+                cfg = cfg or {}
+                local t = cfg.Title or "Dropdown"
+                local rawList = cfg.List or cfg.Values or cfg.Options or {}
+                local multi = cfg.Selected == true
+                local listValues = {}
+                local function rebuildList(src)
+                    listValues = {}
+                    if type(src) ~= "table" then return end
+                    if #src > 0 then
+                        for _, value in ipairs(src) do table.insert(listValues, value) end
+                    else
+                        for key in pairs(src) do table.insert(listValues, key) end
+                        table.sort(listValues, function(a, b) return tostring(a) < tostring(b) end)
+                    end
+                end
+                rebuildList(rawList)
+                local selected = cfg.Default
+                if multi then
+                    selected = type(selected) == "table" and table.clone(selected) or {}
+                    for _, value in ipairs(listValues) do
+                        if selected[value] == nil then selected[value] = type(rawList) == "table" and rawList[value] == true or false end
+                    end
+                else
+                    selected = selected or "Select..."
+                end
+                local function displayValue()
+                    if not multi then return tostring(selected) end
+                    local chosen = {}
+                    for _, value in ipairs(listValues) do if selected[value] then table.insert(chosen, tostring(value)) end end
+                    if #chosen == 0 then return "None selected" end
+                    local shown = table.concat(chosen, ", ")
+                    return #shown > 24 and (string.sub(shown, 1, 21) .. "...") or shown
+                end
+                local row = newRow(body, hasText(cfg.Desc) and 62 or 50, nextOrder(), false)
+                rowTexts(row, t, cfg.Desc, 190)
+                local b = make("TextButton", {
+                    AutoButtonColor = false, Text = "", BackgroundColor3 = C.bg, BorderSizePixel = 0, AnchorPoint = Vector2.new(1, .5),
+                    Position = UDim2.new(1, -12, .5, 0), Size = UDim2.fromOffset(160, 32),
+                }, row)
+                corner(b, 10)
+                stroke(b, C.stroke, 0.3, 1)
+                local selLabel = lbl(b, displayValue(), UDim2.new(1, -34, 1, 0), UDim2.fromOffset(10, 0), 13, C.white)
+                selLabel.TextTruncate = Enum.TextTruncate.AtEnd
+                local arrow = lbl(b, "⌄", UDim2.fromOffset(24, 32), UDim2.new(1, -28, 0, -3), 20, C.muted)
+                arrow.TextXAlignment = Enum.TextXAlignment.Center
+                local opt = addOption(t, "dropdown", selected, pageName, sectionName, callback)
+                local function refreshButton()
+                    selLabel.Text = displayValue()
+                    opt.value = selected
+                end
+                opt._setValue = function(v)
+                    if multi then selected = type(v) == "table" and table.clone(v) or {} else selected = v end
+                    refreshButton()
+                end
+                opt.GetNewList = function(_, newList)
+                    rebuildList(newList or {})
+                    if multi then
+                        for _, value in ipairs(listValues) do if selected[value] == nil then selected[value] = false end end
+                    elseif not table.find(listValues, selected) then
+                        selected = "Select..."
+                    end
+                    refreshButton()
+                end
+                opt.SetList = opt.GetNewList
+                b.MouseButton1Click:Connect(function()
+                    local menuName = "NexoraDropdownOverlay"
+                    local oldMenu = shell:FindFirstChild(menuName)
+                    if oldMenu then
+                        local same = oldMenu:GetAttribute("NexoraOwner") == t
+                        oldMenu:Destroy()
+                        if same then return end
+                    end
+                    local s = math.max(scale.Scale, 0.01)
+                    local shellPos, shellSize = shell.AbsolutePosition, shell.AbsoluteSize
+                    local bPos, bSize = b.AbsolutePosition, b.AbsoluteSize
+                    local shellW, shellH = shellSize.X / s, shellSize.Y / s
+                    local count = #listValues + (multi and 1 or 0)
+                    local h = math.max(40, math.min(196, count * 32 + 12))
+                    local w = math.max(bSize.X / s, 160)
+                    local x = (bPos.X - shellPos.X) / s - (w - bSize.X / s)
+                    local y = (bPos.Y - shellPos.Y + bSize.Y) / s + 5
+                    if y + h > shellH - 8 then y = math.max(8, (bPos.Y - shellPos.Y) / s - h - 5) end
+                    x = math.clamp(x, 6, math.max(6, shellW - w - 6))
+                    local menu = make("ScrollingFrame", {
+                        Name = menuName, Position = UDim2.fromOffset(x, y - 6), Size = UDim2.fromOffset(w, h), CanvasSize = UDim2.new(),
+                        ScrollBarThickness = 2, ScrollBarImageColor3 = C.accent, BackgroundColor3 = C.card2, BorderSizePixel = 0,
+                        ZIndex = 200, Active = true, ClipsDescendants = true, ScrollingDirection = Enum.ScrollingDirection.Y,
+                        ElasticBehavior = Enum.ElasticBehavior.Never,
+                    }, shell)
+                    pcall(function() TweenService:Create(menu, TweenInfo.new(.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.fromOffset(x, y)}):Play() end)
+                    local posConn = b:GetPropertyChangedSignal("AbsolutePosition"):Connect(function() if menu and menu.Parent then menu:Destroy() end end)
+                    menu.Destroying:Connect(function() posConn:Disconnect() end)
+                    menu:SetAttribute("NexoraOwner", t)
+                    corner(menu, 12)
+                    stroke(menu, C.accent, 0.4, 1.2)
+                    local outsideConnection
+                    outsideConnection = UIS.InputBegan:Connect(function(input, processed)
+                        if processed then return end
+                        if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then return end
+                        task.defer(function()
+                            if not menu or not menu.Parent then
+                                if outsideConnection then outsideConnection:Disconnect() end
+                                return
+                            end
+                            local pt = input.Position
+                            local mp, ms = menu.AbsolutePosition, menu.AbsoluteSize
+                            local bp, bs = b.AbsolutePosition, b.AbsoluteSize
+                            local insideMenu = pt.X >= mp.X and pt.X <= mp.X + ms.X and pt.Y >= mp.Y and pt.Y <= mp.Y + ms.Y
+                            local insideButton = pt.X >= bp.X and pt.X <= bp.X + bs.X and pt.Y >= bp.Y and pt.Y <= bp.Y + bs.Y
+                            if not insideMenu and not insideButton then menu:Destroy() end
+                        end)
+                    end)
+                    menu.Destroying:Connect(function() if outsideConnection then outsideConnection:Disconnect() end end)
+                    local lay = make("UIListLayout", {Padding = UDim.new(0, 3), SortOrder = Enum.SortOrder.LayoutOrder}, menu)
+                    make("UIPadding", {PaddingTop = UDim.new(0, 5), PaddingBottom = UDim.new(0, 5), PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5)}, menu)
+                    lay:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() menu.CanvasSize = UDim2.new(0, 0, 0, lay.AbsoluteContentSize.Y + 10) end)
+                    local function styleOption(ob, on)
+                        ob.BackgroundTransparency = on and 0 or 1
+                        ob.BackgroundColor3 = on and C.tabOn or C.card2
+                        ob.TextColor3 = on and C.accent or C.white
+                    end
+                    for index, value in ipairs(listValues) do
+                        local isOn = multi and selected[value] == true
+                        local ob = make("TextButton", {
+                            AutoButtonColor = false, BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 29),
+                            Text = (multi and (isOn and "✓  " or "□  ") or "") .. tostring(value), TextColor3 = C.white, TextSize = 13,
+                            Font = Enum.Font.GothamMedium, ZIndex = 201, LayoutOrder = index, TextXAlignment = Enum.TextXAlignment.Left,
+                            TextTruncate = Enum.TextTruncate.AtEnd,
+                        }, menu)
+                        corner(ob, 8)
+                        make("UIPadding", {PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 8)}, ob)
+                        if multi then styleOption(ob, isOn) end
+                        ob.MouseEnter:Connect(function() if not (multi and selected[value]) then ob.BackgroundTransparency = 0; ob.BackgroundColor3 = C.tabOn end end)
+                        ob.MouseLeave:Connect(function() styleOption(ob, multi and selected[value] == true) end)
+                        ob.MouseButton1Click:Connect(function()
+                            if multi then
+                                selected[value] = not selected[value]
+                                refreshButton()
+                                if callback then task.spawn(function() pcall(callback, value, selected[value]) end) end
+                                menu:Destroy()
+                            else
+                                selected = value
+                                refreshButton()
+                                menu:Destroy()
+                                if callback then task.spawn(function() pcall(callback, value) end) end
+                            end
+                        end)
+                    end
+                    if multi then
+                        local done = make("TextButton", {
+                            AutoButtonColor = false, BackgroundColor3 = C.accent, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 29),
+                            Text = "Done", TextColor3 = Color3.new(1, 1, 1), TextSize = 13, Font = Enum.Font.GothamBold, ZIndex = 201, LayoutOrder = #listValues + 1,
+                        }, menu)
+                        corner(done, 8)
+                        done.MouseButton1Click:Connect(function() menu:Destroy() end)
+                    end
+                end)
+                return opt
+            end
+
+            -- ---------- BOX (texto) ----------
+            function Section.CreateBox(cfg, callback)
+                cfg = cfg or {}
+                local t = cfg.Title or "Text input"
+                local row = newRow(body, hasText(cfg.Desc) and 62 or 50, nextOrder(), false)
+                rowTexts(row, t, cfg.Desc, 170)
+                local input = make("TextBox", {
+                    AnchorPoint = Vector2.new(1, .5), Position = UDim2.new(1, -12, .5, 0), Size = UDim2.fromOffset(140, 32),
+                    BackgroundColor3 = C.bg, BorderSizePixel = 0, Text = tostring(cfg.Default or ""),
+                    PlaceholderText = cfg.Placeholder or "...", TextColor3 = C.white, PlaceholderColor3 = C.muted,
+                    Font = Enum.Font.GothamMedium, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, ClearTextOnFocus = false,
+                    TextTruncate = Enum.TextTruncate.AtEnd,
+                }, row)
+                corner(input, 10)
+                stroke(input, C.stroke, 0.3, 1)
+                make("UIPadding", {PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10)}, input)
+                local opt = addOption(t, "box", input.Text, pageName, sectionName, callback)
+                local function setText(v, fire)
+                    input.Text = tostring(v == nil and "" or v)
+                    opt.value = input.Text
+                    if fire and callback then task.spawn(function() pcall(callback, input.Text) end) end
+                end
+                opt._setValue = function(v) setText(v, false) end
+                opt.FunctionCreate.GetText = function() return input.Text end
+                input.FocusLost:Connect(function() setText(input.Text, true) end)
+                return opt
+            end
+
+            function Section.CreateNoti(text, duration)
+                return Main.CreateNoti(text, duration)
+            end
+            return Section
+        end
+        return Page
+    end
+
+    function Main.CreateBind(cfg, callback)
+        cfg = cfg or {}
+        local key = cfg.Key or Enum.KeyCode.LeftControl
+        local MainBind = {}
+        local conn = UIS.InputBegan:Connect(function(input, processed)
+            if processed then return end
+            if input.KeyCode == key then
+                if callback then task.spawn(function() pcall(callback) end) else toggleWindow() end
+            end
+        end)
+        MainBind.Disconnect = function() if conn then conn:Disconnect() end end
+        MainBind.SetKey = function(v) key = v end
+        return MainBind
+    end
+    Main.CreateNotification = function(payload)
+        return Main.CreateNoti(payload)
+    end
+
+    -- ===================== NOTIFICACOES =====================
+    local NotifContainer = nil
+    local function getNotifContainer()
+        if NotifContainer and NotifContainer.Parent then return NotifContainer end
+        local cGui = parentGui:FindFirstChild("NexoraNotifs")
+        if cGui then cGui:Destroy() end
+        cGui = make("ScreenGui", {Name = "NexoraNotifs", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 1000, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
+        NotifContainer = make("Frame", {Name = "Container", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -12, 0, 56), Size = UDim2.new(0, 320, 1, -70), BackgroundTransparency = 1}, cGui)
+        make("UIListLayout", {FillDirection = Enum.FillDirection.Vertical, HorizontalAlignment = Enum.HorizontalAlignment.Right, VerticalAlignment = Enum.VerticalAlignment.Top, Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder}, NotifContainer)
+        return NotifContainer
+    end
+    function Main.CreateNoti(text, duration)
+        local title, desc
+        if type(text) == "table" then
+            duration = text.ShowTime or duration or 4
+            title = tostring(text.Title or TITLE)
+            desc = tostring(text.Desc or text.Text or "")
+        else
+            duration = duration or 4
+            title = TITLE
+            desc = tostring(text)
+        end
+        local container = getNotifContainer()
+        local card = make("Frame", {Name = "Notif", BackgroundColor3 = C.side, BorderSizePixel = 0, Size = UDim2.new(0, 310, 0, 68), ClipsDescendants = true}, container)
+        corner(card, 14)
+        stroke(card, C.stroke, 0.1, 1)
+        local sideBar = make("Frame", {BackgroundColor3 = C.accent, BorderSizePixel = 0, Size = UDim2.new(0, 3, 1, 0)}, card)
+        corner(sideBar, 2)
+        local iconBg = make("Frame", {BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Size = UDim2.fromOffset(36, 36), Position = UDim2.fromOffset(14, 12)}, card)
+        corner(iconBg, 10)
+        make("UIGradient", {Rotation = 45, Color = ColorSequence.new(Color3.fromRGB(120, 196, 255), Color3.fromRGB(40, 110, 210))}, iconBg)
+        local nn = lbl(iconBg, "N", UDim2.fromScale(1, 1), UDim2.new(), 20, Color3.new(1, 1, 1), Enum.Font.GothamBold)
+        nn.TextXAlignment = Enum.TextXAlignment.Center
+        make("TextLabel", {BackgroundTransparency = 1, Position = UDim2.fromOffset(60, 8), Size = UDim2.new(1, -68, 0, 18), Text = title, TextColor3 = C.white, Font = Enum.Font.GothamBold, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd}, card)
+        make("TextLabel", {BackgroundTransparency = 1, Position = UDim2.fromOffset(60, 27), Size = UDim2.new(1, -68, 0, 34), Text = desc, TextColor3 = C.muted, Font = Enum.Font.GothamMedium, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true}, card)
+        local progressBg = make("Frame", {BackgroundColor3 = C.off, BorderSizePixel = 0, Size = UDim2.new(1, -16, 0, 2), Position = UDim2.new(0, 8, 1, -5)}, card)
+        corner(progressBg, 1)
+        local progressBar = make("Frame", {BackgroundColor3 = C.accent, BorderSizePixel = 0, Size = UDim2.new(1, 0, 1, 0)}, progressBg)
+        corner(progressBar, 1)
+        card.Position = UDim2.new(0, 340, 0, 0)
+        card.Size = UDim2.new(0, 310, 0, 0)
+        TweenService:Create(card, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0), Size = UDim2.new(0, 310, 0, 68)}):Play()
+        TweenService:Create(progressBar, TweenInfo.new(duration, Enum.EasingStyle.Linear), {Size = UDim2.new(0, 0, 1, 0)}):Play()
+        task.delay(duration, function()
+            if card and card.Parent then
+                TweenService:Create(card, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position = UDim2.new(0, 340, 0, 0)}):Play()
+                task.wait(0.25)
+                if card then card:Destroy() end
+            end
+        end)
+        return card
+    end
+
+    -- ===================== BUSCA =====================
+    search:GetPropertyChangedSignal("Text"):Connect(function()
+        local q = string.lower(search.Text)
+        for _, p in ipairs(pages) do
+            local has = (q == "")
+            if not has and string.find(string.lower(p.title), q, 1, true) then has = true end
+            if not has then
+                for _, d in ipairs(p.frame:GetDescendants()) do
+                    if (d:IsA("TextLabel") or d:IsA("TextButton")) and string.find(string.lower(d.Text), q, 1, true) then
+                        has = true
+                        break
+                    end
+                end
+            end
+            p.tab.Visible = has
+        end
+    end)
+
+    -- animacao de abertura
+    task.defer(function()
+        local target = fitScale()
+        scale.Scale = target * 0.9
+        TweenService:Create(scale, TweenInfo.new(.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = target}):Play()
+    end)
+    return Main
+end
+
+function Nexora.CreateNoti(config, duration)
+    return CurrentMain.CreateNoti(config, duration)
+end
+
+function Nexora.RestoreSavedToggles()
+    if getgenv().__NexoraRestoreDone then return end
+    getgenv().__NexoraRestoreDone = true
+    for _, opt in ipairs(Nexora.OptionOrder) do
+        if opt and opt.type == "toggle" and opt.value == true then
+            local control = opt.FunctionCreate
+            if control and type(control.SetStage) == "function" then
+                pcall(function() control:SetStage(true) end)
+            elseif type(opt.Callback) == "function" then
+                pcall(opt.Callback, true)
+            end
+            task.wait()
+        end
+    end
+end
+getgenv().__NexoraRestoreDone = false
+task.delay(10, function() Nexora.RestoreSavedToggles() end)
+
+return Nexora
+end)()
+elseif getgenv().NexoraUIChoice == "Banana" then
 A = (function()
 -- NexoraUI.lua | Biblioteca de interface (layout Zaque Hub Premium, marca Nexora Hub)
 -- API compatível com a source Nexora Hub:
@@ -20489,11 +21378,19 @@ do
 								trick.warned = true
 								notify("Nenhuma porta disponivel agora. O evento roda de :00 a :10 de cada hora; fico procurando.")
 							end
+							-- se todas as portas ficaram "bloqueadas" por ja terem sido visitadas, libera tudo e tenta de novo
+							if not trick.idleSince then
+								trick.idleSince = tick()
+							elseif tick() - trick.idleSince > 8 then
+								trick.visited = {}
+								trick.idleSince = nil
+							end
 							scanDoors(6)
 							task.wait(1.5)
 							return
 						end
 						trick.warned = false
+						trick.idleSince = nil
 
 						local part = best.part
 						local dpos = doorPos(best)
@@ -20569,7 +21466,7 @@ do
 						end
 						held = false
 						if not talked then
-							trick.visited[best.inst] = tick() + (empty and 300 or 30)
+							trick.visited[best.inst] = empty and tick() or (tick() - 30)
 							pcall(function()
 								local i = best.inst
 								local info = (best.big and "[GRANDE] " or "[normal] ") .. i.Parent.Name .. "/" .. (i.Parent.Parent and i.Parent.Parent.Name or "?")
@@ -20860,6 +21757,9 @@ do
 				end)
 				return
 			end
+			if inst:IsA("ProximityPrompt") and not door.allowKnock and hasAny(objText(inst), { "knock", "trick", "treat", "halloweendoor" }) then
+				return -- porta de Trick or Treat: bater gasta token
+			end
 			pcall(function()
 				if inst:IsA("ProximityPrompt") and fireproximityprompt then
 					local old = inst.HoldDuration
@@ -20938,6 +21838,69 @@ do
 				end
 			end)
 		end
+		-- portal sem prompt (Werewolf): atravessa de verdade a zona do portal. Teleporta pelo centro e por todas as partes
+		-- encostaveis perto dele (hitbox do portal) e dispara o toque; nunca mexe em portas de Trick or Treat
+		local portalSweep = function(door, iter)
+			local char = plr.Character
+			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+			if not hrp or not door.part or not door.part.Parent then
+				return
+			end
+			pcall(function()
+				local center = door.part.Position
+				local look = door.part.CFrame.LookVector
+				local offs = { 0, 3, -3, 6, -6 }
+				local off = offs[((iter - 1) % #offs) + 1]
+				hrp.CFrame = CFrame.new(center + look * off)
+				hrp.AssemblyLinearVelocity = Vector3.zero
+				local params = OverlapParams.new()
+				params.FilterType = Enum.RaycastFilterType.Exclude
+				params.FilterDescendantsInstances = { char }
+				local parts = workspace:GetPartBoundsInRadius(center, 30, params)
+				local list = {}
+				for _, pt in ipairs(parts) do
+					local full = lower(pt:GetFullName())
+					if not pt:FindFirstAncestor("Enemies") and not hasAny(full, { "halloweendoor", "knock", "trick", "treat" }) then
+						local mdl = pt:FindFirstAncestorOfClass("Model")
+						if not (mdl and mdl:FindFirstChildOfClass("Humanoid")) then
+							table.insert(list, { p = pt, t = pt:FindFirstChildOfClass("TouchTransmitter") ~= nil, d = (pt.Position - center).Magnitude })
+						end
+					end
+				end
+				table.sort(list, function(x, y)
+					if x.t ~= y.t then
+						return x.t
+					end
+					return x.d < y.d
+				end)
+				local n = 0
+				for _, e in ipairs(list) do
+					n = n + 1
+					if n > 30 then
+						break
+					end
+					if e.t and n <= 6 then
+						hrp.CFrame = e.p.CFrame
+					end
+					if firetouchinterest then
+						firetouchinterest(hrp, e.p, 0)
+						firetouchinterest(hrp, e.p, 1)
+					end
+					-- prompt/clique de entrada (que nao seja de bater na porta)
+					for _, c in ipairs(e.p:GetChildren()) do
+						if c:IsA("ProximityPrompt") and c.Enabled and not hasAny(lower(c.ActionText .. " " .. c.ObjectText), knockWords) then
+							triggerObj({ inst = c, part = e.p })
+						elseif c:IsA("ClickDetector") then
+							triggerObj({ inst = c, part = e.p })
+						end
+					end
+				end
+				if hum then
+					hum:MoveTo(center + look * (off + 4))
+				end
+			end)
+		end
 		-- vai ate a porta com toTarget, entra nela e confirma que foi teleportado (>50 studs DEPOIS de chegar na porta)
 		local passDoor = function(door)
 			local char = plr.Character
@@ -20967,15 +21930,18 @@ do
 					walkIn(door)
 					if door.inst then
 						local isKnock = hasAny(objText(door.inst), knockWords)
-						if not isKnock or (i >= 4 and knocks < 1) then
-							if isKnock then
-								knocks = knocks + 1
-							end
+						if not isKnock then
 							triggerObj(door)
+						elseif i >= 4 and knocks < 1 then
+							knocks = knocks + 1
+							door.allowKnock = true
+							triggerObj(door)
+							door.allowKnock = false
 						end
 					end
 				else
 					triggerObj(door)
+					portalSweep(door, i)
 				end
 				local waited = 0
 				while waited < 1.2 do
@@ -20988,6 +21954,9 @@ do
 				end
 				pcall(toTarget, door.part.CFrame)
 			end
+			-- marca candidato que nao entrou para nao ficar voltando nele (nem ir para outro "Portal" aleatorio do mapa)
+			boss.badPortal = boss.badPortal or {}
+			boss.badPortal[door.part] = (boss.badPortal[door.part] or 0) + 1
 			return false
 		end
 		local entryWords = { "hellfire", "helldoor", "hell door", "hell portal" }
@@ -21128,7 +22097,6 @@ do
 					if (not hasAny(full, PURPLE_SKIP) or string.find(full, "werewolf", 1, true)) and (score == 2 or part.Size.Magnitude >= 5) then
 						seen[part] = true
 						local interact = part:FindFirstChildWhichIsA("ProximityPrompt", true)
-							or (part.Parent and part.Parent:FindFirstChildWhichIsA("ProximityPrompt", true))
 							or part:FindFirstChildWhichIsA("ClickDetector", true)
 							or part:FindFirstChildWhichIsA("TouchTransmitter")
 						table.insert(out, { inst = interact, part = part, dist = (part.Position - hrp.Position).Magnitude, score = score })
@@ -21162,7 +22130,7 @@ do
 				for i = #boss.fresh, 1, -1 do
 					local f = boss.fresh[i]
 					local inst = f.inst
-					if tick() - f.at > 120 or not inst or not inst.Parent then
+					if tick() - f.at > 900 or not inst or not inst.Parent then
 						table.remove(boss.fresh, i)
 					else
 						local part
@@ -21227,7 +22195,13 @@ do
 			if #out == 0 then
 				out = findWolfPortals("loose")
 			end
-			return out
+			local bad, good = boss.badPortal or {}, {}
+			for _, d in ipairs(out) do
+				if (bad[d.part] or 0) < 2 then
+					table.insert(good, d)
+				end
+			end
+			return good
 		end
 		local exitArena = function()
 			local list = findInteractables(exitWords, 600, entrySkip)
@@ -21749,7 +22723,7 @@ do
 			boss.inArena, boss.arenaSeen, boss.arenaAt = false, false, 0
 			boss.arenaCenter = nil
 			boss.summonAt, boss.summonWait, boss.pumpAt = 0, 0, 0
-			boss.fresh, boss.entryPos = {}, nil
+			boss.fresh, boss.entryPos, boss.badPortal = {}, nil, {}
 			if boss.added then
 				boss.added:Disconnect()
 			end
