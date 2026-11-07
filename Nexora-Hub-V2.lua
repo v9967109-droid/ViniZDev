@@ -21233,10 +21233,62 @@ do
 			task.wait(1.2)
 			return quickWitch()
 		end
+		-- posicao direta da Bruxa pelo NPC dela (ReplicatedStorage.NPCs / NPCManager), sem precisar do mapa carregado
+		local directWitch = function()
+			local RS = game:GetService("ReplicatedStorage")
+			local function fromModel(m)
+				if m and m:IsA("Model") and string.find(lower(m.Name), "witch", 1, true) then
+					local ok, pos = pcall(function()
+						return m:GetPivot().Position
+					end)
+					if ok and pos then
+						return { Position = pos, CFrame = CFrame.new(pos + Vector3.new(0, 4, 0)) }
+					end
+				end
+			end
+			for _, root in ipairs({ workspace:FindFirstChild("NPCs"), RS:FindFirstChild("NPCs") }) do
+				if root then
+					for _, m in ipairs(root:GetChildren()) do
+						local r = fromModel(m)
+						if r then
+							return r
+						end
+					end
+				end
+			end
+			local okNL, NpcList = pcall(function()
+				return require(RS.NPCManager.NPCList)
+			end)
+			local okNM, NpcManager = pcall(function()
+				return require(RS.NPCManager)
+			end)
+			if okNL and okNM and type(NpcList) == "table" and type(NpcList.List) == "table" and type(NpcManager) == "table" and NpcManager.getNPCsByName then
+				for name in pairs(NpcList.List) do
+					if string.find(lower(tostring(name)), "witch", 1, true) then
+						local okG, list = pcall(NpcManager.getNPCsByName, name)
+						local n = okG and list and list[1]
+						local inst = n and n._modelState and n._modelState._instance
+						local r = fromModel(inst)
+						if r then
+							return r
+						end
+					end
+				end
+			end
+			local mem = getgenv().__WitchPos[game.PlaceId]
+			if mem then
+				return { Position = mem, CFrame = CFrame.new(mem + Vector3.new(0, 4, 0)) }
+			end
+		end
 		local findWitchPart = function()
 			local part = quickWitch()
 			if part then
 				return rememberWitch(part)
+			end
+			-- vai direto no NPC da Bruxa com toTarget (sem procurar ilha em ilha)
+			local direct = directWitch()
+			if direct then
+				return rememberWitch(direct)
 			end
 			local mem = getgenv().__WitchPos[game.PlaceId]
 			if mem then
@@ -26896,7 +26948,7 @@ function LeavingCowdalmStop()
 end
 ToggleLeavingCowdalm = FarmingSeaEventSection.CreateToggle(
 	{
-		Title = "Auto exit cowdalm",
+		Title = "Auto Exit Cowdalm To Leviathan",
 		Desc = "Auto Sea Event sem lista: ataca todos os eventos automaticamente.",
 		Default = false,
 	},
