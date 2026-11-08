@@ -2457,7 +2457,7 @@ function Nexora.CreateMain(config)
     -- Mesmo formato de antes; so o icone foi trocado pelo logo novo (coroa + N com anel azul).
     local float = make("ScreenGui", {Name = "NexoraFloat", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 998, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
     local pill = make("TextButton", {
-        AnchorPoint = Vector2.new(0, 0), Position = UDim2.fromOffset(18, 200), Size = UDim2.fromOffset(118, 30),
+        AnchorPoint = Vector2.new(0, 0), Position = UDim2.fromOffset(18, 200), Size = UDim2.fromOffset(100, 30),
         BackgroundColor3 = C.side, AutoButtonColor = false, Text = "", BorderSizePixel = 0,
     }, float)
     corner(pill, 15)
@@ -3141,11 +3141,8 @@ function Nexora.CreateMain(config)
         stroke(card, C.stroke, 0.1, 1)
         local sideBar = make("Frame", {BackgroundColor3 = C.accent, BorderSizePixel = 0, Size = UDim2.new(0, 3, 1, 0)}, card)
         corner(sideBar, 2)
-        local iconBg = make("Frame", {BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Size = UDim2.fromOffset(36, 36), Position = UDim2.fromOffset(14, 12)}, card)
-        corner(iconBg, 10)
-        make("UIGradient", {Rotation = 45, Color = ColorSequence.new(Color3.fromRGB(120, 196, 255), Color3.fromRGB(40, 110, 210))}, iconBg)
-        local nn = lbl(iconBg, "N", UDim2.fromScale(1, 1), UDim2.new(), 20, Color3.new(1, 1, 1), Enum.Font.GothamBold)
-        nn.TextXAlignment = Enum.TextXAlignment.Center
+        local iconBg = make("Frame", {BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.fromOffset(38, 38), Position = UDim2.fromOffset(13, 11)}, card)
+        nexoraLogo(iconBg, 38)   -- mesmo logo do botao e do perfil
         make("TextLabel", {BackgroundTransparency = 1, Position = UDim2.fromOffset(60, 8), Size = UDim2.new(1, -68, 0, 18), Text = title, TextColor3 = C.white, Font = Enum.Font.GothamBold, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd}, card)
         make("TextLabel", {BackgroundTransparency = 1, Position = UDim2.fromOffset(60, 27), Size = UDim2.new(1, -68, 0, 34), Text = desc, TextColor3 = C.muted, Font = Enum.Font.GothamMedium, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true}, card)
         local progressBg = make("Frame", {BackgroundColor3 = C.off, BorderSizePixel = 0, Size = UDim2.new(1, -16, 0, 2), Position = UDim2.new(0, 8, 1, -5)}, card)
