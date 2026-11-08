@@ -187,6 +187,157 @@ do
 end
 
 
+-- ===================== SISTEMA DE KEYS =====================
+-- Aparece depois de escolher a interface e antes de carregar o resto do script.
+-- Configure a URL do seu Worker abaixo (veja nexora-key-worker.js). Enquanto nao configurar, o sistema fica desativado.
+do
+	local KEY_SERVER   = "COLOQUE_AQUI_A_URL_DO_SEU_WORKER"   -- ex: "https://nexora-keys.seunome.workers.dev"
+	local KEY_GET_LINK = ""                                    -- opcional: link onde o usuario pega a key (Discord, etc.)
+	local KEY_FILE     = "NexoraHub_Key.txt"
+
+	if KEY_SERVER:find("COLOQUE_AQUI", 1, true) then
+		warn("[Nexora][Keys] URL do servidor nao configurada - sistema de keys desativado.")
+	else
+		local HttpService = game:GetService("HttpService")
+		local TweenService = game:GetService("TweenService")
+		local Players = game:GetService("Players")
+
+		local function getHwid()
+			local id
+			pcall(function() id = gethwid and gethwid() end)
+			if not id or id == "" then
+				pcall(function() id = game:GetService("RbxAnalyticsService"):GetClientId() end)
+			end
+			return tostring(id or "unknown")
+		end
+
+		local function httpGet(url)
+			local req = (syn and syn.request) or (http and http.request) or http_request or request or (fluxus and fluxus.request)
+			if req then
+				local r = req({Url = url, Method = "GET"})
+				return r and (r.Body or r.body)
+			end
+			return game:HttpGet(url)
+		end
+
+		-- retorna ok, mensagem, dados
+		local function checkKey(key)
+			local url = (KEY_SERVER:gsub("/+$", "")) .. "/validate?key=" .. HttpService:UrlEncode(key) .. "&hwid=" .. HttpService:UrlEncode(getHwid())
+			local okReq, body = pcall(httpGet, url)
+			if not okReq or type(body) ~= "string" then return false, "Sem conexão com o servidor de keys." end
+			local okJson, data = pcall(function() return HttpService:JSONDecode(body) end)
+			if not okJson or type(data) ~= "table" then return false, "Resposta inválida do servidor." end
+			return data.ok == true, tostring(data.msg or "Key inválida."), data
+		end
+
+		local function saveKey(key) pcall(function() if writefile then writefile(KEY_FILE, key) end end) end
+		local function loadKey()
+			local k
+			pcall(function() if isfile and isfile(KEY_FILE) then k = (readfile(KEY_FILE):gsub("%s+", "")) end end)
+			return k
+		end
+
+		local passed = false
+
+		-- 1) tenta a key salva (login automatico)
+		local saved = loadKey()
+		if saved and saved ~= "" then
+			local ok = checkKey(saved)
+			if ok then passed = true end
+		end
+
+		-- 2) senao, mostra a tela de key
+		if not passed then
+			local gui = Instance.new("ScreenGui")
+			gui.Name = "NexoraKeyGate"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true; gui.DisplayOrder = 10000
+			gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+			local okP = pcall(function() gui.Parent = (gethui and gethui()) or game:GetService("CoreGui") end)
+			if not okP or not gui.Parent then gui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui") end
+
+			local dim = Instance.new("Frame")
+			dim.Size = UDim2.fromScale(1, 1); dim.BackgroundColor3 = Color3.new(0, 0, 0); dim.BackgroundTransparency = .45
+			dim.BorderSizePixel = 0; dim.Active = true; dim.Parent = gui
+
+			local card = Instance.new("Frame")
+			card.AnchorPoint = Vector2.new(.5, .5); card.Position = UDim2.fromScale(.5, .5)
+			card.Size = UDim2.fromOffset(300, KEY_GET_LINK ~= "" and 238 or 192)
+			card.BackgroundColor3 = Color3.fromRGB(14, 18, 27); card.BorderSizePixel = 0; card.Parent = dim
+			Instance.new("UICorner", card).CornerRadius = UDim.new(0, 16)
+			local cs = Instance.new("UIStroke", card); cs.Color = Color3.fromRGB(70, 130, 200); cs.Transparency = .35; cs.Thickness = 1.4
+
+			local function label(text, y, h, size, color, font)
+				local l = Instance.new("TextLabel")
+				l.BackgroundTransparency = 1; l.Position = UDim2.fromOffset(16, y); l.Size = UDim2.new(1, -32, 0, h)
+				l.Text = text; l.TextSize = size; l.TextColor3 = color; l.Font = font or Enum.Font.GothamMedium
+				l.TextXAlignment = Enum.TextXAlignment.Center; l.TextWrapped = true; l.Parent = card
+				return l
+			end
+			label("Nexora Hub", 14, 26, 20, Color3.new(1, 1, 1), Enum.Font.GothamBold)
+			label("Digite sua key para continuar", 42, 18, 12, Color3.fromRGB(150, 165, 190))
+
+			local box = Instance.new("TextBox")
+			box.Position = UDim2.fromOffset(16, 72); box.Size = UDim2.new(1, -32, 0, 40)
+			box.BackgroundColor3 = Color3.fromRGB(22, 28, 42); box.BorderSizePixel = 0
+			box.PlaceholderText = "NEXORA-XXXX-XXXX-XXXX"; box.PlaceholderColor3 = Color3.fromRGB(110, 120, 140)
+			box.Text = ""; box.TextColor3 = Color3.new(1, 1, 1); box.TextSize = 14; box.Font = Enum.Font.GothamMedium
+			box.ClearTextOnFocus = false; box.Parent = card
+			Instance.new("UICorner", box).CornerRadius = UDim.new(0, 10)
+
+			local status = label("", 116, 18, 12, Color3.fromRGB(150, 165, 190))
+
+			local function button(text, y, color)
+				local b = Instance.new("TextButton")
+				b.Position = UDim2.fromOffset(16, y); b.Size = UDim2.new(1, -32, 0, 38)
+				b.BackgroundColor3 = color; b.BorderSizePixel = 0; b.AutoButtonColor = true
+				b.Text = text; b.TextColor3 = Color3.new(1, 1, 1); b.TextSize = 14; b.Font = Enum.Font.GothamBold; b.Parent = card
+				Instance.new("UICorner", b).CornerRadius = UDim.new(0, 10)
+				return b
+			end
+			local verify = button("Verificar", 140, Color3.fromRGB(60, 130, 230))
+			if KEY_GET_LINK ~= "" then
+				local get = button("Pegar key", 184, Color3.fromRGB(40, 50, 72))
+				get.MouseButton1Click:Connect(function()
+					local copied = false
+					pcall(function() if setclipboard then setclipboard(KEY_GET_LINK); copied = true end end)
+					status.TextColor3 = Color3.fromRGB(150, 205, 250)
+					status.Text = copied and "Link copiado!" or KEY_GET_LINK
+				end)
+			end
+
+			local busy = false
+			local function submit()
+				if busy then return end
+				local key = (box.Text:gsub("%s+", "")):upper()
+				if key == "" then status.TextColor3 = Color3.fromRGB(255, 120, 130); status.Text = "Digite a key."; return end
+				busy = true; verify.Text = "Verificando..."
+				status.TextColor3 = Color3.fromRGB(150, 165, 190); status.Text = "Conectando ao servidor..."
+				local ok, msg, data = checkKey(key)
+				if ok then
+					saveKey(key)
+					local exp = "Vitalícia"
+					if data and tonumber(data.expires) then exp = "Válida até " .. os.date("%d/%m/%Y", tonumber(data.expires)) end
+					status.TextColor3 = Color3.fromRGB(80, 225, 130); status.Text = "Key aceita! " .. exp
+					task.wait(.9)
+					passed = true
+				else
+					status.TextColor3 = Color3.fromRGB(255, 120, 130); status.Text = msg
+					verify.Text = "Verificar"; busy = false
+				end
+			end
+			verify.MouseButton1Click:Connect(submit)
+			box.FocusLost:Connect(function(enter) if enter then submit() end end)
+
+			while not passed do task.wait(.1) end
+			pcall(function()
+				TweenService:Create(dim, TweenInfo.new(.2), {BackgroundTransparency = 1}):Play()
+				TweenService:Create(card, TweenInfo.new(.2), {Size = UDim2.fromOffset(280, 0)}):Play()
+			end)
+			task.wait(.22)
+			gui:Destroy()
+		end
+	end
+end
+
 -- ===================== TELA DE CARREGAMENTO (apos escolher a interface) =====================
 -- Tela de carregamento (Nexora Hub): aparece DEPOIS da escolha da interface. O resto do script so roda depois dela terminar.
 do
