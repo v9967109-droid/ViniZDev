@@ -1,3 +1,232 @@
+-- ===================== SISTEMA DE KEY UNICA (NEXORA HUB) =====================
+-- Fluxo: executa -> se ja existe key salva valida, entra direto -> senao mostra a tela pedindo a key.
+-- Cada key fica presa ao primeiro jogador (UserId) que a usar. Outro jogador com a mesma key e recusado.
+do
+	local passed = (function()
+		local CONFIG = {
+			-- URL do servidor de keys (ex.: "https://nexora-keys.SEUUSER.workers.dev/check").
+			-- Deixe "" para usar o modo local (LOCAL_KEYS abaixo).
+			API_URL = "",
+			-- Modo sem servidor: a key e gerada a partir do UserId do jogador + este segredo (so voce deve ter o gerador).
+			SECRET = "2f345ca4a116a999",
+			-- Modo local: ["KEY"] = UserId do UNICO jogador que pode usar essa key.
+			LOCAL_KEYS = {
+				-- ["NEXORA-AAAA-BBBB"] = 123456789,
+			},
+			FILE = "NexoraHub_Key.json", -- onde a key fica salva
+			GET_KEY_LINK = "",           -- link p/ pegar key (Discord etc.). Vazio = esconde o botao
+		}
+
+		local Players = game:GetService("Players")
+		local HttpService = game:GetService("HttpService")
+		local TweenService = game:GetService("TweenService")
+		if not game:IsLoaded() then game.Loaded:Wait() end
+		local LP = Players.LocalPlayer
+		while not LP do task.wait() LP = Players.LocalPlayer end
+
+		local canFS = type(writefile) == "function" and type(readfile) == "function" and type(isfile) == "function"
+
+		local function getHwid()
+			local ok, id = pcall(function()
+				if type(gethwid) == "function" then return gethwid() end
+				return game:GetService("RbxAnalyticsService"):GetClientId()
+			end)
+			return (ok and id) and tostring(id) or "unknown"
+		end
+
+		local function httpGet(url)
+			local req = (syn and syn.request) or (http and http.request) or http_request or request
+			if req then
+				local ok, res = pcall(req, {Url = url, Method = "GET"})
+				if ok and res and res.Body then return res.Body end
+			end
+			local ok, body = pcall(function() return game:HttpGet(url) end)
+			if ok and body then return body end
+		end
+
+		local ALPHA = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+		local function fnv(str) -- FNV-1a 32 bits (multiplicacao dividida para nao perder precisao)
+			local h = 2166136261
+			for i = 1, #str do
+				h = bit32.bxor(h, str:byte(i))
+				h = (h * 403 + (h % 256) * 16777216) % 4294967296
+			end
+			return h
+		end
+		local function keyFor(uid)
+			local groups = {}
+			for i = 1, 3 do
+				local h = fnv(CONFIG.SECRET .. ":" .. i .. ":" .. tostring(uid))
+				local g = ""
+				for j = 0, 3 do
+					local idx = bit32.band(bit32.rshift(h, 5 * j), 31) + 1
+					g = g .. ALPHA:sub(idx, idx)
+				end
+				groups[i] = g
+			end
+			return "NEXORA-" .. table.concat(groups, "-")
+		end
+
+		local function checkFor(nonce) -- grupo final das keys geradas pelo site (sem UserId)
+			local h = fnv(CONFIG.SECRET .. ":c:" .. nonce)
+			local g = ""
+			for j = 0, 3 do
+				local idx = bit32.band(bit32.rshift(h, 5 * j), 31) + 1
+				g = g .. ALPHA:sub(idx, idx)
+			end
+			return g
+		end
+
+		-- retorna: ok, motivo, erroDeRede
+		local function validate(key)
+			key = tostring(key or ""):gsub("%s+", ""):upper()
+			if key == "" then return false, "Digite a key." end
+			local uid = LP.UserId
+			if CONFIG.API_URL ~= "" then
+				local url = CONFIG.API_URL .. "?key=" .. HttpService:UrlEncode(key)
+					.. "&uid=" .. tostring(uid) .. "&hwid=" .. HttpService:UrlEncode(getHwid())
+				local body = httpGet(url)
+				if not body then return false, "Sem conexao com o servidor.", true end
+				local ok, data = pcall(function() return HttpService:JSONDecode(body) end)
+				if not ok or type(data) ~= "table" then return false, "Resposta invalida do servidor.", true end
+				if data.ok == true then return true end
+				return false, tostring(data.reason or "Key invalida.")
+			end
+			local owner = CONFIG.LOCAL_KEYS[key]
+			if owner ~= nil then
+				if owner ~= uid then return false, "Essa key pertence a outro jogador." end
+				return true
+			end
+			if key == keyFor(uid) then return true end
+			local a, b, c = key:match("^NEXORA%-(%w%w%w%w)%-(%w%w%w%w)%-(%w%w%w%w)$")
+			if a and c == checkFor(a .. b) then return true end
+			return false, "Key invalida."
+		end
+
+		local function loadSaved()
+			if not canFS then return end
+			local ok, data = pcall(function()
+				if isfile(CONFIG.FILE) then return HttpService:JSONDecode(readfile(CONFIG.FILE)) end
+			end)
+			if ok and type(data) == "table" and type(data.key) == "string" and data.key ~= "" then return data end
+		end
+		local function saveKey(key)
+			if canFS then pcall(writefile, CONFIG.FILE, HttpService:JSONEncode({key = key, uid = LP.UserId})) end
+		end
+		local function clearSaved()
+			if canFS then pcall(writefile, CONFIG.FILE, "{}") end
+		end
+
+		-- 1) key ja salva -> entra direto
+		local saved = loadSaved()
+		if saved then
+			local ok, _, netErr = validate(saved.key)
+			if ok then return true end
+			if netErr and saved.uid == LP.UserId then return true end -- servidor fora do ar: libera quem ja validou
+			clearSaved() -- key revogada / de outro jogador
+		end
+
+		-- 2) tela para digitar a key
+		local host = (gethui and gethui()) or game:GetService("CoreGui")
+		local old = host:FindFirstChild("NexoraKeyGate")
+		if old then old:Destroy() end
+
+		local BLUE, BG = Color3.fromRGB(0, 140, 255), Color3.fromRGB(8, 14, 26)
+		local gui = Instance.new("ScreenGui")
+		gui.Name = "NexoraKeyGate"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true; gui.DisplayOrder = 10002
+		gui.Parent = host
+
+		local function mk(class, props, parent)
+			local o = Instance.new(class)
+			for k, v in pairs(props) do o[k] = v end
+			o.Parent = parent
+			return o
+		end
+
+		local dim = mk("Frame", {Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, BorderSizePixel = 0}, gui)
+		TweenService:Create(dim, TweenInfo.new(.25), {BackgroundTransparency = .45}):Play()
+
+		local card = mk("CanvasGroup", {AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = UDim2.fromOffset(320, CONFIG.GET_KEY_LINK ~= "" and 306 or 262), BackgroundColor3 = BG, BorderSizePixel = 0, GroupTransparency = 1}, gui)
+		mk("UICorner", {CornerRadius = UDim.new(0, 18)}, card)
+		mk("UIStroke", {Color = BLUE, Thickness = 1.5, Transparency = .35}, card)
+		local scale = mk("UIScale", {Scale = .92}, card)
+		TweenService:Create(card, TweenInfo.new(.3, Enum.EasingStyle.Quad), {GroupTransparency = 0}):Play()
+		TweenService:Create(scale, TweenInfo.new(.3, Enum.EasingStyle.Back), {Scale = 1}):Play()
+
+		mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.fromOffset(20, 16), Size = UDim2.new(1, -40, 0, 26), Font = Enum.Font.GothamBold, Text = "Nexora Hub", TextColor3 = Color3.new(1, 1, 1), TextSize = 22, TextXAlignment = Enum.TextXAlignment.Left}, card)
+		mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.fromOffset(20, 42), Size = UDim2.new(1, -40, 0, 18), Font = Enum.Font.Gotham, Text = "Digite sua key para continuar", TextColor3 = Color3.fromRGB(150, 170, 200), TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left}, card)
+
+		local closeBtn = mk("TextButton", {AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -12, 0, 12), Size = UDim2.fromOffset(26, 26), BackgroundColor3 = Color3.fromRGB(20, 30, 48), BorderSizePixel = 0, Font = Enum.Font.GothamBold, Text = "X", TextColor3 = Color3.fromRGB(180, 195, 220), TextSize = 13, AutoButtonColor = true}, card)
+		mk("UICorner", {CornerRadius = UDim.new(0, 8)}, closeBtn)
+
+		local boxFrame = mk("Frame", {Position = UDim2.fromOffset(20, 78), Size = UDim2.new(1, -40, 0, 40), BackgroundColor3 = Color3.fromRGB(14, 24, 42), BorderSizePixel = 0}, card)
+		mk("UICorner", {CornerRadius = UDim.new(0, 10)}, boxFrame)
+		local boxStroke = mk("UIStroke", {Color = BLUE, Thickness = 1, Transparency = .7}, boxFrame)
+		local input = mk("TextBox", {BackgroundTransparency = 1, Position = UDim2.fromOffset(12, 0), Size = UDim2.new(1, -24, 1, 0), Font = Enum.Font.Gotham, PlaceholderText = "Cole sua key aqui", PlaceholderColor3 = Color3.fromRGB(100, 120, 150), Text = "", TextColor3 = Color3.new(1, 1, 1), TextSize = 14, ClearTextOnFocus = false, TextXAlignment = Enum.TextXAlignment.Left}, boxFrame)
+
+		local status = mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.fromOffset(20, 124), Size = UDim2.new(1, -40, 0, 32), Font = Enum.Font.Gotham, Text = "", TextColor3 = Color3.fromRGB(255, 90, 90), TextSize = 12, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top}, card)
+
+		local verify = mk("TextButton", {Position = UDim2.fromOffset(20, 164), Size = UDim2.new(1, -40, 0, 40), BackgroundColor3 = BLUE, BorderSizePixel = 0, Font = Enum.Font.GothamBold, Text = "Verificar Key", TextColor3 = Color3.new(1, 1, 1), TextSize = 15, AutoButtonColor = true}, card)
+		mk("UICorner", {CornerRadius = UDim.new(0, 10)}, verify)
+
+		local idBtn = mk("TextButton", {Position = UDim2.fromOffset(20, 212), Size = UDim2.new(1, -40, 0, 36), BackgroundColor3 = Color3.fromRGB(20, 30, 48), BorderSizePixel = 0, Font = Enum.Font.GothamMedium, Text = "Seu ID: " .. tostring(LP.UserId) .. "  (tocar para copiar)", TextColor3 = Color3.fromRGB(180, 195, 220), TextSize = 12, AutoButtonColor = true}, card)
+		mk("UICorner", {CornerRadius = UDim.new(0, 10)}, idBtn)
+		idBtn.MouseButton1Click:Connect(function()
+			if setclipboard then pcall(setclipboard, tostring(LP.UserId)) end
+			status.TextColor3 = Color3.fromRGB(120, 190, 255)
+			status.Text = "ID copiado! Envie esse ID para receber sua key."
+		end)
+
+		if CONFIG.GET_KEY_LINK ~= "" then
+			local getKey = mk("TextButton", {Position = UDim2.fromOffset(20, 256), Size = UDim2.new(1, -40, 0, 36), BackgroundColor3 = Color3.fromRGB(20, 30, 48), BorderSizePixel = 0, Font = Enum.Font.GothamMedium, Text = "Copiar link para pegar a key", TextColor3 = Color3.fromRGB(180, 195, 220), TextSize = 13, AutoButtonColor = true}, card)
+			mk("UICorner", {CornerRadius = UDim.new(0, 10)}, getKey)
+			getKey.MouseButton1Click:Connect(function()
+				if setclipboard then pcall(setclipboard, CONFIG.GET_KEY_LINK) end
+				status.TextColor3 = Color3.fromRGB(120, 190, 255)
+				status.Text = "Link copiado: " .. CONFIG.GET_KEY_LINK
+			end)
+		end
+
+		local result -- nil = aguardando, true = liberado, false = fechou
+		local busy = false
+		local function submit()
+			if busy then return end
+			busy = true
+			verify.Text = "Verificando..."
+			status.Text = ""
+			local ok, reason = validate(input.Text)
+			if ok then
+				saveKey((input.Text:gsub("%s+", ""):upper()))
+				status.TextColor3 = Color3.fromRGB(90, 220, 140)
+				status.Text = "Key valida! Abrindo o script..."
+				verify.Text = "Liberado"
+				task.wait(.7)
+				result = true
+			else
+				status.TextColor3 = Color3.fromRGB(255, 90, 90)
+				status.Text = reason or "Key invalida."
+				verify.Text = "Verificar Key"
+				TweenService:Create(boxStroke, TweenInfo.new(.15), {Color = Color3.fromRGB(255, 90, 90), Transparency = 0}):Play()
+				task.delay(.6, function() TweenService:Create(boxStroke, TweenInfo.new(.3), {Color = BLUE, Transparency = .7}):Play() end)
+				busy = false
+			end
+		end
+		verify.MouseButton1Click:Connect(submit)
+		input.FocusLost:Connect(function(enter) if enter then submit() end end)
+		closeBtn.MouseButton1Click:Connect(function() result = false end)
+
+		while result == nil do task.wait(.1) end
+
+		TweenService:Create(card, TweenInfo.new(.2), {GroupTransparency = 1}):Play()
+		TweenService:Create(dim, TweenInfo.new(.2), {BackgroundTransparency = 1}):Play()
+		task.wait(.22)
+		gui:Destroy()
+		return result
+	end)()
+	if not passed then return end -- sem key valida: o script nao abre
+end
+-- ===================== FIM DO SISTEMA DE KEY =====================
+
 -- ===================== TELA DE ESCOLHA DE INTERFACE =====================
 -- Primeiro o usuario escolhe a interface: Classic (UI original), Banana (UI nova) ou Maru. So depois o script inicia.
 do
@@ -186,157 +415,6 @@ do
 	end
 end
 
-
--- ===================== SISTEMA DE KEYS =====================
--- Aparece depois de escolher a interface e antes de carregar o resto do script.
--- Configure a URL do seu Worker abaixo (veja nexora-key-worker.js). Enquanto nao configurar, o sistema fica desativado.
-do
-	local KEY_SERVER   = "COLOQUE_AQUI_A_URL_DO_SEU_WORKER"   -- ex: "https://nexora-keys.seunome.workers.dev"
-	local KEY_GET_LINK = ""                                    -- opcional: link onde o usuario pega a key (Discord, etc.)
-	local KEY_FILE     = "NexoraHub_Key.txt"
-
-	if KEY_SERVER:find("COLOQUE_AQUI", 1, true) then
-		warn("[Nexora][Keys] URL do servidor nao configurada - sistema de keys desativado.")
-	else
-		local HttpService = game:GetService("HttpService")
-		local TweenService = game:GetService("TweenService")
-		local Players = game:GetService("Players")
-
-		local function getHwid()
-			local id
-			pcall(function() id = gethwid and gethwid() end)
-			if not id or id == "" then
-				pcall(function() id = game:GetService("RbxAnalyticsService"):GetClientId() end)
-			end
-			return tostring(id or "unknown")
-		end
-
-		local function httpGet(url)
-			local req = (syn and syn.request) or (http and http.request) or http_request or request or (fluxus and fluxus.request)
-			if req then
-				local r = req({Url = url, Method = "GET"})
-				return r and (r.Body or r.body)
-			end
-			return game:HttpGet(url)
-		end
-
-		-- retorna ok, mensagem, dados
-		local function checkKey(key)
-			local url = (KEY_SERVER:gsub("/+$", "")) .. "/validate?key=" .. HttpService:UrlEncode(key) .. "&hwid=" .. HttpService:UrlEncode(getHwid())
-			local okReq, body = pcall(httpGet, url)
-			if not okReq or type(body) ~= "string" then return false, "Sem conexão com o servidor de keys." end
-			local okJson, data = pcall(function() return HttpService:JSONDecode(body) end)
-			if not okJson or type(data) ~= "table" then return false, "Resposta inválida do servidor." end
-			return data.ok == true, tostring(data.msg or "Key inválida."), data
-		end
-
-		local function saveKey(key) pcall(function() if writefile then writefile(KEY_FILE, key) end end) end
-		local function loadKey()
-			local k
-			pcall(function() if isfile and isfile(KEY_FILE) then k = (readfile(KEY_FILE):gsub("%s+", "")) end end)
-			return k
-		end
-
-		local passed = false
-
-		-- 1) tenta a key salva (login automatico)
-		local saved = loadKey()
-		if saved and saved ~= "" then
-			local ok = checkKey(saved)
-			if ok then passed = true end
-		end
-
-		-- 2) senao, mostra a tela de key
-		if not passed then
-			local gui = Instance.new("ScreenGui")
-			gui.Name = "NexoraKeyGate"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true; gui.DisplayOrder = 10000
-			gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-			local okP = pcall(function() gui.Parent = (gethui and gethui()) or game:GetService("CoreGui") end)
-			if not okP or not gui.Parent then gui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui") end
-
-			local dim = Instance.new("Frame")
-			dim.Size = UDim2.fromScale(1, 1); dim.BackgroundColor3 = Color3.new(0, 0, 0); dim.BackgroundTransparency = .45
-			dim.BorderSizePixel = 0; dim.Active = true; dim.Parent = gui
-
-			local card = Instance.new("Frame")
-			card.AnchorPoint = Vector2.new(.5, .5); card.Position = UDim2.fromScale(.5, .5)
-			card.Size = UDim2.fromOffset(300, KEY_GET_LINK ~= "" and 238 or 192)
-			card.BackgroundColor3 = Color3.fromRGB(14, 18, 27); card.BorderSizePixel = 0; card.Parent = dim
-			Instance.new("UICorner", card).CornerRadius = UDim.new(0, 16)
-			local cs = Instance.new("UIStroke", card); cs.Color = Color3.fromRGB(70, 130, 200); cs.Transparency = .35; cs.Thickness = 1.4
-
-			local function label(text, y, h, size, color, font)
-				local l = Instance.new("TextLabel")
-				l.BackgroundTransparency = 1; l.Position = UDim2.fromOffset(16, y); l.Size = UDim2.new(1, -32, 0, h)
-				l.Text = text; l.TextSize = size; l.TextColor3 = color; l.Font = font or Enum.Font.GothamMedium
-				l.TextXAlignment = Enum.TextXAlignment.Center; l.TextWrapped = true; l.Parent = card
-				return l
-			end
-			label("Nexora Hub", 14, 26, 20, Color3.new(1, 1, 1), Enum.Font.GothamBold)
-			label("Digite sua key para continuar", 42, 18, 12, Color3.fromRGB(150, 165, 190))
-
-			local box = Instance.new("TextBox")
-			box.Position = UDim2.fromOffset(16, 72); box.Size = UDim2.new(1, -32, 0, 40)
-			box.BackgroundColor3 = Color3.fromRGB(22, 28, 42); box.BorderSizePixel = 0
-			box.PlaceholderText = "NEXORA-XXXX-XXXX-XXXX"; box.PlaceholderColor3 = Color3.fromRGB(110, 120, 140)
-			box.Text = ""; box.TextColor3 = Color3.new(1, 1, 1); box.TextSize = 14; box.Font = Enum.Font.GothamMedium
-			box.ClearTextOnFocus = false; box.Parent = card
-			Instance.new("UICorner", box).CornerRadius = UDim.new(0, 10)
-
-			local status = label("", 116, 18, 12, Color3.fromRGB(150, 165, 190))
-
-			local function button(text, y, color)
-				local b = Instance.new("TextButton")
-				b.Position = UDim2.fromOffset(16, y); b.Size = UDim2.new(1, -32, 0, 38)
-				b.BackgroundColor3 = color; b.BorderSizePixel = 0; b.AutoButtonColor = true
-				b.Text = text; b.TextColor3 = Color3.new(1, 1, 1); b.TextSize = 14; b.Font = Enum.Font.GothamBold; b.Parent = card
-				Instance.new("UICorner", b).CornerRadius = UDim.new(0, 10)
-				return b
-			end
-			local verify = button("Verificar", 140, Color3.fromRGB(60, 130, 230))
-			if KEY_GET_LINK ~= "" then
-				local get = button("Pegar key", 184, Color3.fromRGB(40, 50, 72))
-				get.MouseButton1Click:Connect(function()
-					local copied = false
-					pcall(function() if setclipboard then setclipboard(KEY_GET_LINK); copied = true end end)
-					status.TextColor3 = Color3.fromRGB(150, 205, 250)
-					status.Text = copied and "Link copiado!" or KEY_GET_LINK
-				end)
-			end
-
-			local busy = false
-			local function submit()
-				if busy then return end
-				local key = (box.Text:gsub("%s+", "")):upper()
-				if key == "" then status.TextColor3 = Color3.fromRGB(255, 120, 130); status.Text = "Digite a key."; return end
-				busy = true; verify.Text = "Verificando..."
-				status.TextColor3 = Color3.fromRGB(150, 165, 190); status.Text = "Conectando ao servidor..."
-				local ok, msg, data = checkKey(key)
-				if ok then
-					saveKey(key)
-					local exp = "Vitalícia"
-					if data and tonumber(data.expires) then exp = "Válida até " .. os.date("%d/%m/%Y", tonumber(data.expires)) end
-					status.TextColor3 = Color3.fromRGB(80, 225, 130); status.Text = "Key aceita! " .. exp
-					task.wait(.9)
-					passed = true
-				else
-					status.TextColor3 = Color3.fromRGB(255, 120, 130); status.Text = msg
-					verify.Text = "Verificar"; busy = false
-				end
-			end
-			verify.MouseButton1Click:Connect(submit)
-			box.FocusLost:Connect(function(enter) if enter then submit() end end)
-
-			while not passed do task.wait(.1) end
-			pcall(function()
-				TweenService:Create(dim, TweenInfo.new(.2), {BackgroundTransparency = 1}):Play()
-				TweenService:Create(card, TweenInfo.new(.2), {Size = UDim2.fromOffset(280, 0)}):Play()
-			end)
-			task.wait(.22)
-			gui:Destroy()
-		end
-	end
-end
 
 -- ===================== TELA DE CARREGAMENTO (apos escolher a interface) =====================
 -- Tela de carregamento (Nexora Hub): aparece DEPOIS da escolha da interface. O resto do script so roda depois dela terminar.
