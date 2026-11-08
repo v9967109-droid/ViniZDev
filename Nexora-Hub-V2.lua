@@ -1,87 +1,5 @@
--- Tela de carregamento (Nexora Hub): rapida e animada. O resto do script so roda depois dela terminar.
-do
-	pcall(function()
-		local TS = game:GetService("TweenService")
-		local host = (gethui and gethui()) or game:GetService("CoreGui")
-		local oldLoad = host:FindFirstChild("NexoraLoading")
-		if oldLoad then oldLoad:Destroy() end
-		local gui = Instance.new("ScreenGui")
-		gui.Name = "NexoraLoading"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true; gui.DisplayOrder = 10000
-		gui.Parent = host
-		local BLUE, BLUE_L, DEEP = Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 55, 140)
-		local function mk(class, props, parent)
-			local o = Instance.new(class)
-			for k, v in pairs(props) do o[k] = v end
-			o.Parent = parent
-			return o
-		end
-		local function ring3() return ColorSequence.new({ColorSequenceKeypoint.new(0, BLUE_L), ColorSequenceKeypoint.new(.5, DEEP), ColorSequenceKeypoint.new(1, BLUE_L)}) end
-		local function spin(g, t) pcall(function() TS:Create(g, TweenInfo.new(t, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Rotation = g.Rotation + 360}):Play() end) end
-		local dim = mk("Frame", {Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, BorderSizePixel = 0}, gui)
-		-- brilho externo
-		local glow = mk("Frame", {AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = UDim2.fromOffset(300, 176), BackgroundTransparency = 1}, gui)
-		mk("UICorner", {CornerRadius = UDim.new(0, 30)}, glow)
-		local glowS = mk("UIStroke", {Color = BLUE_L, Thickness = 6, Transparency = 1}, glow)
-		local card = mk("CanvasGroup", {AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = UDim2.fromOffset(280, 156), BackgroundColor3 = Color3.fromRGB(8, 14, 26), BorderSizePixel = 0, GroupTransparency = 1}, gui)
-		mk("UICorner", {CornerRadius = UDim.new(0, 22)}, card)
-		mk("UIGradient", {Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(11, 20, 38), Color3.fromRGB(3, 7, 14))}, card)
-		local edge = mk("UIStroke", {Color = Color3.new(1, 1, 1), Thickness = 2}, card)
-		spin(mk("UIGradient", {Color = ring3()}, edge), 3.5)
-		local sc = mk("UIScale", {Scale = 0.88}, card)
-		-- logo com anel girando e pulso
-		local logo = mk("Frame", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 14), Size = UDim2.fromOffset(54, 54), BackgroundColor3 = Color3.fromRGB(6, 11, 21), BorderSizePixel = 0}, card)
-		mk("UICorner", {CornerRadius = UDim.new(1, 0)}, logo)
-		local lring = mk("UIStroke", {Color = Color3.new(1, 1, 1), Thickness = 2.5}, logo)
-		spin(mk("UIGradient", {Color = ring3()}, lring), 1.6)
-		local pulse = mk("UIScale", {Scale = 1}, logo)
-		pcall(function() TS:Create(pulse, TweenInfo.new(.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Scale = 1.09}):Play() end)
-		mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, 3), Size = UDim2.new(1, 0, 0, 14), Text = "👑", TextColor3 = BLUE_L, Font = Enum.Font.FredokaOne, TextSize = 13}, logo)
-		local n = mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, 11), Size = UDim2.new(1, 0, 1, -13), Text = "N", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.FredokaOne, TextSize = 30}, logo)
-		mk("UIGradient", {Rotation = 90, Color = ColorSequence.new(BLUE_L, BLUE)}, n)
-		mk("TextLabel", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 74), Size = UDim2.fromOffset(240, 20), BackgroundTransparency = 1, Text = "NEXORA HUB", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 17}, card)
-		mk("TextLabel", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 94), Size = UDim2.fromOffset(240, 14), BackgroundTransparency = 1, Text = "BLOX FRUITS • ViniZDev", TextColor3 = Color3.fromRGB(151, 166, 190), Font = Enum.Font.GothamMedium, TextSize = 10}, card)
-		-- barra de progresso com brilho passando
-		local track = mk("Frame", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 120), Size = UDim2.fromOffset(190, 5), BackgroundColor3 = Color3.fromRGB(20, 30, 48), BorderSizePixel = 0, ClipsDescendants = true}, card)
-		mk("UICorner", {CornerRadius = UDim.new(1, 0)}, track)
-		local fill = mk("Frame", {Size = UDim2.new(0, 0, 1, 0), BackgroundColor3 = BLUE, BorderSizePixel = 0}, track)
-		mk("UICorner", {CornerRadius = UDim.new(1, 0)}, fill)
-		mk("UIGradient", {Color = ColorSequence.new(BLUE, BLUE_L)}, fill)
-		local shine = mk("Frame", {Size = UDim2.new(0, 36, 1, 0), Position = UDim2.new(0, -40, 0, 0), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = .55, BorderSizePixel = 0}, track)
-		mk("UIGradient", {Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(.5, 0), NumberSequenceKeypoint.new(1, 1)})}, shine)
-		pcall(function() TS:Create(shine, TweenInfo.new(.9, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Position = UDim2.new(1, 4, 0, 0)}):Play() end)
-		local status = mk("TextLabel", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 132), Size = UDim2.fromOffset(240, 14), BackgroundTransparency = 1, Text = "Carregando... 0%", TextColor3 = Color3.fromRGB(165, 165, 174), Font = Enum.Font.GothamMedium, TextSize = 11}, card)
-		-- entrada
-		TS:Create(dim, TweenInfo.new(.25), {BackgroundTransparency = .5}):Play()
-		TS:Create(card, TweenInfo.new(.2, Enum.EasingStyle.Quad), {GroupTransparency = 0}):Play()
-		TS:Create(sc, TweenInfo.new(.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
-		TS:Create(glowS, TweenInfo.new(.4), {Transparency = .78}):Play()
-		task.delay(.45, function() pcall(function() TS:Create(glowS, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Transparency = .9}):Play() end) end)
-		-- progresso curto (~1,4s) bloqueando o resto do script ate terminar
-		local steps = { {0, "Carregando"}, {0.45, "Preparando interface"}, {0.8, "Quase pronto"} }
-		local DURATION, startT = 1.4, tick()
-		local label = "Carregando"
-		while true do
-			local p = math.clamp((tick() - startT) / DURATION, 0, 1)
-			fill.Size = UDim2.new(1 - (1 - p) ^ 2, 0, 1, 0)
-			for _, st in ipairs(steps) do if p >= st[1] then label = st[2] end end
-			status.Text = label .. "... " .. math.floor(p * 100) .. "%"
-			if p >= 1 then break end
-			task.wait()
-		end
-		status.Text = "Pronto!"
-		task.wait(0.15)
-		TS:Create(card, TweenInfo.new(.24, Enum.EasingStyle.Quad), {GroupTransparency = 1}):Play()
-		TS:Create(sc, TweenInfo.new(.24, Enum.EasingStyle.Quad), {Scale = 0.94}):Play()
-		TS:Create(dim, TweenInfo.new(.24), {BackgroundTransparency = 1}):Play()
-		TS:Create(glowS, TweenInfo.new(.2), {Transparency = 1}):Play()
-		task.delay(.32, function() gui:Destroy() end)
-	end)
-	-- compatibilidade: o fim do script ainda chama isto, mas a tela ja terminou.
-	getgenv().NexoraLoadingFinish = function() end
-end
-
 -- ===================== TELA DE ESCOLHA DE INTERFACE =====================
--- Depois do carregamento: Classic (UI original) ou Glass (UI nova). So a escolhida e carregada.
+-- Primeiro o usuario escolhe a interface: Classic (UI original), Banana (UI nova) ou Maru. So depois o script inicia.
 do
 	local env = getgenv()
 	local skip = env.NexoraSkipUIChoice and (env.NexoraUIChoice == "Classic" or env.NexoraUIChoice == "Banana" or env.NexoraUIChoice == "Maru")
@@ -209,7 +127,7 @@ do
 					box(f, 83, 33 + i * 11, 7, 6, i == 1 and accent or Color3.fromRGB(46, 57, 75), 2)
 				end
 			end
-			-- previa do Glass: lateral com busca, card central, checkboxes
+			-- previa do Banana: lateral com busca, card central, checkboxes
 			local function pvBanana(f, accent)
 				f.BackgroundColor3 = Color3.fromRGB(17, 17, 20)
 				box(f, 0, 0, 30, 66, Color3.fromRGB(24, 24, 28), nil)
@@ -247,7 +165,7 @@ do
 				end
 			end
 			option(70, "Classic", "UI original: abas no topo e visual azul-marinho.", BLUE, pvClassic, "Classic", .15)
-			option(176, "Glass", "Nova UI em vidro: blur, busca e abas na lateral, seções em card.", Color3.fromRGB(59, 130, 246), pvBanana, "Banana", .27)
+			option(176, "Banana", "Nova UI em vidro: blur, busca e abas na lateral, seções em card.", Color3.fromRGB(59, 130, 246), pvBanana, "Banana", .27)
 			option(282, "Maru", "UI escura estilo Maru: perfil, busca e abas na lateral, linhas com descrição.", Color3.fromRGB(98, 176, 238), pvMaru, "Maru", .39)
 			-- entrada geral
 			TS:Create(card, TweenInfo.new(.22, Enum.EasingStyle.Quad), {GroupTransparency = 0}):Play()
@@ -266,6 +184,90 @@ do
 			env.NexoraUIChoice = "Classic"
 		end
 	end
+end
+
+
+-- ===================== TELA DE CARREGAMENTO (apos escolher a interface) =====================
+-- Tela de carregamento (Nexora Hub): aparece DEPOIS da escolha da interface. O resto do script so roda depois dela terminar.
+do
+	pcall(function()
+		local TS = game:GetService("TweenService")
+		local host = (gethui and gethui()) or game:GetService("CoreGui")
+		local oldLoad = host:FindFirstChild("NexoraLoading")
+		if oldLoad then oldLoad:Destroy() end
+		local gui = Instance.new("ScreenGui")
+		gui.Name = "NexoraLoading"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true; gui.DisplayOrder = 10000
+		gui.Parent = host
+		local BLUE, BLUE_L, DEEP = Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 55, 140)
+		local function mk(class, props, parent)
+			local o = Instance.new(class)
+			for k, v in pairs(props) do o[k] = v end
+			o.Parent = parent
+			return o
+		end
+		local function ring3() return ColorSequence.new({ColorSequenceKeypoint.new(0, BLUE_L), ColorSequenceKeypoint.new(.5, DEEP), ColorSequenceKeypoint.new(1, BLUE_L)}) end
+		local function spin(g, t) pcall(function() TS:Create(g, TweenInfo.new(t, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Rotation = g.Rotation + 360}):Play() end) end
+		local dim = mk("Frame", {Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, BorderSizePixel = 0}, gui)
+		-- brilho externo
+		local glow = mk("Frame", {AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = UDim2.fromOffset(300, 176), BackgroundTransparency = 1}, gui)
+		mk("UICorner", {CornerRadius = UDim.new(0, 30)}, glow)
+		local glowS = mk("UIStroke", {Color = BLUE_L, Thickness = 6, Transparency = 1}, glow)
+		local card = mk("CanvasGroup", {AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = UDim2.fromOffset(280, 156), BackgroundColor3 = Color3.fromRGB(8, 14, 26), BorderSizePixel = 0, GroupTransparency = 1}, gui)
+		mk("UICorner", {CornerRadius = UDim.new(0, 22)}, card)
+		mk("UIGradient", {Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(11, 20, 38), Color3.fromRGB(3, 7, 14))}, card)
+		local edge = mk("UIStroke", {Color = Color3.new(1, 1, 1), Thickness = 2}, card)
+		spin(mk("UIGradient", {Color = ring3()}, edge), 3.5)
+		local sc = mk("UIScale", {Scale = 0.88}, card)
+		-- logo com anel girando e pulso
+		local logo = mk("Frame", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 14), Size = UDim2.fromOffset(54, 54), BackgroundColor3 = Color3.fromRGB(6, 11, 21), BorderSizePixel = 0}, card)
+		mk("UICorner", {CornerRadius = UDim.new(1, 0)}, logo)
+		local lring = mk("UIStroke", {Color = Color3.new(1, 1, 1), Thickness = 2.5}, logo)
+		spin(mk("UIGradient", {Color = ring3()}, lring), 1.6)
+		local pulse = mk("UIScale", {Scale = 1}, logo)
+		pcall(function() TS:Create(pulse, TweenInfo.new(.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Scale = 1.09}):Play() end)
+		mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, 3), Size = UDim2.new(1, 0, 0, 14), Text = "👑", TextColor3 = BLUE_L, Font = Enum.Font.FredokaOne, TextSize = 13}, logo)
+		local n = mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, 11), Size = UDim2.new(1, 0, 1, -13), Text = "N", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.FredokaOne, TextSize = 30}, logo)
+		mk("UIGradient", {Rotation = 90, Color = ColorSequence.new(BLUE_L, BLUE)}, n)
+		mk("TextLabel", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 74), Size = UDim2.fromOffset(240, 20), BackgroundTransparency = 1, Text = "NEXORA HUB", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 17}, card)
+		mk("TextLabel", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 94), Size = UDim2.fromOffset(240, 14), BackgroundTransparency = 1, Text = "BLOX FRUITS • ViniZDev", TextColor3 = Color3.fromRGB(151, 166, 190), Font = Enum.Font.GothamMedium, TextSize = 10}, card)
+		-- barra de progresso com brilho passando
+		local track = mk("Frame", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 120), Size = UDim2.fromOffset(190, 5), BackgroundColor3 = Color3.fromRGB(20, 30, 48), BorderSizePixel = 0, ClipsDescendants = true}, card)
+		mk("UICorner", {CornerRadius = UDim.new(1, 0)}, track)
+		local fill = mk("Frame", {Size = UDim2.new(0, 0, 1, 0), BackgroundColor3 = BLUE, BorderSizePixel = 0}, track)
+		mk("UICorner", {CornerRadius = UDim.new(1, 0)}, fill)
+		mk("UIGradient", {Color = ColorSequence.new(BLUE, BLUE_L)}, fill)
+		local shine = mk("Frame", {Size = UDim2.new(0, 36, 1, 0), Position = UDim2.new(0, -40, 0, 0), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = .55, BorderSizePixel = 0}, track)
+		mk("UIGradient", {Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(.5, 0), NumberSequenceKeypoint.new(1, 1)})}, shine)
+		pcall(function() TS:Create(shine, TweenInfo.new(.9, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Position = UDim2.new(1, 4, 0, 0)}):Play() end)
+		local status = mk("TextLabel", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 132), Size = UDim2.fromOffset(240, 14), BackgroundTransparency = 1, Text = "Carregando... 0%", TextColor3 = Color3.fromRGB(165, 165, 174), Font = Enum.Font.GothamMedium, TextSize = 11}, card)
+		-- entrada
+		TS:Create(dim, TweenInfo.new(.25), {BackgroundTransparency = .5}):Play()
+		TS:Create(card, TweenInfo.new(.2, Enum.EasingStyle.Quad), {GroupTransparency = 0}):Play()
+		TS:Create(sc, TweenInfo.new(.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+		TS:Create(glowS, TweenInfo.new(.4), {Transparency = .78}):Play()
+		task.delay(.45, function() pcall(function() TS:Create(glowS, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Transparency = .9}):Play() end) end)
+		-- progresso curto (~1,4s) bloqueando o resto do script ate terminar
+		local steps = { {0, "Carregando"}, {0.45, "Preparando interface"}, {0.8, "Quase pronto"} }
+		local DURATION, startT = 1.4, tick()
+		local label = "Carregando"
+		while true do
+			local p = math.clamp((tick() - startT) / DURATION, 0, 1)
+			fill.Size = UDim2.new(1 - (1 - p) ^ 2, 0, 1, 0)
+			for _, st in ipairs(steps) do if p >= st[1] then label = st[2] end end
+			status.Text = label .. "... " .. math.floor(p * 100) .. "%"
+			if p >= 1 then break end
+			task.wait()
+		end
+		status.Text = "Pronto!"
+		task.wait(0.15)
+		TS:Create(card, TweenInfo.new(.24, Enum.EasingStyle.Quad), {GroupTransparency = 1}):Play()
+		TS:Create(sc, TweenInfo.new(.24, Enum.EasingStyle.Quad), {Scale = 0.94}):Play()
+		TS:Create(dim, TweenInfo.new(.24), {BackgroundTransparency = 1}):Play()
+		TS:Create(glowS, TweenInfo.new(.2), {Transparency = 1}):Play()
+		task.delay(.32, function() gui:Destroy() end)
+	end)
+	-- compatibilidade: o fim do script ainda chama isto, mas a tela ja terminou.
+	getgenv().NexoraLoadingFinish = function() end
 end
 
 -- ===================== NEXORA ANTI SHAKE SYSTEM (NO TREME TELA) =====================
@@ -2402,33 +2404,71 @@ function Nexora.CreateMain(config)
     local hIcon = lbl(hBox, "🏠", UDim2.fromScale(1, 1), UDim2.new(), 22, C.white, Enum.Font.GothamBold)
     hIcon.TextXAlignment = Enum.TextXAlignment.Center
     local hIconScale = make("UIScale", {Scale = 1}, hIcon)
-    local hTitle = lbl(header, "", UDim2.new(1, -60, 0, 24), UDim2.fromOffset(56, 6), 19, C.white, Enum.Font.GothamBold)
+    local hTitle = lbl(header, "", UDim2.new(1, -172, 0, 24), UDim2.fromOffset(56, 6), 19, C.white, Enum.Font.GothamBold)
     hTitle.TextTruncate = Enum.TextTruncate.AtEnd
-    local hSub = lbl(header, "", UDim2.new(1, -60, 0, 18), UDim2.fromOffset(56, 30), 12, C.muted)
+    local hSub = lbl(header, "", UDim2.new(1, -172, 0, 18), UDim2.fromOffset(56, 30), 12, C.muted)
     hSub.TextTruncate = Enum.TextTruncate.AtEnd
     makeDraggable(header)
     make("Frame", {Position = UDim2.new(0, 0, 0, 60), Size = UDim2.new(1, 0, 0, 1), BackgroundColor3 = C.stroke, BackgroundTransparency = 0.4, BorderSizePixel = 0}, content)
     local pageHolder = make("Frame", {Name = "Pages", Position = UDim2.fromOffset(0, 70), Size = UDim2.new(1, 0, 1, -70), BackgroundTransparency = 1, ClipsDescendants = true}, content)
 
-    -- ===================== BOTAO FLUTUANTE (pílula) =====================
-    local float = make("ScreenGui", {Name = "NexoraFloat", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 998, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
-    local pill = make("TextButton", {
-        AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -14, 0, 10), Size = UDim2.fromOffset(150, 38),
-        BackgroundColor3 = C.side, AutoButtonColor = false, Text = "", BorderSizePixel = 0,
+    -- ===================== BOTAO FLUTUANTE (igual ao da Banana) =====================
+    -- ScreenGui separado: o botao fica fora da janela e nao some junto com a UI (nem com o keybind Toggle GUI).
+    local BL, BL2 = C.accent, Color3.fromRGB(120, 196, 255)   -- cores do icone no estilo Maru
+    local function nexoraLogo(parent, px)
+        local f = make("Frame", {
+            Name = "NexoraLogo", AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5),
+            Size = UDim2.fromOffset(px, px), BackgroundColor3 = Color3.fromRGB(14, 18, 27), BorderSizePixel = 0,
+        }, parent)
+        corner(f, px)
+        make("UIGradient", {Rotation = 60, Color = ColorSequence.new(Color3.fromRGB(32, 48, 74), Color3.fromRGB(10, 14, 22))}, f)
+        make("UIScale", {Name = "Pop", Scale = 1}, f)
+        local ring = stroke(f, Color3.new(1, 1, 1), 0, math.max(1.5, px / 20))
+        local ringG = make("UIGradient", {Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, BL2), ColorSequenceKeypoint.new(.5, Color3.fromRGB(40, 90, 150)), ColorSequenceKeypoint.new(1, BL2),
+        })}, ring)
+        pcall(function() TweenService:Create(ringG, TweenInfo.new(3, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Rotation = 360}):Play() end)
+        local halo = make("Frame", {AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .56), Size = UDim2.fromScale(.7, .7), BackgroundColor3 = BL, BackgroundTransparency = .72, BorderSizePixel = 0}, f)
+        corner(halo, px)
+        pcall(function() TweenService:Create(halo, TweenInfo.new(1.3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {BackgroundTransparency = .9, Size = UDim2.fromScale(.82, .82)}):Play() end)
+        local crownL = make("TextLabel", {
+            BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, math.floor(px * 0.07)), Size = UDim2.new(1, 0, 0, math.floor(px * 0.26)),
+            Text = "👑", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = math.max(8, math.floor(px * 0.27)), ZIndex = 3,
+        }, f)
+        pcall(function() TweenService:Create(crownL, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Position = UDim2.new(0, 0, 0, math.floor(px * 0.03))}):Play() end)
+        local nL = make("TextLabel", {
+            BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, math.floor(px * 0.2)), Size = UDim2.new(1, 0, 1, -math.floor(px * 0.24)),
+            Text = "N", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBlack, TextSize = math.max(10, math.floor(px * 0.58)), ZIndex = 3,
+        }, f)
+        make("UIStroke", {Color = Color3.fromRGB(30, 70, 130), Thickness = math.max(1, px / 26), Transparency = .15}, nL)
+        local ng = make("UIGradient", {
+            Rotation = 25,
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, BL2), ColorSequenceKeypoint.new(.42, Color3.fromRGB(150, 210, 255)),
+                ColorSequenceKeypoint.new(.5, Color3.new(1, 1, 1)), ColorSequenceKeypoint.new(.58, Color3.fromRGB(150, 210, 255)),
+                ColorSequenceKeypoint.new(1, BL),
+            }),
+        }, nL)
+        pcall(function() TweenService:Create(nL, TweenInfo.new(1.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Rotation = 0}):Play() end)
+        pcall(function() TweenService:Create(ng, TweenInfo.new(1.2, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut, -1, true, .8), {Rotation = 205}):Play() end)
+        local spark = make("TextLabel", {
+            BackgroundTransparency = 1, AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.8, .3), Size = UDim2.fromOffset(px * 0.22, px * 0.22),
+            Text = "✦", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = math.max(6, math.floor(px * 0.2)), TextTransparency = 1, ZIndex = 4,
+        }, f)
+        pcall(function() TweenService:Create(spark, TweenInfo.new(.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true, .6), {TextTransparency = .05}):Play() end)
+        return f
+    end
+
+    local float = make("ScreenGui", {Name = "NexoraFloat", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 999, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
+    local reopen = make("ImageButton", {
+        Name = "NexoraFloatingButton", AutoButtonColor = false, BackgroundColor3 = C.side, BorderSizePixel = 0,
+        Image = "", ScaleType = Enum.ScaleType.Fit, Size = UDim2.fromOffset(58, 58), ZIndex = 100,
     }, float)
-    corner(pill, 19)
-    stroke(pill, C.stroke, 0.1, 1)
-    local pl = make("Frame", {Position = UDim2.fromOffset(8, 7), Size = UDim2.fromOffset(24, 24), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0}, pill)
-    corner(pl, 8)
-    make("UIGradient", {Rotation = 45, Color = ColorSequence.new(Color3.fromRGB(120, 196, 255), Color3.fromRGB(40, 110, 210))}, pl)
-    local plN = lbl(pl, "N", UDim2.fromScale(1, 1), UDim2.new(), 15, Color3.new(1, 1, 1), Enum.Font.GothamBold)
-    plN.TextXAlignment = Enum.TextXAlignment.Center
-    pulse(pl, 1.1)
-    local pillScale = make("UIScale", {Scale = 1}, pill)
-    pill.MouseEnter:Connect(function() TweenService:Create(pillScale, TweenInfo.new(.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1.06}):Play() end)
-    pill.MouseLeave:Connect(function() TweenService:Create(pillScale, TweenInfo.new(.15), {Scale = 1}):Play() end)
-    local plT = lbl(pill, TITLE, UDim2.new(1, -46, 1, 0), UDim2.fromOffset(40, 0), 13, C.white, Enum.Font.GothamBold)
-    plT.TextTruncate = Enum.TextTruncate.AtEnd
+    nexoraLogo(reopen, 42)
+    reopen:SetAttribute("NexoraKeepColor", true)
+    corner(reopen, 29)
+    local fScale = make("UIScale", {Scale = 1}, reopen)
+
     local isOpen = true
     local function toggleWindow()
         local opening = not (gui.Enabled and isOpen)
@@ -2449,29 +2489,209 @@ function Nexora.CreateMain(config)
             end)
         end
     end
+    local function closeWindow()
+        if gui.Enabled and isOpen then toggleWindow() end
+    end
+    local function windowOpen() return gui.Enabled and isOpen end
+
     do
-        local pdrag, pStart, pPos, moved = false, nil, nil, false
-        pill.InputBegan:Connect(function(i)
-            if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
-                pdrag, moved = true, false
-                pStart, pPos = i.Position, pill.Position
-                i.Changed:Connect(function()
-                    if i.UserInputState == Enum.UserInputState.End then
-                        pdrag = false
-                        if not moved then toggleWindow() end
-                    end
-                end)
-            end
+        -- anel degrade girando + pulso chamando atencao enquanto a UI esta fechada + bolinha de status + zoom no hover
+        local ringStroke = stroke(reopen, Color3.new(1, 1, 1), 0, 2.5)
+        local ringGrad = make("UIGradient", {
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, BL2), ColorSequenceKeypoint.new(.5, Color3.fromRGB(40, 90, 150)),
+                ColorSequenceKeypoint.new(1, BL2),
+            }),
+            Rotation = 0,
+        }, ringStroke)
+        pcall(function()
+            TweenService:Create(ringGrad, TweenInfo.new(3.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Rotation = 360}):Play()
         end)
-        UIS.InputChanged:Connect(function(i)
-            if pdrag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
-                local d = i.Position - pStart
-                if d.Magnitude > 6 then moved = true end
-                if moved then
-                    pill.Position = UDim2.new(pPos.X.Scale, pPos.X.Offset + d.X, pPos.Y.Scale, pPos.Y.Offset + d.Y)
+
+        local pulseF = make("Frame", {
+            Name = "Pulse", AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = UDim2.fromScale(1, 1),
+            BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 99,
+        }, reopen)
+        make("UICorner", {CornerRadius = UDim.new(.5, 0)}, pulseF)
+        local pulseStroke = stroke(pulseF, BL2, 1, 2)
+        task.spawn(function()
+            while float.Parent do
+                if not windowOpen() then
+                    pulseF.Size = UDim2.fromScale(1, 1)
+                    pulseStroke.Transparency = .35
+                    local info = TweenInfo.new(1.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+                    TweenService:Create(pulseF, info, {Size = UDim2.fromScale(1.55, 1.55)}):Play()
+                    TweenService:Create(pulseStroke, info, {Transparency = 1}):Play()
+                    task.wait(1.9)
+                else
+                    pulseStroke.Transparency = 1
+                    task.wait(.3)
                 end
             end
         end)
+
+        local dot = make("Frame", {
+            Name = "Status", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -1, 0, 1), Size = UDim2.fromOffset(14, 14),
+            BackgroundColor3 = Color3.fromRGB(110, 125, 150), BorderSizePixel = 0, ZIndex = 102,
+        }, reopen)
+        corner(dot, 7)
+        stroke(dot, C.side, 0, 2)
+        local function refreshDot()
+            TweenService:Create(dot, TweenInfo.new(.2), {BackgroundColor3 = windowOpen() and Color3.fromRGB(70, 220, 120) or Color3.fromRGB(110, 125, 150)}):Play()
+        end
+        gui:GetPropertyChangedSignal("Enabled"):Connect(refreshDot)
+        task.spawn(function()
+            while float.Parent do
+                refreshDot()
+                task.wait(.4)
+            end
+        end)
+        refreshDot()
+
+        reopen.MouseEnter:Connect(function()
+            TweenService:Create(fScale, TweenInfo.new(.15, Enum.EasingStyle.Quad), {Scale = 1.1}):Play()
+        end)
+        reopen.MouseLeave:Connect(function()
+            TweenService:Create(fScale, TweenInfo.new(.15, Enum.EasingStyle.Quad), {Scale = 1}):Play()
+        end)
+    end
+    local function bounceFloat()
+        local wasOpen = windowOpen()
+        TweenService:Create(fScale, TweenInfo.new(.08), {Scale = .8}):Play()
+        task.delay(.08, function() TweenService:Create(fScale, TweenInfo.new(.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play() end)
+        local lg = reopen:FindFirstChild("NexoraLogo")
+        if lg then
+            lg.Rotation = 0
+            TweenService:Create(lg, TweenInfo.new(.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Rotation = wasOpen and -360 or 360}):Play()
+            local pop = lg:FindFirstChild("Pop")
+            if pop then
+                pop.Scale = .55
+                TweenService:Create(pop, TweenInfo.new(.5, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {Scale = 1}):Play()
+            end
+        end
+        pcall(function()
+            local wave = make("Frame", {AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 98}, reopen)
+            corner(wave, 60)
+            local ws = stroke(wave, wasOpen and Color3.fromRGB(255, 110, 120) or BL2, 0.1, 3)
+            local info = TweenInfo.new(.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+            TweenService:Create(wave, info, {Size = UDim2.fromScale(2.1, 2.1)}):Play()
+            TweenService:Create(ws, info, {Transparency = 1}):Play()
+            task.delay(.65, function() wave:Destroy() end)
+        end)
+    end
+
+    -- posicao do botao salva em arquivo (mesmo arquivo da Banana)
+    local FLOAT_POS_FILE = "NexoraHub_FloatPosition.json"
+    local function loadFloatPosition()
+        local saved
+        pcall(function()
+            if readfile and isfile and isfile(FLOAT_POS_FILE) then
+                saved = game:GetService("HttpService"):JSONDecode(readfile(FLOAT_POS_FILE))
+            end
+        end)
+        if type(saved) == "table" and tonumber(saved.x) and tonumber(saved.y) then
+            return UDim2.new(0, tonumber(saved.x), 0, tonumber(saved.y))
+        end
+        local cam = workspace.CurrentCamera
+        local vp = cam and cam.ViewportSize or Vector2.new(800, 600)
+        return UDim2.new(0, 18, 0, math.max(10, math.floor(vp.Y / 2 - 27)))
+    end
+    local function saveFloatPosition()
+        pcall(function()
+            if writefile then
+                local p = reopen.Position
+                writefile(FLOAT_POS_FILE, game:GetService("HttpService"):JSONEncode({x = math.floor(p.X.Offset), y = math.floor(p.Y.Offset)}))
+            end
+        end)
+    end
+    reopen.AnchorPoint = Vector2.new(0, 0)
+    reopen.Position = loadFloatPosition()
+    reopen.Visible = true
+
+    local floatDragging, floatStart, floatPos, floatMoved = false, nil, nil, false
+    reopen.Activated:Connect(function()
+        if floatMoved then
+            task.defer(function() floatMoved = false end)
+            return
+        end
+        pcall(bounceFloat)
+        toggleWindow()
+    end)
+    reopen.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            floatDragging = true; floatMoved = false; floatStart = input.Position; floatPos = reopen.Position
+        end
+    end)
+    UIS.InputChanged:Connect(function(input)
+        if floatDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local d = input.Position - floatStart
+            if math.abs(d.X) > 4 or math.abs(d.Y) > 4 then floatMoved = true end
+            if floatMoved then
+                local cam = workspace.CurrentCamera
+                local vp = cam and cam.ViewportSize or Vector2.new(800, 600)
+                local x = math.clamp(floatPos.X.Offset + d.X, 0, math.max(0, vp.X - reopen.AbsoluteSize.X))
+                local y = math.clamp(floatPos.Y.Offset + d.Y, 0, math.max(0, vp.Y - reopen.AbsoluteSize.Y))
+                reopen.Position = UDim2.new(0, x, 0, y)
+            end
+        end
+    end)
+    UIS.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            floatDragging = false
+            if floatMoved then saveFloatPosition() end
+        end
+    end)
+
+    -- ===================== CONTROLES DA JANELA (minimizar / fechar, igual a Banana) =====================
+    do
+        local controls = make("Frame", {
+            Name = "Controls", AnchorPoint = Vector2.new(1, 0), BackgroundColor3 = C.card, BorderSizePixel = 0,
+            Position = UDim2.new(1, -4, 0, 6), Size = UDim2.fromOffset(96, 44),
+        }, header)
+        corner(controls, 22)
+        stroke(controls, C.stroke, 0.3, 1)
+        local function controlButton(centerX, tint, symbolColor, kind, action)
+            local b = make("TextButton", {
+                Name = kind, AutoButtonColor = false, Text = "", BackgroundColor3 = tint, BackgroundTransparency = .86,
+                BorderSizePixel = 0, AnchorPoint = Vector2.new(.5, .5), Position = UDim2.new(0, centerX, .5, 0),
+                Size = UDim2.fromOffset(34, 34),
+            }, controls)
+            corner(b, 17)
+            local st = stroke(b, tint, .55, 1)
+            local bsc = make("UIScale", {Scale = 1}, b)
+            local marks = {}
+            local function bar(rot)
+                local f = make("Frame", {
+                    AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5),
+                    Size = UDim2.fromOffset(kind == "min" and 12 or 15, 2.5), BackgroundColor3 = symbolColor,
+                    BorderSizePixel = 0, Rotation = rot,
+                }, b)
+                corner(f, 2)
+                marks[#marks + 1] = f
+            end
+            if kind == "min" then bar(0) else bar(45); bar(-45) end
+            local hoverBg = kind == "close" and .08 or .5
+            local hoverSym = kind == "close" and Color3.new(1, 1, 1) or Color3.fromRGB(170, 215, 255)
+            local function go(bgT, strokeT, symCol, scl)
+                TweenService:Create(b, TweenInfo.new(.14), {BackgroundTransparency = bgT}):Play()
+                TweenService:Create(st, TweenInfo.new(.14), {Transparency = strokeT}):Play()
+                TweenService:Create(bsc, TweenInfo.new(.14, Enum.EasingStyle.Quad), {Scale = scl}):Play()
+                for _, m in ipairs(marks) do
+                    TweenService:Create(m, TweenInfo.new(.14), {BackgroundColor3 = symCol}):Play()
+                end
+            end
+            b.MouseEnter:Connect(function() go(hoverBg, .15, hoverSym, 1.1) end)
+            b.MouseLeave:Connect(function() go(.86, .55, symbolColor, 1) end)
+            b.MouseButton1Down:Connect(function() go(hoverBg, .05, hoverSym, .88) end)
+            b.MouseButton1Up:Connect(function() go(hoverBg, .15, hoverSym, 1.1) end)
+            b.MouseButton1Click:Connect(function()
+                task.delay(.2, function() go(.86, .55, symbolColor, 1) end)
+                action()
+            end)
+            return b
+        end
+        controlButton(26, C.accent, Color3.fromRGB(150, 205, 250), "min", closeWindow)
+        controlButton(70, Color3.fromRGB(255, 82, 92), Color3.fromRGB(255, 118, 128), "close", closeWindow)
     end
 
     -- ===================== PAGINAS =====================
@@ -3102,7 +3322,7 @@ A = (function()
 -- Esta biblioteca só cria a UI; a source principal continua responsável pelas funções do jogo.
 
 local Nexora = {}
-local BANANA = getgenv().NexoraUIChoice == "Banana"   -- true = Glass (azul), false = Classic (original, laranja)
+local BANANA = getgenv().NexoraUIChoice == "Banana"   -- true = Banana (azul), false = Classic (original, laranja)
 Nexora.Options = {}
 Nexora.OptionOrder = {}
 
@@ -4519,7 +4739,7 @@ local C = {
     tabOn = Color3.fromRGB(8, 47, 91),
     tabOff = Color3.fromRGB(8, 14, 25),
 }
--- Visual Glass (azul-marinho translucido)
+-- Visual Banana (azul-marinho translucido)
 C.bg = Color3.fromRGB(10, 15, 28)
 C.panel = Color3.fromRGB(16, 24, 42)
 C.panel2 = Color3.fromRGB(22, 34, 60)
@@ -12881,7 +13101,7 @@ function AQLog(msg)
         return
     end
     getgenv().__AQLogLast[msg] = tick()
-    warn("[Glass][AutoQuest] " .. msg)
+    warn("[Banana][AutoQuest] " .. msg)
 end
 -- Tarefas da missão atual como texto (ex.: "Bandit=3"), lidas do GuideModule.
 function AQTaskString()
@@ -14800,7 +15020,7 @@ task.spawn(function()
 									bv.P = 10000
 									bv.Parent = root
 								end
-								local speed = math.clamp(tonumber(Settings["Speed Tween "]) or 220, 50, 220)
+								local speed = 220 -- velocidade fixa do Tween do Teleport To Fruit
 								local dur = math.max((goal.Position - root.Position).Magnitude / speed, 0.05)
 								local newTw = game:GetService("TweenService"):Create(
 									root,
