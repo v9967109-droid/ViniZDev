@@ -6,7 +6,7 @@ do
 		local CONFIG = {
 			-- URL do servidor de keys (ex.: "https://nexora-keys.SEUUSER.workers.dev/check").
 			-- Deixe "" para usar o modo local (LOCAL_KEYS abaixo).
-			API_URL = "",
+			API_URL = "https://nexora-keys.v9967109.workers.dev/check",
 			-- Modo sem servidor: a key e gerada a partir do UserId do jogador + este segredo (so voce deve ter o gerador).
 			SECRET = "2f345ca4a116a999",
 			-- Modo local: ["KEY"] = UserId do UNICO jogador que pode usar essa key.
