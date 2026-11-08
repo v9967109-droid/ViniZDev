@@ -2457,7 +2457,7 @@ function Nexora.CreateMain(config)
     -- Mesmo formato de antes; so o icone foi trocado pelo logo novo (coroa + N com anel azul).
     local float = make("ScreenGui", {Name = "NexoraFloat", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 998, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
     local pill = make("TextButton", {
-        AnchorPoint = Vector2.new(0, 0), Position = UDim2.fromOffset(18, 200), Size = UDim2.fromOffset(106, 40),
+        AnchorPoint = Vector2.new(0, 0), Position = UDim2.fromOffset(18, 200), Size = UDim2.fromOffset(128, 40),
         BackgroundColor3 = C.side, AutoButtonColor = false, Text = "", BorderSizePixel = 0,
     }, float)
     corner(pill, 20)
@@ -2467,7 +2467,7 @@ function Nexora.CreateMain(config)
     local pillScale = make("UIScale", {Scale = 1}, pill)
     pill.MouseEnter:Connect(function() TweenService:Create(pillScale, TweenInfo.new(.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1.06}):Play() end)
     pill.MouseLeave:Connect(function() TweenService:Create(pillScale, TweenInfo.new(.15), {Scale = 1}):Play() end)
-    local plT = lbl(pill, TITLE, UDim2.new(1, -46, 1, 0), UDim2.fromOffset(42, 0), 11, C.white, Enum.Font.GothamBold)
+    local plT = lbl(pill, TITLE, UDim2.new(1, -50, 1, 0), UDim2.fromOffset(44, 0), 13, C.white, Enum.Font.GothamBold)
     plT.TextTruncate = Enum.TextTruncate.AtEnd
     local isOpen = true
     local function toggleWindow()
