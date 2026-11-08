@@ -2457,17 +2457,17 @@ function Nexora.CreateMain(config)
     -- Mesmo formato de antes; so o icone foi trocado pelo logo novo (coroa + N com anel azul).
     local float = make("ScreenGui", {Name = "NexoraFloat", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 998, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
     local pill = make("TextButton", {
-        AnchorPoint = Vector2.new(0, 0), Position = UDim2.fromOffset(18, 200), Size = UDim2.fromOffset(150, 47),
+        AnchorPoint = Vector2.new(0, 0), Position = UDim2.fromOffset(18, 200), Size = UDim2.fromOffset(147, 38),
         BackgroundColor3 = C.side, AutoButtonColor = false, Text = "", BorderSizePixel = 0,
     }, float)
-    corner(pill, 24)
+    corner(pill, 19)
     stroke(pill, C.stroke, 0.1, 1)
-    local pl = make("Frame", {Position = UDim2.fromOffset(4, 3), Size = UDim2.fromOffset(41, 41), BackgroundTransparency = 1, BorderSizePixel = 0}, pill)
-    nexoraLogo(pl, 41)
+    local pl = make("Frame", {Position = UDim2.fromOffset(4, 2), Size = UDim2.fromOffset(34, 34), BackgroundTransparency = 1, BorderSizePixel = 0}, pill)
+    nexoraLogo(pl, 34)
     local pillScale = make("UIScale", {Scale = 1}, pill)
     pill.MouseEnter:Connect(function() TweenService:Create(pillScale, TweenInfo.new(.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1.06}):Play() end)
     pill.MouseLeave:Connect(function() TweenService:Create(pillScale, TweenInfo.new(.15), {Scale = 1}):Play() end)
-    local plT = lbl(pill, TITLE, UDim2.new(1, -56, 1, 0), UDim2.fromOffset(52, 0), 15, C.white, Enum.Font.GothamBold)
+    local plT = lbl(pill, TITLE, UDim2.new(1, -50, 1, 0), UDim2.fromOffset(44, 0), 13, C.white, Enum.Font.GothamBold)
     plT.TextTruncate = Enum.TextTruncate.AtEnd
     local isOpen = true
     local function toggleWindow()
@@ -2506,7 +2506,7 @@ function Nexora.CreateMain(config)
         else
             local cam = workspace.CurrentCamera
             local vp = cam and cam.ViewportSize or Vector2.new(800, 600)
-            pill.Position = UDim2.fromOffset(18, math.max(10, math.floor(vp.Y / 2 - 24)))
+            pill.Position = UDim2.fromOffset(18, math.max(10, math.floor(vp.Y / 2 - 19)))
         end
     end
     local function savePillPosition()
