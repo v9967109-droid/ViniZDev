@@ -2453,18 +2453,22 @@ function Nexora.CreateMain(config)
     make("Frame", {Position = UDim2.new(0, 0, 0, 60), Size = UDim2.new(1, 0, 0, 1), BackgroundColor3 = C.stroke, BackgroundTransparency = 0.4, BorderSizePixel = 0}, content)
     local pageHolder = make("Frame", {Name = "Pages", Position = UDim2.fromOffset(0, 70), Size = UDim2.new(1, 0, 1, -70), BackgroundTransparency = 1, ClipsDescendants = true}, content)
 
-    -- ===================== BOTAO FLUTUANTE (igual ao da Banana) =====================
-    -- ScreenGui separado: o botao fica fora da janela e nao some junto com a UI (nem com o keybind Toggle GUI).
-    local float = make("ScreenGui", {Name = "NexoraFloat", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 999, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
-    local reopen = make("ImageButton", {
-        Name = "NexoraFloatingButton", AutoButtonColor = false, BackgroundColor3 = C.side, BorderSizePixel = 0,
-        Image = "", ScaleType = Enum.ScaleType.Fit, Size = UDim2.fromOffset(58, 58), ZIndex = 100,
+    -- ===================== BOTAO FLUTUANTE (pilula, como na primeira versao) =====================
+    -- Mesmo formato de antes; so o icone foi trocado pelo logo novo (coroa + N com anel azul).
+    local float = make("ScreenGui", {Name = "NexoraFloat", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 998, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
+    local pill = make("TextButton", {
+        AnchorPoint = Vector2.new(0, 0), Position = UDim2.fromOffset(18, 200), Size = UDim2.fromOffset(150, 38),
+        BackgroundColor3 = C.side, AutoButtonColor = false, Text = "", BorderSizePixel = 0,
     }, float)
-    nexoraLogo(reopen, 42)
-    reopen:SetAttribute("NexoraKeepColor", true)
-    corner(reopen, 29)
-    local fScale = make("UIScale", {Scale = 1}, reopen)
-
+    corner(pill, 19)
+    stroke(pill, C.stroke, 0.1, 1)
+    local pl = make("Frame", {Position = UDim2.fromOffset(5, 2), Size = UDim2.fromOffset(34, 34), BackgroundTransparency = 1, BorderSizePixel = 0}, pill)
+    nexoraLogo(pl, 34)
+    local pillScale = make("UIScale", {Scale = 1}, pill)
+    pill.MouseEnter:Connect(function() TweenService:Create(pillScale, TweenInfo.new(.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1.06}):Play() end)
+    pill.MouseLeave:Connect(function() TweenService:Create(pillScale, TweenInfo.new(.15), {Scale = 1}):Play() end)
+    local plT = lbl(pill, TITLE, UDim2.new(1, -50, 1, 0), UDim2.fromOffset(46, 0), 13, C.white, Enum.Font.GothamBold)
+    plT.TextTruncate = Enum.TextTruncate.AtEnd
     local isOpen = true
     local function toggleWindow()
         local opening = not (gui.Enabled and isOpen)
@@ -2488,97 +2492,9 @@ function Nexora.CreateMain(config)
     local function closeWindow()
         if gui.Enabled and isOpen then toggleWindow() end
     end
-    local function windowOpen() return gui.Enabled and isOpen end
-
-    do
-        -- anel degrade girando + pulso chamando atencao enquanto a UI esta fechada + bolinha de status + zoom no hover
-        local ringStroke = stroke(reopen, Color3.new(1, 1, 1), 0, 2.5)
-        local ringGrad = make("UIGradient", {
-            Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, BL2), ColorSequenceKeypoint.new(.5, Color3.fromRGB(40, 90, 150)),
-                ColorSequenceKeypoint.new(1, BL2),
-            }),
-            Rotation = 0,
-        }, ringStroke)
-        pcall(function()
-            TweenService:Create(ringGrad, TweenInfo.new(3.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Rotation = 360}):Play()
-        end)
-
-        local pulseF = make("Frame", {
-            Name = "Pulse", AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = UDim2.fromScale(1, 1),
-            BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 99,
-        }, reopen)
-        make("UICorner", {CornerRadius = UDim.new(.5, 0)}, pulseF)
-        local pulseStroke = stroke(pulseF, BL2, 1, 2)
-        task.spawn(function()
-            while float.Parent do
-                if not windowOpen() then
-                    pulseF.Size = UDim2.fromScale(1, 1)
-                    pulseStroke.Transparency = .35
-                    local info = TweenInfo.new(1.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-                    TweenService:Create(pulseF, info, {Size = UDim2.fromScale(1.55, 1.55)}):Play()
-                    TweenService:Create(pulseStroke, info, {Transparency = 1}):Play()
-                    task.wait(1.9)
-                else
-                    pulseStroke.Transparency = 1
-                    task.wait(.3)
-                end
-            end
-        end)
-
-        local dot = make("Frame", {
-            Name = "Status", AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -1, 0, 1), Size = UDim2.fromOffset(14, 14),
-            BackgroundColor3 = Color3.fromRGB(110, 125, 150), BorderSizePixel = 0, ZIndex = 102,
-        }, reopen)
-        corner(dot, 7)
-        stroke(dot, C.side, 0, 2)
-        local function refreshDot()
-            TweenService:Create(dot, TweenInfo.new(.2), {BackgroundColor3 = windowOpen() and Color3.fromRGB(70, 220, 120) or Color3.fromRGB(110, 125, 150)}):Play()
-        end
-        gui:GetPropertyChangedSignal("Enabled"):Connect(refreshDot)
-        task.spawn(function()
-            while float.Parent do
-                refreshDot()
-                task.wait(.4)
-            end
-        end)
-        refreshDot()
-
-        reopen.MouseEnter:Connect(function()
-            TweenService:Create(fScale, TweenInfo.new(.15, Enum.EasingStyle.Quad), {Scale = 1.1}):Play()
-        end)
-        reopen.MouseLeave:Connect(function()
-            TweenService:Create(fScale, TweenInfo.new(.15, Enum.EasingStyle.Quad), {Scale = 1}):Play()
-        end)
-    end
-    local function bounceFloat()
-        local wasOpen = windowOpen()
-        TweenService:Create(fScale, TweenInfo.new(.08), {Scale = .8}):Play()
-        task.delay(.08, function() TweenService:Create(fScale, TweenInfo.new(.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play() end)
-        local lg = reopen:FindFirstChild("NexoraLogo")
-        if lg then
-            lg.Rotation = 0
-            TweenService:Create(lg, TweenInfo.new(.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Rotation = wasOpen and -360 or 360}):Play()
-            local pop = lg:FindFirstChild("Pop")
-            if pop then
-                pop.Scale = .55
-                TweenService:Create(pop, TweenInfo.new(.5, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {Scale = 1}):Play()
-            end
-        end
-        pcall(function()
-            local wave = make("Frame", {AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 98}, reopen)
-            corner(wave, 60)
-            local ws = stroke(wave, wasOpen and Color3.fromRGB(255, 110, 120) or BL2, 0.1, 3)
-            local info = TweenInfo.new(.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-            TweenService:Create(wave, info, {Size = UDim2.fromScale(2.1, 2.1)}):Play()
-            TweenService:Create(ws, info, {Transparency = 1}):Play()
-            task.delay(.65, function() wave:Destroy() end)
-        end)
-    end
-
-    -- posicao do botao salva em arquivo (mesmo arquivo da Banana)
+    -- posicao salva em arquivo (mesmo arquivo da Banana); padrao: lado esquerdo, meio da tela
     local FLOAT_POS_FILE = "NexoraHub_FloatPosition.json"
-    local function loadFloatPosition()
+    do
         local saved
         pcall(function()
             if readfile and isfile and isfile(FLOAT_POS_FILE) then
@@ -2586,57 +2502,49 @@ function Nexora.CreateMain(config)
             end
         end)
         if type(saved) == "table" and tonumber(saved.x) and tonumber(saved.y) then
-            return UDim2.new(0, tonumber(saved.x), 0, tonumber(saved.y))
+            pill.Position = UDim2.fromOffset(tonumber(saved.x), tonumber(saved.y))
+        else
+            local cam = workspace.CurrentCamera
+            local vp = cam and cam.ViewportSize or Vector2.new(800, 600)
+            pill.Position = UDim2.fromOffset(18, math.max(10, math.floor(vp.Y / 2 - 19)))
         end
-        local cam = workspace.CurrentCamera
-        local vp = cam and cam.ViewportSize or Vector2.new(800, 600)
-        return UDim2.new(0, 18, 0, math.max(10, math.floor(vp.Y / 2 - 27)))
     end
-    local function saveFloatPosition()
+    local function savePillPosition()
         pcall(function()
             if writefile then
-                local p = reopen.Position
-                writefile(FLOAT_POS_FILE, game:GetService("HttpService"):JSONEncode({x = math.floor(p.X.Offset), y = math.floor(p.Y.Offset)}))
+                local pp = pill.Position
+                writefile(FLOAT_POS_FILE, game:GetService("HttpService"):JSONEncode({x = math.floor(pp.X.Offset), y = math.floor(pp.Y.Offset)}))
             end
         end)
     end
-    reopen.AnchorPoint = Vector2.new(0, 0)
-    reopen.Position = loadFloatPosition()
-    reopen.Visible = true
-
-    local floatDragging, floatStart, floatPos, floatMoved = false, nil, nil, false
-    reopen.Activated:Connect(function()
-        if floatMoved then
-            task.defer(function() floatMoved = false end)
-            return
-        end
-        pcall(bounceFloat)
-        toggleWindow()
-    end)
-    reopen.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            floatDragging = true; floatMoved = false; floatStart = input.Position; floatPos = reopen.Position
-        end
-    end)
-    UIS.InputChanged:Connect(function(input)
-        if floatDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local d = input.Position - floatStart
-            if math.abs(d.X) > 4 or math.abs(d.Y) > 4 then floatMoved = true end
-            if floatMoved then
-                local cam = workspace.CurrentCamera
-                local vp = cam and cam.ViewportSize or Vector2.new(800, 600)
-                local x = math.clamp(floatPos.X.Offset + d.X, 0, math.max(0, vp.X - reopen.AbsoluteSize.X))
-                local y = math.clamp(floatPos.Y.Offset + d.Y, 0, math.max(0, vp.Y - reopen.AbsoluteSize.Y))
-                reopen.Position = UDim2.new(0, x, 0, y)
+    do
+        local pdrag, pStart, pPos, moved = false, nil, nil, false
+        pill.InputBegan:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+                pdrag, moved = true, false
+                pStart, pPos = i.Position, pill.Position
+                i.Changed:Connect(function()
+                    if i.UserInputState == Enum.UserInputState.End then
+                        pdrag = false
+                        if moved then savePillPosition() else toggleWindow() end
+                    end
+                end)
             end
-        end
-    end)
-    UIS.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            floatDragging = false
-            if floatMoved then saveFloatPosition() end
-        end
-    end)
+        end)
+        UIS.InputChanged:Connect(function(i)
+            if pdrag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+                local d = i.Position - pStart
+                if d.Magnitude > 6 then moved = true end
+                if moved then
+                    local cam = workspace.CurrentCamera
+                    local vp = cam and cam.ViewportSize or Vector2.new(800, 600)
+                    local x = math.clamp(pPos.X.Offset + d.X, 0, math.max(0, vp.X - pill.AbsoluteSize.X))
+                    local y = math.clamp(pPos.Y.Offset + d.Y, 0, math.max(0, vp.Y - pill.AbsoluteSize.Y))
+                    pill.Position = UDim2.fromOffset(x, y)
+                end
+            end
+        end)
+    end
 
     -- ===================== CONTROLES DA JANELA (minimizar / fechar, igual a Banana) =====================
     do
