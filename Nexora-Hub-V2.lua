@@ -2339,6 +2339,51 @@ function Nexora.CreateMain(config)
         end)
     end
 
+    local BL, BL2 = C.accent, Color3.fromRGB(120, 196, 255)   -- cores do icone no estilo Maru
+    local function nexoraLogo(parent, px)
+        local f = make("Frame", {
+            Name = "NexoraLogo", AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5),
+            Size = UDim2.fromOffset(px, px), BackgroundColor3 = Color3.fromRGB(14, 18, 27), BorderSizePixel = 0,
+        }, parent)
+        corner(f, px)
+        make("UIGradient", {Rotation = 60, Color = ColorSequence.new(Color3.fromRGB(32, 48, 74), Color3.fromRGB(10, 14, 22))}, f)
+        make("UIScale", {Name = "Pop", Scale = 1}, f)
+        local ring = stroke(f, Color3.new(1, 1, 1), 0, math.max(1.5, px / 20))
+        local ringG = make("UIGradient", {Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, BL2), ColorSequenceKeypoint.new(.5, Color3.fromRGB(40, 90, 150)), ColorSequenceKeypoint.new(1, BL2),
+        })}, ring)
+        pcall(function() TweenService:Create(ringG, TweenInfo.new(3, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Rotation = 360}):Play() end)
+        local halo = make("Frame", {AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .56), Size = UDim2.fromScale(.7, .7), BackgroundColor3 = BL, BackgroundTransparency = .72, BorderSizePixel = 0}, f)
+        corner(halo, px)
+        pcall(function() TweenService:Create(halo, TweenInfo.new(1.3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {BackgroundTransparency = .9, Size = UDim2.fromScale(.82, .82)}):Play() end)
+        local crownL = make("TextLabel", {
+            BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, math.floor(px * 0.07)), Size = UDim2.new(1, 0, 0, math.floor(px * 0.26)),
+            Text = "👑", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = math.max(8, math.floor(px * 0.27)), ZIndex = 3,
+        }, f)
+        pcall(function() TweenService:Create(crownL, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Position = UDim2.new(0, 0, 0, math.floor(px * 0.03))}):Play() end)
+        local nL = make("TextLabel", {
+            BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, math.floor(px * 0.2)), Size = UDim2.new(1, 0, 1, -math.floor(px * 0.24)),
+            Text = "N", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBlack, TextSize = math.max(10, math.floor(px * 0.58)), ZIndex = 3,
+        }, f)
+        make("UIStroke", {Color = Color3.fromRGB(30, 70, 130), Thickness = math.max(1, px / 26), Transparency = .15}, nL)
+        local ng = make("UIGradient", {
+            Rotation = 25,
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, BL2), ColorSequenceKeypoint.new(.42, Color3.fromRGB(150, 210, 255)),
+                ColorSequenceKeypoint.new(.5, Color3.new(1, 1, 1)), ColorSequenceKeypoint.new(.58, Color3.fromRGB(150, 210, 255)),
+                ColorSequenceKeypoint.new(1, BL),
+            }),
+        }, nL)
+        pcall(function() TweenService:Create(nL, TweenInfo.new(1.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Rotation = 0}):Play() end)
+        pcall(function() TweenService:Create(ng, TweenInfo.new(1.2, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut, -1, true, .8), {Rotation = 205}):Play() end)
+        local spark = make("TextLabel", {
+            BackgroundTransparency = 1, AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.8, .3), Size = UDim2.fromOffset(px * 0.22, px * 0.22),
+            Text = "✦", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = math.max(6, math.floor(px * 0.2)), TextTransparency = 1, ZIndex = 4,
+        }, f)
+        pcall(function() TweenService:Create(spark, TweenInfo.new(.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true, .6), {TextTransparency = .05}):Play() end)
+        return f
+    end
+
     -- ===================== LATERAL =====================
     local side = make("Frame", {Name = "Sidebar", Position = UDim2.fromOffset(8, 8), Size = UDim2.new(0, SIDEBAR_W - 8, 1, -16), BackgroundColor3 = C.side, BorderSizePixel = 0}, shell)
     corner(side, 14)
@@ -2348,12 +2393,8 @@ function Nexora.CreateMain(config)
     corner(profile, 14)
     stroke(profile, C.stroke, 0.2, 1)
     make("UIGradient", {Rotation = 0, Color = ColorSequence.new(Color3.fromRGB(40, 60, 88), Color3.fromRGB(24, 33, 49))}, profile)
-    local logo = make("Frame", {Position = UDim2.fromOffset(10, 11), Size = UDim2.fromOffset(38, 38), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0}, profile)
-    corner(logo, 11)
-    make("UIGradient", {Rotation = 45, Color = ColorSequence.new(Color3.fromRGB(120, 196, 255), Color3.fromRGB(40, 110, 210))}, logo)
-    local logoN = lbl(logo, "N", UDim2.fromScale(1, 1), UDim2.new(), 22, Color3.new(1, 1, 1), Enum.Font.GothamBold)
-    logoN.TextXAlignment = Enum.TextXAlignment.Center
-    pulse(logo, 1.07)
+    local logo = make("Frame", {Name = "LogoHolder", Position = UDim2.fromOffset(8, 9), Size = UDim2.fromOffset(42, 42), BackgroundTransparency = 1, BorderSizePixel = 0}, profile)
+    nexoraLogo(logo, 42)   -- mesmo logo do botao de abrir/fechar
     local ptitle = lbl(profile, TITLE, UDim2.new(1, -62, 0, 22), UDim2.fromOffset(56, 12), 15, C.white, Enum.Font.GothamBold)
     ptitle.TextTruncate = Enum.TextTruncate.AtEnd
     local psub = lbl(profile, SUBTITLE, UDim2.new(1, -62, 0, 16), UDim2.fromOffset(56, 33), 11, C.muted)
@@ -2414,51 +2455,6 @@ function Nexora.CreateMain(config)
 
     -- ===================== BOTAO FLUTUANTE (igual ao da Banana) =====================
     -- ScreenGui separado: o botao fica fora da janela e nao some junto com a UI (nem com o keybind Toggle GUI).
-    local BL, BL2 = C.accent, Color3.fromRGB(120, 196, 255)   -- cores do icone no estilo Maru
-    local function nexoraLogo(parent, px)
-        local f = make("Frame", {
-            Name = "NexoraLogo", AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5),
-            Size = UDim2.fromOffset(px, px), BackgroundColor3 = Color3.fromRGB(14, 18, 27), BorderSizePixel = 0,
-        }, parent)
-        corner(f, px)
-        make("UIGradient", {Rotation = 60, Color = ColorSequence.new(Color3.fromRGB(32, 48, 74), Color3.fromRGB(10, 14, 22))}, f)
-        make("UIScale", {Name = "Pop", Scale = 1}, f)
-        local ring = stroke(f, Color3.new(1, 1, 1), 0, math.max(1.5, px / 20))
-        local ringG = make("UIGradient", {Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, BL2), ColorSequenceKeypoint.new(.5, Color3.fromRGB(40, 90, 150)), ColorSequenceKeypoint.new(1, BL2),
-        })}, ring)
-        pcall(function() TweenService:Create(ringG, TweenInfo.new(3, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Rotation = 360}):Play() end)
-        local halo = make("Frame", {AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .56), Size = UDim2.fromScale(.7, .7), BackgroundColor3 = BL, BackgroundTransparency = .72, BorderSizePixel = 0}, f)
-        corner(halo, px)
-        pcall(function() TweenService:Create(halo, TweenInfo.new(1.3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {BackgroundTransparency = .9, Size = UDim2.fromScale(.82, .82)}):Play() end)
-        local crownL = make("TextLabel", {
-            BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, math.floor(px * 0.07)), Size = UDim2.new(1, 0, 0, math.floor(px * 0.26)),
-            Text = "👑", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = math.max(8, math.floor(px * 0.27)), ZIndex = 3,
-        }, f)
-        pcall(function() TweenService:Create(crownL, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Position = UDim2.new(0, 0, 0, math.floor(px * 0.03))}):Play() end)
-        local nL = make("TextLabel", {
-            BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, math.floor(px * 0.2)), Size = UDim2.new(1, 0, 1, -math.floor(px * 0.24)),
-            Text = "N", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBlack, TextSize = math.max(10, math.floor(px * 0.58)), ZIndex = 3,
-        }, f)
-        make("UIStroke", {Color = Color3.fromRGB(30, 70, 130), Thickness = math.max(1, px / 26), Transparency = .15}, nL)
-        local ng = make("UIGradient", {
-            Rotation = 25,
-            Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, BL2), ColorSequenceKeypoint.new(.42, Color3.fromRGB(150, 210, 255)),
-                ColorSequenceKeypoint.new(.5, Color3.new(1, 1, 1)), ColorSequenceKeypoint.new(.58, Color3.fromRGB(150, 210, 255)),
-                ColorSequenceKeypoint.new(1, BL),
-            }),
-        }, nL)
-        pcall(function() TweenService:Create(nL, TweenInfo.new(1.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Rotation = 0}):Play() end)
-        pcall(function() TweenService:Create(ng, TweenInfo.new(1.2, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut, -1, true, .8), {Rotation = 205}):Play() end)
-        local spark = make("TextLabel", {
-            BackgroundTransparency = 1, AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.8, .3), Size = UDim2.fromOffset(px * 0.22, px * 0.22),
-            Text = "✦", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = math.max(6, math.floor(px * 0.2)), TextTransparency = 1, ZIndex = 4,
-        }, f)
-        pcall(function() TweenService:Create(spark, TweenInfo.new(.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true, .6), {TextTransparency = .05}):Play() end)
-        return f
-    end
-
     local float = make("ScreenGui", {Name = "NexoraFloat", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 999, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
     local reopen = make("ImageButton", {
         Name = "NexoraFloatingButton", AutoButtonColor = false, BackgroundColor3 = C.side, BorderSizePixel = 0,
