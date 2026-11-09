@@ -126,12 +126,18 @@ do
 			clearSaved() -- key revogada / de outro jogador
 		end
 
-		-- 2) tela para digitar a key
+		-- 2) tela para digitar a key (mesmo visual da tela de carregamento / escolha de interface)
 		local host = (gethui and gethui()) or game:GetService("CoreGui")
 		local old = host:FindFirstChild("NexoraKeyGate")
 		if old then old:Destroy() end
+		pcall(function()
+			local ob = game:GetService("Lighting"):FindFirstChild("NexoraKeyBlur")
+			if ob then ob:Destroy() end
+		end)
 
-		local BLUE, BG = Color3.fromRGB(0, 140, 255), Color3.fromRGB(8, 14, 26)
+		local BLUE, BLUE_L, DEEP = Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 55, 140)
+		local RED, GREEN = Color3.fromRGB(255, 90, 90), Color3.fromRGB(90, 220, 140)
+		local W, H = 330, 330
 		local gui = Instance.new("ScreenGui")
 		gui.Name = "NexoraKeyGate"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true; gui.DisplayOrder = 10002
 		gui.Parent = host
@@ -142,48 +148,170 @@ do
 			o.Parent = parent
 			return o
 		end
+		local function ring3(a, b)
+			return ColorSequence.new({ColorSequenceKeypoint.new(0, a), ColorSequenceKeypoint.new(.5, b), ColorSequenceKeypoint.new(1, a)})
+		end
+		local function tw(o, t, props, style, dir)
+			pcall(function()
+				TweenService:Create(o, TweenInfo.new(t, style or Enum.EasingStyle.Quad, dir or Enum.EasingDirection.Out), props):Play()
+			end)
+		end
+		local function spin(g, t)
+			pcall(function()
+				TweenService:Create(g, TweenInfo.new(t, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Rotation = g.Rotation + 360}):Play()
+			end)
+		end
+		local function hover(b, base, over)
+			local s = mk("UIScale", {Scale = 1}, b)
+			b.MouseEnter:Connect(function() tw(s, .12, {Scale = 1.03}); if over then tw(b, .12, {BackgroundColor3 = over}) end end)
+			b.MouseLeave:Connect(function() tw(s, .12, {Scale = 1}); if over then tw(b, .12, {BackgroundColor3 = base}) end end)
+			b.MouseButton1Down:Connect(function() tw(s, .08, {Scale = .97}) end)
+			b.MouseButton1Up:Connect(function() tw(s, .1, {Scale = 1.03}) end)
+		end
+
+		-- desfoque do jogo atras
+		local blur
+		pcall(function()
+			blur = Instance.new("BlurEffect")
+			blur.Name = "NexoraKeyBlur"; blur.Size = 0
+			blur.Parent = game:GetService("Lighting")
+			tw(blur, .35, {Size = 14})
+		end)
+
+		-- escala que se ajusta a telas pequenas (celular)
+		local fit = 1
+		pcall(function()
+			local vs = workspace.CurrentCamera.ViewportSize
+			fit = math.clamp(math.min((vs.Y - 30) / H, (vs.X - 24) / W), .6, 1)
+		end)
 
 		local dim = mk("Frame", {Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, BorderSizePixel = 0}, gui)
-		TweenService:Create(dim, TweenInfo.new(.25), {BackgroundTransparency = .45}):Play()
+		tw(dim, .3, {BackgroundTransparency = .5})
 
-		local card = mk("CanvasGroup", {AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = UDim2.fromOffset(320, CONFIG.GET_KEY_LINK ~= "" and 306 or 262), BackgroundColor3 = BG, BorderSizePixel = 0, GroupTransparency = 1}, gui)
-		mk("UICorner", {CornerRadius = UDim.new(0, 18)}, card)
-		mk("UIStroke", {Color = BLUE, Thickness = 1.5, Transparency = .35}, card)
-		local scale = mk("UIScale", {Scale = .92}, card)
-		TweenService:Create(card, TweenInfo.new(.3, Enum.EasingStyle.Quad), {GroupTransparency = 0}):Play()
-		TweenService:Create(scale, TweenInfo.new(.3, Enum.EasingStyle.Back), {Scale = 1}):Play()
+		-- brilho externo pulsando
+		local glow = mk("Frame", {AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = UDim2.fromOffset(W + 20, H + 20), BackgroundTransparency = 1}, gui)
+		mk("UICorner", {CornerRadius = UDim.new(0, 32)}, glow)
+		local glowS = mk("UIStroke", {Color = BLUE_L, Thickness = 6, Transparency = 1}, glow)
+		local glowSc = mk("UIScale", {Scale = fit * .88}, glow)
 
-		mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.fromOffset(20, 16), Size = UDim2.new(1, -40, 0, 26), Font = Enum.Font.GothamBold, Text = "Nexora Hub", TextColor3 = Color3.new(1, 1, 1), TextSize = 22, TextXAlignment = Enum.TextXAlignment.Left}, card)
-		mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.fromOffset(20, 42), Size = UDim2.new(1, -40, 0, 18), Font = Enum.Font.Gotham, Text = "Digite sua key para continuar", TextColor3 = Color3.fromRGB(150, 170, 200), TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left}, card)
+		local card = mk("CanvasGroup", {AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = UDim2.fromOffset(W, H), BackgroundColor3 = Color3.fromRGB(8, 14, 26), BorderSizePixel = 0, GroupTransparency = 1}, gui)
+		mk("UICorner", {CornerRadius = UDim.new(0, 22)}, card)
+		mk("UIGradient", {Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(11, 20, 38), Color3.fromRGB(3, 7, 14))}, card)
+		local edge = mk("UIStroke", {Color = Color3.new(1, 1, 1), Thickness = 2}, card)
+		local edgeG = mk("UIGradient", {Color = ring3(BLUE_L, DEEP)}, edge)
+		spin(edgeG, 3.5)
+		local scale = mk("UIScale", {Scale = fit * .88}, card)
 
-		local closeBtn = mk("TextButton", {AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -12, 0, 12), Size = UDim2.fromOffset(26, 26), BackgroundColor3 = Color3.fromRGB(20, 30, 48), BorderSizePixel = 0, Font = Enum.Font.GothamBold, Text = "X", TextColor3 = Color3.fromRGB(180, 195, 220), TextSize = 13, AutoButtonColor = true}, card)
+		-- particulas subindo no fundo do card
+		for i = 1, 9 do
+			local sz = math.random(2, 4)
+			local x = math.random(10, W - 10)
+			local dur = math.random(40, 75) / 10
+			local p = mk("Frame", {Position = UDim2.fromOffset(x, H + 6), Size = UDim2.fromOffset(sz, sz), BackgroundColor3 = BLUE_L, BackgroundTransparency = .35, BorderSizePixel = 0}, card)
+			mk("UICorner", {CornerRadius = UDim.new(1, 0)}, p)
+			task.delay(i * .45, function()
+				pcall(function()
+					local info = TweenInfo.new(dur, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1)
+					TweenService:Create(p, info, {Position = UDim2.fromOffset(x, -10), BackgroundTransparency = 1}):Play()
+				end)
+			end)
+		end
+
+		-- logo com anel girando e pulso
+		local logoBox = mk("Frame", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 16), Size = UDim2.fromOffset(54, 54), BackgroundTransparency = 1}, card)
+		local pop = mk("UIScale", {Scale = 0}, logoBox)
+		local logo = mk("Frame", {Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(6, 11, 21), BorderSizePixel = 0}, logoBox)
+		mk("UICorner", {CornerRadius = UDim.new(1, 0)}, logo)
+		local lring = mk("UIStroke", {Color = Color3.new(1, 1, 1), Thickness = 2.5}, logo)
+		spin(mk("UIGradient", {Color = ring3(BLUE_L, DEEP)}, lring), 1.6)
+		local pulse = mk("UIScale", {Scale = 1}, logo)
+		pcall(function() TweenService:Create(pulse, TweenInfo.new(.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Scale = 1.09}):Play() end)
+		mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, 3), Size = UDim2.new(1, 0, 0, 14), Text = "👑", TextColor3 = BLUE_L, Font = Enum.Font.FredokaOne, TextSize = 13}, logo)
+		local nL = mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, 11), Size = UDim2.new(1, 0, 1, -13), Text = "N", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.FredokaOne, TextSize = 30}, logo)
+		mk("UIGradient", {Rotation = 90, Color = ColorSequence.new(BLUE_L, BLUE)}, nL)
+
+		mk("TextLabel", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 76), Size = UDim2.fromOffset(280, 22), BackgroundTransparency = 1, Text = "NEXORA HUB", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 18}, card)
+		mk("TextLabel", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 98), Size = UDim2.fromOffset(280, 14), BackgroundTransparency = 1, Text = "BLOX FRUITS • ViniZDev", TextColor3 = Color3.fromRGB(151, 166, 190), Font = Enum.Font.GothamMedium, TextSize = 10}, card)
+
+		-- divisor com titulo
+		local divL = mk("Frame", {Position = UDim2.fromOffset(22, 128), Size = UDim2.fromOffset(78, 1), BackgroundColor3 = BLUE, BackgroundTransparency = .6, BorderSizePixel = 0}, card)
+		local divR = mk("Frame", {AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -22, 0, 128), Size = UDim2.fromOffset(78, 1), BackgroundColor3 = BLUE, BackgroundTransparency = .6, BorderSizePixel = 0}, card)
+		mk("TextLabel", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 121), Size = UDim2.fromOffset(120, 14), BackgroundTransparency = 1, Text = "VERIFICAÇÃO DE KEY", TextColor3 = BLUE_L, Font = Enum.Font.GothamBold, TextSize = 9}, card)
+
+		local closeBtn = mk("TextButton", {AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -12, 0, 12), Size = UDim2.fromOffset(26, 26), BackgroundColor3 = Color3.fromRGB(20, 30, 48), BorderSizePixel = 0, Font = Enum.Font.GothamBold, Text = "X", TextColor3 = Color3.fromRGB(180, 195, 220), TextSize = 13, AutoButtonColor = false}, card)
 		mk("UICorner", {CornerRadius = UDim.new(0, 8)}, closeBtn)
+		hover(closeBtn, Color3.fromRGB(20, 30, 48), Color3.fromRGB(150, 40, 50))
 
-		local boxFrame = mk("Frame", {Position = UDim2.fromOffset(20, 78), Size = UDim2.new(1, -40, 0, 40), BackgroundColor3 = Color3.fromRGB(14, 24, 42), BorderSizePixel = 0}, card)
-		mk("UICorner", {CornerRadius = UDim.new(0, 10)}, boxFrame)
-		local boxStroke = mk("UIStroke", {Color = BLUE, Thickness = 1, Transparency = .7}, boxFrame)
-		local input = mk("TextBox", {BackgroundTransparency = 1, Position = UDim2.fromOffset(12, 0), Size = UDim2.new(1, -24, 1, 0), Font = Enum.Font.Gotham, PlaceholderText = "Cole sua key aqui", PlaceholderColor3 = Color3.fromRGB(100, 120, 150), Text = "", TextColor3 = Color3.new(1, 1, 1), TextSize = 14, ClearTextOnFocus = false, TextXAlignment = Enum.TextXAlignment.Left}, boxFrame)
+		-- campo da key com brilho no foco
+		local boxFrame = mk("Frame", {Position = UDim2.fromOffset(22, 146), Size = UDim2.new(1, -44, 0, 42), BackgroundColor3 = Color3.fromRGB(10, 18, 32), BorderSizePixel = 0}, card)
+		mk("UICorner", {CornerRadius = UDim.new(0, 11)}, boxFrame)
+		local boxStroke = mk("UIStroke", {Color = BLUE, Thickness = 1.2, Transparency = .65}, boxFrame)
+		mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.fromOffset(10, 0), Size = UDim2.fromOffset(24, 42), Text = "🔑", TextColor3 = BLUE_L, Font = Enum.Font.GothamBold, TextSize = 15}, boxFrame)
+		local input = mk("TextBox", {BackgroundTransparency = 1, Position = UDim2.fromOffset(40, 0), Size = UDim2.new(1, -50, 1, 0), Font = Enum.Font.GothamMedium, PlaceholderText = "NEXORA-XXXX-XXXX-XXXX", PlaceholderColor3 = Color3.fromRGB(100, 120, 150), Text = "", TextColor3 = Color3.new(1, 1, 1), TextSize = 14, ClearTextOnFocus = false, TextXAlignment = Enum.TextXAlignment.Left}, boxFrame)
+		local errorState = false
+		input.Focused:Connect(function()
+			if not errorState then tw(boxStroke, .15, {Color = BLUE_L, Transparency = 0}) end
+		end)
 
-		local status = mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.fromOffset(20, 124), Size = UDim2.new(1, -40, 0, 32), Font = Enum.Font.Gotham, Text = "", TextColor3 = Color3.fromRGB(255, 90, 90), TextSize = 12, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top}, card)
+		local status = mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.fromOffset(22, 192), Size = UDim2.new(1, -44, 0, 30), Font = Enum.Font.GothamMedium, Text = "", TextColor3 = RED, TextSize = 12, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Center}, card)
 
-		local verify = mk("TextButton", {Position = UDim2.fromOffset(20, 164), Size = UDim2.new(1, -40, 0, 40), BackgroundColor3 = BLUE, BorderSizePixel = 0, Font = Enum.Font.GothamBold, Text = "Verificar Key", TextColor3 = Color3.new(1, 1, 1), TextSize = 15, AutoButtonColor = true}, card)
-		mk("UICorner", {CornerRadius = UDim.new(0, 10)}, verify)
+		-- botao verificar com gradiente e brilho passando
+		local verify = mk("TextButton", {Position = UDim2.fromOffset(22, 226), Size = UDim2.new(1, -44, 0, 44), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Font = Enum.Font.GothamBold, Text = "Verificar Key", TextColor3 = Color3.new(1, 1, 1), TextSize = 15, AutoButtonColor = false, ClipsDescendants = true}, card)
+		mk("UICorner", {CornerRadius = UDim.new(0, 11)}, verify)
+		local vGrad = mk("UIGradient", {Rotation = 0, Color = ColorSequence.new(BLUE_L, BLUE)}, verify)
+		local shine = mk("Frame", {Size = UDim2.new(0, 40, 1, 0), Position = UDim2.new(0, -46, 0, 0), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = .55, BorderSizePixel = 0}, verify)
+		mk("UIGradient", {Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(.5, 0), NumberSequenceKeypoint.new(1, 1)})}, shine)
+		pcall(function() TweenService:Create(shine, TweenInfo.new(1.4, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Position = UDim2.new(1, 6, 0, 0)}):Play() end)
+		hover(verify)
 
-		local idBtn = mk("TextButton", {Position = UDim2.fromOffset(20, 212), Size = UDim2.new(1, -40, 0, 36), BackgroundColor3 = Color3.fromRGB(20, 30, 48), BorderSizePixel = 0, Font = Enum.Font.GothamMedium, Text = "Seu ID: " .. tostring(LP.UserId) .. "  (tocar para copiar)", TextColor3 = Color3.fromRGB(180, 195, 220), TextSize = 12, AutoButtonColor = true}, card)
-		mk("UICorner", {CornerRadius = UDim.new(0, 10)}, idBtn)
+		-- botoes secundarios (ID / link)
+		local hasLink = CONFIG.GET_KEY_LINK ~= ""
+		local function small(x, w, text)
+			local b = mk("TextButton", {Position = UDim2.new(0, x, 0, 280), Size = UDim2.new(0, w, 0, 36), BackgroundColor3 = Color3.fromRGB(16, 26, 44), BorderSizePixel = 0, Font = Enum.Font.GothamMedium, Text = text, TextColor3 = Color3.fromRGB(180, 195, 220), TextSize = 11, AutoButtonColor = false}, card)
+			mk("UICorner", {CornerRadius = UDim.new(0, 10)}, b)
+			mk("UIStroke", {Color = BLUE, Thickness = 1, Transparency = .8}, b)
+			hover(b, Color3.fromRGB(16, 26, 44), Color3.fromRGB(24, 40, 66))
+			return b
+		end
+		local innerW = W - 44
+		local idBtn, getKey
+		if hasLink then
+			local half = (innerW - 8) / 2
+			idBtn = small(22, half, "📋 Copiar ID: " .. tostring(LP.UserId))
+			getKey = small(22 + half + 8, half, "🔗 Pegar key")
+		else
+			idBtn = small(22, innerW, "📋 Copiar ID: " .. tostring(LP.UserId))
+		end
 		idBtn.MouseButton1Click:Connect(function()
 			if setclipboard then pcall(setclipboard, tostring(LP.UserId)) end
 			status.TextColor3 = Color3.fromRGB(120, 190, 255)
 			status.Text = "ID copiado! Envie esse ID para receber sua key."
 		end)
-
-		if CONFIG.GET_KEY_LINK ~= "" then
-			local getKey = mk("TextButton", {Position = UDim2.fromOffset(20, 256), Size = UDim2.new(1, -40, 0, 36), BackgroundColor3 = Color3.fromRGB(20, 30, 48), BorderSizePixel = 0, Font = Enum.Font.GothamMedium, Text = "Copiar link para pegar a key", TextColor3 = Color3.fromRGB(180, 195, 220), TextSize = 13, AutoButtonColor = true}, card)
-			mk("UICorner", {CornerRadius = UDim.new(0, 10)}, getKey)
+		if getKey then
 			getKey.MouseButton1Click:Connect(function()
 				if setclipboard then pcall(setclipboard, CONFIG.GET_KEY_LINK) end
 				status.TextColor3 = Color3.fromRGB(120, 190, 255)
 				status.Text = "Link copiado: " .. CONFIG.GET_KEY_LINK
+			end)
+		end
+
+		-- entrada
+		tw(card, .25, {GroupTransparency = 0})
+		tw(scale, .38, {Scale = fit}, Enum.EasingStyle.Back)
+		tw(glowSc, .38, {Scale = fit}, Enum.EasingStyle.Back)
+		tw(glowS, .4, {Transparency = .78})
+		tw(pop, .5, {Scale = 1}, Enum.EasingStyle.Back)
+		task.delay(.45, function()
+			pcall(function() TweenService:Create(glowS, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Transparency = .9}):Play() end)
+		end)
+
+		local function shake()
+			task.spawn(function()
+				for _, dx in ipairs({-10, 9, -7, 5, -3, 0}) do
+					tw(card, .045, {Position = UDim2.new(.5, dx, .5, 0)})
+					tw(glow, .045, {Position = UDim2.new(.5, dx, .5, 0)})
+					task.wait(.05)
+				end
 			end)
 		end
 
@@ -192,35 +320,65 @@ do
 		local function submit()
 			if busy then return end
 			busy = true
-			verify.Text = "Verificando..."
 			status.Text = ""
+			local alive = true
+			task.spawn(function()
+				local n = 0
+				while alive do
+					n = n % 3 + 1
+					verify.Text = "Verificando" .. string.rep(".", n)
+					task.wait(.25)
+				end
+			end)
 			local ok, reason = validate(input.Text)
+			alive = false
+			task.wait()
 			if ok then
 				saveKey((input.Text:gsub("%s+", ""):upper()))
-				status.TextColor3 = Color3.fromRGB(90, 220, 140)
-				status.Text = "Key valida! Abrindo o script..."
-				verify.Text = "Liberado"
-				task.wait(.7)
+				status.TextColor3 = GREEN
+				status.Text = "Key válida! Abrindo o script..."
+				verify.Text = "✓ Liberado"
+				vGrad.Color = ColorSequence.new(Color3.fromRGB(120, 240, 170), Color3.fromRGB(40, 180, 110))
+				edgeG.Color = ring3(GREEN, Color3.fromRGB(20, 110, 70))
+				tw(boxStroke, .2, {Color = GREEN, Transparency = 0})
+				tw(glowS, .3, {Color = GREEN, Transparency = .6})
+				task.wait(.8)
 				result = true
 			else
-				status.TextColor3 = Color3.fromRGB(255, 90, 90)
-				status.Text = reason or "Key invalida."
+				errorState = true
+				status.TextColor3 = RED
+				status.Text = reason or "Key inválida."
 				verify.Text = "Verificar Key"
-				TweenService:Create(boxStroke, TweenInfo.new(.15), {Color = Color3.fromRGB(255, 90, 90), Transparency = 0}):Play()
-				task.delay(.6, function() TweenService:Create(boxStroke, TweenInfo.new(.3), {Color = BLUE, Transparency = .7}):Play() end)
+				edgeG.Color = ring3(RED, Color3.fromRGB(120, 25, 35))
+				tw(boxStroke, .15, {Color = RED, Transparency = 0})
+				shake()
+				task.delay(.8, function()
+					errorState = false
+					edgeG.Color = ring3(BLUE_L, DEEP)
+					tw(boxStroke, .3, {Color = BLUE, Transparency = .65})
+				end)
 				busy = false
 			end
 		end
 		verify.MouseButton1Click:Connect(submit)
-		input.FocusLost:Connect(function(enter) if enter then submit() end end)
+		input.FocusLost:Connect(function(enter)
+			if enter then submit()
+			elseif not errorState and not busy then tw(boxStroke, .2, {Color = BLUE, Transparency = .65}) end
+		end)
 		closeBtn.MouseButton1Click:Connect(function() result = false end)
 
 		while result == nil do task.wait(.1) end
 
-		TweenService:Create(card, TweenInfo.new(.2), {GroupTransparency = 1}):Play()
-		TweenService:Create(dim, TweenInfo.new(.2), {BackgroundTransparency = 1}):Play()
-		task.wait(.22)
+		-- saida
+		tw(card, .25, {GroupTransparency = 1})
+		tw(scale, .25, {Scale = fit * 1.06})
+		tw(glowSc, .25, {Scale = fit * 1.06})
+		tw(glowS, .2, {Transparency = 1})
+		tw(dim, .25, {BackgroundTransparency = 1})
+		if blur then tw(blur, .25, {Size = 0}) end
+		task.wait(.28)
 		gui:Destroy()
+		if blur then pcall(function() blur:Destroy() end) end
 		return result
 	end)()
 	if not passed then return end -- sem key valida: o script nao abre
@@ -15129,42 +15287,17 @@ task.spawn(function()
 							warn("[Nexora] Teleport To Fruit: indo até " .. tostring(fruit.Name) .. " (" .. math.floor(dist) .. " studs)")
 						end
 						local goal = handle.CFrame * CFrame.new(0, 3, 0)
-						local lastGoal = getgenv().__FruitGoal
-						local tw = getgenv().__FruitTween
-						local running = tw and tw.PlaybackState == Enum.PlaybackState.Playing
-						-- só cria um tween novo se não há um rodando, se a fruta mudou ou se ela se moveu mais de 6 studs
-						if (not running) or getgenv().__FruitGoalObj ~= fruit or (not lastGoal)
-							or (lastGoal.Position - goal.Position).Magnitude > 6 then
-							if tw then
-								pcall(function() tw:Cancel() end)
-							end
-							pcall(function()
-								if TweenManager and TweenManager.CancelTweenOnly then TweenManager.CancelTweenOnly() end
-							end)
-							pcall(function()
-								if not root:FindFirstChild("FloatForce") then
-									local bv = Instance.new("BodyVelocity")
-									bv.Name = "FloatForce"
-									bv.Velocity = Vector3.new(0, 0, 0)
-									bv.MaxForce = Vector3.new(100000, 100000, 100000)
-									bv.P = 10000
-									bv.Parent = root
-								end
-								local speed = 220 -- velocidade fixa do Tween do Teleport To Fruit
-								local dur = math.max((goal.Position - root.Position).Magnitude / speed, 0.05)
-								local newTw = game:GetService("TweenService"):Create(
-									root,
-									TweenInfo.new(dur, Enum.EasingStyle.Linear),
-									{ CFrame = goal }
-								)
-								getgenv().__FruitTween = newTw
-								getgenv().__FruitGoal = goal
-								getgenv().__FruitGoalObj = fruit
-								newTw:Play()
-							end)
+						-- FIX (voltando pra trás): antes usava um tween próprio que o TweenManager não conhecia.
+						-- O loop global (~linha 39310) via FloatForce sem TweenManager.currentTween + k.LastCall velho
+						-- (>2s), chamava TweenManager.CancelCurrent() e destruía o FloatForce no meio do voo,
+						-- fazendo o personagem cair/colidir e ser puxado de volta. Agora usa o mesmo toTarget
+						-- do resto do hub (registra no TweenManager, mantém FloatForce e atualiza k.LastCall).
+						if getgenv().__FruitTween then
+							pcall(function() getgenv().__FruitTween:Cancel() end)
+							getgenv().__FruitTween = nil
 						end
-						root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-						task.wait(0.1)
+						pcall(function() toTarget(goal) end)
+						task.wait(0.05)
 					end
 				else
 					-- nenhuma fruta no mapa agora
