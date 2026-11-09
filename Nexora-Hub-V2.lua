@@ -20981,7 +20981,7 @@ do
 	-- Evento: portas em varias ilhas (minuto :00 a :10 de cada hora). Bate na porta, escolhe "Treat" no dialogo
 	-- (Candy Corn) e segue para a proxima. Se a porta disparar uma luta, mata os inimigos novos e continua.
 	do
-		local trick = { on = false, noclip = nil, flying = false, visited = {}, doors = {}, scannedAt = 0, warned = false, useBig = true, killMobs = true, mobRadius = 120, hitGhost = true, ghosts = {} }
+		local trick = { cards = true, on = false, noclip = nil, flying = false, visited = {}, doors = {}, scannedAt = 0, warned = false, useBig = true, killMobs = true, mobRadius = 120, hitGhost = true, ghosts = {} }
 		local GRP_Trick = NXH:AddLeftGroupbox("Trick or Treat")
 		GRP_Trick:AddLabel("Auto Trick or Treat\nBate nas portas, escolhe Treat no dialogo e vai para a proxima casa. O evento roda do minuto :00 ate :10 de cada hora.")
 
@@ -21475,6 +21475,365 @@ do
 			return nil
 		end
 
+		-- ===== Minigame das cartas (memoria) =====
+		-- Quando a porta abre o jogo das cartas, clica nas cartas com o mouse virtual (SendMouseButtonEvent),
+		-- le a "frente" de cada carta virada, memoriza e clica nos pares certos ate acabar.
+		local solveCards, waitAndSolveCards = (function() -- escopo proprio (evita estourar o limite de locals)
+		local cardSkipGui = { NexoraUI = true, NexoraFloat = true, NexoraNotifs = true }
+
+		local guiShown = function(obj)
+			local node = obj
+			while node do
+				if node:IsA("ScreenGui") then
+					return node.Enabled
+				end
+				if node:IsA("GuiObject") and not node.Visible then
+					return false
+				end
+				node = node.Parent
+			end
+			return false
+		end
+
+		-- assinatura visual da carta: imagens/textos visiveis dentro dela (muda entre verso e frente)
+		local cardSig = function(card)
+			local out = {}
+			local walk
+			walk = function(o)
+				if o:IsA("GuiObject") then
+					if not o.Visible then
+						return
+					end
+					if o:IsA("ImageLabel") or o:IsA("ImageButton") then
+						if o.Image ~= "" and o.ImageTransparency < 0.95 then
+							out[#out + 1] = o.Image .. "|" .. tostring(o.ImageRectOffset) .. "|" .. tostring(o.ImageRectSize)
+						end
+					elseif o:IsA("TextLabel") or o:IsA("TextButton") then
+						if o.Text ~= "" and o.TextTransparency < 0.95 then
+							out[#out + 1] = "T" .. o.Text
+						end
+					end
+				end
+				for _, child in ipairs(o:GetChildren()) do
+					walk(child)
+				end
+			end
+			pcall(walk, card)
+			return table.concat(out, ";")
+		end
+
+		-- acha a grade de cartas: varios elementos do mesmo tamanho, mesmo pai, quantidade par e todos com o mesmo verso
+		local findCardBoard = function()
+			local pg = plr:FindFirstChildOfClass("PlayerGui")
+			if not pg then
+				return nil
+			end
+			local best, bestScore = nil, 0
+			local seen = 0
+			for _, gui in ipairs(pg:GetChildren()) do
+				if gui:IsA("ScreenGui") and gui.Enabled and not cardSkipGui[gui.Name] then
+					local groups = {}
+					for _, d in ipairs(gui:GetDescendants()) do
+						seen = seen + 1
+						if seen % 3000 == 0 then
+							task.wait()
+						end
+						if d:IsA("GuiObject") and d.Visible and d.Parent then
+							local s = d.AbsoluteSize
+							if s.X >= 40 and s.Y >= 40 and s.X <= 450 and s.Y <= 450 then
+								local bySize = groups[d.Parent]
+								if not bySize then
+									bySize = {}
+									groups[d.Parent] = bySize
+								end
+								local key = math.floor(s.X + 0.5) .. "x" .. math.floor(s.Y + 0.5)
+								local list = bySize[key]
+								if not list then
+									list = {}
+									bySize[key] = list
+								end
+								list[#list + 1] = d
+							end
+						end
+					end
+					for _, bySize in pairs(groups) do
+						for _, list in pairs(bySize) do
+							local n = #list
+							if n >= 8 and n <= 30 and n % 2 == 0 and guiShown(list[1]) then
+								local score = n * list[1].AbsoluteSize.X * list[1].AbsoluteSize.Y
+								if score > bestScore then
+									local counts, top = {}, 0
+									for _, c in ipairs(list) do
+										local sig = cardSig(c)
+										if sig ~= "" then
+											counts[sig] = (counts[sig] or 0) + 1
+											if counts[sig] > top then
+												top = counts[sig]
+											end
+										end
+									end
+									if top >= n * 0.8 then
+										best, bestScore = list, score
+									end
+								end
+							end
+						end
+					end
+				end
+			end
+			if not best then
+				return nil
+			end
+			table.sort(best, function(a, b)
+				local pa, pb = a.AbsolutePosition, b.AbsolutePosition
+				if math.abs(pa.Y - pb.Y) > 5 then
+					return pa.Y < pb.Y
+				end
+				return pa.X < pb.X
+			end)
+			return best
+		end
+
+		-- click de mouse de verdade no centro do elemento
+		local clickGui = function(obj)
+			local inset = Vector2.new(0, 0)
+			pcall(function()
+				local node = obj
+				while node and not node:IsA("ScreenGui") do
+					node = node.Parent
+				end
+				if not (node and node.IgnoreGuiInset) then
+					inset = game:GetService("GuiService"):GetGuiInset()
+				end
+			end)
+			local ap, as = obj.AbsolutePosition, obj.AbsoluteSize
+			local x, y = ap.X + as.X / 2, ap.Y + as.Y / 2 + inset.Y
+			pcall(function()
+				VirtualInputManager:SendMouseMoveEvent(x, y, game)
+			end)
+			task.wait(0.05)
+			pcall(function()
+				VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, game, 0)
+				task.wait(0.06)
+				VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, game, 0)
+			end)
+		end
+
+		-- reserva: se o clique de mouse nao virar a carta, dispara os sinais do botao
+		local fireCardSignal = function(card)
+			if not firesignal then
+				return
+			end
+			local list = { card }
+			for _, d in ipairs(card:GetDescendants()) do
+				list[#list + 1] = d
+			end
+			for _, o in ipairs(list) do
+				if o:IsA("GuiButton") then
+					pcall(firesignal, o.MouseButton1Down)
+					pcall(firesignal, o.MouseButton1Click)
+					pcall(firesignal, o.Activated)
+				end
+			end
+		end
+
+		local solveCards = function()
+			local cards = findCardBoard()
+			if not cards then
+				return false
+			end
+			local n = #cards
+			notify("Minigame das cartas detectado (" .. n .. " cartas). Clicando para achar os pares...")
+			local base, face, matched, fails = {}, {}, {}, {}
+			for i, c in ipairs(cards) do
+				base[i] = cardSig(c)
+			end
+			local alive = function()
+				return trick.on and cards[1].Parent ~= nil and guiShown(cards[1])
+			end
+
+			-- espera a animacao de virar terminar (assinatura estavel)
+			local settle = function(i)
+				local prev, s = nil, nil
+				for _ = 1, 8 do
+					task.wait(0.25)
+					s = cardSig(cards[i])
+					if s == prev and s ~= "" and s ~= base[i] then
+						return s
+					end
+					prev = s
+				end
+				return s
+			end
+
+			-- clica na carta i e devolve a assinatura da frente (ou nil se nao virou)
+			local flip = function(i)
+				for attempt = 1, 3 do
+					if not alive() then
+						return nil
+					end
+					clickGui(cards[i])
+					if attempt >= 2 then
+						fireCardSignal(cards[i])
+					end
+					local t0 = tick()
+					while tick() - t0 < 1.6 do
+						task.wait(0.12)
+						if not cards[i].Parent then
+							return nil
+						end
+						if cardSig(cards[i]) ~= base[i] then
+							local s = settle(i)
+							if s ~= base[i] and s ~= "" then
+								return s
+							end
+							return nil
+						end
+					end
+				end
+				return nil
+			end
+
+			local waitBack = function(a, b)
+				local t0 = tick()
+				while tick() - t0 < 3 and alive() do
+					if cardSig(cards[a]) == base[a] and cardSig(cards[b]) == base[b] then
+						break
+					end
+					task.wait(0.2)
+				end
+				task.wait(0.25)
+			end
+
+			local bump = function(i)
+				fails[i] = (fails[i] or 0) + 1
+				if fails[i] >= 3 then
+					matched[i] = true -- carta que nao responde: ignora
+				end
+			end
+
+			local nextUnknown = function(skip)
+				for i = 1, n do
+					if not matched[i] and not face[i] and i ~= skip then
+						return i
+					end
+				end
+				return nil
+			end
+
+			local knownPair = function()
+				local byFace = {}
+				for i = 1, n do
+					if not matched[i] and face[i] then
+						local j = byFace[face[i]]
+						if j then
+							return j, i
+						end
+						byFace[face[i]] = i
+					end
+				end
+				return nil
+			end
+
+			local pairsLeft = math.floor(n / 2)
+			local anyFlip = false
+			local started = tick()
+			while alive() and pairsLeft > 0 and tick() - started < 150 do
+				local a, b = knownPair()
+				if a then
+					local sa = flip(a)
+					local sb = sa and flip(b)
+					if sa and sb then
+						anyFlip = true
+						matched[a], matched[b] = true, true
+						pairsLeft = pairsLeft - 1
+						task.wait(0.5)
+					else
+						bump(a)
+						bump(b)
+						task.wait(0.3)
+					end
+				else
+					local i = nextUnknown()
+					if not i then
+						break
+					end
+					local s = flip(i)
+					if not s then
+						bump(i)
+					else
+						anyFlip = true
+						face[i] = s
+						local m
+						for j = 1, n do
+							if j ~= i and not matched[j] and face[j] == s then
+								m = j
+								break
+							end
+						end
+						if m then
+							if flip(m) then
+								matched[i], matched[m] = true, true
+								pairsLeft = pairsLeft - 1
+								task.wait(0.5)
+							else
+								bump(m)
+							end
+						else
+							local k = nextUnknown(i)
+							if not k then
+								break
+							end
+							local t = flip(k)
+							if not t then
+								bump(k)
+							else
+								face[k] = t
+								if t == s then
+									matched[i], matched[k] = true, true
+									pairsLeft = pairsLeft - 1
+									task.wait(0.5)
+								else
+									waitBack(i, k)
+								end
+							end
+						end
+					end
+				end
+				if not anyFlip then
+					local total = 0
+					for _, v in pairs(fails) do
+						total = total + v
+					end
+					if total >= 4 then
+						notify("As cartas nao viraram com o clique do mouse. Desisti deste minigame.")
+						break
+					end
+				end
+			end
+			-- espera o minigame fechar / entregar o premio
+			local closing = tick()
+			while alive() and tick() - closing < 4 do
+				task.wait(0.3)
+			end
+			return true
+		end
+
+		-- depois do dialogo da porta, espera um pouco o minigame aparecer e resolve
+		local waitAndSolveCards = function(seconds)
+			local deadline = tick() + (seconds or 2)
+			repeat
+				if solveCards() then
+					return true
+				end
+				task.wait(0.3)
+			until tick() > deadline or not trick.on
+			return false
+		end
+
+		return solveCards, waitAndSolveCards
+		end)()
+
 		local startTrick = function()
 			if trick.on then
 				return
@@ -21551,6 +21910,14 @@ do
 						local hum = char and char:FindFirstChildOfClass("Humanoid")
 						if not hrp or not hum or hum.Health <= 0 then
 							return
+						end
+
+						-- minigame das cartas aberto (ex: "You're still busy with another door!"): resolve antes de ir para outra porta
+						if trick.cards and tick() - (trick.cardScanAt or 0) > 2 then
+							trick.cardScanAt = tick()
+							if solveCards() then
+								return
+							end
 						end
 
 						-- porta disponivel mais proxima (cada porta so de novo depois de 60s)
@@ -21663,6 +22030,10 @@ do
 							end
 							task.wait(0.15)
 						end
+						-- a porta pode abrir o minigame das cartas: fica parado e resolve com cliques de mouse
+						if talked and trick.cards then
+							pcall(waitAndSolveCards, 2.2)
+						end
 						held = false
 						if not talked then
 							trick.visited[best.inst] = empty and tick() or (tick() - 30)
@@ -21710,6 +22081,15 @@ do
 			end
 			pcall(clearMovers)
 		end
+
+		GRP_Trick:AddToggle("Trick_Solve_Cards", {
+			Text = "Resolver minigame das cartas",
+			Tooltip = "Clica nas cartas com o mouse e acha os pares sozinho",
+			Default = true,
+			Callback = function(value)
+				trick.cards = value
+			end
+		})
 
 		GRP_Trick:AddToggle("Trick_Hit_Ghost", {
 			Text = "Atacar fantasma (Ghost Chase)",
