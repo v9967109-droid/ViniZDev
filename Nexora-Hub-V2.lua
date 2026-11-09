@@ -22917,6 +22917,33 @@ do
 			boss.arenaCenter = nil
 			boss.summonAt, boss.summonWait, boss.pumpAt = 0, 0, 0
 			boss.fresh, boss.entryPos, boss.badPortal = {}, nil, {}
+			boss.needPortal, boss.selfKill = false, false
+			-- Se o player morrer durante o farm (Werewolf/Hellfire), marca que precisa entrar no portal do boss de novo
+			local hookDeath = function(char)
+				local hum = char and (char:FindFirstChildOfClass("Humanoid") or char:WaitForChild("Humanoid", 10))
+				if not hum then
+					return
+				end
+				hum.Died:Connect(function()
+					if not boss.on or boss.selfKill or boss.lastKind == "pump" or boss.wasPump then
+						return
+					end
+					if boss.lastKind ~= nil or boss.inArena then
+						boss.needPortal = true
+						boss.needPortalAt = tick()
+						boss.inArena, boss.arenaSeen = false, false
+						boss.entryPos, boss.badPortal = nil, {}
+						notify("Voce morreu. Vai entrar no portal do boss de novo antes de lutar.")
+					end
+				end)
+			end
+			if boss.charConn then
+				boss.charConn:Disconnect()
+			end
+			task.spawn(hookDeath, plr.Character)
+			boss.charConn = plr.CharacterAdded:Connect(function(c)
+				task.spawn(hookDeath, c)
+			end)
 			if boss.added then
 				boss.added:Disconnect()
 			end
@@ -23002,6 +23029,32 @@ do
 							task.wait(1)
 							return
 						end
+						-- Morreu durante o farm: antes de voltar a atacar, entra de novo no portal do boss
+						if boss.needPortal then
+							boss.target = nil
+							if not (findBoss("were") or findBoss("hell")) then
+								boss.needPortal = false -- boss ja morreu/sumiu, nao precisa entrar
+							else
+								local doors = findEntryDoors()
+								if doors[1] then
+									notify("Entrando no portal do boss (" .. string.sub(doors[1].part and doors[1].part.Name or "?", 1, 28) .. ")...")
+									if passDoor(doors[1]) then
+										boss.needPortal = false
+										boss.inArena, boss.arenaSeen, boss.arenaAt = true, false, tick()
+										return
+									end
+									task.wait(2)
+									return
+								end
+								if tick() - (boss.needPortalAt or 0) > 30 then
+									boss.needPortal = false
+									notify("Portal do boss nao encontrado. Indo direto no boss.")
+								else
+									task.wait(1)
+									return
+								end
+							end
+						end
 						if not bossAlive(boss.target) then
 							-- Detecta QUAL boss esta spawnado (Werewolf ou Hellfire Gas) e vai no que existir.
 							-- Fora da arena checa o Werewolf primeiro; dentro da arena, o Hellfire primeiro.
@@ -23062,6 +23115,7 @@ do
 								end
 								local oldChar = plr.Character
 								local oldHum = oldChar and oldChar:FindFirstChildOfClass("Humanoid")
+								boss.selfKill = true -- reset proposital: nao e morte em luta
 								if oldHum then
 									oldHum.Health = 0
 								elseif oldChar then
@@ -23079,6 +23133,7 @@ do
 									task.wait(0.3)
 								end
 								task.wait(1)
+								boss.selfKill = false
 								boss.inArena, boss.arenaSeen = false, false
 								boss.entryPos = nil
 								return
@@ -23168,6 +23223,11 @@ do
 				boss.added:Disconnect()
 				boss.added = nil
 			end
+			if boss.charConn then
+				boss.charConn:Disconnect()
+				boss.charConn = nil
+			end
+			boss.needPortal, boss.selfKill = false, false
 			_G.HalloweenFarm = boss.prevFarm
 			pcall(clearMovers)
 		end
