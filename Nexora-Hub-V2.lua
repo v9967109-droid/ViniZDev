@@ -20721,13 +20721,19 @@ do
 				clearMovers()
 				pcall(toTarget, goal)
 				hrp.AssemblyLinearVelocity = Vector3.zero
-			elseif (hrp.Position - part.Position).Magnitude > 12 then
+			else
+				-- movers sempre ligados durante a luta (antes o clearMovers soltava o char e ele caia/subia)
 				applyMovers(char)
 				hrp.CFrame = goal
-			else
-				clearMovers()
-				hrp.CFrame = goal
 				hrp.AssemblyLinearVelocity = Vector3.zero
+				local gyro = hrp:FindFirstChild("FarmBodyGyro")
+				if gyro then
+					gyro.CFrame = goal
+				end
+				local vel = hrp:FindFirstChild("FarmBodyVelocity")
+				if vel then
+					vel.Velocity = Vector3.zero
+				end
 			end
 			if tick() - lastHit >= 0.12 then
 				lastHit = tick()
@@ -20754,7 +20760,7 @@ do
 					nearSince = nil
 				end
 			end
-			task.wait(0.05)
+			RunService.Heartbeat:Wait()
 		end
 		return false
 	end
