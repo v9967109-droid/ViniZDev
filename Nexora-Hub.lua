@@ -1,87 +1,5 @@
--- Tela de carregamento (Nexora Hub): rapida e animada. O resto do script so roda depois dela terminar.
-do
-	pcall(function()
-		local TS = game:GetService("TweenService")
-		local host = (gethui and gethui()) or game:GetService("CoreGui")
-		local oldLoad = host:FindFirstChild("NexoraLoading")
-		if oldLoad then oldLoad:Destroy() end
-		local gui = Instance.new("ScreenGui")
-		gui.Name = "NexoraLoading"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true; gui.DisplayOrder = 10000
-		gui.Parent = host
-		local BLUE, BLUE_L, DEEP = Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 55, 140)
-		local function mk(class, props, parent)
-			local o = Instance.new(class)
-			for k, v in pairs(props) do o[k] = v end
-			o.Parent = parent
-			return o
-		end
-		local function ring3() return ColorSequence.new({ColorSequenceKeypoint.new(0, BLUE_L), ColorSequenceKeypoint.new(.5, DEEP), ColorSequenceKeypoint.new(1, BLUE_L)}) end
-		local function spin(g, t) pcall(function() TS:Create(g, TweenInfo.new(t, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Rotation = g.Rotation + 360}):Play() end) end
-		local dim = mk("Frame", {Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, BorderSizePixel = 0}, gui)
-		-- brilho externo
-		local glow = mk("Frame", {AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = UDim2.fromOffset(300, 176), BackgroundTransparency = 1}, gui)
-		mk("UICorner", {CornerRadius = UDim.new(0, 30)}, glow)
-		local glowS = mk("UIStroke", {Color = BLUE_L, Thickness = 6, Transparency = 1}, glow)
-		local card = mk("CanvasGroup", {AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = UDim2.fromOffset(280, 156), BackgroundColor3 = Color3.fromRGB(8, 14, 26), BorderSizePixel = 0, GroupTransparency = 1}, gui)
-		mk("UICorner", {CornerRadius = UDim.new(0, 22)}, card)
-		mk("UIGradient", {Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(11, 20, 38), Color3.fromRGB(3, 7, 14))}, card)
-		local edge = mk("UIStroke", {Color = Color3.new(1, 1, 1), Thickness = 2}, card)
-		spin(mk("UIGradient", {Color = ring3()}, edge), 3.5)
-		local sc = mk("UIScale", {Scale = 0.88}, card)
-		-- logo com anel girando e pulso
-		local logo = mk("Frame", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 14), Size = UDim2.fromOffset(54, 54), BackgroundColor3 = Color3.fromRGB(6, 11, 21), BorderSizePixel = 0}, card)
-		mk("UICorner", {CornerRadius = UDim.new(1, 0)}, logo)
-		local lring = mk("UIStroke", {Color = Color3.new(1, 1, 1), Thickness = 2.5}, logo)
-		spin(mk("UIGradient", {Color = ring3()}, lring), 1.6)
-		local pulse = mk("UIScale", {Scale = 1}, logo)
-		pcall(function() TS:Create(pulse, TweenInfo.new(.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Scale = 1.09}):Play() end)
-		mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, 3), Size = UDim2.new(1, 0, 0, 14), Text = "👑", TextColor3 = BLUE_L, Font = Enum.Font.FredokaOne, TextSize = 13}, logo)
-		local n = mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, 11), Size = UDim2.new(1, 0, 1, -13), Text = "N", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.FredokaOne, TextSize = 30}, logo)
-		mk("UIGradient", {Rotation = 90, Color = ColorSequence.new(BLUE_L, BLUE)}, n)
-		mk("TextLabel", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 74), Size = UDim2.fromOffset(240, 20), BackgroundTransparency = 1, Text = "NEXORA HUB", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 17}, card)
-		mk("TextLabel", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 94), Size = UDim2.fromOffset(240, 14), BackgroundTransparency = 1, Text = "BLOX FRUITS • ViniZDev", TextColor3 = Color3.fromRGB(151, 166, 190), Font = Enum.Font.GothamMedium, TextSize = 10}, card)
-		-- barra de progresso com brilho passando
-		local track = mk("Frame", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 120), Size = UDim2.fromOffset(190, 5), BackgroundColor3 = Color3.fromRGB(20, 30, 48), BorderSizePixel = 0, ClipsDescendants = true}, card)
-		mk("UICorner", {CornerRadius = UDim.new(1, 0)}, track)
-		local fill = mk("Frame", {Size = UDim2.new(0, 0, 1, 0), BackgroundColor3 = BLUE, BorderSizePixel = 0}, track)
-		mk("UICorner", {CornerRadius = UDim.new(1, 0)}, fill)
-		mk("UIGradient", {Color = ColorSequence.new(BLUE, BLUE_L)}, fill)
-		local shine = mk("Frame", {Size = UDim2.new(0, 36, 1, 0), Position = UDim2.new(0, -40, 0, 0), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = .55, BorderSizePixel = 0}, track)
-		mk("UIGradient", {Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(.5, 0), NumberSequenceKeypoint.new(1, 1)})}, shine)
-		pcall(function() TS:Create(shine, TweenInfo.new(.9, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Position = UDim2.new(1, 4, 0, 0)}):Play() end)
-		local status = mk("TextLabel", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 132), Size = UDim2.fromOffset(240, 14), BackgroundTransparency = 1, Text = "Carregando... 0%", TextColor3 = Color3.fromRGB(165, 165, 174), Font = Enum.Font.GothamMedium, TextSize = 11}, card)
-		-- entrada
-		TS:Create(dim, TweenInfo.new(.25), {BackgroundTransparency = .5}):Play()
-		TS:Create(card, TweenInfo.new(.2, Enum.EasingStyle.Quad), {GroupTransparency = 0}):Play()
-		TS:Create(sc, TweenInfo.new(.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
-		TS:Create(glowS, TweenInfo.new(.4), {Transparency = .78}):Play()
-		task.delay(.45, function() pcall(function() TS:Create(glowS, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Transparency = .9}):Play() end) end)
-		-- progresso curto (~1,4s) bloqueando o resto do script ate terminar
-		local steps = { {0, "Carregando"}, {0.45, "Preparando interface"}, {0.8, "Quase pronto"} }
-		local DURATION, startT = 1.4, tick()
-		local label = "Carregando"
-		while true do
-			local p = math.clamp((tick() - startT) / DURATION, 0, 1)
-			fill.Size = UDim2.new(1 - (1 - p) ^ 2, 0, 1, 0)
-			for _, st in ipairs(steps) do if p >= st[1] then label = st[2] end end
-			status.Text = label .. "... " .. math.floor(p * 100) .. "%"
-			if p >= 1 then break end
-			task.wait()
-		end
-		status.Text = "Pronto!"
-		task.wait(0.15)
-		TS:Create(card, TweenInfo.new(.24, Enum.EasingStyle.Quad), {GroupTransparency = 1}):Play()
-		TS:Create(sc, TweenInfo.new(.24, Enum.EasingStyle.Quad), {Scale = 0.94}):Play()
-		TS:Create(dim, TweenInfo.new(.24), {BackgroundTransparency = 1}):Play()
-		TS:Create(glowS, TweenInfo.new(.2), {Transparency = 1}):Play()
-		task.delay(.32, function() gui:Destroy() end)
-	end)
-	-- compatibilidade: o fim do script ainda chama isto, mas a tela ja terminou.
-	getgenv().NexoraLoadingFinish = function() end
-end
-
 -- ===================== TELA DE ESCOLHA DE INTERFACE =====================
--- Depois do carregamento: Classic (UI original) ou Glass (UI nova). So a escolhida e carregada.
+-- Primeiro o usuario escolhe a interface: Classic (UI original), Banana (UI nova) ou Maru. So depois o script inicia.
 do
 	local env = getgenv()
 	local skip = env.NexoraSkipUIChoice and (env.NexoraUIChoice == "Classic" or env.NexoraUIChoice == "Banana" or env.NexoraUIChoice == "Maru")
@@ -209,7 +127,7 @@ do
 					box(f, 83, 33 + i * 11, 7, 6, i == 1 and accent or Color3.fromRGB(46, 57, 75), 2)
 				end
 			end
-			-- previa do Glass: lateral com busca, card central, checkboxes
+			-- previa do Banana: lateral com busca, card central, checkboxes
 			local function pvBanana(f, accent)
 				f.BackgroundColor3 = Color3.fromRGB(17, 17, 20)
 				box(f, 0, 0, 30, 66, Color3.fromRGB(24, 24, 28), nil)
@@ -247,7 +165,7 @@ do
 				end
 			end
 			option(70, "Classic", "UI original: abas no topo e visual azul-marinho.", BLUE, pvClassic, "Classic", .15)
-			option(176, "Glass", "Nova UI em vidro: blur, busca e abas na lateral, seções em card.", Color3.fromRGB(59, 130, 246), pvBanana, "Banana", .27)
+			option(176, "Banana", "Nova UI em vidro: blur, busca e abas na lateral, seções em card.", Color3.fromRGB(59, 130, 246), pvBanana, "Banana", .27)
 			option(282, "Maru", "UI escura estilo Maru: perfil, busca e abas na lateral, linhas com descrição.", Color3.fromRGB(98, 176, 238), pvMaru, "Maru", .39)
 			-- entrada geral
 			TS:Create(card, TweenInfo.new(.22, Enum.EasingStyle.Quad), {GroupTransparency = 0}):Play()
@@ -266,6 +184,90 @@ do
 			env.NexoraUIChoice = "Classic"
 		end
 	end
+end
+
+
+-- ===================== TELA DE CARREGAMENTO (apos escolher a interface) =====================
+-- Tela de carregamento (Nexora Hub): aparece DEPOIS da escolha da interface. O resto do script so roda depois dela terminar.
+do
+	pcall(function()
+		local TS = game:GetService("TweenService")
+		local host = (gethui and gethui()) or game:GetService("CoreGui")
+		local oldLoad = host:FindFirstChild("NexoraLoading")
+		if oldLoad then oldLoad:Destroy() end
+		local gui = Instance.new("ScreenGui")
+		gui.Name = "NexoraLoading"; gui.ResetOnSpawn = false; gui.IgnoreGuiInset = true; gui.DisplayOrder = 10000
+		gui.Parent = host
+		local BLUE, BLUE_L, DEEP = Color3.fromRGB(0, 140, 255), Color3.fromRGB(80, 180, 255), Color3.fromRGB(0, 55, 140)
+		local function mk(class, props, parent)
+			local o = Instance.new(class)
+			for k, v in pairs(props) do o[k] = v end
+			o.Parent = parent
+			return o
+		end
+		local function ring3() return ColorSequence.new({ColorSequenceKeypoint.new(0, BLUE_L), ColorSequenceKeypoint.new(.5, DEEP), ColorSequenceKeypoint.new(1, BLUE_L)}) end
+		local function spin(g, t) pcall(function() TS:Create(g, TweenInfo.new(t, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Rotation = g.Rotation + 360}):Play() end) end
+		local dim = mk("Frame", {Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, BorderSizePixel = 0}, gui)
+		-- brilho externo
+		local glow = mk("Frame", {AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = UDim2.fromOffset(300, 176), BackgroundTransparency = 1}, gui)
+		mk("UICorner", {CornerRadius = UDim.new(0, 30)}, glow)
+		local glowS = mk("UIStroke", {Color = BLUE_L, Thickness = 6, Transparency = 1}, glow)
+		local card = mk("CanvasGroup", {AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5), Size = UDim2.fromOffset(280, 156), BackgroundColor3 = Color3.fromRGB(8, 14, 26), BorderSizePixel = 0, GroupTransparency = 1}, gui)
+		mk("UICorner", {CornerRadius = UDim.new(0, 22)}, card)
+		mk("UIGradient", {Rotation = 90, Color = ColorSequence.new(Color3.fromRGB(11, 20, 38), Color3.fromRGB(3, 7, 14))}, card)
+		local edge = mk("UIStroke", {Color = Color3.new(1, 1, 1), Thickness = 2}, card)
+		spin(mk("UIGradient", {Color = ring3()}, edge), 3.5)
+		local sc = mk("UIScale", {Scale = 0.88}, card)
+		-- logo com anel girando e pulso
+		local logo = mk("Frame", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 14), Size = UDim2.fromOffset(54, 54), BackgroundColor3 = Color3.fromRGB(6, 11, 21), BorderSizePixel = 0}, card)
+		mk("UICorner", {CornerRadius = UDim.new(1, 0)}, logo)
+		local lring = mk("UIStroke", {Color = Color3.new(1, 1, 1), Thickness = 2.5}, logo)
+		spin(mk("UIGradient", {Color = ring3()}, lring), 1.6)
+		local pulse = mk("UIScale", {Scale = 1}, logo)
+		pcall(function() TS:Create(pulse, TweenInfo.new(.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Scale = 1.09}):Play() end)
+		mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, 3), Size = UDim2.new(1, 0, 0, 14), Text = "👑", TextColor3 = BLUE_L, Font = Enum.Font.FredokaOne, TextSize = 13}, logo)
+		local n = mk("TextLabel", {BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, 11), Size = UDim2.new(1, 0, 1, -13), Text = "N", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.FredokaOne, TextSize = 30}, logo)
+		mk("UIGradient", {Rotation = 90, Color = ColorSequence.new(BLUE_L, BLUE)}, n)
+		mk("TextLabel", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 74), Size = UDim2.fromOffset(240, 20), BackgroundTransparency = 1, Text = "NEXORA HUB", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = 17}, card)
+		mk("TextLabel", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 94), Size = UDim2.fromOffset(240, 14), BackgroundTransparency = 1, Text = "BLOX FRUITS • ViniZDev", TextColor3 = Color3.fromRGB(151, 166, 190), Font = Enum.Font.GothamMedium, TextSize = 10}, card)
+		-- barra de progresso com brilho passando
+		local track = mk("Frame", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 120), Size = UDim2.fromOffset(190, 5), BackgroundColor3 = Color3.fromRGB(20, 30, 48), BorderSizePixel = 0, ClipsDescendants = true}, card)
+		mk("UICorner", {CornerRadius = UDim.new(1, 0)}, track)
+		local fill = mk("Frame", {Size = UDim2.new(0, 0, 1, 0), BackgroundColor3 = BLUE, BorderSizePixel = 0}, track)
+		mk("UICorner", {CornerRadius = UDim.new(1, 0)}, fill)
+		mk("UIGradient", {Color = ColorSequence.new(BLUE, BLUE_L)}, fill)
+		local shine = mk("Frame", {Size = UDim2.new(0, 36, 1, 0), Position = UDim2.new(0, -40, 0, 0), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = .55, BorderSizePixel = 0}, track)
+		mk("UIGradient", {Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(.5, 0), NumberSequenceKeypoint.new(1, 1)})}, shine)
+		pcall(function() TS:Create(shine, TweenInfo.new(.9, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Position = UDim2.new(1, 4, 0, 0)}):Play() end)
+		local status = mk("TextLabel", {AnchorPoint = Vector2.new(.5, 0), Position = UDim2.new(.5, 0, 0, 132), Size = UDim2.fromOffset(240, 14), BackgroundTransparency = 1, Text = "Carregando... 0%", TextColor3 = Color3.fromRGB(165, 165, 174), Font = Enum.Font.GothamMedium, TextSize = 11}, card)
+		-- entrada
+		TS:Create(dim, TweenInfo.new(.25), {BackgroundTransparency = .5}):Play()
+		TS:Create(card, TweenInfo.new(.2, Enum.EasingStyle.Quad), {GroupTransparency = 0}):Play()
+		TS:Create(sc, TweenInfo.new(.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+		TS:Create(glowS, TweenInfo.new(.4), {Transparency = .78}):Play()
+		task.delay(.45, function() pcall(function() TS:Create(glowS, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Transparency = .9}):Play() end) end)
+		-- progresso curto (~1,4s) bloqueando o resto do script ate terminar
+		local steps = { {0, "Carregando"}, {0.45, "Preparando interface"}, {0.8, "Quase pronto"} }
+		local DURATION, startT = 1.4, tick()
+		local label = "Carregando"
+		while true do
+			local p = math.clamp((tick() - startT) / DURATION, 0, 1)
+			fill.Size = UDim2.new(1 - (1 - p) ^ 2, 0, 1, 0)
+			for _, st in ipairs(steps) do if p >= st[1] then label = st[2] end end
+			status.Text = label .. "... " .. math.floor(p * 100) .. "%"
+			if p >= 1 then break end
+			task.wait()
+		end
+		status.Text = "Pronto!"
+		task.wait(0.15)
+		TS:Create(card, TweenInfo.new(.24, Enum.EasingStyle.Quad), {GroupTransparency = 1}):Play()
+		TS:Create(sc, TweenInfo.new(.24, Enum.EasingStyle.Quad), {Scale = 0.94}):Play()
+		TS:Create(dim, TweenInfo.new(.24), {BackgroundTransparency = 1}):Play()
+		TS:Create(glowS, TweenInfo.new(.2), {Transparency = 1}):Play()
+		task.delay(.32, function() gui:Destroy() end)
+	end)
+	-- compatibilidade: o fim do script ainda chama isto, mas a tela ja terminou.
+	getgenv().NexoraLoadingFinish = function() end
 end
 
 -- ===================== NEXORA ANTI SHAKE SYSTEM (NO TREME TELA) =====================
@@ -2229,14 +2231,17 @@ end
 local function pageIcon(name)
     local n = string.lower(tostring(name))
     local map = {
-        {"setting", "⚙"}, {"config", "⚙"}, {"status", "★"}, {"server", "★"}, {"farm", "▣"}, {"main", "▣"},
-        {"quest", "✦"}, {"item", "♧"}, {"shop", "♧"}, {"raid", "⚔"}, {"boss", "⚔"}, {"pvp", "⚔"}, {"fight", "⚔"},
-        {"race", "♨"}, {"fish", "♨"}, {"fruit", "✧"}, {"halloween", "✧"}, {"esp", "◎"}, {"player", "♟"},
+        {"halloween", "🎃"}, {"kitsune", "🦊"}, {"volcano", "🌋"}, {"dungeon", "🏰"}, {"secret", "🗝️"},
+        {"webhook", "🔔"}, {"resize", "📐"}, {"teleport", "🌀"}, {"upgrade", "⬆️"}, {"craft", "🔨"},
+        {"status", "📊"}, {"server", "🌐"}, {"setting", "⚙️"}, {"config", "⚙️"}, {"sea", "🌊"},
+        {"quest", "📜"}, {"item", "🎒"}, {"shop", "🛒"}, {"raid", "⚔️"}, {"boss", "👹"}, {"pvp", "🗡️"},
+        {"fight", "⚔️"}, {"race", "🧬"}, {"fish", "🎣"}, {"fruit", "🍎"}, {"esp", "👁️"}, {"player", "🧍"},
+        {"farm", "🌾"}, {"main", "🏠"}, {"misc", "✨"}, {"get", "🎁"},
     }
     for _, m in ipairs(map) do
         if string.find(n, m[1], 1, true) then return m[2] end
     end
-    return "✦"
+    return "✨"
 end
 local PAGE_DESC = {
     main = "Farming and progression.",
@@ -2252,6 +2257,14 @@ local function pageDesc(name)
         if string.find(n, key, 1, true) then return d end
     end
     return "Configure your options."
+end
+
+local function pulse(obj, amount)
+    local sc = make("UIScale", {Scale = 1}, obj)
+    pcall(function()
+        TweenService:Create(sc, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Scale = amount or 1.08}):Play()
+    end)
+    return sc
 end
 
 local CurrentMain
@@ -2272,7 +2285,10 @@ function Nexora.CreateMain(config)
         Size = UDim2.fromOffset(W, H), BackgroundColor3 = C.bg, BorderSizePixel = 0,
     }, gui)
     corner(shell, 20)
-    stroke(shell, C.stroke, 0.1, 1.5)
+    local shellStroke = stroke(shell, C.stroke, 0.1, 1.5)
+    pcall(function()
+        TweenService:Create(shellStroke, TweenInfo.new(2.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Color = C.accent, Transparency = 0.35}):Play()
+    end)
     local scale = make("UIScale", {Scale = 1}, shell)
 
     -- ===== tamanho / escala (compativel com a aba "Resize UI") =====
@@ -2323,6 +2339,51 @@ function Nexora.CreateMain(config)
         end)
     end
 
+    local BL, BL2 = C.accent, Color3.fromRGB(120, 196, 255)   -- cores do icone no estilo Maru
+    local function nexoraLogo(parent, px)
+        local f = make("Frame", {
+            Name = "NexoraLogo", AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5),
+            Size = UDim2.fromOffset(px, px), BackgroundColor3 = Color3.fromRGB(14, 18, 27), BorderSizePixel = 0,
+        }, parent)
+        corner(f, px)
+        make("UIGradient", {Rotation = 60, Color = ColorSequence.new(Color3.fromRGB(32, 48, 74), Color3.fromRGB(10, 14, 22))}, f)
+        make("UIScale", {Name = "Pop", Scale = 1}, f)
+        local ring = stroke(f, Color3.new(1, 1, 1), 0, math.max(1.5, px / 20))
+        local ringG = make("UIGradient", {Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, BL2), ColorSequenceKeypoint.new(.5, Color3.fromRGB(40, 90, 150)), ColorSequenceKeypoint.new(1, BL2),
+        })}, ring)
+        pcall(function() TweenService:Create(ringG, TweenInfo.new(3, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Rotation = 360}):Play() end)
+        local halo = make("Frame", {AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .56), Size = UDim2.fromScale(.7, .7), BackgroundColor3 = BL, BackgroundTransparency = .72, BorderSizePixel = 0}, f)
+        corner(halo, px)
+        pcall(function() TweenService:Create(halo, TweenInfo.new(1.3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {BackgroundTransparency = .9, Size = UDim2.fromScale(.82, .82)}):Play() end)
+        local crownL = make("TextLabel", {
+            BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, math.floor(px * 0.07)), Size = UDim2.new(1, 0, 0, math.floor(px * 0.26)),
+            Text = "👑", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = math.max(8, math.floor(px * 0.27)), ZIndex = 3,
+        }, f)
+        pcall(function() TweenService:Create(crownL, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Position = UDim2.new(0, 0, 0, math.floor(px * 0.03))}):Play() end)
+        local nL = make("TextLabel", {
+            BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, math.floor(px * 0.2)), Size = UDim2.new(1, 0, 1, -math.floor(px * 0.24)),
+            Text = "N", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBlack, TextSize = math.max(10, math.floor(px * 0.58)), ZIndex = 3,
+        }, f)
+        make("UIStroke", {Color = Color3.fromRGB(30, 70, 130), Thickness = math.max(1, px / 26), Transparency = .15}, nL)
+        local ng = make("UIGradient", {
+            Rotation = 25,
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, BL2), ColorSequenceKeypoint.new(.42, Color3.fromRGB(150, 210, 255)),
+                ColorSequenceKeypoint.new(.5, Color3.new(1, 1, 1)), ColorSequenceKeypoint.new(.58, Color3.fromRGB(150, 210, 255)),
+                ColorSequenceKeypoint.new(1, BL),
+            }),
+        }, nL)
+        pcall(function() TweenService:Create(nL, TweenInfo.new(1.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Rotation = 0}):Play() end)
+        pcall(function() TweenService:Create(ng, TweenInfo.new(1.2, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut, -1, true, .8), {Rotation = 205}):Play() end)
+        local spark = make("TextLabel", {
+            BackgroundTransparency = 1, AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.8, .3), Size = UDim2.fromOffset(px * 0.22, px * 0.22),
+            Text = "✦", TextColor3 = Color3.new(1, 1, 1), Font = Enum.Font.GothamBold, TextSize = math.max(6, math.floor(px * 0.2)), TextTransparency = 1, ZIndex = 4,
+        }, f)
+        pcall(function() TweenService:Create(spark, TweenInfo.new(.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true, .6), {TextTransparency = .05}):Play() end)
+        return f
+    end
+
     -- ===================== LATERAL =====================
     local side = make("Frame", {Name = "Sidebar", Position = UDim2.fromOffset(8, 8), Size = UDim2.new(0, SIDEBAR_W - 8, 1, -16), BackgroundColor3 = C.side, BorderSizePixel = 0}, shell)
     corner(side, 14)
@@ -2332,11 +2393,8 @@ function Nexora.CreateMain(config)
     corner(profile, 14)
     stroke(profile, C.stroke, 0.2, 1)
     make("UIGradient", {Rotation = 0, Color = ColorSequence.new(Color3.fromRGB(40, 60, 88), Color3.fromRGB(24, 33, 49))}, profile)
-    local logo = make("Frame", {Position = UDim2.fromOffset(10, 11), Size = UDim2.fromOffset(38, 38), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0}, profile)
-    corner(logo, 11)
-    make("UIGradient", {Rotation = 45, Color = ColorSequence.new(Color3.fromRGB(120, 196, 255), Color3.fromRGB(40, 110, 210))}, logo)
-    local logoN = lbl(logo, "N", UDim2.fromScale(1, 1), UDim2.new(), 22, Color3.new(1, 1, 1), Enum.Font.GothamBold)
-    logoN.TextXAlignment = Enum.TextXAlignment.Center
+    local logo = make("Frame", {Name = "LogoHolder", Position = UDim2.fromOffset(8, 9), Size = UDim2.fromOffset(42, 42), BackgroundTransparency = 1, BorderSizePixel = 0}, profile)
+    nexoraLogo(logo, 42)   -- mesmo logo do botao de abrir/fechar
     local ptitle = lbl(profile, TITLE, UDim2.new(1, -62, 0, 22), UDim2.fromOffset(56, 12), 15, C.white, Enum.Font.GothamBold)
     ptitle.TextTruncate = Enum.TextTruncate.AtEnd
     local psub = lbl(profile, SUBTITLE, UDim2.new(1, -62, 0, 16), UDim2.fromOffset(56, 33), 11, C.muted)
@@ -2345,7 +2403,7 @@ function Nexora.CreateMain(config)
 
     local searchBox = make("Frame", {Position = UDim2.fromOffset(10, 80), Size = UDim2.new(1, -20, 0, 34), BackgroundColor3 = C.card, BorderSizePixel = 0}, side)
     corner(searchBox, 12)
-    stroke(searchBox, C.stroke, 0.3, 1)
+    local searchStroke = stroke(searchBox, C.stroke, 0.3, 1)
     local mag = lbl(searchBox, "🔍", UDim2.fromOffset(28, 34), UDim2.fromOffset(8, 0), 13, C.muted)
     mag.TextXAlignment = Enum.TextXAlignment.Center
     local search = make("TextBox", {
@@ -2353,6 +2411,9 @@ function Nexora.CreateMain(config)
         PlaceholderText = "Search...", PlaceholderColor3 = C.muted, TextColor3 = C.white, Font = Enum.Font.GothamMedium,
         TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, ClearTextOnFocus = false,
     }, searchBox)
+
+    search.Focused:Connect(function() TweenService:Create(searchStroke, TweenInfo.new(.18), {Color = C.accent, Transparency = 0}):Play() end)
+    search.FocusLost:Connect(function() TweenService:Create(searchStroke, TweenInfo.new(.18), {Color = C.stroke, Transparency = 0.3}):Play() end)
 
     local tabList = make("ScrollingFrame", {
         Name = "Tabs", Position = UDim2.fromOffset(10, 124), Size = UDim2.new(1, -20, 1, -170), BackgroundTransparency = 1,
@@ -2381,34 +2442,80 @@ function Nexora.CreateMain(config)
     local hBox = make("Frame", {Position = UDim2.fromOffset(4, 6), Size = UDim2.fromOffset(42, 42), BackgroundColor3 = C.card, BorderSizePixel = 0}, header)
     corner(hBox, 12)
     stroke(hBox, C.stroke, 0.3, 1)
-    local hIcon = lbl(hBox, "▣", UDim2.fromScale(1, 1), UDim2.new(), 20, C.white, Enum.Font.GothamBold)
+    local hIcon = lbl(hBox, "🏠", UDim2.fromScale(1, 1), UDim2.new(), 22, C.white, Enum.Font.GothamBold)
     hIcon.TextXAlignment = Enum.TextXAlignment.Center
-    local hTitle = lbl(header, "", UDim2.new(1, -60, 0, 24), UDim2.fromOffset(56, 6), 19, C.white, Enum.Font.GothamBold)
+    local hIconScale = make("UIScale", {Scale = 1}, hIcon)
+    local hTitle = lbl(header, "", UDim2.new(1, -172, 0, 24), UDim2.fromOffset(56, 6), 19, C.white, Enum.Font.GothamBold)
     hTitle.TextTruncate = Enum.TextTruncate.AtEnd
-    local hSub = lbl(header, "", UDim2.new(1, -60, 0, 18), UDim2.fromOffset(56, 30), 12, C.muted)
+    local hSub = lbl(header, "", UDim2.new(1, -172, 0, 18), UDim2.fromOffset(56, 30), 12, C.muted)
     hSub.TextTruncate = Enum.TextTruncate.AtEnd
     makeDraggable(header)
     make("Frame", {Position = UDim2.new(0, 0, 0, 60), Size = UDim2.new(1, 0, 0, 1), BackgroundColor3 = C.stroke, BackgroundTransparency = 0.4, BorderSizePixel = 0}, content)
     local pageHolder = make("Frame", {Name = "Pages", Position = UDim2.fromOffset(0, 70), Size = UDim2.new(1, 0, 1, -70), BackgroundTransparency = 1, ClipsDescendants = true}, content)
 
-    -- ===================== BOTAO FLUTUANTE (pílula) =====================
+    -- ===================== BOTAO FLUTUANTE (pilula, como na primeira versao) =====================
+    -- Mesmo formato de antes; so o icone foi trocado pelo logo novo (coroa + N com anel azul).
     local float = make("ScreenGui", {Name = "NexoraFloat", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 998, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
     local pill = make("TextButton", {
-        AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -14, 0, 10), Size = UDim2.fromOffset(150, 38),
+        AnchorPoint = Vector2.new(0, 0), Position = UDim2.fromOffset(18, 200), Size = UDim2.fromOffset(147, 38),
         BackgroundColor3 = C.side, AutoButtonColor = false, Text = "", BorderSizePixel = 0,
     }, float)
     corner(pill, 19)
     stroke(pill, C.stroke, 0.1, 1)
-    local pl = make("Frame", {Position = UDim2.fromOffset(8, 7), Size = UDim2.fromOffset(24, 24), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0}, pill)
-    corner(pl, 8)
-    make("UIGradient", {Rotation = 45, Color = ColorSequence.new(Color3.fromRGB(120, 196, 255), Color3.fromRGB(40, 110, 210))}, pl)
-    local plN = lbl(pl, "N", UDim2.fromScale(1, 1), UDim2.new(), 15, Color3.new(1, 1, 1), Enum.Font.GothamBold)
-    plN.TextXAlignment = Enum.TextXAlignment.Center
-    local plT = lbl(pill, TITLE, UDim2.new(1, -46, 1, 0), UDim2.fromOffset(40, 0), 13, C.white, Enum.Font.GothamBold)
+    local pl = make("Frame", {Position = UDim2.fromOffset(4, 2), Size = UDim2.fromOffset(34, 34), BackgroundTransparency = 1, BorderSizePixel = 0}, pill)
+    nexoraLogo(pl, 34)
+    local pillScale = make("UIScale", {Scale = 1}, pill)
+    pill.MouseEnter:Connect(function() TweenService:Create(pillScale, TweenInfo.new(.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1.06}):Play() end)
+    pill.MouseLeave:Connect(function() TweenService:Create(pillScale, TweenInfo.new(.15), {Scale = 1}):Play() end)
+    local plT = lbl(pill, TITLE, UDim2.new(1, -50, 1, 0), UDim2.fromOffset(44, 0), 13, C.white, Enum.Font.GothamBold)
     plT.TextTruncate = Enum.TextTruncate.AtEnd
+    local isOpen = true
     local function toggleWindow()
-        gui.Enabled = not gui.Enabled
-        getgenv().UIToggled = gui.Enabled
+        local opening = not (gui.Enabled and isOpen)
+        isOpen = opening
+        getgenv().UIToggled = opening
+        if opening then
+            gui.Enabled = true
+            local target = fitScale()
+            scale.Scale = target * 0.88
+            TweenService:Create(scale, TweenInfo.new(.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = target}):Play()
+        else
+            TweenService:Create(scale, TweenInfo.new(.14, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Scale = scale.Scale * 0.88}):Play()
+            task.delay(.14, function()
+                if not isOpen then
+                    gui.Enabled = false
+                    scale.Scale = fitScale()
+                end
+            end)
+        end
+    end
+    local function closeWindow()
+        if gui.Enabled and isOpen then toggleWindow() end
+    end
+    -- posicao salva em arquivo (mesmo arquivo da Banana); padrao: lado esquerdo, meio da tela
+    local FLOAT_POS_FILE = "NexoraHub_FloatPosition.json"
+    do
+        local saved
+        pcall(function()
+            if readfile and isfile and isfile(FLOAT_POS_FILE) then
+                saved = game:GetService("HttpService"):JSONDecode(readfile(FLOAT_POS_FILE))
+            end
+        end)
+        if type(saved) == "table" and tonumber(saved.x) and tonumber(saved.y) then
+            pill.Position = UDim2.fromOffset(tonumber(saved.x), tonumber(saved.y))
+        else
+            local cam = workspace.CurrentCamera
+            local vp = cam and cam.ViewportSize or Vector2.new(800, 600)
+            pill.Position = UDim2.fromOffset(18, math.max(10, math.floor(vp.Y / 2 - 19)))
+        end
+    end
+    local function savePillPosition()
+        pcall(function()
+            if writefile then
+                local pp = pill.Position
+                writefile(FLOAT_POS_FILE, game:GetService("HttpService"):JSONEncode({x = math.floor(pp.X.Offset), y = math.floor(pp.Y.Offset)}))
+            end
+        end)
     end
     do
         local pdrag, pStart, pPos, moved = false, nil, nil, false
@@ -2419,7 +2526,7 @@ function Nexora.CreateMain(config)
                 i.Changed:Connect(function()
                     if i.UserInputState == Enum.UserInputState.End then
                         pdrag = false
-                        if not moved then toggleWindow() end
+                        if moved then savePillPosition() else toggleWindow() end
                     end
                 end)
             end
@@ -2429,10 +2536,66 @@ function Nexora.CreateMain(config)
                 local d = i.Position - pStart
                 if d.Magnitude > 6 then moved = true end
                 if moved then
-                    pill.Position = UDim2.new(pPos.X.Scale, pPos.X.Offset + d.X, pPos.Y.Scale, pPos.Y.Offset + d.Y)
+                    local cam = workspace.CurrentCamera
+                    local vp = cam and cam.ViewportSize or Vector2.new(800, 600)
+                    local x = math.clamp(pPos.X.Offset + d.X, 0, math.max(0, vp.X - pill.AbsoluteSize.X))
+                    local y = math.clamp(pPos.Y.Offset + d.Y, 0, math.max(0, vp.Y - pill.AbsoluteSize.Y))
+                    pill.Position = UDim2.fromOffset(x, y)
                 end
             end
         end)
+    end
+
+    -- ===================== CONTROLES DA JANELA (minimizar / fechar, igual a Banana) =====================
+    do
+        local controls = make("Frame", {
+            Name = "Controls", AnchorPoint = Vector2.new(1, 0), BackgroundColor3 = C.card, BorderSizePixel = 0,
+            Position = UDim2.new(1, -4, 0, 6), Size = UDim2.fromOffset(96, 44),
+        }, header)
+        corner(controls, 22)
+        stroke(controls, C.stroke, 0.3, 1)
+        local function controlButton(centerX, tint, symbolColor, kind, action)
+            local b = make("TextButton", {
+                Name = kind, AutoButtonColor = false, Text = "", BackgroundColor3 = tint, BackgroundTransparency = .86,
+                BorderSizePixel = 0, AnchorPoint = Vector2.new(.5, .5), Position = UDim2.new(0, centerX, .5, 0),
+                Size = UDim2.fromOffset(34, 34),
+            }, controls)
+            corner(b, 17)
+            local st = stroke(b, tint, .55, 1)
+            local bsc = make("UIScale", {Scale = 1}, b)
+            local marks = {}
+            local function bar(rot)
+                local f = make("Frame", {
+                    AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5),
+                    Size = UDim2.fromOffset(kind == "min" and 12 or 15, 2.5), BackgroundColor3 = symbolColor,
+                    BorderSizePixel = 0, Rotation = rot,
+                }, b)
+                corner(f, 2)
+                marks[#marks + 1] = f
+            end
+            if kind == "min" then bar(0) else bar(45); bar(-45) end
+            local hoverBg = kind == "close" and .08 or .5
+            local hoverSym = kind == "close" and Color3.new(1, 1, 1) or Color3.fromRGB(170, 215, 255)
+            local function go(bgT, strokeT, symCol, scl)
+                TweenService:Create(b, TweenInfo.new(.14), {BackgroundTransparency = bgT}):Play()
+                TweenService:Create(st, TweenInfo.new(.14), {Transparency = strokeT}):Play()
+                TweenService:Create(bsc, TweenInfo.new(.14, Enum.EasingStyle.Quad), {Scale = scl}):Play()
+                for _, m in ipairs(marks) do
+                    TweenService:Create(m, TweenInfo.new(.14), {BackgroundColor3 = symCol}):Play()
+                end
+            end
+            b.MouseEnter:Connect(function() go(hoverBg, .15, hoverSym, 1.1) end)
+            b.MouseLeave:Connect(function() go(.86, .55, symbolColor, 1) end)
+            b.MouseButton1Down:Connect(function() go(hoverBg, .05, hoverSym, .88) end)
+            b.MouseButton1Up:Connect(function() go(hoverBg, .15, hoverSym, 1.1) end)
+            b.MouseButton1Click:Connect(function()
+                task.delay(.2, function() go(.86, .55, symbolColor, 1) end)
+                action()
+            end)
+            return b
+        end
+        controlButton(26, C.accent, Color3.fromRGB(150, 205, 250), "min", closeWindow)
+        controlButton(70, Color3.fromRGB(255, 82, 92), Color3.fromRGB(255, 118, 128), "close", closeWindow)
     end
 
     -- ===================== PAGINAS =====================
@@ -2443,18 +2606,37 @@ function Nexora.CreateMain(config)
     local current
 
     local function showPage(p)
+        local changed = current ~= p
         for _, q in ipairs(pages) do
             local on = (q == p)
             q.frame.Visible = on
-            q.tab.BackgroundTransparency = on and 0 or 1
+            TweenService:Create(q.tab, TweenInfo.new(.18), {BackgroundTransparency = on and 0 or 1}):Play()
+            TweenService:Create(q.tabText, TweenInfo.new(.18), {TextColor3 = on and C.white or C.muted}):Play()
             q.bar.Visible = on
-            q.tabText.TextColor3 = on and C.white or C.muted
-            q.tabIcon.TextColor3 = on and C.accent or C.muted
+            if on and changed then
+                q.bar.Size = UDim2.fromOffset(3, 0)
+                q.bar.Position = UDim2.new(0, 0, .5, 0)
+                TweenService:Create(q.bar, TweenInfo.new(.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.fromOffset(3, 18), Position = UDim2.new(0, 0, .5, -9)}):Play()
+                q.iconScale.Scale = .6
+                TweenService:Create(q.iconScale, TweenInfo.new(.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1.12}):Play()
+            elseif not on then
+                TweenService:Create(q.iconScale, TweenInfo.new(.15), {Scale = 1}):Play()
+            end
         end
         current = p
         hTitle.Text = p.title
         hSub.Text = p.desc
         hIcon.Text = p.icon
+        if changed then
+            -- entrada da pagina: desliza de baixo, titulo aparece e o icone "pula"
+            p.frame.Position = UDim2.fromOffset(0, 22)
+            TweenService:Create(p.frame, TweenInfo.new(.28, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position = UDim2.fromOffset(0, 0)}):Play()
+            hTitle.TextTransparency, hSub.TextTransparency = 1, 1
+            TweenService:Create(hTitle, TweenInfo.new(.25), {TextTransparency = 0}):Play()
+            TweenService:Create(hSub, TweenInfo.new(.35), {TextTransparency = 0}):Play()
+            hIconScale.Scale = .6
+            TweenService:Create(hIconScale, TweenInfo.new(.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+        end
     end
 
     -- ---------- linhas (cards) ----------
@@ -2467,9 +2649,21 @@ function Nexora.CreateMain(config)
             row.Text = ""
         end
         corner(row, 14)
-        stroke(row, C.stroke, 0.45, 1)
-        row.MouseEnter:Connect(function() TweenService:Create(row, TweenInfo.new(.12), {BackgroundColor3 = C.card2}):Play() end)
-        row.MouseLeave:Connect(function() TweenService:Create(row, TweenInfo.new(.12), {BackgroundColor3 = C.card}):Play() end)
+        local rowStroke = stroke(row, C.stroke, 0.45, 1)
+        row.MouseEnter:Connect(function()
+            TweenService:Create(row, TweenInfo.new(.12), {BackgroundColor3 = C.card2}):Play()
+            TweenService:Create(rowStroke, TweenInfo.new(.12), {Color = C.accent, Transparency = 0.6}):Play()
+        end)
+        row.MouseLeave:Connect(function()
+            TweenService:Create(row, TweenInfo.new(.12), {BackgroundColor3 = C.card}):Play()
+            TweenService:Create(rowStroke, TweenInfo.new(.12), {Color = C.stroke, Transparency = 0.45}):Play()
+        end)
+        if clickable then
+            local rs = make("UIScale", {Scale = 1}, row)
+            row.MouseButton1Down:Connect(function() TweenService:Create(rs, TweenInfo.new(.07), {Scale = 0.975}):Play() end)
+            row.MouseButton1Up:Connect(function() TweenService:Create(rs, TweenInfo.new(.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play() end)
+            row.MouseLeave:Connect(function() TweenService:Create(rs, TweenInfo.new(.12), {Scale = 1}):Play() end)
+        end
         return row
     end
     local function hasText(d)
@@ -2506,19 +2700,39 @@ function Nexora.CreateMain(config)
         corner(tab, 11)
         local bar = make("Frame", {Visible = false, Position = UDim2.new(0, 0, .5, -9), Size = UDim2.fromOffset(3, 18), BackgroundColor3 = C.accent, BorderSizePixel = 0}, tab)
         corner(bar, 2)
-        local tIcon = lbl(tab, icon, UDim2.fromOffset(30, 38), UDim2.fromOffset(10, 0), 15, C.muted, Enum.Font.GothamBold)
+        local tIcon = lbl(tab, icon, UDim2.fromOffset(30, 38), UDim2.fromOffset(10, 0), 17, C.muted, Enum.Font.GothamBold)
         tIcon.TextXAlignment = Enum.TextXAlignment.Center
+        local iconScale = make("UIScale", {Scale = 1}, tIcon)
         local tText = lbl(tab, navText, UDim2.new(1, -48, 1, 0), UDim2.fromOffset(44, 0), 14, C.muted, Enum.Font.GothamMedium)
         tText.TextTruncate = Enum.TextTruncate.AtEnd
+        -- entrada em cascata das abas
+        tIcon.TextTransparency, tText.TextTransparency = 1, 1
+        tab.BackgroundTransparency = 1
+        task.delay(math.min(0.06 * #pages, 1.2), function()
+            TweenService:Create(tIcon, TweenInfo.new(.3), {TextTransparency = 0}):Play()
+            TweenService:Create(tText, TweenInfo.new(.3), {TextTransparency = 0}):Play()
+        end)
 
         local p = {
             name = pageName, title = navText, frame = frame, tab = tab, bar = bar, tabText = tText, tabIcon = tIcon,
-            icon = icon, desc = tostring(pageConfig.Page_Desc or pageDesc(navText)),
+            icon = icon, desc = tostring(pageConfig.Page_Desc or pageDesc(navText)), iconScale = iconScale,
         }
         pages[#pages + 1] = p
         tab.MouseButton1Click:Connect(function() showPage(p) end)
-        tab.MouseEnter:Connect(function() if current ~= p then tab.BackgroundTransparency = 0.6 end end)
-        tab.MouseLeave:Connect(function() if current ~= p then tab.BackgroundTransparency = 1 end end)
+        tab.MouseEnter:Connect(function()
+            if current ~= p then
+                TweenService:Create(tab, TweenInfo.new(.12), {BackgroundTransparency = 0.6}):Play()
+                TweenService:Create(tText, TweenInfo.new(.15, Enum.EasingStyle.Quad), {Position = UDim2.fromOffset(49, 0)}):Play()
+                TweenService:Create(iconScale, TweenInfo.new(.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1.2}):Play()
+            end
+        end)
+        tab.MouseLeave:Connect(function()
+            TweenService:Create(tText, TweenInfo.new(.15, Enum.EasingStyle.Quad), {Position = UDim2.fromOffset(44, 0)}):Play()
+            if current ~= p then
+                TweenService:Create(tab, TweenInfo.new(.12), {BackgroundTransparency = 1}):Play()
+                TweenService:Create(iconScale, TweenInfo.new(.15), {Scale = 1}):Play()
+            end
+        end)
         if #pages == 1 then showPage(p) end
 
         local Page = {}
@@ -2563,8 +2777,8 @@ function Nexora.CreateMain(config)
                     local pos = val and UDim2.new(1, -21, 0, 3) or UDim2.new(0, 3, 0, 3)
                     local col = val and C.accent or C.off
                     if animate then
-                        TweenService:Create(track, TweenInfo.new(.15), {BackgroundColor3 = col}):Play()
-                        TweenService:Create(knob, TweenInfo.new(.15), {Position = pos}):Play()
+                        TweenService:Create(track, TweenInfo.new(.18), {BackgroundColor3 = col}):Play()
+                        TweenService:Create(knob, TweenInfo.new(.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = pos}):Play()
                     else
                         track.BackgroundColor3 = col
                         knob.Position = pos
@@ -2640,7 +2854,10 @@ function Nexora.CreateMain(config)
                     BackgroundColor3 = C.knob, BorderSizePixel = 0, AnchorPoint = Vector2.new(.5, .5),
                     Position = UDim2.new(ratio0, 0, .5, 0), Size = UDim2.fromOffset(14, 14),
                 }, bar)
-                corner(knob, 7)
+                corner(knob, 20)
+                local function growKnob(on)
+                    TweenService:Create(knob, TweenInfo.new(.12, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = on and UDim2.fromOffset(20, 20) or UDim2.fromOffset(14, 14)}):Play()
+                end
                 local hit = make("TextButton", {BackgroundTransparency = 1, Text = "", Size = UDim2.new(1, -20, 0, 26), Position = UDim2.new(0, 10, 0, barY - 10)}, row)
                 local opt
                 local sliding = false
@@ -2664,6 +2881,7 @@ function Nexora.CreateMain(config)
                 hit.InputBegan:Connect(function(i)
                     if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
                         sliding = true
+                        growKnob(true)
                         set(i.Position.X)
                     end
                 end)
@@ -2671,7 +2889,10 @@ function Nexora.CreateMain(config)
                     if sliding and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then set(i.Position.X) end
                 end)
                 UIS.InputEnded:Connect(function(i)
-                    if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then sliding = false end
+                    if (i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch) and sliding then
+                        sliding = false
+                        growKnob(false)
+                    end
                 end)
                 return opt
             end
@@ -2920,11 +3141,8 @@ function Nexora.CreateMain(config)
         stroke(card, C.stroke, 0.1, 1)
         local sideBar = make("Frame", {BackgroundColor3 = C.accent, BorderSizePixel = 0, Size = UDim2.new(0, 3, 1, 0)}, card)
         corner(sideBar, 2)
-        local iconBg = make("Frame", {BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Size = UDim2.fromOffset(36, 36), Position = UDim2.fromOffset(14, 12)}, card)
-        corner(iconBg, 10)
-        make("UIGradient", {Rotation = 45, Color = ColorSequence.new(Color3.fromRGB(120, 196, 255), Color3.fromRGB(40, 110, 210))}, iconBg)
-        local nn = lbl(iconBg, "N", UDim2.fromScale(1, 1), UDim2.new(), 20, Color3.new(1, 1, 1), Enum.Font.GothamBold)
-        nn.TextXAlignment = Enum.TextXAlignment.Center
+        local iconBg = make("Frame", {BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.fromOffset(38, 38), Position = UDim2.fromOffset(13, 11)}, card)
+        nexoraLogo(iconBg, 38)   -- mesmo logo do botao e do perfil
         make("TextLabel", {BackgroundTransparency = 1, Position = UDim2.fromOffset(60, 8), Size = UDim2.new(1, -68, 0, 18), Text = title, TextColor3 = C.white, Font = Enum.Font.GothamBold, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd}, card)
         make("TextLabel", {BackgroundTransparency = 1, Position = UDim2.fromOffset(60, 27), Size = UDim2.new(1, -68, 0, 34), Text = desc, TextColor3 = C.muted, Font = Enum.Font.GothamMedium, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true}, card)
         local progressBg = make("Frame", {BackgroundColor3 = C.off, BorderSizePixel = 0, Size = UDim2.new(1, -16, 0, 2), Position = UDim2.new(0, 8, 1, -5)}, card)
@@ -3005,7 +3223,7 @@ A = (function()
 -- Esta biblioteca só cria a UI; a source principal continua responsável pelas funções do jogo.
 
 local Nexora = {}
-local BANANA = getgenv().NexoraUIChoice == "Banana"   -- true = Glass (azul), false = Classic (original, laranja)
+local BANANA = getgenv().NexoraUIChoice == "Banana"   -- true = Banana (azul), false = Classic (original, laranja)
 Nexora.Options = {}
 Nexora.OptionOrder = {}
 
@@ -4422,7 +4640,7 @@ local C = {
     tabOn = Color3.fromRGB(8, 47, 91),
     tabOff = Color3.fromRGB(8, 14, 25),
 }
--- Visual Glass (azul-marinho translucido)
+-- Visual Banana (azul-marinho translucido)
 C.bg = Color3.fromRGB(10, 15, 28)
 C.panel = Color3.fromRGB(16, 24, 42)
 C.panel2 = Color3.fromRGB(22, 34, 60)
@@ -12784,7 +13002,7 @@ function AQLog(msg)
         return
     end
     getgenv().__AQLogLast[msg] = tick()
-    warn("[Glass][AutoQuest] " .. msg)
+    warn("[Banana][AutoQuest] " .. msg)
 end
 -- Tarefas da missão atual como texto (ex.: "Bandit=3"), lidas do GuideModule.
 function AQTaskString()
@@ -14682,42 +14900,17 @@ task.spawn(function()
 							warn("[Nexora] Teleport To Fruit: indo até " .. tostring(fruit.Name) .. " (" .. math.floor(dist) .. " studs)")
 						end
 						local goal = handle.CFrame * CFrame.new(0, 3, 0)
-						local lastGoal = getgenv().__FruitGoal
-						local tw = getgenv().__FruitTween
-						local running = tw and tw.PlaybackState == Enum.PlaybackState.Playing
-						-- só cria um tween novo se não há um rodando, se a fruta mudou ou se ela se moveu mais de 6 studs
-						if (not running) or getgenv().__FruitGoalObj ~= fruit or (not lastGoal)
-							or (lastGoal.Position - goal.Position).Magnitude > 6 then
-							if tw then
-								pcall(function() tw:Cancel() end)
-							end
-							pcall(function()
-								if TweenManager and TweenManager.CancelTweenOnly then TweenManager.CancelTweenOnly() end
-							end)
-							pcall(function()
-								if not root:FindFirstChild("FloatForce") then
-									local bv = Instance.new("BodyVelocity")
-									bv.Name = "FloatForce"
-									bv.Velocity = Vector3.new(0, 0, 0)
-									bv.MaxForce = Vector3.new(100000, 100000, 100000)
-									bv.P = 10000
-									bv.Parent = root
-								end
-								local speed = math.clamp(tonumber(Settings["Speed Tween "]) or 220, 50, 220)
-								local dur = math.max((goal.Position - root.Position).Magnitude / speed, 0.05)
-								local newTw = game:GetService("TweenService"):Create(
-									root,
-									TweenInfo.new(dur, Enum.EasingStyle.Linear),
-									{ CFrame = goal }
-								)
-								getgenv().__FruitTween = newTw
-								getgenv().__FruitGoal = goal
-								getgenv().__FruitGoalObj = fruit
-								newTw:Play()
-							end)
+						-- FIX (voltando pra trás): antes usava um tween próprio que o TweenManager não conhecia.
+						-- O loop global (~linha 39310) via FloatForce sem TweenManager.currentTween + k.LastCall velho
+						-- (>2s), chamava TweenManager.CancelCurrent() e destruía o FloatForce no meio do voo,
+						-- fazendo o personagem cair/colidir e ser puxado de volta. Agora usa o mesmo toTarget
+						-- do resto do hub (registra no TweenManager, mantém FloatForce e atualiza k.LastCall).
+						if getgenv().__FruitTween then
+							pcall(function() getgenv().__FruitTween:Cancel() end)
+							getgenv().__FruitTween = nil
 						end
-						root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-						task.wait(0.1)
+						pcall(function() toTarget(goal) end)
+						task.wait(0.05)
 					end
 				else
 					-- nenhuma fruta no mapa agora
@@ -36996,10 +37189,12 @@ end)
 function GetEspFruit()
 	local b, s, X = next, game.Workspace:GetChildren()
 	for g, g in b, s, X do
+		local handle = (g:IsA("Tool") or g:IsA("Model")) and g:FindFirstChild("Handle")
 		if
-			(g:IsA("Tool") or (g:IsA("Model")))
+			handle
 			and (string.find(g.Name, "Fruit"))
-			and not g.Handle:FindFirstChild("Ignored")
+			and g.Parent == game.Workspace
+			and not handle:FindFirstChild("Ignored")
 		then
 			return g
 		end
@@ -37132,7 +37327,7 @@ function EspFruit()
 					R.Visible = false
 				end
 			end
-		until not b or not b.Parent or not X.Parent or not Settings["ESP Fruit"]
+		until not b or b.Parent ~= game.Workspace or not X.Parent or X.Parent ~= b or not X:IsDescendantOf(game.Workspace) or not Settings["ESP Fruit"]
 		f:Remove()
 		R:Remove()
 		if X:FindFirstChild("Ignored") then
@@ -41577,17 +41772,17 @@ rawset(_G, "RecoveredFunction_0276", RecoveredFunction_0276)
 end
 
 do
-local function RecoveredFunction_0287(...)local __args = {...};local b = __args[1];local Z = __args[5];return function()local Z=GetEspFruit();if not Z then return;end;local F,c=GetFruitName(Z),Z:FindFirstChild("Handle");if not c then return;end;local l=Instance.new("IntValue");l.Name="Ignored";l.Parent=c;local l,H=({["Leopard Fruit"]=Color3.fromRGB(255,170,0),["Dragon (East) Fruit"]=Color3.fromRGB(255,0,0),["Dragon (West) Fruit"]=Color3.fromRGB(255,80,80),["Kitsune Fruit"]=Color3.fromRGB(200,100,255),["Spirit Fruit"]=Color3.fromRGB(120,200,255),["Venom Fruit"]=Color3.fromRGB(180,60,200),["Dough Fruit"]=Color3.fromRGB(255,220,180),["Light Fruit"]=Color3.fromRGB(255,255,150)})[F]or(Color3.fromRGB(255,255,255)),Drawing.new("Text");H.Visible=false;H.Transparency=1;H.Text=F;H.Color=l;H.Size=20;H.Outline=true;H.OutlineColor=Color3.fromRGB(0,0,0);H.Center=true;H.Font=2;local M=Drawing.new("Square");M.Visible=false;M.Filled=true;M.Color=Color3.fromRGB(0,0,0);M.Transparency=0.4;spawn(function()repeat task.wait();if c then local S,Q=workspace.CurrentCamera:WorldToViewportPoint(c.Position);if Q then H.Text=F.." ["..math.round(b[1]:DistanceFromCharacter(c.Position)).."m]";H.Position=Vector2.new(S.X,S.Y-20);H.Color=l;H.Visible=true;local b=H.TextBounds;M.Position=Vector2.new(H.Position.X-b.X/-2,H.Position.Y-2);M.Size=Vector2.new(b.X+8,b.Y+4);M.Visible=true;else H.Visible=false;M.Visible=false;end;end;until not Z or not Z.Parent or not c.Parent or not Settings["ESP Fruit"];H:Remove();M:Remove();if c:FindFirstChild("Ignored")then c.Ignored:Destroy();end;end);end;end
+local function RecoveredFunction_0287(...)local __args = {...};local b = __args[1];local Z = __args[5];return function()local Z=GetEspFruit();if not Z then return;end;local F,c=GetFruitName(Z),Z:FindFirstChild("Handle");if not c then return;end;local l=Instance.new("IntValue");l.Name="Ignored";l.Parent=c;local l,H=({["Leopard Fruit"]=Color3.fromRGB(255,170,0),["Dragon (East) Fruit"]=Color3.fromRGB(255,0,0),["Dragon (West) Fruit"]=Color3.fromRGB(255,80,80),["Kitsune Fruit"]=Color3.fromRGB(200,100,255),["Spirit Fruit"]=Color3.fromRGB(120,200,255),["Venom Fruit"]=Color3.fromRGB(180,60,200),["Dough Fruit"]=Color3.fromRGB(255,220,180),["Light Fruit"]=Color3.fromRGB(255,255,150)})[F]or(Color3.fromRGB(255,255,255)),Drawing.new("Text");H.Visible=false;H.Transparency=1;H.Text=F;H.Color=l;H.Size=20;H.Outline=true;H.OutlineColor=Color3.fromRGB(0,0,0);H.Center=true;H.Font=2;local M=Drawing.new("Square");M.Visible=false;M.Filled=true;M.Color=Color3.fromRGB(0,0,0);M.Transparency=0.4;spawn(function()repeat task.wait();if c then local S,Q=workspace.CurrentCamera:WorldToViewportPoint(c.Position);if Q then H.Text=F.." ["..math.round(b[1]:DistanceFromCharacter(c.Position)).."m]";H.Position=Vector2.new(S.X,S.Y-20);H.Color=l;H.Visible=true;local b=H.TextBounds;M.Position=Vector2.new(H.Position.X-b.X/-2,H.Position.Y-2);M.Size=Vector2.new(b.X+8,b.Y+4);M.Visible=true;else H.Visible=false;M.Visible=false;end;end;until not Z or Z.Parent ~= game.Workspace or not c.Parent or c.Parent ~= Z or not c:IsDescendantOf(game.Workspace) or not Settings["ESP Fruit"];H:Remove();M:Remove();if c:FindFirstChild("Ignored")then c.Ignored:Destroy();end;end);end;end
 rawset(_G, "RecoveredFunction_0287", RecoveredFunction_0287)
 end
 
 do
-local function RecoveredFunction_0288()local Z=GetEspFruit();if not Z then return;end;local F,c=GetFruitName(Z),Z:FindFirstChild("Handle");if not c then return;end;local l=Instance.new("IntValue");l.Name="Ignored";l.Parent=c;local l,H=({["Leopard Fruit"]=Color3.fromRGB(255,170,0),["Dragon (East) Fruit"]=Color3.fromRGB(255,0,0),["Dragon (West) Fruit"]=Color3.fromRGB(255,80,80),["Kitsune Fruit"]=Color3.fromRGB(200,100,255),["Spirit Fruit"]=Color3.fromRGB(120,200,255),["Venom Fruit"]=Color3.fromRGB(180,60,200),["Dough Fruit"]=Color3.fromRGB(255,220,180),["Light Fruit"]=Color3.fromRGB(255,255,150)})[F]or(Color3.fromRGB(255,255,255)),Drawing.new("Text");H.Visible=false;H.Transparency=1;H.Text=F;H.Color=l;H.Size=20;H.Outline=true;H.OutlineColor=Color3.fromRGB(0,0,0);H.Center=true;H.Font=2;local M=Drawing.new("Square");M.Visible=false;M.Filled=true;M.Color=Color3.fromRGB(0,0,0);M.Transparency=0.4;spawn(function()repeat task.wait();if c then local S,Q=workspace.CurrentCamera:WorldToViewportPoint(c.Position);if Q then H.Text=F.." ["..math.round(b[1]:DistanceFromCharacter(c.Position)).."m]";H.Position=Vector2.new(S.X,S.Y-20);H.Color=l;H.Visible=true;local b=H.TextBounds;M.Position=Vector2.new(H.Position.X-b.X/-2,H.Position.Y-2);M.Size=Vector2.new(b.X+8,b.Y+4);M.Visible=true;else H.Visible=false;M.Visible=false;end;end;until not Z or not Z.Parent or not c.Parent or not Settings["ESP Fruit"];H:Remove();M:Remove();if c:FindFirstChild("Ignored")then c.Ignored:Destroy();end;end);end
+local function RecoveredFunction_0288()local Z=GetEspFruit();if not Z then return;end;local F,c=GetFruitName(Z),Z:FindFirstChild("Handle");if not c then return;end;local l=Instance.new("IntValue");l.Name="Ignored";l.Parent=c;local l,H=({["Leopard Fruit"]=Color3.fromRGB(255,170,0),["Dragon (East) Fruit"]=Color3.fromRGB(255,0,0),["Dragon (West) Fruit"]=Color3.fromRGB(255,80,80),["Kitsune Fruit"]=Color3.fromRGB(200,100,255),["Spirit Fruit"]=Color3.fromRGB(120,200,255),["Venom Fruit"]=Color3.fromRGB(180,60,200),["Dough Fruit"]=Color3.fromRGB(255,220,180),["Light Fruit"]=Color3.fromRGB(255,255,150)})[F]or(Color3.fromRGB(255,255,255)),Drawing.new("Text");H.Visible=false;H.Transparency=1;H.Text=F;H.Color=l;H.Size=20;H.Outline=true;H.OutlineColor=Color3.fromRGB(0,0,0);H.Center=true;H.Font=2;local M=Drawing.new("Square");M.Visible=false;M.Filled=true;M.Color=Color3.fromRGB(0,0,0);M.Transparency=0.4;spawn(function()repeat task.wait();if c then local S,Q=workspace.CurrentCamera:WorldToViewportPoint(c.Position);if Q then H.Text=F.." ["..math.round(b[1]:DistanceFromCharacter(c.Position)).."m]";H.Position=Vector2.new(S.X,S.Y-20);H.Color=l;H.Visible=true;local b=H.TextBounds;M.Position=Vector2.new(H.Position.X-b.X/-2,H.Position.Y-2);M.Size=Vector2.new(b.X+8,b.Y+4);M.Visible=true;else H.Visible=false;M.Visible=false;end;end;until not Z or Z.Parent ~= game.Workspace or not c.Parent or c.Parent ~= Z or not c:IsDescendantOf(game.Workspace) or not Settings["ESP Fruit"];H:Remove();M:Remove();if c:FindFirstChild("Ignored")then c.Ignored:Destroy();end;end);end
 rawset(_G, "RecoveredFunction_0288", RecoveredFunction_0288)
 end
 
 do
-local function RecoveredFunction_0289()repeat task.wait();if c then local S,Q=workspace.CurrentCamera:WorldToViewportPoint(c.Position);if Q then H.Text=F.." ["..math.round(b[1]:DistanceFromCharacter(c.Position)).."m]";H.Position=Vector2.new(S.X,S.Y-20);H.Color=l;H.Visible=true;local b=H.TextBounds;M.Position=Vector2.new(H.Position.X-b.X/-2,H.Position.Y-2);M.Size=Vector2.new(b.X+8,b.Y+4);M.Visible=true;else H.Visible=false;M.Visible=false;end;end;until not Z or not Z.Parent or not c.Parent or not Settings["ESP Fruit"];H:Remove();M:Remove();if c:FindFirstChild("Ignored")then c.Ignored:Destroy();end;end
+local function RecoveredFunction_0289()repeat task.wait();if c then local S,Q=workspace.CurrentCamera:WorldToViewportPoint(c.Position);if Q then H.Text=F.." ["..math.round(b[1]:DistanceFromCharacter(c.Position)).."m]";H.Position=Vector2.new(S.X,S.Y-20);H.Color=l;H.Visible=true;local b=H.TextBounds;M.Position=Vector2.new(H.Position.X-b.X/-2,H.Position.Y-2);M.Size=Vector2.new(b.X+8,b.Y+4);M.Visible=true;else H.Visible=false;M.Visible=false;end;end;until not Z or Z.Parent ~= game.Workspace or not c.Parent or c.Parent ~= Z or not c:IsDescendantOf(game.Workspace) or not Settings["ESP Fruit"];H:Remove();M:Remove();if c:FindFirstChild("Ignored")then c.Ignored:Destroy();end;end
 rawset(_G, "RecoveredFunction_0289", RecoveredFunction_0289)
 end
 
