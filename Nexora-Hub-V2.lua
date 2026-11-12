@@ -165,7 +165,7 @@ do
 				end
 			end
 			option(70, "Classic", "UI original: abas no topo e visual azul-marinho.", BLUE, pvClassic, "Classic", .15)
-			option(176, "Banana", "Nova UI em vidro: blur, busca e abas na lateral, seções em card.", Color3.fromRGB(59, 130, 246), pvBanana, "Banana", .27)
+			option(176, "Banana", "Estilo Banana Cat em azul: busca e abas na lateral, cards e checkbox.", Color3.fromRGB(59, 130, 246), pvBanana, "Banana", .27)
 			option(282, "Maru", "UI escura estilo Maru: perfil, busca e abas na lateral, linhas com descrição.", Color3.fromRGB(98, 176, 238), pvMaru, "Maru", .39)
 			-- entrada geral
 			TS:Create(card, TweenInfo.new(.22, Enum.EasingStyle.Quad), {GroupTransparency = 0}):Play()
@@ -3216,7 +3216,7 @@ return Nexora
 end)()
 elseif getgenv().NexoraUIChoice == "Banana" then
 A = (function()
--- NexoraUI.lua | Biblioteca de interface (layout Zaque Hub Premium, marca Nexora Hub)
+-- NexoraUI.lua | Biblioteca de interface (estilo Banana Cat em azul, marca Nexora Hub)
 -- API compatível com a source Nexora Hub:
 -- CreateMain, CreatePage, CreateSection, CreateToggle, CreateButton,
 -- CreateDropdown, CreateSlider, CreateLabel, CreateBox, CreateNoti, CreateBind.
@@ -3250,34 +3250,23 @@ local oldFloat = parentGui:FindFirstChild("NexoraFloat")
 if oldFloat then oldFloat:Destroy() end
 
 local C = {
-    bg = Color3.fromRGB(17, 17, 20),
-    panel = Color3.fromRGB(24, 24, 28),
-    panel2 = Color3.fromRGB(30, 30, 35),
-    element = Color3.fromRGB(32, 32, 37),
-    hover = Color3.fromRGB(42, 42, 48),
-    press = (BANANA and Color3.fromRGB(20, 40, 80) or Color3.fromRGB(70, 52, 20)),
-    stroke = Color3.fromRGB(52, 52, 60),
-    blue = (BANANA and Color3.fromRGB(59, 130, 246) or Color3.fromRGB(245, 166, 35)),   -- cor de destaque (azul); nome mantido para nao quebrar o resto
-    blue2 = (BANANA and Color3.fromRGB(96, 165, 250) or Color3.fromRGB(255, 190, 70)),
-    white = Color3.fromRGB(240, 240, 242),
-    muted = Color3.fromRGB(150, 150, 160),
-    off = Color3.fromRGB(62, 62, 70),
-    tabOn = Color3.fromRGB(30, 30, 35),
-    tabOff = Color3.fromRGB(24, 24, 28),
+    bg = Color3.fromRGB(11, 13, 19),
+    panel = Color3.fromRGB(15, 17, 24),
+    panel2 = Color3.fromRGB(22, 25, 34),
+    element = Color3.fromRGB(27, 31, 42),
+    hover = Color3.fromRGB(36, 43, 60),
+    press = Color3.fromRGB(20, 40, 80),
+    stroke = Color3.fromRGB(52, 62, 84),
+    blue = Color3.fromRGB(59, 130, 246),        -- cor de destaque (azul Nexora)
+    blue2 = Color3.fromRGB(96, 165, 250),
+    blueDark = Color3.fromRGB(30, 80, 200),
+    white = Color3.fromRGB(244, 247, 253),
+    muted = Color3.fromRGB(145, 156, 178),
+    muted2 = Color3.fromRGB(206, 214, 229),
+    off = Color3.fromRGB(48, 56, 76),
+    tabOn = Color3.fromRGB(26, 42, 78),
+    tabOff = Color3.fromRGB(15, 17, 24),
 }
-if BANANA then
-    C.bg = Color3.fromRGB(10, 15, 28)
-    C.panel = Color3.fromRGB(16, 24, 42)
-    C.panel2 = Color3.fromRGB(22, 34, 60)
-    C.element = Color3.fromRGB(20, 30, 54)
-    C.hover = Color3.fromRGB(32, 50, 88)
-    C.stroke = Color3.fromRGB(60, 90, 150)
-    C.white = Color3.fromRGB(244, 248, 255)
-    C.muted = Color3.fromRGB(140, 160, 195)
-    C.off = Color3.fromRGB(44, 60, 96)
-    C.tabOn = Color3.fromRGB(26, 42, 78)
-    C.tabOff = Color3.fromRGB(16, 24, 42)
-end
 
 local function make(class, props, parent)
     local o = Instance.new(class)
@@ -3439,6 +3428,7 @@ local function sectionIcon(name)
     return "✦"
 end
 
+local MainRef
 function Nexora.CreateMain(config)
     config = config or {}
     local TITLE = tostring(config.Title or CONFIG.Title)
@@ -3449,61 +3439,38 @@ function Nexora.CreateMain(config)
 
     local gui = make("ScreenGui", {Name = "NexoraUI", ResetOnSpawn = false, IgnoreGuiInset = true, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
 
-    local W, H = (BANANA and 720 or 860), (BANANA and 500 or 540)
-    local HEADER_H, SIDEBAR_W = 48, 210
+    -- Layout no estilo Banana Cat: titulo no topo, lateral com busca + abas em texto, painel de conteudo com titulo e lupa.
+    local W, H = 720, 410
+    local HEADER_H, SIDEBAR_W, PAD, GAP = 36, 203, 10, 6
 
     local shell = make("Frame", {
         Name = "Window", AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5),
-        Size = UDim2.fromOffset(W, H), BackgroundColor3 = C.bg, BorderSizePixel = 0,
+        Size = UDim2.fromOffset(W, H), BackgroundColor3 = C.bg, BackgroundTransparency = 0.3, BorderSizePixel = 0,
     }, gui)
-    corner(shell, 14)
-    local shellStroke = stroke(shell, Color3.new(1, 1, 1), 0, 2.5)
-    local shellGrad = make("UIGradient", {
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, C.blue2), ColorSequenceKeypoint.new(.5, (BANANA and Color3.fromRGB(20, 50, 110) or Color3.fromRGB(130, 85, 10))),
-            ColorSequenceKeypoint.new(1, C.blue2),
-        }),
-        Rotation = 0,
-    }, shellStroke)
-    pcall(function()
-        TweenService:Create(shellGrad, TweenInfo.new(3.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Rotation = 360}):Play()
-    end)
-    gradient(shell, Color3.fromRGB(26, 26, 30), Color3.fromRGB(15, 15, 18), 35)
-    if BANANA then
-        shell.BackgroundTransparency = 0.22
-        shellStroke.Thickness = 1.6
-        gradient(shell, Color3.fromRGB(18, 28, 52), Color3.fromRGB(7, 11, 22), 35)
-        -- brilho de vidro no topo
-        local sheen = make("Frame", {BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.94, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0.35, 0), ZIndex = 0}, shell)
-        corner(sheen, 14)
-        make("UIGradient", {Rotation = 90, Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1)})}, sheen)
-        -- blur do mundo atras da UI (aparece quando a janela esta aberta)
-        task.spawn(function()
-            local Lighting = game:GetService("Lighting")
-            local blur = Lighting:FindFirstChild("NexoraBlur") or Instance.new("BlurEffect")
-            blur.Name = "NexoraBlur"; blur.Size = 0; blur.Parent = Lighting
-            local last
-            while gui.Parent do
-                local open = gui.Enabled and shell.Visible
-                if open ~= last then
-                    last = open
-                    pcall(function() TweenService:Create(blur, TweenInfo.new(.35, Enum.EasingStyle.Quad), {Size = open and 16 or 0}):Play() end)
-                end
-                task.wait(.15)
-            end
-            pcall(function() blur:Destroy() end)
-        end)
-    end
+    corner(shell, 12)
+    stroke(shell, Color3.new(1, 1, 1), 0.85, 1)
     local scale = make("UIScale", {Scale = 1}, shell)
 
-    local glow = make("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 10, 1, 10), Position = UDim2.new(0, -5, 0, -5), ZIndex = 0}, shell)
-    corner(glow, 27)
-    stroke(glow, C.blue2, BANANA and 0.82 or 0.72, 3)
+    -- desfoque leve do mundo atras da UI (so enquanto a janela esta aberta)
+    task.spawn(function()
+        local Lighting = game:GetService("Lighting")
+        local blur = Lighting:FindFirstChild("NexoraBlur") or Instance.new("BlurEffect")
+        blur.Name = "NexoraBlur"; blur.Size = 0; blur.Parent = Lighting
+        local last
+        while gui.Parent do
+            local open = gui.Enabled and shell.Visible
+            if open ~= last then
+                last = open
+                pcall(function() TweenService:Create(blur, TweenInfo.new(.35, Enum.EasingStyle.Quad), {Size = open and 10 or 0}):Play() end)
+            end
+            task.wait(.15)
+        end
+        pcall(function() blur:Destroy() end)
+    end)
 
-    local userScale = 1   -- tamanho escolhido na aba "Resize UI"
     -- Resize: a escala (texto/abas) e FIXA e encaixada na tela. Largura e altura da janela mudam pela aba
-    -- "Resize UI" (sliders Width/Height), como o redimensionamento antigo, sem mexer no tamanho das abas.
-    local FIT_MARGIN, HEIGHT_FILL = 0.656, 0.88
+    -- "Resize UI" (sliders Width/Height), sem mexer no tamanho das abas.
+    local FIT_MARGIN, HEIGHT_FILL = 0.54, 0.68
     local MIN_W, MIN_H = 480, 300
     local userW, userH = 1, 1
     local function fitScale()
@@ -3532,30 +3499,7 @@ function Nexora.CreateMain(config)
         workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function() scale.Scale = fitScale() end)
     end
 
-    -- ============================ CABEÇALHO ============================
-    local top = make("Frame", {Name = "Header", Size = UDim2.new(1, 0, 0, HEADER_H), BackgroundColor3 = Color3.fromRGB(22, 22, 26), BorderSizePixel = 0}, shell)
-    corner(top, 14)
-    gradient(top, Color3.fromRGB(32, 32, 37), Color3.fromRGB(22, 22, 26), 0)
-    if BANANA then
-        top.BackgroundTransparency = 0.45
-        gradient(top, Color3.fromRGB(34, 54, 98), Color3.fromRGB(14, 22, 42), 0)
-        make("Frame", {BackgroundColor3 = C.blue2, BackgroundTransparency = 0.7, BorderSizePixel = 0, Position = UDim2.new(0, 14, 1, -1), Size = UDim2.new(1, -28, 0, 1)}, top)
-    end
-
-    -- (ícone removido do cabeçalho: fica só o nome)
-
-    local titleLbl = lbl(top, "", UDim2.new(1, -130, 0, 30), UDim2.new(0, 18, 0, 9), 19, C.white, Enum.Font.GothamBold)
-    titleLbl.RichText = true
-    if BANANA then
-        titleLbl.Size = UDim2.new(1, -240, 0, 30)
-        titleLbl.Position = UDim2.new(0, 120, 0, 9)
-        titleLbl.TextXAlignment = Enum.TextXAlignment.Center
-    end
-    titleLbl.Text = '<font color="' .. (BANANA and "#3B82F6" or "#F5A623") .. '">' .. TITLE .. '</font> <font color="#FFFFFF">-- Blox Fruits</font>'
-    titleLbl.TextTruncate = Enum.TextTruncate.AtEnd
-
-    -- Controles da janela: cápsula com dois botões redondos (minimizar = âmbar, fechar = vermelho),
-    -- ícones desenhados com barras (nítidos em qualquer tela), brilho no hover e "afundar" ao tocar.
+    -- lupa desenhada com frames (nitida em qualquer tela)
     local function magnifier(parent, x, y, s, color)
         local holder = make("Frame", {BackgroundTransparency = 1, Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(s, s), ZIndex = 5}, parent)
         local ring = make("Frame", {BackgroundTransparency = 1, Size = UDim2.fromOffset(s * 0.66, s * 0.66), ZIndex = 5}, holder)
@@ -3565,128 +3509,66 @@ function Nexora.CreateMain(config)
         corner(handle, 1)
         return holder
     end
-    local minimizeBtn, closeBtn
-    do
-        local controls = make("Frame", {
-            Name = "Controls", BackgroundColor3 = Color3.fromRGB(20, 20, 24), BorderSizePixel = 0,
-            Position = UDim2.new(1, -106, 0, 2), Size = UDim2.fromOffset(96, 44),
-        }, top)
-        corner(controls, 22)
-        stroke(controls, C.stroke, 0.1, 1)
-        local function controlButton(centerX, tint, symbolColor, kind)
-            local b = make("TextButton", {
-                Name = kind, AutoButtonColor = false, Text = "", BackgroundColor3 = tint, BackgroundTransparency = .86,
-                BorderSizePixel = 0, AnchorPoint = Vector2.new(.5, .5), Position = UDim2.new(0, centerX, .5, 0),
-                Size = UDim2.fromOffset(34, 34),
-            }, controls)
-            corner(b, 17)
-            local st = stroke(b, tint, .55, 1)
-            local sc = make("UIScale", {Scale = 1}, b)
-            local marks = {}
-            local function bar(rot)
-                local f = make("Frame", {
-                    AnchorPoint = Vector2.new(.5, .5), Position = UDim2.fromScale(.5, .5),
-                    Size = UDim2.fromOffset(kind == "min" and 12 or 15, 2.5), BackgroundColor3 = symbolColor,
-                    BorderSizePixel = 0, Rotation = rot,
-                }, b)
-                corner(f, 2)
-                marks[#marks + 1] = f
-            end
-            if kind == "min" then bar(0) else bar(45); bar(-45) end
-            local hoverBg = kind == "close" and .08 or .5
-            local hoverSym = kind == "close" and Color3.new(1, 1, 1) or (BANANA and Color3.fromRGB(170, 205, 255) or Color3.fromRGB(255, 222, 140))
-            local function go(bgT, strokeT, symCol, scl)
-                TweenService:Create(b, TweenInfo.new(.14), {BackgroundTransparency = bgT}):Play()
-                TweenService:Create(st, TweenInfo.new(.14), {Transparency = strokeT}):Play()
-                TweenService:Create(sc, TweenInfo.new(.14, Enum.EasingStyle.Quad), {Scale = scl}):Play()
-                for _, m in ipairs(marks) do
-                    TweenService:Create(m, TweenInfo.new(.14), {BackgroundColor3 = symCol}):Play()
-                end
-            end
-            b.MouseEnter:Connect(function() go(hoverBg, .15, hoverSym, 1.1) end)
-            b.MouseLeave:Connect(function() go(.86, .55, symbolColor, 1) end)
-            b.MouseButton1Down:Connect(function() go(hoverBg, .05, hoverSym, .88) end)
-            b.MouseButton1Up:Connect(function() go(hoverBg, .15, hoverSym, 1.1) end)
-            -- no toque não existe "sair do hover": volta ao normal logo depois do clique
-            b.MouseButton1Click:Connect(function()
-                task.delay(.2, function() go(.86, .55, symbolColor, 1) end)
-            end)
-            return b
-        end
-        minimizeBtn = controlButton(26, (BANANA and Color3.fromRGB(80, 150, 255) or Color3.fromRGB(255, 184, 64)), (BANANA and Color3.fromRGB(130, 180, 255) or Color3.fromRGB(255, 205, 100)), "min")
-        closeBtn = controlButton(70, Color3.fromRGB(255, 82, 92), Color3.fromRGB(255, 118, 128), "close")
-    end
 
-    -- ============================ BARRA LATERAL ============================
-    local sidebar = make("Frame", {Name = "Sidebar", BackgroundColor3 = Color3.fromRGB(22, 22, 26), BorderSizePixel = 0, Position = UDim2.new(0, 0, 0, HEADER_H), Size = UDim2.new(0, SIDEBAR_W, 1, -HEADER_H)}, shell)
-    if BANANA then
-        sidebar.BackgroundTransparency = 0.5
-        gradient(sidebar, Color3.fromRGB(22, 34, 62), Color3.fromRGB(10, 16, 30), 90)
-    end
-    corner(sidebar, 12)
-    make("Frame", {BackgroundColor3 = C.stroke, BorderSizePixel = 0, Position = UDim2.new(1, -1, 0, 0), Size = UDim2.new(0, 1, 1, 0)}, sidebar)
+    -- ============================ TOPO: logo + titulo ============================
+    local top = make("Frame", {Name = "Header", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, HEADER_H)}, shell)
+    local minimizeBtn = make("TextButton", {
+        Name = "Logo", Text = "", AutoButtonColor = false, BackgroundTransparency = 1,
+        Position = UDim2.fromOffset(12, 3), Size = UDim2.fromOffset(30, 30),
+    }, top)
+    nexoraLogo(minimizeBtn, 28)
+    local titleLbl = lbl(top, "", UDim2.new(1, -120, 1, 0), UDim2.fromOffset(60, 0), 17, C.white, Enum.Font.GothamBold)
+    titleLbl.RichText = true
+    titleLbl.TextXAlignment = Enum.TextXAlignment.Center
+    titleLbl.TextTruncate = Enum.TextTruncate.AtEnd
+    titleLbl.Text = '<font color="#3B82F6">' .. TITLE .. '</font> <font color="#FFFFFF">- Blox Fruits</font>'
 
-    local sideButtons = {}
-    local function sideButton(symbol, y)
-        local b = button(sidebar, symbol, UDim2.new(1, -22, 0, 58), UDim2.new(0, 11, 0, y))
-        b.TextSize = 23
-        b.TextColor3 = C.muted
-        b.BackgroundTransparency = 1
-        b:SetAttribute("NexoraKeepColor", true)
-        local s = b:FindFirstChildOfClass("UIStroke")
-        if s then s.Transparency = 1 end
-        sideButtons[#sideButtons + 1] = {btn = b, stroke = s}
-        return b
-    end
-    local function paintSide(entry, on)
-        entry.btn.BackgroundTransparency = on and 0 or 1
-        entry.btn.BackgroundColor3 = on and (BANANA and Color3.fromRGB(18, 36, 74) or Color3.fromRGB(60, 44, 14)) or C.panel
-        entry.btn.TextColor3 = on and C.white or C.muted
-        if entry.stroke then
-            entry.stroke.Color = on and C.blue or C.stroke
-            entry.stroke.Transparency = on and 0.1 or 1
-        end
-    end
-    local homeBtn = sideButton("⌂", 18)
-    local gearBtn = sideButton("⚙", 88)
-    local infoBtn = sideButton("ⓘ", 158)
+    -- ============================ LATERAL: busca + abas ============================
+    local sidebar = make("Frame", {
+        Name = "Sidebar", BackgroundColor3 = C.panel, BackgroundTransparency = 0.12, BorderSizePixel = 0,
+        Position = UDim2.fromOffset(PAD, HEADER_H), Size = UDim2.new(0, SIDEBAR_W, 1, -(HEADER_H + PAD)),
+    }, shell)
+    corner(sidebar, 8)
+    stroke(sidebar, Color3.new(1, 1, 1), 0.92, 1)
 
-    local crown = lbl(sidebar, "👑", UDim2.new(1, 0, 0, 35), UDim2.new(0, 0, 1, -92), 31, C.blue2, Enum.Font.GothamBold)
-    crown.TextXAlignment = Enum.TextXAlignment.Center
-    local brand = lbl(sidebar, TITLE, UDim2.new(1, 0, 0, 24), UDim2.new(0, 0, 1, -55), 12, C.white, Enum.Font.GothamBold)
-    brand.TextXAlignment = Enum.TextXAlignment.Center
-    for _, e in ipairs(sideButtons) do e.btn.Visible = false end
-    crown.Visible = false
-    brand.Visible = false
-    -- lista de abas na vertical, dentro da barra lateral
+    local search = make("TextBox", {
+        Name = "Search", Position = UDim2.fromOffset(6, 6), Size = UDim2.new(1, -12, 0, 32),
+        BackgroundColor3 = C.panel2, BackgroundTransparency = 0.2, BorderSizePixel = 0,
+        PlaceholderText = "Search section or Function", Text = "", TextColor3 = C.white, PlaceholderColor3 = C.muted,
+        Font = Enum.Font.GothamMedium, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, ClearTextOnFocus = false,
+        ClipsDescendants = true,
+    }, sidebar)
+    corner(search, 7)
+    stroke(search, C.stroke, 0.55, 1)
+    make("UIPadding", {PaddingLeft = UDim.new(0, 34), PaddingRight = UDim.new(0, 8)}, search)
+    magnifier(sidebar, 15, 15, 14, C.muted)
+
     local tabStrip = make("ScrollingFrame", {
         Name = "Tabs", BackgroundTransparency = 1, BorderSizePixel = 0,
-        Position = UDim2.new(0, 6, 0, 54), Size = UDim2.new(1, -12, 1, -62),
+        Position = UDim2.fromOffset(6, 46), Size = UDim2.new(1, -12, 1, -52),
         CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y,
         ScrollingDirection = Enum.ScrollingDirection.Y, ScrollBarThickness = 2, ScrollBarImageColor3 = C.blue,
-        ClipsDescendants = true,
     }, sidebar)
     make("UIListLayout", {Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder}, tabStrip)
 
-    -- ============================ ÁREA DE CONTEÚDO ============================
-    local content = make("Frame", {Name = "Content", BackgroundTransparency = 1, Position = UDim2.new(0, SIDEBAR_W + 12, 0, HEADER_H + 8), Size = UDim2.new(1, -(SIDEBAR_W + 24), 1, -(HEADER_H + 16))}, shell)
-    local search = make("TextBox", {
-        Name = "Search", Position = UDim2.new(0, 8, 0, 10), Size = UDim2.new(1, -16, 0, 34),
-        BackgroundColor3 = C.element, BorderSizePixel = 0, PlaceholderText = "Search section or Function", Text = "",
-        TextColor3 = C.white, PlaceholderColor3 = C.muted, Font = Enum.Font.GothamMedium, TextSize = 13,
-        TextXAlignment = Enum.TextXAlignment.Left, ClearTextOnFocus = false,
-    }, sidebar)
-    corner(search, 8)
-    stroke(search, C.stroke, 0.15)
-    make("UIPadding", {PaddingLeft = UDim.new(0, BANANA and 36 or 14), PaddingRight = UDim.new(0, 14)}, search)
-    if BANANA then magnifier(sidebar, 17, 19, 16, C.muted) end
-    local pageHolder = make("Frame", {Name = "Pages", BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, 38), Size = UDim2.new(1, 0, 1, -38)}, content)
-    local pageTitle = lbl(content, "", UDim2.new(1, -8, 0, 30), UDim2.new(0, 4, 0, 0), 20, C.white, Enum.Font.GothamBold)
-    if BANANA then
-        local sb = make("TextButton", {BackgroundTransparency = 1, Text = "", AutoButtonColor = false, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -6, 0, 0), Size = UDim2.fromOffset(32, 30), ZIndex = 5}, content)
-        magnifier(sb, 6, 5, 20, C.blue2)
-        sb.MouseButton1Click:Connect(function() pcall(function() search:CaptureFocus() end) end)
-    end
+    -- ============================ CONTEUDO: titulo da aba + lupa + lista ============================
+    local content = make("Frame", {
+        Name = "Content", BackgroundColor3 = C.panel, BackgroundTransparency = 0.12, BorderSizePixel = 0,
+        Position = UDim2.fromOffset(PAD + SIDEBAR_W + GAP, HEADER_H), Size = UDim2.new(1, -(PAD * 2 + SIDEBAR_W + GAP), 1, -(HEADER_H + PAD)),
+    }, shell)
+    corner(content, 8)
+    stroke(content, Color3.new(1, 1, 1), 0.92, 1)
+    local pageTitle = lbl(content, "", UDim2.new(1, -60, 0, 36), UDim2.fromOffset(14, 0), 18, C.white, Enum.Font.GothamBold)
+    pageTitle.TextTruncate = Enum.TextTruncate.AtEnd
+    local searchBtn = make("TextButton", {
+        Name = "SearchButton", Text = "", AutoButtonColor = false, BackgroundColor3 = C.element, BackgroundTransparency = 0.2, BorderSizePixel = 0,
+        AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 5), Size = UDim2.fromOffset(26, 26), ZIndex = 4,
+    }, content)
+    corner(searchBtn, 7)
+    stroke(searchBtn, C.stroke, 0.5, 1)
+    magnifier(searchBtn, 6, 5, 15, C.blue2)
+    searchBtn.MouseButton1Click:Connect(function() pcall(function() search:CaptureFocus() end) end)
+    local pageHolder = make("Frame", {Name = "Pages", BackgroundTransparency = 1, Position = UDim2.fromOffset(0, 38), Size = UDim2.new(1, 0, 1, -38), ClipsDescendants = true}, content)
 
     -- ============================ BOTÃO FLUTUANTE ============================
     -- ScreenGui separado: o botão fica fora da janela e não some junto com a UI (nem com o keybind Toggle GUI).
@@ -3864,7 +3746,6 @@ function Nexora.CreateMain(config)
     end
 
     minimizeBtn.MouseButton1Click:Connect(function() playClose() end)
-    closeBtn.MouseButton1Click:Connect(function() playClose() end)
 
     -- O mesmo botão flutuante fica sempre visível e alterna abrir/fechar.
     reopen.Activated:Connect(function()
@@ -3924,121 +3805,10 @@ function Nexora.CreateMain(config)
         end
     end)
 
-    -- ============================ REDIMENSIONAR A JANELA ============================
-    -- Uma única barra azul no centro da borda de baixo, sempre visível e por cima de todo o conteúdo da janela.
-    -- Só redimensiona (largura e altura) quando você segura e arrasta ESSA barra; as bordas da janela não fazem
-    -- nada. Toque duplo na barra volta ao tamanho original.
-    do
-        local MIN_W, MIN_H = 600, 360
-        local resizing, startIn, startW, startH, startPos = false, nil, nil, nil, nil
-        local lastTap = 0
-        local SIZE_FILE = "NexoraHub_UISize.json"
-        local function saveSize(w, h)
-            pcall(function()
-                if w and h then getgenv().NexoraUISize = {w = w, h = h} else getgenv().NexoraUISize = nil end
-                if writefile then
-                    writefile(SIZE_FILE, (w and h) and game:GetService("HttpService"):JSONEncode({w = math.floor(w), h = math.floor(h)}) or "")
-                end
-            end)
-        end
-        local function loadSize()
-            local saved
-            pcall(function()
-                if readfile and isfile and isfile(SIZE_FILE) then
-                    local raw = readfile(SIZE_FILE)
-                    if raw and raw ~= "" then saved = game:GetService("HttpService"):JSONDecode(raw) end
-                end
-            end)
-            if not (saved and saved.w and saved.h) then saved = getgenv().NexoraUISize end
-            return saved
-        end
-        local function limits()
-            local cam = workspace.CurrentCamera
-            local vp = cam and cam.ViewportSize or Vector2.new(1280, 720)
-            local sc = math.max(scale.Scale, 0.05)
-            return sc, math.max(MIN_W, (vp.X - 16) / sc), math.max(MIN_H, (vp.Y - 16) / sc)
-        end
-        -- Alça no canto inferior direito (formato de "L"), por cima de todo o conteúdo da janela.
-        local handle = make("Frame", {
-            Name = "ResizeHandle", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -4, 1, -4),
-            Size = UDim2.fromOffset(46, 46), BackgroundTransparency = 1, BorderSizePixel = 0, Active = true,
-            Visible = false, ZIndex = 500,
-        }, shell)
-        local bar = make("Frame", {Name = "Bar", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 501}, handle)
-        local barH = make("Frame", {
-            Name = "H", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -8, 1, -8), Size = UDim2.fromOffset(26, 6),
-            BackgroundColor3 = (BANANA and Color3.fromRGB(59, 130, 246) or Color3.fromRGB(245, 166, 35)), BackgroundTransparency = .15, BorderSizePixel = 0, ZIndex = 501,
-        }, bar)
-        corner(barH, 3)
-        local barV = make("Frame", {
-            Name = "V", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -8, 1, -8), Size = UDim2.fromOffset(6, 26),
-            BackgroundColor3 = (BANANA and Color3.fromRGB(59, 130, 246) or Color3.fromRGB(245, 166, 35)), BackgroundTransparency = .15, BorderSizePixel = 0, ZIndex = 501,
-        }, bar)
-        corner(barV, 3)
-        local function fade(value)
-            pcall(function()
-                TweenService:Create(barH, TweenInfo.new(.12), {BackgroundTransparency = value}):Play()
-                TweenService:Create(barV, TweenInfo.new(.12), {BackgroundTransparency = value}):Play()
-            end)
-        end
-        local function isPress(input)
-            return input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch
-        end
-        local function setSize(w, h, basePos, baseW, baseH)
-            local sc = limits()
-            shell.Size = UDim2.fromOffset(w, h)
-            -- a janela é ancorada no centro: desloca meia diferença para o canto superior esquerdo ficar parado
-            shell.Position = UDim2.new(basePos.X.Scale, basePos.X.Offset + (w - baseW) * sc / 2, basePos.Y.Scale, basePos.Y.Offset + (h - baseH) * sc / 2)
-        end
-        handle.InputBegan:Connect(function(input)
-            if true or animating or not isPress(input) then return end -- resize por arrasto desligado: use a aba Resize UI
-            if tick() - lastTap < 0.35 then
-                lastTap, resizing = 0, false
-                setSize(W, H, shell.Position, shell.Size.X.Offset, shell.Size.Y.Offset)
-                saveSize(nil)
-                return
-            end
-            lastTap = tick()
-            resizing, startIn = true, input.Position
-            startW, startH, startPos = shell.Size.X.Offset, shell.Size.Y.Offset, shell.Position
-            fade(0)
-        end)
-        UIS.InputChanged:Connect(function(input)
-            if not resizing then return end
-            if not (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                return
-            end
-            local sc, maxW, maxH = limits()
-            local d = input.Position - startIn
-            setSize(math.clamp(startW + d.X / sc, MIN_W, maxW), math.clamp(startH + d.Y / sc, MIN_H, maxH), startPos, startW, startH)
-        end)
-        UIS.InputEnded:Connect(function(input)
-            if resizing and isPress(input) then
-                resizing = false
-                fade(0.15)
-                saveSize(shell.Size.X.Offset, shell.Size.Y.Offset)
-            end
-        end)
-        -- Reaplica o tamanho salvo (arquivo NexoraHub_UISize.json) sempre que a UI abre.
-        pcall(function()
-            local saved = loadSize()
-            if false and saved and saved.w and saved.h then
-                local _, maxW, maxH = limits()
-                shell.Size = UDim2.fromOffset(math.clamp(saved.w, MIN_W, maxW), math.clamp(saved.h, MIN_H, maxH))
-            end
-        end)
-    end
-
     -- ============================ PÁGINAS ============================
     local Main = {}
+    MainRef = Main
     local pages, activePage = {}, nil
-    local function updateSide()
-        paintSide(sideButtons[1], activePage ~= nil and activePage == pages[1])
-        local isSettings = false
-        if activePage and string.find(string.lower(activePage.title), "setting", 1, true) then isSettings = true end
-        paintSide(sideButtons[2], isSettings)
-        paintSide(sideButtons[3], false)
-    end
     local function showPage(p)
         local changed = (activePage ~= p)
         activePage = p
@@ -4046,64 +3816,48 @@ function Nexora.CreateMain(config)
         for _, item in ipairs(pages) do
             local on = (item == p)
             item.frame.Visible = on
-            item.tab.TextColor3 = on and C.white or C.muted
-            if item.tabBar then item.tabBar.Visible = on end
+            item.tab.TextColor3 = on and C.white or C.muted2
+            item.tab.Font = on and Enum.Font.GothamBold or Enum.Font.GothamMedium
+            item.tab.BackgroundTransparency = on and 0.86 or 1
+            item.tabBar.Visible = on
         end
         if changed and p.frame then
-            p.frame.Position = UDim2.new(0, 18, 0, 0)
+            p.frame.Position = UDim2.new(0, 14, 0, 0)
             TweenService:Create(p.frame, TweenInfo.new(.28, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)}):Play()
         end
-        updateSide()
     end
-    homeBtn.MouseButton1Click:Connect(function()
-        if pages[1] then showPage(pages[1]) end
-        tabStrip.CanvasPosition = Vector2.new(0, 0)
-    end)
-    gearBtn.MouseButton1Click:Connect(function()
-        for _, p in ipairs(pages) do
-            if string.find(string.lower(p.title), "setting", 1, true) then showPage(p); return end
-        end
-    end)
-    infoBtn.MouseButton1Click:Connect(function()
-        pcall(function() Main.CreateNoti({Title = TITLE, Desc = CREDITS, ShowTime = 4}) end)
-    end)
 
     function Main.CreatePage(pageConfig)
         pageConfig = pageConfig or {}
         local pageName = pageConfig.Page_Name or pageConfig.Page_Title or "Page"
         local navText = tostring(pageConfig.Page_Title or pageName)
 
+        -- lista vertical de cards (uma coluna, como na referencia)
         local frame = make("ScrollingFrame", {
             Name = pageName, BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.fromScale(1, 1),
             CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y,
             ScrollingDirection = Enum.ScrollingDirection.Y, ScrollBarThickness = 3, ScrollBarImageColor3 = C.blue, Visible = false,
         }, pageHolder)
-        make("UIPadding", {PaddingRight = UDim.new(0, 8), PaddingBottom = UDim.new(0, 14)}, frame)
-        local holder = make("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y}, frame)
-        make("UIListLayout", {FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 14), SortOrder = Enum.SortOrder.LayoutOrder}, holder)
-        local columns = {}
-        for i = 1, 2 do
-            local col = make("Frame", {BackgroundTransparency = 1, Size = UDim2.new(i == 1 and 1 or 0, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = i}, holder)
-            make("UIListLayout", {Padding = UDim.new(0, 14), SortOrder = Enum.SortOrder.LayoutOrder}, col)
-            columns[i] = {frame = col, weight = (i == 2) and math.huge or 0, count = 0}
-        end
+        make("UIPadding", {PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10), PaddingTop = UDim.new(0, 2), PaddingBottom = UDim.new(0, 12)}, frame)
+        make("UIListLayout", {Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder}, frame)
 
-        -- Aba na barra lateral (lista vertical, barra laranja na ativa)
-        local tab = button(tabStrip, navText, UDim2.new(1, 0, 0, 36))
-        tab:SetAttribute("NexoraKeepColor", true)
-        tab.TextSize = 15
-        tab.TextColor3 = C.muted
-        tab.BackgroundTransparency = 1
-        tab.TextXAlignment = Enum.TextXAlignment.Left
-        tab.TextTruncate = Enum.TextTruncate.AtEnd
-        tab.LayoutOrder = #pages + 1
-        make("UIPadding", {PaddingLeft = UDim.new(0, 18)}, tab)
-        local tabStroke = tab:FindFirstChildOfClass("UIStroke")
-        if tabStroke then tabStroke.Transparency = 1 end
-        local tabBar = make("Frame", {BackgroundColor3 = C.blue, BorderSizePixel = 0, Position = UDim2.new(0, -12, .5, -9), Size = UDim2.fromOffset(4, 18), Visible = false}, tab)
+        -- aba da lateral: so texto, barra azul na aba ativa
+        local tab = make("TextButton", {
+            Name = pageName, AutoButtonColor = false, Text = navText, TextColor3 = C.muted2, TextSize = 14, Font = Enum.Font.GothamMedium,
+            BackgroundColor3 = C.blue, BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 32),
+            TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, LayoutOrder = #pages + 1,
+        }, tabStrip)
+        corner(tab, 6)
+        make("UIPadding", {PaddingLeft = UDim.new(0, 22), PaddingRight = UDim.new(0, 6)}, tab)
+        local tabBar = make("Frame", {
+            BackgroundColor3 = C.blue, BorderSizePixel = 0, AnchorPoint = Vector2.new(0, .5),
+            Position = UDim2.new(0, -14, .5, 0), Size = UDim2.fromOffset(3, 18), Visible = false,
+        }, tab)
         corner(tabBar, 2)
-        local p = {name = pageName, title = navText, frame = frame, tab = tab, tabStroke = tabStroke, tabBar = tabBar}
+        local p = {name = pageName, title = navText, frame = frame, tab = tab, tabBar = tabBar}
         pages[#pages + 1] = p
+        tab.MouseEnter:Connect(function() if activePage ~= p then tab.TextColor3 = C.white end end)
+        tab.MouseLeave:Connect(function() if activePage ~= p then tab.TextColor3 = C.muted2 end end)
         tab.MouseButton1Click:Connect(function() showPage(p) end)
         if #pages == 1 then showPage(p) end
 
@@ -4111,38 +3865,45 @@ function Nexora.CreateMain(config)
         local sectionOrder = 0
         function Page.CreateSection(sectionName)
             sectionName = tostring(sectionName or "Section")
-            -- Coluna com menos conteúdo estimado recebe a seção (equilibra as duas colunas).
-            local col = columns[1]
-            if columns[2].weight < columns[1].weight then col = columns[2] end
-            col.weight = col.weight + 90
             sectionOrder = sectionOrder + 1
 
-            local wrap = make("Frame", {Name = sectionName, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = sectionOrder}, col.frame)
-            make("UIListLayout", {Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder}, wrap)
-            if BANANA then
-                wrap.BackgroundTransparency = 0.42
-                wrap.BackgroundColor3 = Color3.fromRGB(14, 22, 42)
-                corner(wrap, 12)
-                stroke(wrap, C.stroke, 0.55, 1)
-                gradient(wrap, Color3.fromRGB(26, 40, 72), Color3.fromRGB(12, 18, 34), 90)
-                make("UIPadding", {PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 4), PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8)}, wrap)
-            end
-            local heading = make("Frame", {BackgroundColor3 = C.panel2, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 36), LayoutOrder = 1}, wrap)
-            corner(heading, 8)
-            local ttl = lbl(heading, sectionName, UDim2.new(1, -20, 1, -2), UDim2.new(0, 10, 0, 0), 16, C.white, Enum.Font.GothamBold)
+            -- card da secao: titulo centralizado + linha azul em degrade, linhas escuras embaixo
+            local card = make("Frame", {
+                Name = sectionName, BackgroundColor3 = C.bg, BackgroundTransparency = 0.25, BorderSizePixel = 0,
+                Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = sectionOrder,
+            }, frame)
+            corner(card, 8)
+            stroke(card, Color3.new(1, 1, 1), 0.92, 1)
+            make("UIListLayout", {Padding = UDim.new(0, 7), SortOrder = Enum.SortOrder.LayoutOrder}, card)
+            make("UIPadding", {PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, 10), PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8)}, card)
+            local heading = make("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 30), LayoutOrder = 1}, card)
+            local ttl = lbl(heading, sectionName, UDim2.new(1, 0, 1, -4), UDim2.new(), 15, C.white, Enum.Font.GothamBold)
             ttl.TextXAlignment = Enum.TextXAlignment.Center
             ttl.TextTruncate = Enum.TextTruncate.AtEnd
-            make("Frame", {BackgroundColor3 = C.blue, BorderSizePixel = 0, Position = UDim2.new(0, 0, 1, -2), Size = UDim2.new(1, 0, 0, 2)}, heading)
-            local body = make("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 2}, wrap)
-            make("UIListLayout", {Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder}, body)
-            make("UIPadding", {PaddingBottom = UDim.new(0, 10)}, body)
+            local line = make("Frame", {BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, AnchorPoint = Vector2.new(.5, 1), Position = UDim2.new(.5, 0, 1, 0), Size = UDim2.new(1, -4, 0, 2)}, heading)
+            make("UIGradient", {
+                Color = ColorSequence.new({ColorSequenceKeypoint.new(0, C.blueDark), ColorSequenceKeypoint.new(.5, C.blue2), ColorSequenceKeypoint.new(1, C.blueDark)}),
+                Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(.18, 0), NumberSequenceKeypoint.new(.82, 0), NumberSequenceKeypoint.new(1, 1)}),
+            }, line)
 
-            local order = 0
+            local order = 1
             local function nextOrder() order = order + 1; return order end
-            local function weigh(h) col.weight = col.weight + h + 10 end
+            local function newRow(height, class)
+                local r = make(class or "Frame", {BackgroundColor3 = C.element, BackgroundTransparency = 0.15, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, height), LayoutOrder = nextOrder()}, card)
+                if class == "TextButton" then r.Text = ""; r.AutoButtonColor = false end
+                corner(r, 7)
+                return r
+            end
+            local function rowName(r, text, reserve)
+                local n = lbl(r, text, UDim2.new(1, -(reserve or 56), 1, 0), UDim2.fromOffset(12, 0), 14, C.white, Enum.Font.GothamBold)
+                n.TextWrapped = true
+                n.TextTruncate = Enum.TextTruncate.AtEnd
+                return n
+            end
 
             local Section = {}
 
+            -- checkbox quadrada a direita (contorno azul, preenche ao ligar)
             function Section.CreateToggle(cfg, callback)
                 cfg = cfg or {}; local t = cfg.Title or "Toggle"
                 -- Usa o arquivo de settings por jogador já existente.
@@ -4150,22 +3911,27 @@ function Nexora.CreateMain(config)
                 local savedToggle = Settings[t]
                 local val
                 if type(savedToggle) == "boolean" then val = savedToggle else val = (cfg.Default == true) end
-                local row = button(body, "", UDim2.new(1, 0, 0, 46)); row.LayoutOrder = nextOrder(); weigh(46)
-                local name = lbl(row, t, UDim2.new(1, -70, 1, 0), UDim2.new(0, 17, 0, 0), 14, C.white, BANANA and Enum.Font.GothamBold or nil)
-                name.TextWrapped = true
-                local box = make("Frame", {BackgroundColor3 = val and C.blue or C.element, BorderSizePixel = 0, AnchorPoint = Vector2.new(1, .5), Position = UDim2.new(1, -14, .5, 0), Size = UDim2.fromOffset(28, 28)}, row)
-                corner(box, 8)
+                local row = newRow(36, "TextButton")
+                rowName(row, t, 56)
+                local box = make("Frame", {
+                    BackgroundColor3 = C.blue, BackgroundTransparency = 1, BorderSizePixel = 0,
+                    AnchorPoint = Vector2.new(1, .5), Position = UDim2.new(1, -12, .5, 0), Size = UDim2.fromOffset(24, 24),
+                }, row)
+                corner(box, 6)
                 stroke(box, C.blue, 0, 2)
-                if BANANA then gradient(box, Color3.new(1, 1, 1), Color3.fromRGB(190, 215, 255), 90) end
+                local checkMark = lbl(box, "✓", UDim2.fromScale(1, 1), UDim2.new(), 16, Color3.new(1, 1, 1), Enum.Font.GothamBold)
+                checkMark.TextXAlignment = Enum.TextXAlignment.Center
                 local function paint(animate)
-                    local col2 = val and C.blue or C.element
+                    checkMark.Visible = val
                     if animate then
-                        TweenService:Create(box, TweenInfo.new(.15), {BackgroundColor3 = col2}):Play()
+                        TweenService:Create(box, TweenInfo.new(.15), {BackgroundTransparency = val and 0 or 1}):Play()
                     else
-                        box.BackgroundColor3 = col2
+                        box.BackgroundTransparency = val and 0 or 1
                     end
                 end
                 paint(false)
+                row.MouseEnter:Connect(function() TweenService:Create(row, TweenInfo.new(.12), {BackgroundColor3 = C.hover}):Play() end)
+                row.MouseLeave:Connect(function() TweenService:Create(row, TweenInfo.new(.12), {BackgroundColor3 = C.element}):Play() end)
                 local opt = addOption(t, "toggle", val, pageName, sectionName, callback)
                 local function applyToggle(v, fire)
                     val = not not v; opt.value = val; paint(true)
@@ -4180,11 +3946,23 @@ function Nexora.CreateMain(config)
                 return opt
             end
 
+            -- linha com nome a esquerda e botao "Click" azul a direita
             function Section.CreateButton(cfg, callback)
                 cfg = cfg or {}; local t = cfg.Title or "Button"
-                local b = button(body, t, UDim2.new(1, 0, 0, 52)); b.LayoutOrder = nextOrder(); weigh(52)
-                b.TextSize = 14
-                b.TextWrapped = true
+                local row = newRow(44)
+                rowName(row, t, 124)
+                local b = make("TextButton", {
+                    Name = "Click", AutoButtonColor = false, Text = "Click", TextColor3 = Color3.new(1, 1, 1), TextSize = 14, Font = Enum.Font.GothamBold,
+                    BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, AnchorPoint = Vector2.new(1, .5),
+                    Position = UDim2.new(1, -10, .5, 0), Size = UDim2.fromOffset(96, 30),
+                }, row)
+                corner(b, 8)
+                gradient(b, C.blue2, C.blueDark, 90)
+                stroke(b, C.blue2, 0.45, 1)
+                local bs = make("UIScale", {Scale = 1}, b)
+                b.MouseButton1Down:Connect(function() TweenService:Create(bs, TweenInfo.new(.08), {Scale = .94}):Play() end)
+                b.MouseButton1Up:Connect(function() TweenService:Create(bs, TweenInfo.new(.14), {Scale = 1}):Play() end)
+                b.MouseLeave:Connect(function() TweenService:Create(bs, TweenInfo.new(.14), {Scale = 1}):Play() end)
                 addOption(t, "button", false, pageName, sectionName, callback)
                 b.MouseButton1Click:Connect(function() if callback then task.spawn(callback) end end)
                 return b
@@ -4192,9 +3970,8 @@ function Nexora.CreateMain(config)
 
             function Section.CreateLabel(cfg)
                 local t = type(cfg) == "table" and (cfg.Title or cfg.Text or "") or tostring(cfg or "")
-                weigh(30)
-                local holderL = make("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = nextOrder()}, body)
-                make("UIPadding", {PaddingLeft = UDim.new(0, 4), PaddingTop = UDim.new(0, 3), PaddingBottom = UDim.new(0, 3)}, holderL)
+                local holderL = make("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = nextOrder()}, card)
+                make("UIPadding", {PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6), PaddingTop = UDim.new(0, 2), PaddingBottom = UDim.new(0, 2)}, holderL)
                 local txt = make("TextLabel", {
                     BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y,
                     Text = tostring(t), TextColor3 = C.muted, TextSize = 13, Font = Enum.Font.GothamMedium,
@@ -4211,29 +3988,24 @@ function Nexora.CreateMain(config)
                 local min = cfg.Min or cfg.MinValue or 0
                 local max = cfg.Max or cfg.MaxValue or 100
                 local val = math.clamp(cfg.Default or cfg.Value or min, min, max)
-                weigh(66)
-                local r = make("Frame", {BackgroundColor3 = C.element, BackgroundTransparency = BANANA and 0 or 1, Size = UDim2.new(1, 0, 0, 66), LayoutOrder = nextOrder()}, body)
-                if BANANA then corner(r, 8) end
-                local ttl2 = lbl(r, t, BANANA and UDim2.new(1, -130, 0, 30) or UDim2.new(.75, 0, 0, 24), BANANA and UDim2.new(0, 12, 0, 2) or UDim2.new(0, 2, 0, 0), 14, C.white, BANANA and Enum.Font.GothamBold or nil)
+                local r = newRow(56)
+                local ttl2 = lbl(r, t, UDim2.new(1, -110, 0, 26), UDim2.fromOffset(12, 3), 14, C.white, Enum.Font.GothamBold)
                 ttl2.TextTruncate = Enum.TextTruncate.AtEnd
-                local num
-                if BANANA then
-                    local numBox = make("Frame", {BackgroundColor3 = C.bg, BorderSizePixel = 0, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 5), Size = UDim2.fromOffset(100, 26)}, r)
-                    corner(numBox, 6)
-                    stroke(numBox, C.stroke, 0.15)
-                    num = lbl(numBox, tostring(val), UDim2.fromScale(1, 1), UDim2.new(), 14, C.white, Enum.Font.GothamBold)
-                else
-                    num = lbl(r, tostring(val), UDim2.new(.25, 0, 0, 24), UDim2.new(.75, -2, 0, 0), 14, C.blue2)
-                end
-                num.TextXAlignment = BANANA and Enum.TextXAlignment.Center or Enum.TextXAlignment.Right
+                local numBox = make("Frame", {BackgroundColor3 = C.bg, BackgroundTransparency = 0.2, BorderSizePixel = 0, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 5), Size = UDim2.fromOffset(76, 24)}, r)
+                corner(numBox, 6)
+                stroke(numBox, C.stroke, 0.3)
+                local num = lbl(numBox, tostring(val), UDim2.fromScale(1, 1), UDim2.new(), 13, C.white, Enum.Font.GothamBold)
+                num.TextXAlignment = Enum.TextXAlignment.Center
                 local ratio0 = (val - min) / math.max(1, max - min)
-                local bar = make("Frame", {BackgroundColor3 = C.off, BorderSizePixel = 0, Position = BANANA and UDim2.new(0, 12, 0, 44) or UDim2.new(0, 2, 0, 38), Size = BANANA and UDim2.new(1, -24, 0, 6) or UDim2.new(1, -4, 0, 7)}, r)
+                local bar = make("Frame", {BackgroundColor3 = C.off, BorderSizePixel = 0, Position = UDim2.new(0, 12, 0, 40), Size = UDim2.new(1, -24, 0, 6)}, r)
                 corner(bar, 6)
-                local fill = make("Frame", {BackgroundColor3 = C.blue, BorderSizePixel = 0, Size = UDim2.new(ratio0, 0, 1, 0)}, bar)
+                local fill = make("Frame", {BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Size = UDim2.new(ratio0, 0, 1, 0)}, bar)
                 corner(fill, 6)
+                gradient(fill, C.blueDark, C.blue2, 0)
                 local knob = make("Frame", {BackgroundColor3 = C.white, BorderSizePixel = 0, AnchorPoint = Vector2.new(.5, .5), Position = UDim2.new(ratio0, 0, .5, 0), Size = UDim2.fromOffset(15, 15)}, bar)
                 corner(knob, 20)
-                local hit = make("TextButton", {BackgroundTransparency = 1, Text = "", Size = UDim2.new(1, 0, 0, 28), Position = UDim2.new(0, 0, 0, 29)}, r)
+                stroke(knob, C.blue, 0, 2)
+                local hit = make("TextButton", {BackgroundTransparency = 1, Text = "", Size = UDim2.new(1, 0, 0, 26), Position = UDim2.new(0, 0, 0, 30)}, r)
                 local opt
                 local sliding = false
                 local function set(x)
@@ -4299,14 +4071,17 @@ function Nexora.CreateMain(config)
                     local shown = table.concat(chosen, ", ")
                     return #shown > 32 and (string.sub(shown, 1, 29) .. "...") or shown
                 end
-                weigh(82)
-                local holderD = make("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 82), LayoutOrder = nextOrder()}, body)
-                local dl = lbl(holderD, t, UDim2.new(1, 0, 0, 24), UDim2.new(0, 3, 0, 0), 14, C.white, Enum.Font.GothamBold)
-                dl.TextTruncate = Enum.TextTruncate.AtEnd
-                local b = button(holderD, "", UDim2.new(1, 0, 0, 48), UDim2.new(0, 0, 0, 29))
-                local selLabel = lbl(b, displayValue(), UDim2.new(1, -52, 1, 0), UDim2.new(0, 16, 0, 0), 14, C.white)
+                local holderD = newRow(44)
+                local dl = rowName(holderD, t, 172)
+                local b = make("TextButton", {
+                    AutoButtonColor = false, Text = "", BackgroundColor3 = C.panel2, BackgroundTransparency = 0.1, BorderSizePixel = 0,
+                    AnchorPoint = Vector2.new(1, .5), Position = UDim2.new(1, -10, .5, 0), Size = UDim2.fromOffset(152, 30),
+                }, holderD)
+                corner(b, 7)
+                stroke(b, C.blue, 0.45, 1)
+                local selLabel = lbl(b, displayValue(), UDim2.new(1, -26, 1, 0), UDim2.fromOffset(9, 0), 12, C.white, Enum.Font.GothamMedium)
                 selLabel.TextTruncate = Enum.TextTruncate.AtEnd
-                local arrow = lbl(b, "⌄", UDim2.new(0, 28, 1, 0), UDim2.new(1, -38, 0, -4), 22, C.muted)
+                local arrow = lbl(b, "▾", UDim2.new(0, 18, 1, 0), UDim2.new(1, -22, 0, 0), 13, C.blue2, Enum.Font.GothamBold)
                 arrow.TextXAlignment = Enum.TextXAlignment.Center
                 local opt = addOption(t, "dropdown", selected, pageName, sectionName, callback)
                 local function refreshButton()
@@ -4429,18 +4204,17 @@ function Nexora.CreateMain(config)
             function Section.CreateBox(cfg, callback)
                 cfg = cfg or {}
                 local t = cfg.Title or "Text input"
-                weigh(82)
-                local r = make("Frame", {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 82), LayoutOrder = nextOrder()}, body)
-                local bl = lbl(r, t, UDim2.new(1, 0, 0, 24), UDim2.new(0, 3, 0, 0), 14, C.white, Enum.Font.GothamBold)
-                bl.TextTruncate = Enum.TextTruncate.AtEnd
+                local r = newRow(44)
+                rowName(r, t, 196)
                 local input = make("TextBox", {
-                    Position = UDim2.new(0, 0, 0, 29), Size = UDim2.new(1, 0, 0, 48), BackgroundColor3 = C.element, BorderSizePixel = 0,
+                    AnchorPoint = Vector2.new(1, .5), Position = UDim2.new(1, -10, .5, 0), Size = UDim2.fromOffset(176, 30),
+                    BackgroundColor3 = C.panel2, BackgroundTransparency = 0.1, BorderSizePixel = 0,
                     Text = tostring(cfg.Default or ""), PlaceholderText = cfg.Placeholder or "Digite aqui...", TextColor3 = C.white,
-                    PlaceholderColor3 = C.muted, Font = Enum.Font.GothamMedium, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left,
-                    ClearTextOnFocus = false,
+                    PlaceholderColor3 = C.muted, Font = Enum.Font.GothamMedium, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left,
+                    ClearTextOnFocus = false, ClipsDescendants = true,
                 }, r)
-                corner(input, 12); stroke(input, C.stroke, 0.15)
-                make("UIPadding", {PaddingLeft = UDim.new(0, 16), PaddingRight = UDim.new(0, 16)}, input)
+                corner(input, 7); stroke(input, C.blue, 0.45, 1)
+                make("UIPadding", {PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10)}, input)
                 local opt = addOption(t, "box", input.Text, pageName, sectionName, callback)
                 local function setText(v, fire)
                     input.Text = tostring(v == nil and "" or v); opt.value = input.Text
@@ -4564,7 +4338,7 @@ function Nexora.CreateMain(config)
 end
 
 function Nexora.CreateNoti(config, duration)
-    return Main.CreateNoti(config, duration)
+    return (MainRef or Main).CreateNoti(config, duration)
 end
 
 function Nexora.RestoreSavedToggles()
