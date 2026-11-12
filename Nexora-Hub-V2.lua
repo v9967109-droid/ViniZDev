@@ -28,13 +28,6 @@ do
 				if r then mk("UICorner", {CornerRadius = UDim.new(0, r)}, f) end
 				return f
 			end
-			-- desfoque do jogo atras (opcional)
-			local blur
-			pcall(function()
-				blur = Instance.new("BlurEffect"); blur.Name = "NexoraUIChoiceBlur"; blur.Size = 0
-				blur.Parent = game:GetService("Lighting")
-				TS:Create(blur, TweenInfo.new(.3), {Size = 14}):Play()
-			end)
 			local dim = mk("Frame", {Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 1, BorderSizePixel = 0}, gui)
 			TS:Create(dim, TweenInfo.new(.3), {BackgroundTransparency = .45}):Play()
 			local CW, CH = 340, 402
@@ -67,10 +60,8 @@ do
 				TS:Create(sc, TweenInfo.new(.22, Enum.EasingStyle.Quad), {Scale = fit * .94}):Play()
 				TS:Create(dim, TweenInfo.new(.22), {BackgroundTransparency = 1}):Play()
 				TS:Create(glowS, TweenInfo.new(.2), {Transparency = 1}):Play()
-				if blur then TS:Create(blur, TweenInfo.new(.25), {Size = 0}):Play() end
 				task.delay(.3, function()
 					gui:Destroy()
-					if blur then blur:Destroy() end
 				end)
 			end
 			local function option(y, name, tag, accent, preview, value, delay)
@@ -179,7 +170,6 @@ do
 			pcall(function()
 				local h = (gethui and gethui()) or game:GetService("CoreGui")
 				local g = h:FindFirstChild("NexoraUIChoice"); if g then g:Destroy() end
-				local b = game:GetService("Lighting"):FindFirstChild("NexoraUIChoiceBlur"); if b then b:Destroy() end
 			end)
 			env.NexoraUIChoice = "Classic"
 		end
@@ -3440,7 +3430,7 @@ function Nexora.CreateMain(config)
     local gui = make("ScreenGui", {Name = "NexoraUI", ResetOnSpawn = false, IgnoreGuiInset = true, ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, parentGui)
 
     -- Layout no estilo Banana Cat: titulo no topo, lateral com busca + abas em texto, painel de conteudo com titulo e lupa.
-    local W, H = 720, 410
+    local W, H = 720, 452
     local HEADER_H, SIDEBAR_W, PAD, GAP = 36, 203, 10, 6
 
     local shell = make("Frame", {
@@ -3451,26 +3441,10 @@ function Nexora.CreateMain(config)
     stroke(shell, Color3.new(1, 1, 1), 0.85, 1)
     local scale = make("UIScale", {Scale = 1}, shell)
 
-    -- desfoque leve do mundo atras da UI (so enquanto a janela esta aberta)
-    task.spawn(function()
-        local Lighting = game:GetService("Lighting")
-        local blur = Lighting:FindFirstChild("NexoraBlur") or Instance.new("BlurEffect")
-        blur.Name = "NexoraBlur"; blur.Size = 0; blur.Parent = Lighting
-        local last
-        while gui.Parent do
-            local open = gui.Enabled and shell.Visible
-            if open ~= last then
-                last = open
-                pcall(function() TweenService:Create(blur, TweenInfo.new(.35, Enum.EasingStyle.Quad), {Size = open and 10 or 0}):Play() end)
-            end
-            task.wait(.15)
-        end
-        pcall(function() blur:Destroy() end)
-    end)
 
     -- Resize: a escala (texto/abas) e FIXA e encaixada na tela. Largura e altura da janela mudam pela aba
     -- "Resize UI" (sliders Width/Height), sem mexer no tamanho das abas.
-    local FIT_MARGIN, HEIGHT_FILL = 0.54, 0.68
+    local FIT_MARGIN, HEIGHT_FILL = 0.656, 0.88
     local MIN_W, MIN_H = 480, 300
     local userW, userH = 1, 1
     local function fitScale()
@@ -4623,21 +4597,6 @@ function Nexora.CreateMain(config)
         local sheen = make("Frame", {BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.94, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0.35, 0), ZIndex = 0}, shell)
         corner(sheen, 24)
         make("UIGradient", {Rotation = 90, Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1)})}, sheen)
-        task.spawn(function()
-            local Lighting = game:GetService("Lighting")
-            local blur = Lighting:FindFirstChild("NexoraBlur") or Instance.new("BlurEffect")
-            blur.Name = "NexoraBlur"; blur.Size = 0; blur.Parent = Lighting
-            local last
-            while gui.Parent do
-                local open = gui.Enabled and shell.Visible
-                if open ~= last then
-                    last = open
-                    pcall(function() TweenService:Create(blur, TweenInfo.new(.35, Enum.EasingStyle.Quad), {Size = open and 16 or 0}):Play() end)
-                end
-                task.wait(.15)
-            end
-            pcall(function() blur:Destroy() end)
-        end)
     end
     local scale = make("UIScale", {Scale = 1}, shell)
 
@@ -27410,6 +27369,133 @@ SettingSeaEventSection.CreateSlider(
 		SaveSettings("Boat Height", l)
 	end
 )
+-- Protect Boat: quando voce esta FORA do barco e aparece um Sea Event (Sea Beast, Terrorshark, Ship, Shark, Piranha),
+-- o seu barco sobe a 175 de altura e fica andando em triangulo (250 studs por lado, curva de 120 graus) ate o evento acabar.
+-- Leve: so faz algo a cada 1s (deteccao) e por frame apenas enquanto o barco esta protegido.
+do
+	getgenv().__ProtectBoatGen = (getgenv().__ProtectBoatGen or 0) + 1
+	local gen = getgenv().__ProtectBoatGen
+	pcall(function() if getgenv().__ProtectBoatConn then getgenv().__ProtectBoatConn:Disconnect() end end)
+	local HEIGHT, LEG, SPEED, CLEAR_AFTER = 175, 250, 90, 6 -- altura, lado do triangulo (studs), velocidade (studs/s), segundos sem evento
+	local st = { active = false, boat = nil, baseY = 8, wps = nil, idx = 1, rot0 = nil, lastEvent = 0, descending = false, acc = 0 }
+	local function stop()
+		st.active, st.boat, st.wps, st.descending = false, nil, nil, false
+		getgenv().__ProtectBoatActive = false
+	end
+	getgenv().__ProtectBoatStop = stop
+	local function isSeated()
+		local char = t.Character
+		local hum = char and char:FindFirstChildOfClass("Humanoid")
+		return hum ~= nil and hum.SeatPart ~= nil
+	end
+	local function eventNear()
+		if type(DetectSeaEvents) ~= "function" then return false end
+		local ok, r = pcall(DetectSeaEvents, true)
+		return ok and r and true or false
+	end
+	local function begin(boat)
+		local vs = boat:FindFirstChild("VehicleSeat")
+		if not vs then return false end
+		local base = boat:GetAttribute("NexoraBaseY")
+		if not base then
+			base = (vs.Position.Y < 30) and vs.Position.Y or 8
+			boat:SetAttribute("NexoraBaseY", base)
+		end
+		local pivot = boat:GetPivot()
+		local p = pivot.Position
+		local look = Vector3.new(pivot.LookVector.X, 0, pivot.LookVector.Z)
+		look = look.Magnitude > 0.01 and look.Unit or Vector3.new(0, 0, -1)
+		local p0 = Vector3.new(p.X, 0, p.Z)
+		local d1 = CFrame.Angles(0, math.rad(120), 0):VectorToWorldSpace(look)
+		local p1 = p0 + look * LEG
+		local p2 = p1 + d1 * LEG
+		st.boat, st.baseY, st.rot0 = boat, base, pivot - p
+		st.wps, st.idx, st.descending, st.active = { p1, p2, p0 }, 1, false, true
+		getgenv().__ProtectBoatActive = true
+		return true
+	end
+	getgenv().__ProtectBoatConn = game:GetService("RunService").Heartbeat:Connect(function(dt)
+		if getgenv().__ProtectBoatGen ~= gen then return end
+		if not Settings["Protect Boat"] then
+			if st.active then stop() end
+			return
+		end
+		if Settings["Auto Find Leviathan"] or getgenv().ReadyToDodge then
+			if st.active then stop() end
+			return
+		end
+		-- deteccao a cada 1s (barato)
+		st.acc = st.acc + dt
+		if st.acc >= 1 then
+			st.acc = 0
+			pcall(function()
+				if isSeated() then
+					if st.active then stop() end
+					return
+				end
+				if eventNear() then
+					st.lastEvent = tick()
+					st.descending = false
+					if not st.active then
+						local boat = checkboat()
+						if boat then begin(boat) end
+					end
+				elseif st.active and tick() - st.lastEvent > CLEAR_AFTER then
+					st.descending = true
+				end
+			end)
+		end
+		if not st.active then return end
+		pcall(function()
+			local boat = st.boat
+			if not boat or not boat.Parent or isSeated() then stop() return end
+			local pivot = boat:GetPivot()
+			local pos = pivot.Position
+			local targetY = st.baseY + (st.descending and 0 or HEIGHT)
+			local newY = pos.Y + math.clamp(targetY - pos.Y, -SPEED * dt, SPEED * dt)
+			local nx, nz = pos.X, pos.Z
+			if st.descending then
+				if math.abs(newY - st.baseY) < 0.5 then
+					boat:PivotTo(CFrame.new(nx, st.baseY, nz) * st.rot0)
+					stop()
+					return
+				end
+			elseif math.abs(targetY - newY) < 1 then
+				-- ja esta no alto: anda rumo ao proximo canto do triangulo
+				local wp = st.wps[st.idx]
+				local d = Vector3.new(wp.X - nx, 0, wp.Z - nz)
+				local step = SPEED * dt
+				if d.Magnitude <= step then
+					nx, nz = wp.X, wp.Z
+					st.idx = st.idx % 3 + 1
+				else
+					local u = d.Unit
+					nx, nz = nx + u.X * step, nz + u.Z * step
+				end
+			end
+			local yaw = math.rad(120 * (st.idx - 1))
+			boat:PivotTo(CFrame.new(nx, newY, nz) * CFrame.Angles(0, yaw, 0) * st.rot0)
+			local vs = boat:FindFirstChild("VehicleSeat")
+			if vs then
+				vs.AssemblyLinearVelocity = Vector3.zero
+				vs.AssemblyAngularVelocity = Vector3.zero
+			end
+		end)
+	end)
+end
+SettingSeaEventSection.CreateToggle(
+	{
+		Title = "Protect Boat",
+		Desc = "When you are OUT of the boat and a Sea Event is detected (Sea Beast, Terrorshark, Ship...), the boat rises to 175 and keeps moving in a triangle (250 studs per side) until the event is gone.",
+		Default = Settings["Protect Boat"] or false,
+	},
+	function(l)
+		SaveSettings("Protect Boat", l)
+		if not l and getgenv().__ProtectBoatStop then
+			pcall(getgenv().__ProtectBoatStop)
+		end
+	end
+)
 -- Sobe o barco (só no eixo Y) enquanto você está sentado nele. X/Z e a direção ficam livres,
 -- então a direção continua manual. Ao desligar a toggle o barco volta a descer sozinho.
 do
@@ -27426,7 +27512,7 @@ do
 		-- V13: Raise Boat Manual Drive totalmente independente - não bloqueia nenhuma outra função de barco
 		-- Só trava o Y, mantendo X/Z livre, pode coexistir com Sea Event, Leviathan, Prehistoric, etc.
 		-- Auto Find Leviathan e os dodges controlam a altura do barco sozinhos: não briga com eles.
-		if Settings["Auto Find Leviathan"] or getgenv().ReadyToDodge then return end
+		if Settings["Auto Find Leviathan"] or getgenv().ReadyToDodge or getgenv().__ProtectBoatActive then return end
 		pcall(function()
 			local char = t.Character
 			local hum = char and char:FindFirstChildOfClass("Humanoid")
