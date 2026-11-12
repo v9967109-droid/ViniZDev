@@ -12647,16 +12647,23 @@ do
     local AQGen = getgenv().__AQGen
     local AQState = { hasTarget = false, busy = false }
 
+    -- Sinal único de missão ativa: a interface da missão (padrão dos hubs de Blox Fruits).
     local function AQRawActive()
         local has = false
-        pcall(function() has = Z.Data and Z.Data.QuestData ~= nil end)
-        if not has then
-            pcall(function()
-                local q = t.PlayerGui.Main:FindFirstChild("Quest")
-                has = q ~= nil and q.Visible == true
-            end)
-        end
+        pcall(function()
+            local q = t.PlayerGui.Main:FindFirstChild("Quest")
+            has = q ~= nil and q.Visible == true
+        end)
         return has
+    end
+
+    -- Título da missão atual em minúsculas ("" se não der para ler).
+    local function AQQuestTitle()
+        local txt = ""
+        pcall(function()
+            txt = t.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text or ""
+        end)
+        return string.lower(txt)
     end
 
     function AQIsQuestActive()
@@ -12701,7 +12708,22 @@ do
         local root = char and char:FindFirstChild("HumanoidRootPart")
         local hum = char and char:FindFirstChildOfClass("Humanoid")
         if not root or not hum or hum.Health <= 0 then return end
-        if AQRawActive() then return end -- missão ativa: não mexe em nada
+        if AQRawActive() then
+            -- Auto Farm Level: se a missão aberta não é a do nível atual (ex.: subiu de nível), abandona e pega a certa.
+            if selectedFarm == "Auto Farm Level" then
+                local ok, info = pcall(GetLevelQuestInfo, t.Data.Level.Value)
+                local title = AQQuestTitle()
+                if ok and type(info) == "table" and info.Mob and info.QuestName and title ~= "" then
+                    local mobBase = string.lower(string.match(tostring(info.Mob), "^(.-)%s*%[") or tostring(info.Mob))
+                    local key = tostring(info.QuestName) .. tostring(info.Id)
+                    if mobBase ~= "" and not string.find(title, mobBase, 1, true) and AQState.abandonedFor ~= key then
+                        AQState.abandonedFor = key -- uma vez por missão, evita loop
+                        pcall(function() CommF:InvokeServer("AbandonQuest") end)
+                    end
+                end
+            end
+            return -- missão ativa: não mexe em nada
+        end
         local questName, questId, npcPos = AQTarget(selectedFarm)
         if not questName then return end
         AQState.hasTarget = true
