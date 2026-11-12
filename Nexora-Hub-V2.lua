@@ -12645,7 +12645,7 @@ AutoQuestInfo = {
 getgenv().__AQGen = (getgenv().__AQGen or 0) + 1
 do
     local AQGen = getgenv().__AQGen
-    local AQState = { hasTarget = false, busy = false }
+    local AQState = { hasTarget = false, busy = false, fails = 0, suspended = false }
 
     -- Sinal único de missão ativa: a interface da missão (padrão dos hubs de Blox Fruits).
     local function AQRawActive()
@@ -12654,6 +12654,10 @@ do
             local q = t.PlayerGui.Main:FindFirstChild("Quest")
             has = q ~= nil and q.Visible == true
         end)
+        if not has then
+            -- Segundo sinal: dados da missão (alguns servidores não mostram a interface).
+            pcall(function() has = Z.Data and Z.Data.QuestData ~= nil end)
+        end
         return has
     end
 
@@ -12709,6 +12713,7 @@ do
         local hum = char and char:FindFirstChildOfClass("Humanoid")
         if not root or not hum or hum.Health <= 0 then return end
         if AQRawActive() then
+            AQState.fails, AQState.suspended = 0, false
             -- Auto Farm Level: se a missão aberta não é a do nível atual (ex.: subiu de nível), abandona e pega a certa.
             if selectedFarm == "Auto Farm Level" then
                 local ok, info = pcall(GetLevelQuestInfo, t.Data.Level.Value)
@@ -12724,6 +12729,7 @@ do
             end
             return -- missão ativa: não mexe em nada
         end
+        if AQState.suspended then return end -- pediu 3x sem confirmação: o farm segue (sem travar no NPC)
         local questName, questId, npcPos = AQTarget(selectedFarm)
         if not questName then return end
         AQState.hasTarget = true
@@ -12741,6 +12747,12 @@ do
         AQState.busy = false
         if AQRawActive() then
             pcall(function() TweenManager.CancelCurrent() end) -- solta o personagem do NPC
+        else
+            AQState.fails += 1
+            if AQState.fails >= 3 then
+                AQState.suspended = true
+                pcall(function() TweenManager.CancelCurrent() end)
+            end
         end
     end
 
