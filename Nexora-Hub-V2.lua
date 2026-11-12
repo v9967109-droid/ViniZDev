@@ -12645,7 +12645,7 @@ AutoQuestInfo = {
 getgenv().__AQGen = (getgenv().__AQGen or 0) + 1
 do
     local AQGen = getgenv().__AQGen
-    local AQState = { hasTarget = false, busy = false, fails = 0, suspended = false }
+    local AQState = { hasTarget = false, busy = false, fails = 0, suspended = false, seenPending = false, doneLatch = false }
 
     -- Sinal único de missão ativa: a interface da missão (padrão dos hubs de Blox Fruits).
     local function AQRawActive()
@@ -12658,6 +12658,28 @@ do
             -- Segundo sinal: dados da missão (alguns servidores não mostram a interface).
             pcall(function() has = Z.Data and Z.Data.QuestData ~= nil end)
         end
+        if has then
+            -- Missão concluída = todas as tarefas zeradas (depois de já ter visto tarefa pendente nesta missão).
+            -- Assim, mesmo que a interface/dados fiquem presos, o script volta ao NPC.
+            pcall(function()
+                local data = Z.Data and Z.Data.QuestData
+                local task = data and data.Task
+                if type(task) == "table" then
+                    local total, found = 0, false
+                    for _, v in pairs(task) do
+                        found = true
+                        total = total + (tonumber(v) or 0)
+                    end
+                    if found and total > 0 then
+                        AQState.seenPending = true
+                    elseif found and total <= 0 and AQState.seenPending then
+                        AQState.doneLatch = true -- concluída: fica "concluída" até pedir a próxima
+                    end
+                end
+            end)
+        end
+        if not has then AQState.seenPending, AQState.doneLatch = false, false end
+        if AQState.doneLatch then return false end
         return has
     end
 
@@ -12739,6 +12761,7 @@ do
         end
         -- No NPC e sem missão: pede uma vez e espera o jogo confirmar (por tentativas, não por tempo).
         AQState.busy = true
+        AQState.seenPending, AQState.doneLatch = false, false
         pcall(function() CommF:InvokeServer("StartQuest", questName, questId) end)
         for _ = 1, 30 do
             if AQRawActive() then break end
