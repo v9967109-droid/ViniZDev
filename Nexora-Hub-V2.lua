@@ -12678,7 +12678,26 @@ do
                 end
             end)
         end
+        if has then
+            -- Terceiro sinal: contador no título da missão, ex.: "(5/5)" = concluída (não depende dos dados internos).
+            pcall(function()
+                local title = t.PlayerGui.Main.Quest.Container.QuestTitle.Title.Text or ""
+                local a, b = string.match(title, "%((%d+)%s*/%s*(%d+)%)")
+                a, b = tonumber(a), tonumber(b)
+                if a and b and b > 0 then
+                    if a >= b then AQState.doneLatch = true else AQState.seenPending = true end
+                end
+            end)
+        end
         if not has then AQState.seenPending, AQState.doneLatch = false, false end
+        -- Diagnóstico (F9): imprime só quando o estado muda.
+        if getgenv().AQDebug ~= false then
+            local dbg = tostring(has) .. "|" .. tostring(AQState.doneLatch) .. "|" .. tostring(AQState.suspended) .. "|" .. tostring(AQState.hasTarget)
+            if AQState.lastDbg ~= dbg then
+                AQState.lastDbg = dbg
+                print(string.format("[Nexora][AutoQuest] sinal=%s concluida=%s pausado=%s alvo=%s", tostring(has), tostring(AQState.doneLatch), tostring(AQState.suspended), tostring(AQState.hasTarget)))
+            end
+        end
         if AQState.doneLatch then return false end
         return has
     end
