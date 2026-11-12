@@ -12631,381 +12631,100 @@ function FarmMethod()
 		end
 	end
 end
--- Auto Quest: ONLY accepts the quest of the selected farm. Never attacks.
--- Only the quest-selection logic lives here; the individual Auto Farm functions
--- remain untouched.
+-- ===================== Auto Quest (sem tempo, por estado) =====================
+--   Sem missão ativa -> vai ao NPC e pede a missão UMA vez.
+--   Missão ativa     -> não faz nada (o farm mata os mobs).
+--   Missão concluída (dados da missão somem) -> volta ao NPC sozinho.
+-- Nenhum temporizador: tudo decidido pelo estado da missão.
 AutoQuestInfo = {
     ["Auto Farm Bones"] = { 2050, "HauntedQuest2", 2 },
     ["Auto Farm Katakuri"] = { 2275, "CakeQuest2", 2 },
     ["Auto Farm Tyrant of the Skies"] = { 2575, "TikiQuest3", 2 },
 }
 
--- Detect whether a quest is already active. This belongs to Auto Quest only.
--- Diagnóstico do Auto Quest: imprime no console (F9) POR QUE ele vai ao NPC / pede a missão.
--- Desligue com getgenv().AQDebug = false antes de executar o script.
-function AQLog(msg)
-    if getgenv().AQDebug == false then
-        return
-    end
-    getgenv().__AQLogLast = getgenv().__AQLogLast or {}
-    local last = getgenv().__AQLogLast[msg]
-    if last and tick() - last < 2 then
-        return
-    end
-    getgenv().__AQLogLast[msg] = tick()
-    warn("[Banana][AutoQuest] " .. msg)
-end
--- Tarefas da missão atual como texto (ex.: "Bandit=3"), lidas do GuideModule.
-function AQTaskString()
-    local parts = {}
-    pcall(function()
-        local gm = require(game.ReplicatedStorage:WaitForChild("GuideModule"))
-        local qd = gm.Data and gm.Data.QuestData
-        local task = qd and qd.Task
-        if type(task) == "table" then
-            for k, v in pairs(task) do
-                parts[#parts + 1] = tostring(k) .. "=" .. tostring(v)
-            end
-        end
-    end)
-    return #parts > 0 and table.concat(parts, ",") or "?"
-end
--- Soma do que ainda falta matar na missão ativa (nil se não der para ler).
-function AQQuestRemaining()
-    local total
-    pcall(function()
-        local data = Z.Data and Z.Data.QuestData
-        local task = data and data.Task
-        if type(task) == "table" then
-            total = 0
-            for _, v in pairs(task) do
-                total = total + (tonumber(v) or 0)
-            end
-        end
-    end)
-    return total
-end
-
-function AQIsQuestActive()
-    local has = false
-    pcall(function()
-        has = DontQuest() == true
-    end)
-    local shown = false
-    pcall(function()
-        local main = t.PlayerGui and t.PlayerGui:FindFirstChild("Main")
-        local q = main and main:FindFirstChild("Quest")
-        shown = q ~= nil and q.Visible == true
-    end)
-    if not (has or shown) then
-        -- Histerese: a interface/os dados da missão podem piscar por 1 frame ao matar um mob. Só conta como
-        -- "sem missão" depois de 3s seguidos sem nenhum sinal de missão (antes qualquer piscada fazia o
-        -- script voltar ao NPC e pegar a missão de novo antes de completar).
-        -- O tempo de espera depende de quanto faltava matar na última leitura:
-        --   faltava 0 a 2 (ou é a última morte)  -> 3s   (concluída de verdade);
-        --   não deu para ler o progresso         -> 8s;
-        --   faltava mais de 2                    -> 25s  (a missão sumiu SEM estar concluída: morte,
-        --                                                 troca de servidor etc.; antes o script pegava
-        --                                                 a missão de novo na hora e perdia o progresso).
-        local remaining = getgenv().__AQLastRemaining
-        local quiet = remaining == nil and 15 or (remaining <= 0 and 2 or (remaining <= 2 and 6 or 40))
-        if tick() - (getgenv().__AQLastRaw or 0) < quiet then
-            return true
-        end
-        if getgenv().__AQLastRaw and not getgenv().__AQLogged then
-            getgenv().__AQLogged = true
-            print(string.format("[Nexora][Auto Quest] missão encerrada (faltava=%s, espera=%ds); pegando a próxima",
-                tostring(remaining), quiet))
-        end
-        getgenv().__AQDoneSince, getgenv().__AQSeenPositive = nil, nil
-        return false
-    end
-    getgenv().__AQLastRaw = tick()
-    getgenv().__AQLogged = nil
-    getgenv().__AQLastRemaining = AQQuestRemaining()
-    if tick() - (getgenv().__AQTaskAt or 0) > 0.5 then
-        getgenv().__AQTaskAt = tick()
-        getgenv().__AQLastTask = AQTaskString()
-    end
-    -- Missão concluída: todas as tarefas zeradas por 1,5s. Só vale se, nesta missão, já vimos uma tarefa
-    -- positiva (assim um "tudo zero" logo ao aceitar nunca é tomado por missão concluída).
-    local ok, Task = pcall(function()
-        local questData = t and t:FindFirstChild("Data") and t.Data:FindFirstChild("QuestData")
-        if not questData then
-            return nil
-        end
-        if questData:IsA("ValueBase") then
-            questData = questData.Value
-        end
-        if type(questData) == "table" then
-            return questData.Task
-        end
-        return questData:FindFirstChild("Task")
-    end)
-    if ok and type(Task) == "table" then
-        for _, Progress in pairs(Task) do
-            local n = tonumber(Progress)
-            if n and n > 0 then
-                getgenv().__AQSeenPositive = true
-            end
-        end
-    end
-    local done = false
-    pcall(function()
-        done = IsActiveFarmQuestComplete()
-    end)
-    if done and getgenv().__AQSeenPositive then
-        getgenv().__AQDoneSince = getgenv().__AQDoneSince or tick()
-        if tick() - getgenv().__AQDoneSince >= 1.5 then
-            return false
-        end
-    else
-        getgenv().__AQDoneSince = nil
-    end
-    return true
-end
-
--- ===================== Auto Quest (máquina de estados) =====================
--- Fases, sempre uma de cada vez:
---   PEGAR   : sem missão ativa -> o FarmMethod espera (só o Auto Quest se mexe), o personagem vai ao NPC,
---             espera 0,8s parado nele, inicia a missão UMA vez e confere se abriu (até 3s);
---   FARMAR  : missão ativa -> o Auto Quest não faz nada; o FarmMethod sai do NPC e farma o mob da missão;
---   VOLTAR  : missão concluída (some, ou tarefas zeradas por 1,5s) -> volta à fase PEGAR sozinho.
--- Falhou ao abrir: espera 2s, 4s, ... até 10s entre tentativas; 6 falhas seguidas -> devolve o controle
--- ao farm por 45s (o farm segue sem missão em vez de ficar parado esperando). Se o Auto Quest não tem
--- alvo (nível baixo demais, NPC desconhecido), o farm NÃO espera por ele.
--- Reexecutar o script não duplica o loop (só a execução mais recente continua).
 getgenv().__AQGen = (getgenv().__AQGen or 0) + 1
-getgenv().__AQReady, getgenv().__AQGiveUp = 0, nil
-
--- O farm só espera quando o Auto Quest está ligado, tem alvo e ainda não há missão ativa.
-function AQNeedsQuest()
-    if not Settings["Auto Quest [Katakuri/Bone/Tyrant]"] then
-        return false
-    end
-    if Settings["Farm Mastery"] and Settings["Start Farm"] then
-        return false
-    end
-    if getgenv().__AQLocked then
-        return false
-    end
-    if getgenv().__AQGiveUp and tick() < getgenv().__AQGiveUp then
-        return false
-    end
-    if tick() - (getgenv().__AQReady or 0) > 2 then
-        return false -- o Auto Quest não está em condições de agir: o farm segue normal
-    end
-    return not AQIsQuestActive()
-end
-
 do
-    local MyGen = getgenv().__AQGen
-    local initialLevel = 0
-    pcall(function() initialLevel = tonumber(t.Data.Level.Value) or 0 end)
-    local State = {
-        fails = 0, nextTry = 0, atNpcSince = nil, busy = false,
-        graceUntil = 0, wasActive = false, lastDeath = 0, loggedTrip = false,
-        lastLevelCheck = 0, lastKnownLevel = initialLevel, levelQuestPending = false
-    }
+    local AQGen = getgenv().__AQGen
+    local AQState = { hasTarget = false, busy = false }
 
-    -- Auto Farm Level: verifica a cada 2 segundos se o jogador subiu de nível.
-    -- Só libera uma nova missão de Level quando detectar aumento de nível.
-    local function CheckLevelUpForQuest(selectedFarm)
-        if selectedFarm then
-            return true -- pega a próxima missão assim que a atual for concluída
+    local function AQRawActive()
+        local has = false
+        pcall(function() has = Z.Data and Z.Data.QuestData ~= nil end)
+        if not has then
+            pcall(function()
+                local q = t.PlayerGui.Main:FindFirstChild("Quest")
+                has = q ~= nil and q.Visible == true
+            end)
         end
-        local now = tick()
-        if now - State.lastLevelCheck >= 2 then
-            State.lastLevelCheck = now
-            local currentLevel
-            pcall(function() currentLevel = tonumber(t.Data.Level.Value) end)
-            if currentLevel then
-                if currentLevel > (State.lastKnownLevel or currentLevel) then
-                    State.levelQuestPending = true
-                    AQLog("subiu de level: " .. tostring(State.lastKnownLevel) .. " -> " .. tostring(currentLevel) .. "; missão liberada")
-                end
-                State.lastKnownLevel = currentLevel
-            end
-        end
-        return State.levelQuestPending
+        return has
     end
 
-    -- Retorna nome da missão, id e posição do NPC da missão do farm selecionado.
-    local function QuestTarget(selectedFarm)
+    function AQIsQuestActive()
+        return AQRawActive()
+    end
+
+    -- O farm só espera enquanto o Auto Quest tem alvo e ainda não há missão.
+    function AQNeedsQuest()
+        if not Settings["Auto Quest [Katakuri/Bone/Tyrant]"] then return false end
+        if Settings["Farm Mastery"] and Settings["Start Farm"] then return false end
+        if not AQState.hasTarget then return false end
+        return not AQRawActive()
+    end
+
+    local function AQTarget(selectedFarm)
         if selectedFarm == "Auto Farm Level" then
             local ok, info = pcall(GetLevelQuestInfo, t.Data.Level.Value)
-            if not ok or type(info) ~= "table" or not info.Pos or not info.QuestName then
-                return nil
-            end
+            if not ok or type(info) ~= "table" or not info.Pos or not info.QuestName then return nil end
             local pos = typeof(info.Pos) == "CFrame" and info.Pos.Position or info.Pos
             return tostring(info.QuestName), info.Id, pos
         end
         local q = AutoQuestInfo[selectedFarm]
-        if not q or t.Data.Level.Value < q[1] then
-            return nil
-        end
+        if not q or t.Data.Level.Value < q[1] then return nil end
         local points = getgenv().questpoint
         local cf = points and points[q[2]]
         if not cf then
             pcall(CFrameQuest)
-            task.wait(1)
             points = getgenv().questpoint
             cf = points and points[q[2]]
         end
-        if not cf then
-            return nil
-        end
+        if not cf then return nil end
         return q[2], q[3], cf.Position
     end
 
-    local function Step()
-        if not Settings["Auto Quest [Katakuri/Bone/Tyrant]"] then
-            State.atNpcSince = nil
-            return
-        end
-        if Settings["Farm Mastery"] and Settings["Start Farm"] then
-            return
-        end
+    local function AQStep()
+        AQState.hasTarget = false
+        if not Settings["Auto Quest [Katakuri/Bone/Tyrant]"] then return end
+        if Settings["Farm Mastery"] and Settings["Start Farm"] then return end
         local selectedFarm = GetSelectedIndividualFarm()
-        if not selectedFarm or selectedFarm == "Aura Farm" or Settings["Farm Material"] then
-            return
-        end
-        -- Para Auto Farm Level, a mesma toggle Auto Quest só busca missão depois
-        -- de detectar um level-up. A checagem é feita a cada 2 segundos.
-        local levelQuestAllowed = CheckLevelUpForQuest(selectedFarm)
-        local character = t.Character
-        local root = character and character:FindFirstChild("HumanoidRootPart")
-        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-        if not root or not humanoid or humanoid.Health <= 0 then
-            State.atNpcSince = nil
-            if humanoid and humanoid.Health <= 0 then
-                State.lastDeath = tick()
-            end
-            return
-        end
-        -- FARMAR: missão ativa -> não mexe em nada e zera as falhas.
-        local activeNow = AQIsQuestActive()
-        if activeNow ~= State.wasActive then
-            State.wasActive = activeNow
-            if activeNow then
-                AQLog("missão ATIVA | tarefa: " .. AQTaskString())
-            else
-                local diedAgo = tick() - State.lastDeath
-                AQLog(string.format(
-                    "missão SUMIU | última tarefa vista: %s | morreu há %s",
-                    tostring(getgenv().__AQLastTask or "?"),
-                    State.lastDeath > 0 and string.format("%.0fs", diedAgo) or "nunca"
-                ))
-            end
-        end
-        if activeNow then
-            State.fails, State.atNpcSince, State.loggedTrip = 0, nil, false
-            State.lostAt = nil
-            getgenv().__AQGiveUp = nil
-            return
-        end
-        -- TRAVA: depois de aceitar, só volta ao NPC se a missão ficar 6s seguidos sem nenhum sinal
-        -- (concluída de verdade). Oscilações curtas da interface/dados não liberam mais nova missão.
-        if State.locked then
-            State.lostAt = State.lostAt or tick()
-            if tick() - State.lostAt < 6 then
-                getgenv().__AQLocked = true
-                return
-            end
-            State.locked, State.lostAt = false, nil
-            getgenv().__AQLocked = nil
-        end
-        -- Folga: nos 8s seguintes a uma missão aceita ela não pode estar concluída; se a leitura falhou,
-        -- é oscilação. Não vai ao NPC nem faz o farm esperar.
-        if tick() < State.graceUntil then
-            return
-        end
-        if getgenv().__AQGiveUp and tick() < getgenv().__AQGiveUp then
-            return
-        end
-        if selectedFarm == "Auto Farm Level" and not levelQuestAllowed then
-            return -- aguarda detectar aumento de nível; não fica indo ao NPC sem necessidade
-        end
-        local questName, questId, npcPos = QuestTarget(selectedFarm)
-        if not questName then
-            return -- sem alvo: __AQReady não é renovado e o farm segue normal
-        end
-        if (getgenv().__AQLastRemaining or 0) > 0 and tick() - (getgenv().__AQLastRaw or 0) < 40 then
-            return -- ainda faltavam mobs na última leitura: não volta ao NPC antes de completar
-        end
-        getgenv().__AQReady = tick() -- PEGAR: o farm espera por mim
-        if tick() < State.nextTry then
-            return
-        end
-        -- vai até o NPC
+        if not selectedFarm or selectedFarm == "Aura Farm" or Settings["Farm Material"] then return end
+        local char = t.Character
+        local root = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if not root or not hum or hum.Health <= 0 then return end
+        if AQRawActive() then return end -- missão ativa: não mexe em nada
+        local questName, questId, npcPos = AQTarget(selectedFarm)
+        if not questName then return end
+        AQState.hasTarget = true
         if (npcPos - root.Position).Magnitude > 8 then
-            State.atNpcSince = nil
-            if not State.loggedTrip then
-                State.loggedTrip = true
-                AQLog(string.format(
-                    "indo ao NPC (%s) | sem sinal de missão há %.1fs | última tarefa vista: %s",
-                    questName,
-                    tick() - (getgenv().__AQLastRaw or 0),
-                    tostring(getgenv().__AQLastTask or "?")
-                ))
-            end
             toTarget(CFrame.new(npcPos) * CFrame.new(0, 4, 2), true)
             return
         end
-        State.atNpcSince = State.atNpcSince or tick()
-        if tick() - State.atNpcSince < 0.8 then
-            return
+        -- No NPC e sem missão: pede uma vez e espera o jogo confirmar (por tentativas, não por tempo).
+        AQState.busy = true
+        pcall(function() CommF:InvokeServer("StartQuest", questName, questId) end)
+        for _ = 1, 30 do
+            if AQRawActive() then break end
+            task.wait()
         end
-        -- Última conferência: se a missão voltou a aparecer, NÃO pede de novo (pedir com missão ativa
-        -- reinicia o progresso).
-        if AQIsQuestActive() then
-            State.atNpcSince = nil
-            return
-        end
-        -- inicia a missão uma vez e confere
-        State.busy = true
-        AQLog("StartQuest enviado: " .. tostring(questName) .. " id " .. tostring(questId))
-        pcall(function()
-            CommF:InvokeServer("StartQuest", questName, questId)
-        end)
-        local deadline = tick() + 3
-        local opened = false
-        repeat
-            task.wait(0.1)
-            opened = AQIsQuestActive()
-        until opened or tick() > deadline
-        State.busy = false
-        State.atNpcSince = nil
-        State.loggedTrip = false
-        if opened then
-            State.locked, State.lostAt = true, nil
-            getgenv().__AQLocked = true
-            State.fails = 0
-            if selectedFarm == "Auto Farm Level" then
-                State.levelQuestPending = false
-            end
-            State.nextTry = tick() + 1
-            State.graceUntil = tick() + 15
-            getgenv().__AQGiveUp = nil
-            -- Solta o personagem do NPC: cancela o movimento até ele para o farm assumir já.
-            pcall(function()
-                TweenManager.CancelCurrent()
-            end)
-        else
-            State.fails += 1
-            State.nextTry = tick() + math.min(2 * State.fails, 10)
-            if State.fails >= 6 then
-                getgenv().__AQGiveUp = tick() + 45
-                State.fails = 0
-            end
+        AQState.busy = false
+        if AQRawActive() then
+            pcall(function() TweenManager.CancelCurrent() end) -- solta o personagem do NPC
         end
     end
 
     spawn(function()
-        while task.wait(0.25) and getgenv().__AQGen == MyGen do
-            if not State.busy then
-                pcall(Step)
-            end
+        while task.wait() and getgenv().__AQGen == AQGen do
+            if not AQState.busy then pcall(AQStep) end
         end
     end)
 end
