@@ -12708,7 +12708,7 @@ function AQIsQuestActive()
         --                                                 troca de servidor etc.; antes o script pegava
         --                                                 a missão de novo na hora e perdia o progresso).
         local remaining = getgenv().__AQLastRemaining
-        local quiet = remaining == nil and 8 or (remaining <= 2 and 3 or 25)
+        local quiet = remaining == nil and 15 or (remaining <= 0 and 2 or (remaining <= 2 and 6 or 40))
         if tick() - (getgenv().__AQLastRaw or 0) < quiet then
             return true
         end
@@ -12784,6 +12784,9 @@ function AQNeedsQuest()
         return false
     end
     if Settings["Farm Mastery"] and Settings["Start Farm"] then
+        return false
+    end
+    if getgenv().__AQLocked then
         return false
     end
     if getgenv().__AQGiveUp and tick() < getgenv().__AQGiveUp then
@@ -12897,8 +12900,20 @@ do
         end
         if activeNow then
             State.fails, State.atNpcSince, State.loggedTrip = 0, nil, false
+            State.lostAt = nil
             getgenv().__AQGiveUp = nil
             return
+        end
+        -- TRAVA: depois de aceitar, só volta ao NPC se a missão ficar 6s seguidos sem nenhum sinal
+        -- (concluída de verdade). Oscilações curtas da interface/dados não liberam mais nova missão.
+        if State.locked then
+            State.lostAt = State.lostAt or tick()
+            if tick() - State.lostAt < 6 then
+                getgenv().__AQLocked = true
+                return
+            end
+            State.locked, State.lostAt = false, nil
+            getgenv().__AQLocked = nil
         end
         -- Folga: nos 8s seguintes a uma missão aceita ela não pode estar concluída; se a leitura falhou,
         -- é oscilação. Não vai ao NPC nem faz o farm esperar.
@@ -12914,6 +12929,9 @@ do
         local questName, questId, npcPos = QuestTarget(selectedFarm)
         if not questName then
             return -- sem alvo: __AQReady não é renovado e o farm segue normal
+        end
+        if (getgenv().__AQLastRemaining or 0) > 0 and tick() - (getgenv().__AQLastRaw or 0) < 40 then
+            return -- ainda faltavam mobs na última leitura: não volta ao NPC antes de completar
         end
         getgenv().__AQReady = tick() -- PEGAR: o farm espera por mim
         if tick() < State.nextTry then
@@ -12960,12 +12978,14 @@ do
         State.atNpcSince = nil
         State.loggedTrip = false
         if opened then
+            State.locked, State.lostAt = true, nil
+            getgenv().__AQLocked = true
             State.fails = 0
             if selectedFarm == "Auto Farm Level" then
                 State.levelQuestPending = false
             end
             State.nextTry = tick() + 1
-            State.graceUntil = tick() + 8
+            State.graceUntil = tick() + 15
             getgenv().__AQGiveUp = nil
             -- Solta o personagem do NPC: cancela o movimento até ele para o farm assumir já.
             pcall(function()
