@@ -11586,95 +11586,13 @@ SettingAutoFarmSection.CreateToggle(
 SettingAutoFarmSection.CreateToggle(
 	{ Title = "Auto Quest", Desc = "Only accepts the quest of the selected farm (Level/Bones/Katakuri/Tyrant).", Default = true },
 	function(V)
-		if getgenv().__AQCycleSync then return end
 		getgenv().__AQUserWants = V
 		SaveSettings("Auto Quest [Katakuri/Bone/Tyrant]", V)
 	end
 )
--- Ciclo Auto Quest: 10s ligado e 75s desligado, somente na ilha do farm selecionado.
--- Fora da ilha correspondente, o ciclo fica pausado e não altera o toggle.
-do
-	getgenv().__AQToggleCycleGeneration = (getgenv().__AQToggleCycleGeneration or 0) + 1
-	local cycleGeneration = getgenv().__AQToggleCycleGeneration
-	local toggleKey = "Auto Quest [Katakuri/Bone/Tyrant]"
-	local function SetAutoQuestToggle(value)
-		if value and getgenv().__AQUserWants == false then return end
-		getgenv().__AQCycleSync = true
-		pcall(function() SaveSettings(toggleKey, value) end)
-		pcall(function()
-			local option = Options and Options["Auto Quest"]
-			local control = option and option.FunctionCreate
-			if control and control.SetValue then control:SetValue(value) end
-		end)
-		task.delay(0.25, function()
-			if getgenv().__AQToggleCycleGeneration == cycleGeneration then
-				getgenv().__AQCycleSync = false
-			end
-		end)
-	end
-	local function GetSelectedQuestNPCPosition()
-		local selected = GetSelectedIndividualFarm and GetSelectedIndividualFarm()
-		if not selected or selected == "Aura Farm" or Settings["Farm Material"] then return nil end
-		local targetPosition
-		if selected == "Auto Farm Level" then
-			pcall(function()
-				local info = GetLevelQuestInfo(t.Data.Level.Value)
-				if info and info.Pos then
-					targetPosition = typeof(info.Pos) == "CFrame" and info.Pos.Position or info.Pos
-				end
-			end)
-		else
-			local info = AutoQuestInfo and AutoQuestInfo[selected]
-			local points = getgenv().questpoint
-			local cf = info and points and points[info[2]]
-			if cf then targetPosition = cf.Position end
-		end
-		return targetPosition
-	end
-	local function IsOnSelectedFarmIsland()
-		local targetPosition = GetSelectedQuestNPCPosition()
-		local root = t.Character and t.Character:FindFirstChild("HumanoidRootPart")
-		if not root or not targetPosition then return false end
-		-- Distância ampla para reconhecer que chegou à ilha correspondente.
-		return (root.Position - targetPosition).Magnitude <= 2500
-	end
-	local function IsNearSelectedQuestNPC()
-		local targetPosition = GetSelectedQuestNPCPosition()
-		local root = t.Character and t.Character:FindFirstChild("HumanoidRootPart")
-		if not root or not targetPosition then return false end
-		-- O ciclo só começa quando o personagem chega perto do NPC da missão.
-		return (root.Position - targetPosition).Magnitude <= 100
-	end
-	task.spawn(function()
-		local isEnabled = true
-		local startedAtNPC = false
-		SetAutoQuestToggle(true)
-		while getgenv().__AQToggleCycleGeneration == cycleGeneration do
-			if IsOnSelectedFarmIsland() and (startedAtNPC or IsNearSelectedQuestNPC()) then
-				startedAtNPC = true
-				local duration = isEnabled and 10 or 75
-				local deadline = tick() + duration
-				while getgenv().__AQToggleCycleGeneration == cycleGeneration and IsOnSelectedFarmIsland() and tick() < deadline do
-					task.wait(0.25)
-				end
-				if getgenv().__AQToggleCycleGeneration ~= cycleGeneration then break end
-				if IsOnSelectedFarmIsland() then
-					isEnabled = not isEnabled
-					SetAutoQuestToggle(isEnabled)
-				end
-			else
-				-- Na ilha, aguarda chegar perto do NPC; fora dela, também aguarda sem alterar o toggle.
-				-- Farm desligado (ou ainda fora da ilha): o Auto Quest fica/volta ligado; só desliga se o usuário desligar.
-				if (not GetSelectedIndividualFarm() or not IsOnSelectedFarmIsland()) and not Settings[toggleKey] and getgenv().__AQUserWants ~= false then
-					SetAutoQuestToggle(true)
-					isEnabled = true
-					startedAtNPC = false
-				end
-				task.wait(1)
-			end
-		end
-	end)
-end
+-- Auto Quest fica ligado até o usuário desligar (sem ciclo por tempo).
+getgenv().__AQUserWants = true
+pcall(function() SaveSettings("Auto Quest [Katakuri/Bone/Tyrant]", true) end)
 -- Mantém os toggles "Farm Mastery" e "Start Farm" visualmente iguais ao estado real.
 function SyncMasteryToggle(title, v)
 	if getgenv().__MasterySyncing then
@@ -12890,8 +12808,8 @@ do
     -- Auto Farm Level: verifica a cada 2 segundos se o jogador subiu de nível.
     -- Só libera uma nova missão de Level quando detectar aumento de nível.
     local function CheckLevelUpForQuest(selectedFarm)
-        if selectedFarm ~= "Auto Farm Level" then
-            return true
+        if selectedFarm then
+            return true -- pega a próxima missão assim que a atual for concluída
         end
         local now = tick()
         if now - State.lastLevelCheck >= 2 then
